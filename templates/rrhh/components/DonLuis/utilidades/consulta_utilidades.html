@@ -1,0 +1,636 @@
+{% load static %}
+
+
+{% load static %}
+
+
+<!DOCTYPE html>
+<!--[if IE 8]> <html lang="en" class="ie8"> <![endif]-->
+<!--[if !IE]><!-->
+<html lang="en">
+<!--<![endif]-->
+<head>
+	<meta charset="utf-8" />
+	<title>Don Luis</title>
+	<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport" />
+	<meta content="" name="description" />
+	<meta content="" name="author" />
+	<link rel="icon" type="image/png" href="{% static 'assets/img/logo/logo-donluis.png' %}">	
+	<!-- ================== BEGIN BASE CSS STYLE ================== -->
+	<link href="http://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700" rel="stylesheet" />
+	<link href="{% static 'assets/plugins/jquery-ui/jquery-ui.min.css' %}" rel="stylesheet" />
+	<link href="{% static 'assets/plugins/bootstrap/4.0.0/css/bootstrap.min.css' %}" rel="stylesheet" />
+	<link href="{% static 'assets/plugins/font-awesome/5.0/css/fontawesome-all.min.css' %}" rel="stylesheet" />
+	<link href="{% static 'assets/plugins/animate/animate.min.css' %}" rel="stylesheet" />
+	<link href="{% static 'assets/css/default/style.min.css' %}" rel="stylesheet" />
+	<link href="{% static 'assets/css/default/style-responsive.min.css' %}" rel="stylesheet" />
+	<link href="{% static 'assets/css/default/theme/default.css' %}" rel="stylesheet" id="theme" />
+	<!-- ================== END BASE CSS STYLE ================== -->	
+	<!-- ================== INIT BASE AUTO CSS TYLE ================== -->
+	<link href="{% static 'core/css/css.css' %}" rel="stylesheet"/>
+	<!-- ================== BEGIN BASE CSS STYLE ================== -->
+	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+	{% block css %}
+	
+	{% endblock %}
+</head>
+
+
+
+<body>
+	<!-- begin #page-loader -->
+	<div id="page-loader" class="fade show"><span class="spinner"></span></div>
+	<!-- end #page-loader -->
+	<!-- begin #page-container -->
+	<div id="page-container" class="page-container fade page-sidebar-fixed page-header-fixed">
+		<!-- begin #header -->
+		<div id="header" class="header navbar-inverse">
+			<!-- begin navbar-header -->
+			<div class="navbar-header">
+				<a href="{% url 'home' %}" class="navbar-brand"><b> Don Luis |</b><span style="font-size: 15px;"> Portal web</span></a>
+				<button type="button" class="navbar-toggle" data-click="sidebar-toggled">
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+				</button>
+			</div>
+			<!-- end navbar-header -->
+			<!-- begin header-nav -->
+			<ul class="navbar-nav navbar-right">
+				<li class="dropdown navbar-user">
+					<a href="javascript:;" class="dropdown-toggle" data-toggle="dropdown">
+						<img src="{% static 'assets/img/user/user-white.png' %}" alt="" />
+						<span class="d-none d-md-inline text-uppercase">
+						{% if user.is_authenticated %}
+							{{ user.username }}&nbsp;
+						{% endif %}
+						</span> <b class="caret"></b>
+					</a>
+					<div class="dropdown-menu dropdown-menu-right">
+						{% comment %} <a href="#" onclick="modal_update_password('{% url 'update_password' user.pk %}')" class="dropdown-item" style="cursor:pointer;"><i class="fa fa-cogs"></i> &nbsp;Cambiar clave</a> {% endcomment %}
+						<div class="dropdown-divider"></div>
+						{% comment %} <a href="{% url 'logout' %}" class="dropdown-item"><i class="fa fa-sign-out-alt"></i> &nbsp;Cerrar sesión</a> {% endcomment %}
+
+					</div>
+				</li>
+			</ul>
+			<!-- end header navigation right -->
+		</div>
+		<!-- end #header -->
+		<!-- #modal-dialog -->
+		<div class="modal fade" id="modalUpdatePassword">
+		</div>
+
+
+
+
+
+
+{% block header %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+{% endblock %}
+
+
+
+<!-- begin panel -->
+<div class="panel panel-inverse" data-sortable-id="form-stuff-3">
+    <div class="panel-heading">
+        <div class="panel-heading-btn">
+            <!-- Nuevo botón de configuración -->
+            {% comment %} <a href="javascript:;" class="btn btn-xs btn-icon btn-circle btn-info m-r-5" data-toggle="modal" data-target="#configModal">
+                <i class="fa fa-cog"></i>
+            </a> {% endcomment %}
+            {% comment %} <a href="javascript:;" class="btn btn-xs btn-icon btn-circle btn-default" data-click="panel-expand"><i class="fa fa-expand"></i></a>
+            <a href="javascript:;" class="btn btn-xs btn-icon btn-circle btn-success" data-click="panel-reload"><i class="fa fa-repeat"></i></a>
+            <a href="javascript:;" class="btn btn-xs btn-icon btn-circle btn-warning" data-click="panel-collapse"><i class="fa fa-minus"></i></a>
+            <a href="javascript:;" class="btn btn-xs btn-icon btn-circle btn-danger" data-click="panel-remove"><i class="fa fa-times"></i></a> {% endcomment %}
+        </div>
+        <h4 class="panel-title" style="font-family: 'Montserrat', sans-serif; font-weight: 500;">Consulta de Utilidades</h4>
+    </div>
+    <div class="panel-body" style="background-color: #f5f7fa; min-height: calc(100vh - 150px); display: flex; align-items: center;">
+        <div class="d-flex justify-content-center" style="width: 100%;">
+            <div style="width: 90%;">
+                <!-- Card Principal con sombra mejorada -->
+                <div class="card" style="border-radius: 15px; box-shadow: 0 15px 35px rgba(0,0,0,0.15), 0 5px 15px rgba(0,0,0,0.08); overflow: hidden; border: none; margin: 20px 0;">
+                    <!-- Header con imagen de fondo (portada completa) - Ajustado para ver el logo completo -->
+                    <div class="card-header text-white" id="headerBanner" style="background-color: #2ecc71; background-size: cover; background-position: center 40%; border-bottom: none; padding: 25px 20px; position: relative; height: 180px; overflow: hidden;">
+                        <!-- Gradiente sutilmente más oscuro para mejor contraste -->
+                        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(90deg, rgba(41, 128, 185, 0.2), rgba(46, 204, 113, 0.2)); z-index: 1;"></div>
+                        
+                        <!-- Título y subtítulo con mejor posicionamiento -->
+                        <div style="position: relative; z-index: 2;">
+                            <h4 class="m-b-0" style="font-family: 'Montserrat', sans-serif; font-weight: 600; letter-spacing: 0.5px; text-shadow: 0 2px 4px rgba(0,0,0,0.5);"><i class="fa fa-search"></i> Búsqueda de Usuario</h4>
+                        </div>
+                    </div>
+                    <div class="card-body" style="padding: 25px; background-color: #ffffff; box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);">
+                        <!-- Sección de Búsqueda -->
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <div class="input-group" style="box-shadow: 0 3px 10px rgba(0,0,0,0.05); border-radius: 5px; overflow: hidden;">
+                                    <span class="input-group-addon" style="background-color: #f8f9fc; border: none;"><i class="fa fa-search"></i></span>
+                                    <input type="number" class="form-control" placeholder="Ingrese DNI del usuario" id="searchInput" style="border: none; padding: 12px 15px; height: auto; font-family: 'Roboto', sans-serif; font-size: 15px; letter-spacing: 0.3px; color: #333; font-weight: 400;" maxlength="10" pattern="[0-9]{1,10}">
+                                    {% comment %} <span class="input-group-btn">
+                                        <button class="btn btn-primary" type="button" id="searchButton" style="border-radius: 0; padding: 12px 25px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; font-size: 13px;">Buscar</button>
+                                    </span> {% endcomment %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Sección de Información -->
+                        <form id="userInfoForm" class="form-horizontal">
+                            <!-- Separador con estilo -->
+                            <div class="mb-4" style="height: 1px; background: linear-gradient(to right, rgba(0,0,0,0.05), rgba(0,0,0,0.1), rgba(0,0,0,0.05));"></div>
+                            
+                            <div class="row">
+                                <!-- Datos personales -->
+                                <div class="col-md-6">
+                                    <div class="mb-4">
+                                        <h5 class="text-primary m-b-15" style="font-family: 'Montserrat', sans-serif; font-weight: 600; letter-spacing: 0.5px;"><i class="fa fa-user-circle fa-lg"></i> Información Personal</h5>
+                                        <div class="card" style="border: none; border-radius: 5px; box-shadow: 0 3px 10px rgba(0,0,0,0.03); background-color: #fcfcfc;">
+                                            <div class="card-body" style="padding: 15px;">
+                                                <div class="form-group row m-b-16">
+                                                    <label class="col-md-4 col-form-label" style="font-family: 'Roboto', sans-serif; font-weight: 500; font-size: 14px; color: #444;">Nombre Completo:</label>
+                                                    <div class="col-md-8">
+                                                        <input type="text" name="nombreCompleto" class="form-control input-modern" readonly style="background-color: #f8f9fa; border-radius: 4px; font-family: 'Roboto', sans-serif; padding: 10px 14px; height: auto; border: 1px solid #e4e6ef; transition: all 0.3s; font-size: 14px; color: #333; font-weight: 400; line-height: 1.5;">
+                                                    </div>
+                                                </div>
+                                                <div class="form-group row m-b-16">
+                                                    <label class="col-md-4 col-form-label" style="font-family: 'Roboto', sans-serif; font-weight: 500; font-size: 14px; color: #444;">DNI:</label>
+                                                    <div class="col-md-8">
+                                                        <input type="text" name="dni" class="form-control input-modern" readonly style="background-color: #f8f9fa; border-radius: 4px; font-family: 'Roboto', sans-serif; padding: 10px 14px; height: auto; border: 1px solid #e4e6ef; transition: all 0.3s; font-size: 14px; color: #333; font-weight: 400; line-height: 1.5;">
+                                                    </div>
+                                                </div>
+                                                <div class="form-group row m-b-16">
+                                                    <label class="col-md-4 col-form-label" style="font-family: 'Roboto', sans-serif; font-weight: 500; font-size: 14px; color: #444;">Teléfono: <span class="text-danger">*</span></label>
+                                                    <div class="col-md-8">
+                                                        <input type="text" name="telefono" class="form-control input-modern" required style="border-radius: 4px; font-family: 'Roboto', sans-serif; padding: 10px 14px; height: auto; border: 1px solid #e4e6ef; box-shadow: none; transition: all 0.3s; font-size: 14px; color: #333; font-weight: 400; line-height: 1.5;">
+                                                    </div>
+                                                </div>
+                                                <div class="form-group row m-b-0">
+                                                    <label class="col-md-4 col-form-label" style="font-family: 'Roboto', sans-serif; font-weight: 500; font-size: 14px; color: #444;">Correo Electrónico: <span class="text-danger">*</span></label>
+                                                    <div class="col-md-8">
+                                                        <input type="email" name="email" class="form-control input-modern" required style="border-radius: 4px; font-family: 'Roboto', sans-serif; padding: 10px 14px; height: auto; border: 1px solid #e4e6ef; box-shadow: none; transition: all 0.3s; font-size: 14px; color: #333; font-weight: 400; line-height: 1.5;">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Información bancaria -->
+                                <div class="col-md-6">
+                                    <div class="mb-4">
+                                        <h5 class="text-primary m-b-15" style="font-family: 'Montserrat', sans-serif; font-weight: 600; letter-spacing: 0.5px;"><i class="fa fa-university fa-lg"></i> Información Bancaria</h5>
+                                        <div class="card" style="border: none; border-radius: 5px; box-shadow: 0 3px 10px rgba(0,0,0,0.03); background-color: #fcfcfc;">
+                                            <div class="card-body" style="padding: 15px;">
+                                                <div class="form-group row m-b-16">
+                                                    <label class="col-md-4 col-form-label" style="font-family: 'Roboto', sans-serif; font-weight: 500; font-size: 14px; color: #444;">Banco: <span class="text-danger">*</span></label>
+                                                    <div class="col-md-8">
+                                                        <select name="banco" class="form-control select-modern" required style="border-radius: 4px; font-family: 'Roboto', sans-serif; padding: 10px 14px; height: 42px; border: 1px solid #e4e6ef; box-shadow: none; transition: all 0.3s; font-size: 14px; color: #333; font-weight: 400; appearance: none; background-image: url('data:image/svg+xml;utf8,<svg fill=\"%23333\" height=\"24\" viewBox=\"0 0 24 24\" width=\"24\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M7 10l5 5 5-5z\"/><path d=\"M0 0h24v24H0z\" fill=\"none\"/></svg>'); background-repeat: no-repeat; background-position: right 10px center; line-height: 1.5;">
+                                                            <option value="">Seleccione un banco o caja</option>
+                                                            <option value="BBIF">BANCO INTERAMERICANO DE FINANZAS</option>
+                                                            <option value="BBVA">BANCO CONTINENTAL BBVA</option>
+                                                            <option value="BCP">BANCO DE CREDITO DEL PERU</option>
+                                                            <option value="BNC">BANCO DE LA NACION</option>
+                                                            <option value="BSCT">BANCO SCOTIABANK</option>
+                                                            <option value="CAJA">CAJA EFECTIVO</option>
+                                                            <option value="CUCU">CMAC CAJA CUSCO</option>
+                                                            <option value="CHU">CAJA HUANCAYO</option>
+                                                            <option value="CJIC">CMAC CAJA ICA</option>
+                                                            <option value="FFIJ">FONDO FIJO</option>
+                                                            <option value="IBK">BANCO INTERBANK</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                                <div class="form-group row m-b-16">
+                                                    <label class="col-md-4 col-form-label" style="font-family: 'Roboto', sans-serif; font-weight: 500; font-size: 14px; color: #444;">Número de Cuenta: <span class="text-danger">*</span></label>
+                                                    <div class="col-md-8">
+                                                        <input type="text" name="numeroCuenta" class="form-control input-modern" required style="border-radius: 4px; font-family: 'Roboto', sans-serif; padding: 10px 14px; height: auto; border: 1px solid #e4e6ef; box-shadow: none; transition: all 0.3s; font-size: 14px; color: #333; font-weight: 400; line-height: 1.5;">
+                                                    </div>
+                                                </div>
+                                                <div class="form-group row m-b-0">
+                                                    <label class="col-md-4 col-form-label" style="font-family: 'Roboto', sans-serif; font-weight: 500; font-size: 14px; color: #444;">Cuenta Interbancaria: <span class="text-danger">*</span></label>
+                                                    <div class="col-md-8">
+                                                        <input type="text" name="cuentaInterbancaria" class="form-control input-modern" style="border-radius: 4px; font-family: 'Roboto', sans-serif; padding: 10px 14px; height: auto; border: 1px solid #e4e6ef; box-shadow: none; transition: all 0.3s; font-size: 14px; color: #333; font-weight: 400; line-height: 1.5;">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Botones de acción -->
+                            <div class="row">
+                                <div class="col-md-12 text-right">
+                                    <button type="button" class="btn btn-sm btn-white m-r-5" style="border-radius: 4px; padding: 8px 18px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); font-family: 'Montserrat', sans-serif; font-weight: 500; font-size: 13px; letter-spacing: 0.3px;">Cancelar</button>
+                                    <button type="submit" class="btn btn-sm btn-primary" style="border-radius: 4px; padding: 8px 18px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); font-family: 'Montserrat', sans-serif; font-weight: 500; font-size: 13px; letter-spacing: 0.3px;">Guardar Cambios</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- end panel -->
+
+
+
+
+
+<!-- Modal de Configuración -->
+<div class="modal fade" id="configModal" tabindex="-1" role="dialog" aria-labelledby="configModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content" style="border-radius: 15px; border: none; box-shadow: 0 15px 35px rgba(0,0,0,0.2);">
+            <div class="modal-header" style="background: linear-gradient(90deg, #3498db, #2ecc71); border-top-left-radius: 15px; border-top-right-radius: 15px; border: none;">
+                <h5 class="modal-title text-white" id="configModalLabel" style="font-family: 'Montserrat', sans-serif; font-weight: 600;">
+                    <i class="fa fa-upload"></i> Carga de Datos de Utilidades
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" style="padding: 25px;">
+                <form id="uploadForm" enctype="multipart/form-data">
+                    <!-- Selector de Período -->
+                    <div class="form-group mb-4">
+                        <label style="font-family: 'Montserrat', sans-serif; font-weight: 500; color: #2c3e50;">
+                            <i class="fa fa-calendar"></i> Período
+                        </label>
+                        <div class="input-group">
+                            <select class="form-control select-modern" id="periodSelect" required style="border-radius: 4px; font-family: 'Roboto', sans-serif; height: 42px;">
+                                <option value="">Seleccione el período</option>
+                                <option value="2025">2025</option>
+                                
+                                
+                            </select>
+                            <div class="input-group-append">
+                                <span class="input-group-text" style="background: #f8f9fa;">
+                                    <i class="fa fa-calendar-check-o"></i>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Área de carga de archivo -->
+                    <div class="form-group">
+                        <label style="font-family: 'Montserrat', sans-serif; font-weight: 500; color: #2c3e50;">
+                            <i class="fa fa-file-excel-o"></i> Archivo Excel
+                        </label>
+                        <div class="custom-file-container" style="border: 2px dashed #e2e8f0; border-radius: 10px; padding: 20px; text-align: center; background: #f8fafc; position: relative;">
+                            <input type="file" class="custom-file-input" id="excelFile" accept=".xlsx,.xls" required style="display: none;">
+                            <label for="excelFile" class="custom-file-label" style="cursor: pointer; margin: 0; position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; background: transparent; border: none;">
+                                <div>
+                                    <i class="fa fa-cloud-upload fa-3x mb-2" style="color: #3498db;"></i>
+                                    <p class="mb-0" style="font-family: 'Montserrat', sans-serif;">Arrastra y suelta tu archivo Excel aquí o <br><span style="color: #3498db;">haz clic para seleccionar</span></p>
+                                    <p class="selected-file-name mt-2 mb-0" style="display: none; color: #2ecc71; font-size: 0.9em;"></p>
+                                </div>
+                            </label>
+                        </div>
+                        <small class="form-text text-muted" style="font-family: 'Roboto', sans-serif;">
+                            Formatos permitidos: .xlsx, .xls
+                        </small>
+                    </div>
+
+                    <!-- Barra de progreso -->
+                    <div class="progress" style="height: 10px; display: none; margin-top: 15px; border-radius: 5px; background: #e9ecef;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer" style="border-top: 1px solid rgba(0,0,0,0.05);">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal" style="font-family: 'Montserrat', sans-serif; font-weight: 500;">
+                    <i class="fa fa-times"></i> Cancelar
+                </button>
+                <button type="button" class="btn btn-primary" id="uploadButton" style="font-family: 'Montserrat', sans-serif; font-weight: 500;">
+                    <i class="fa fa-upload"></i> Subir Datos
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- Agregar estilos adicionales -->
+<style>
+    .custom-file-container.has-file {
+        background-color: #f0fff4;
+        border-color: #2ecc71;
+    }
+
+    .progress-bar {
+        background-color: #2ecc71;
+    }
+
+    .custom-file-container:hover {
+        border-color: #3498db;
+        background-color: #edf2f7;
+    }
+</style>
+
+
+
+
+
+{% include 'base/footer.html' %}
+
+
+{% block js %}
+<!-- Añadir las bibliotecas necesarias para el PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="{% static 'core/js/RRHH/DonLuis/consulta_utilidades.js' %}"></script>
+
+<!-- Añadir después de las otras dependencias -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfobject/2.2.8/pdfobject.min.js"></script>
+
+<!-- Añadir el modal para el PDF -->
+<div class="modal fade" id="pdfModal" tabindex="-1" role="dialog" aria-labelledby="pdfModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" style="max-width: 90%;" role="document">
+        <div class="modal-content" style="height: 90vh;">
+            <div class="modal-header bg-secondary text-white">
+                <h5 class="modal-title text-white" id="pdfModalLabel">Constancia de Utilidades</h5>
+                <div class="ml-auto">
+                    <button type="button" class="btn btn-sm btn-light mr-2" id="btnDescargarPDF">
+                        <i class="fa fa-download"></i> Descargar
+                    </button>
+                    <button type="button" class="btn btn-sm btn-light" data-dismiss="modal">
+                        <i class="fa fa-times"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="modal-body p-0" style="height: calc(100% - 56px);">
+                <div id="pdfViewer" style="height: 100%;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Añadir estilos para el visor de PDF -->
+<style>
+    .pdfobject-container {
+        height: 100%;
+        border: 1px solid rgba(0,0,0,.2);
+    }
+    .modal-header .btn {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+        line-height: 1.5;
+        border-radius: 0.2rem;
+    }
+    .modal-header .btn i {
+        margin-right: 5px;
+    }
+</style>
+
+<script>
+  $(document).ready(function () {
+    // Comprueba si jsPDF está disponible
+    console.log("jsPDF disponible:", !!window.jspdf);
+    
+    // Inicializa la aplicación
+    App.init();
+    
+    // Oculta el formulario de información al cargar
+    $("#userInfoForm").hide();
+    
+    // Agrega estilos de fuente Google Fonts al head
+    $('head').append('<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">');
+    
+    // Intenta cargar la imagen de portada con diferentes posiciones
+    var imgPaths = [
+        "{% static 'img/portadas.png' %}",
+        "{% static 'assets/img/portadas.png' %}",
+        "{% static 'assets/img/logo/portadas.png' %}",
+        "/static/img/portadas.png",
+        "/static/assets/img/portadas.png",
+        "/static/assets/img/logo/portadas.png"
+    ];
+    
+    function tryLoadImageAsBackground(index) {
+        if (index >= imgPaths.length) {
+            console.error("No se pudo cargar la imagen de portada desde ninguna ruta");
+            // Usar el degradado azul-verde como fallback
+            $("#headerBanner").css({
+                "background": "linear-gradient(90deg, #3498db, #2ecc71)",
+                "background-size": "cover"
+            });
+            return;
+        }
+        
+        var imgTest = new Image();
+        imgTest.onload = function() {
+            console.log("Imagen cargada desde: " + imgPaths[index]);
+            $("#headerBanner").css({
+                "background-image": "linear-gradient(90deg, rgba(41, 128, 185, 0.2), rgba(46, 204, 113, 0.2)), url('" + imgPaths[index] + "')",
+                "background-size": "cover",
+                "background-position": "center 46%" // Ajustado para mostrar el logo completo
+            });
+        };
+        imgTest.onerror = function() {
+            console.log("No se pudo cargar desde: " + imgPaths[index]);
+            tryLoadImageAsBackground(index + 1);
+        };
+        imgTest.src = imgPaths[index];
+    }
+    
+    // Iniciar la verificación de imágenes
+    tryLoadImageAsBackground(0);
+    
+    // Prueba diferentes posiciones de imagen para mostrar mejor el logo
+    var backgroundPositions = ["center 40%", "center 45%", "center 50%", "center 30%"];
+    var currentPositionIndex = 0;
+    
+    // Función para ajustar la posición del fondo al hacer clic en el encabezado (para pruebas)
+    $("#headerBanner").click(function() {
+        currentPositionIndex = (currentPositionIndex + 1) % backgroundPositions.length;
+        $(this).css("background-position", backgroundPositions[currentPositionIndex]);
+        console.log("Posición de fondo cambiada a: " + backgroundPositions[currentPositionIndex]);
+    });
+    
+    // Efecto de foco para los inputs
+    $(".input-modern, .select-modern").focus(function() {
+      $(this).css({
+        'border-color': '#a8c5f3',
+        'box-shadow': '0 0 0 3px rgba(41, 98, 255, 0.1)',
+        'background-color': '#ffffff'
+      });
+    }).blur(function() {
+      if (!$(this).prop('readonly')) {
+        $(this).css({
+          'border-color': '#e4e6ef',
+          'box-shadow': 'none',
+          'background-color': '#ffffff'
+        });
+      } else {
+        $(this).css({
+          'border-color': '#e4e6ef',
+          'box-shadow': 'none',
+          'background-color': '#f8f9fa'
+        });
+      }
+    });
+    
+    // Inicializa tooltips para campos obligatorios
+    $('label .text-danger').parent().append('<i class="fa fa-info-circle text-muted ml-1" data-toggle="tooltip" data-placement="top" title="Campo obligatorio"></i>');
+    $('[data-toggle="tooltip"]').tooltip();
+    
+    // Efecto de hover para los botones
+    $(".btn").hover(
+      function() {
+        $(this).css('transform', 'translateY(-2px)');
+      }, 
+      function() {
+        $(this).css('transform', 'translateY(0)');
+      }
+    );
+    
+    // Animación para mostrar el formulario
+    $("#searchButton").click(function() {
+      $("#userInfoForm").hide().slideDown(300);
+    });
+    
+    // Mejora de legibilidad para inputs de solo lectura
+    $('.input-modern[readonly]').css({
+      'color': '#555',
+      'font-style': 'normal',
+      'background-color': '#f8f9fa',
+      'border-color': '#eaeaea'
+    });
+    
+    // Ajustar al cargar la página
+    setTimeout(function() {
+        // Centrado vertical cuando cambia el tamaño de la ventana
+        var windowHeight = $(window).height();
+        var contentHeight = $('.card').outerHeight(true);
+        var headerHeight = 100; // Altura aproximada de header y otros elementos
+        
+        // Si el contenido es más pequeño que la ventana, centramos
+        if (contentHeight < (windowHeight - headerHeight)) {
+          $('.panel-body').css('justify-content', 'center');
+        } else {
+          $('.panel-body').css('justify-content', 'flex-start');
+        }
+    }, 100);
+    
+    // Configuración del control deslizante para la posición del fondo
+    $('#backgroundPosition').on('input', function() {
+        var value = $(this).val();
+        $('#positionValue').text(value + '%');
+        $('#headerBanner').css('background-position', 'center ' + value + '%');
+    });
+    
+    // Efecto hover para el botón de configuración
+    $('.btn-icon').hover(
+        function() {
+            $(this).css('transform', 'rotate(45deg)');
+        },
+        function() {
+            $(this).css('transform', 'rotate(0deg)');
+        }
+    );
+    
+    // Animación al abrir el modal
+    $('#configModal').on('show.bs.modal', function () {
+        $(this).find('.modal-content')
+            .css('transform', 'scale(0.7)')
+            .animate({
+                transform: 'scale(1)'
+            }, 300);
+    });
+
+    // Manejo de archivo Excel
+    $('#excelFile').change(function(e) {
+        var fileName = e.target.files[0].name;
+        $('.selected-file-name').text(fileName).show();
+        $('.custom-file-container').addClass('has-file');
+    });
+
+    // Drag and drop
+    $('.custom-file-container').on({
+        'dragenter dragover': function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            $(this).css('background-color', '#edf2f7');
+        },
+        'dragleave': function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            $(this).css('background-color', '#f8fafc');
+        },
+        'drop': function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            $(this).css('background-color', '#f8fafc');
+            
+            var file = e.originalEvent.dataTransfer.files[0];
+            var fileType = file.name.split('.').pop().toLowerCase();
+            
+            if(['xlsx', 'xls'].indexOf(fileType) !== -1) {
+                $('#excelFile')[0].files = e.originalEvent.dataTransfer.files;
+                $('.selected-file-name').text(file.name).show();
+                $(this).addClass('has-file');
+            } else {
+                alert('Por favor, sube solo archivos Excel (.xlsx, .xls)');
+            }
+        }
+    });
+
+    // Subida de archivo
+    $('#uploadButton').click(function() {
+        var formData = new FormData();
+        var file = $('#excelFile')[0].files[0];
+        var period = $('#periodSelect').val();
+
+        if(!file || !period) {
+            alert('Por favor, selecciona un archivo y un período');
+            return;
+        }
+
+        formData.append('file', file);
+        formData.append('period', period);
+
+        $('.progress').show();
+
+        // Aquí irá la lógica de subida al servidor
+        // Por ahora solo simulamos la subida
+        var progress = 0;
+        var interval = setInterval(function() {
+            progress += 10;
+            $('.progress-bar').css('width', progress + '%').attr('aria-valuenow', progress);
+            
+            if(progress >= 100) {
+                clearInterval(interval);
+                Swal.fire({
+                    icon: "success",
+                    title: "Archivo subido exitosamente",
+                    confirmButtonText: "Entendido",
+                });
+                $('#configModal').modal('hide');
+                // Reiniciar el formulario
+                $('#uploadForm')[0].reset();
+                $('.selected-file-name').hide();
+                $('.progress').hide();
+                $('.progress-bar').css('width', '0%').attr('aria-valuenow', 0);
+            }
+        }, 200);
+    });
+  });
+</script>
+
+
+
+
+
+{% endblock %}
+
+
+
+
+
+
+
+

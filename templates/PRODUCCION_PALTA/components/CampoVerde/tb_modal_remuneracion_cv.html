@@ -1,0 +1,46 @@
+{% load static %}
+
+
+{% include "base/components/forms/forms_remuneracion.html" %}
+
+
+<style>
+  .cantidad-masiva-container {
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    transition: all 0.3s ease;
+  }
+
+  .cantidad-masiva-container:hover {
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  }
+
+  #aplicar_cantidad_masiva_sueldo {
+    white-space: nowrap;
+  }
+
+  #cantidad_masiva_sueldo::-webkit-inner-spin-button,
+  #cantidad_masiva_sueldo::-webkit-outer-spin-button {
+    opacity: 1;
+  }
+
+  .input-group .btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  }
+
+  #cantidad_masiva_salario::-webkit-inner-spin-button,
+  #cantidad_masiva_salario::-webkit-outer-spin-button {
+    opacity: 1;
+  }
+
+  #aplicar_cantidad_masiva_salario {
+    white-space: nowrap;
+  }
+</style>
+
+{% block js %}
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+<script src="{% static 'core/js/PRODUCCION_PALTA/CampoVerde/remuneracion_cv.js' %}"></script>
+{% endblock %}

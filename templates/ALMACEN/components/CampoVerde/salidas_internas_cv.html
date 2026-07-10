@@ -1,0 +1,1402 @@
+
+
+<!-- Modal de Detalles de Salida Interna -->
+<div
+  class="modal fade"
+  id="modalDetallesSalidaInterna"
+  tabindex="-1"
+  aria-labelledby="modalDetallesSalidaInternaLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-xl" style="max-width: 90%; width: 90%">
+    <div class="modal-content">
+      <!-- Header del Modal -->
+      <div class="modal-header bg-gradient-primary text-white">
+        <div class="d-flex align-items-center">
+          <div class="bg-white rounded-circle shadow-sm mr-3 p-2">
+            <i
+              class="fas fa-box-open"
+              style="color: #007bff; font-size: 1.2rem"
+            ></i>
+          </div>
+          <div>
+            <h5
+              class="modal-title text-white mb-0"
+              id="modalDetallesSalidaInternaLabel"
+            >
+              Detalle de Salida Interna
+            </h5>
+            <small class="text-white-50" id="modal-subtitulo"
+              >Información completa del documento</small
+            >
+          </div>
+        </div>
+
+        <div
+          class="panel-heading-btn d-flex align-items-center"
+          style="gap: 0.3rem"
+        >
+          <a
+            href="javascript:;"
+            class="btn btn-xs btn-icon btn-circle btn-light d-flex justify-content-center align-items-center"
+            data-click="panel-expand"
+            title="Expandir"
+            style="width: 32px; height: 32px; padding: 0"
+          >
+            <i
+              class="fa fa-expand m-0"
+              style="font-size: 1rem; color: #007bff"
+            ></i>
+          </a>
+          <a
+            href="javascript:;"
+            class="btn btn-xs btn-icon btn-circle btn-success d-flex justify-content-center align-items-center"
+            data-click="panel-reload"
+            title="Recargar"
+            style="width: 32px; height: 32px; padding: 0"
+          >
+            <i class="fas fa-sync-alt m-0" style="font-size: 1rem"></i>
+          </a>
+          <a
+            href="javascript:;"
+            id="btn-cerrar-modal-salida"
+            class="btn btn-xs btn-icon btn-circle btn-danger d-flex justify-content-center align-items-center"
+            data-click="panel-remove"
+            title="Cerrar"
+            style="width: 32px; height: 32px; padding: 0"
+          >
+            <i class="fa fa-times m-0" style="font-size: 1rem"></i>
+          </a>
+        </div>
+      </div>
+
+      <!-- Body del Modal -->
+      <div
+        class="modal-body p-3"
+        style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)"
+      >
+        <!-- Loading Spinner -->
+        <div
+          id="loading-salida-detalle"
+          class="text-center py-5"
+          style="display: none"
+        >
+          <div
+            class="spinner-border text-primary"
+            role="status"
+            style="width: 3rem; height: 3rem"
+          >
+            <span class="sr-only">Cargando...</span>
+          </div>
+          <p class="mt-3 text-muted">Cargando detalles de la salida...</p>
+        </div>
+
+        <!-- Contenido Principal -->
+        <div id="contenido-salida-detalle">
+          <!-- Sección Superior: Información del Encabezado -->
+          <div class="row mb-4">
+            <div class="col-12">
+              <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom-0 py-3">
+                  <div
+                    class="d-flex justify-content-between align-items-center"
+                  >
+                    <div class="d-flex align-items-center">
+                      <i class="fas fa-file-invoice text-primary mr-2"></i>
+                      <h6 class="mb-0 font-weight-bold">
+                        Información del Documento
+                      </h6>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                      <!-- Badges dinámicos que se llenarán con JavaScript -->
+                      <div
+                        class="d-flex align-items-center bg-primary text-white px-3 py-1 rounded-pill"
+                        style="font-size: 0.8rem"
+                      >
+                        <i class="fas fa-hashtag mr-1"></i>
+                        <span
+                          id="salida-numero-documento"
+                          class="font-weight-bold"
+                          >-</span
+                        >
+                      </div>
+                      <div
+                        class="d-flex align-items-center bg-light text-dark px-3 py-1 rounded-pill border"
+                        style="font-size: 0.8rem"
+                      >
+                        <i class="fas fa-calendar mr-1"></i>
+                        <span id="salida-fecha-documento">-</span>
+                      </div>
+                      <div
+                        class="d-flex align-items-center px-3 py-1 rounded-pill"
+                        style="font-size: 0.8rem"
+                        id="salida-estado-badge"
+                      >
+                        <i class="fas fa-flag mr-1"></i>
+                        <span
+                          id="salida-estado-documento"
+                          class="font-weight-bold"
+                          >-</span
+                        >
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="card-body p-4">
+                  <div class="row">
+                    <!-- Columna 1 -->
+                    <div class="col-md-4 mb-3">
+                      <div class="form-group">
+                        <label
+                          class="form-label font-weight-bold text-muted small mb-2"
+                        >
+                          <i class="fas fa-building mr-1"></i>Empresa /
+                          Sucursal:
+                        </label>
+                        <div class="d-flex">
+                          <input
+                            type="text"
+                            id="salida-empresa"
+                            class="form-control form-control-sm bg-light border-0 mr-2"
+                            style="width: 80px"
+                            readonly
+                          />
+                          <input
+                            type="text"
+                            id="salida-sucursal"
+                            class="form-control form-control-sm bg-light border-0"
+                            readonly
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                      <div class="form-group">
+                        <label
+                          class="form-label font-weight-bold text-muted small mb-2"
+                        >
+                          <i class="fas fa-warehouse mr-1"></i>Almacén Origen:
+                        </label>
+                        <input
+                          type="text"
+                          id="salida-almacen-origen"
+                          class="form-control form-control-sm bg-light border-0"
+                          readonly
+                        />
+                      </div>
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                      <div class="form-group">
+                        <label
+                          class="form-label font-weight-bold text-muted small mb-2"
+                        >
+                          <i class="fas fa-warehouse mr-1"></i>Almacén Destino:
+                        </label>
+                        <input
+                          type="text"
+                          id="salida-almacen-destino"
+                          class="form-control form-control-sm bg-light border-0"
+                          readonly
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <!-- Columna 2 -->
+                    <div class="col-md-4 mb-3">
+                      <div class="form-group">
+                        <label
+                          class="form-label font-weight-bold text-muted small mb-2"
+                        >
+                          <i class="fas fa-user-tie mr-1"></i>Responsable:
+                        </label>
+                        <input
+                          type="text"
+                          id="salida-responsable"
+                          class="form-control form-control-sm bg-light border-0"
+                          readonly
+                        />
+                      </div>
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                      <div class="form-group">
+                        <label
+                          class="form-label font-weight-bold text-muted small mb-2"
+                        >
+                          <i class="fas fa-tags mr-1"></i>Motivo:
+                        </label>
+                        <input
+                          type="text"
+                          id="salida-motivo"
+                          class="form-control form-control-sm bg-light border-0"
+                          readonly
+                        />
+                      </div>
+                    </div>
+
+                    <div class="col-md-4 mb-3">
+                      <div class="form-group">
+                        <label
+                          class="form-label font-weight-bold text-muted small mb-2"
+                        >
+                          <i class="fas fa-project-diagram mr-1"></i>Proyecto:
+                        </label>
+                        <input
+                          type="text"
+                          id="salida-proyecto"
+                          class="form-control form-control-sm bg-light border-0"
+                          readonly
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="row">
+                    <div class="col-md-12">
+                      <div class="form-group">
+                        <label
+                          class="form-label font-weight-bold text-muted small mb-2"
+                        >
+                          <i class="fas fa-comment-alt mr-1"></i>Observaciones:
+                        </label>
+                        <textarea
+                          id="salida-observaciones"
+                          class="form-control form-control-sm bg-light border-0"
+                          rows="2"
+                          readonly
+                          style="resize: none"
+                        ></textarea>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sección Inferior: Tabla de Productos -->
+          <div class="row">
+            <div class="col-12">
+              <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom-0 py-3">
+                  <div
+                    class="d-flex justify-content-between align-items-center"
+                  >
+                    <div class="d-flex align-items-center">
+                      <i class="fas fa-boxes text-success mr-2"></i>
+                      <h6 class="mb-0 font-weight-bold">
+                        Productos de la Salida
+                      </h6>
+                      <span
+                        class="badge badge-primary badge-pill ml-2"
+                        id="total-productos"
+                        >-</span
+                      >
+                    </div>
+                    <div class="d-flex align-items-center text-muted small">
+                      <div class="mr-3">
+                        <i class="fas fa-weight mr-1"></i>
+                        Total Peso:
+                        <span id="total-peso" class="font-weight-bold">-</span>
+                      </div>
+                      <div>
+                        <i class="fas fa-dollar-sign mr-1"></i>
+                        Total Importe:
+                        <span id="total-importe" class="font-weight-bold"
+                          >-</span
+                        >
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="card-body p-0">
+                  <div
+                    class="table-responsive"
+                    style="max-height: 400px; overflow-y: auto"
+                  >
+                    <table
+                      class="table table-striped table-hover mb-0"
+                      id="tabla-productos-salida"
+                    >
+                      <thead class="bg-light text-dark sticky-top">
+                        <tr>
+                          <th class="text-center" style="width: 60px">ITEM</th>
+                          <th style="width: 150px">CÓDIGO</th>
+                          <th>DESCRIPCIÓN</th>
+                          <th class="text-center" style="width: 80px">U.M.</th>
+                          <th class="text-right" style="width: 100px">
+                            CANTIDAD
+                          </th>
+                          <th class="text-right" style="width: 100px">PESO</th>
+                          <th class="text-right" style="width: 120px">
+                            PRECIO
+                          </th>
+                          <th class="text-right" style="width: 120px">
+                            IMPORTE
+                          </th>
+                          <th style="width: 150px">CONSUMIDOR</th>
+                          <th>OBSERVACIONES</th>
+                        </tr>
+                      </thead>
+                      <tbody id="tbody-productos-salida">
+                        <!-- Los datos se cargarán dinámicamente -->
+                        <tr>
+                          <td colspan="10" class="text-center text-muted py-4">
+                            <i class="fas fa-box-open fa-2x mb-2 d-block"></i>
+                            No hay productos para mostrar
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer del Modal -->
+      <div class="modal-footer bg-light border-top-0">
+        <div class="d-flex justify-content-between w-100 align-items-center">
+          <div class="text-muted small">
+            <i class="fas fa-info-circle mr-1"></i>
+            ID: <span id="salida-id-documento" class="font-weight-bold">-</span>
+          </div>
+          <div>
+
+
+            <button type="button" class="btn btn-outline-primary btn-sm mr-2" id="btn-imprimir">
+              <i class="fas fa-print mr-1"></i>Imprimir
+            </button>
+
+
+
+           
+
+            <input
+              type="hidden"
+              id="usuario-logueado"
+              value=" {{ user.first_name}} {{ user.last_name}} "
+            />
+
+
+            <button
+              type="button"
+              class="btn btn-secondary btn-sm"
+              data-dismiss="modal"
+            >
+              <i class="fas fa-times mr-1"></i>Cerrar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para Nueva Salida Interna -->
+
+<!-- Modal para Nueva Salida Interna -->
+<div
+  class="modal fade"
+  id="modalNuevaSalida"
+  tabindex="-1"
+  aria-labelledby="modalNuevaSalidaLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-lg" style="max-width: 86%">
+    <div class="modal-content">
+      <!-- Header del Modal -->
+      <div class="modal-header bg-black text-white">
+        <h5
+          class="modal-title text-white font-weight-bold"
+          id="modalNuevaSalidaLabel"
+        >
+          <i class="fas fa-plus-circle mr-2 text-white"></i>Nueva Salida Interna
+          de Almacén
+        </h5>
+        <button
+          type="button"
+          class="close"
+          data-dismiss="modal"
+          aria-label="Close"
+        >
+          <span aria-hidden="true" class="text-white">&times;</span>
+        </button>
+      </div>
+
+      <!-- Body del Modal -->
+      <div class="modal-body p-4" style="max-height: 70vh; overflow-y: auto">
+        <!-- Información del Encabezado -->
+        <div class="card shadow-sm">
+          <div class="card-header bg-gradient-warning text-dark">
+            <h6 class="mb-0 font-weight-bold">
+              <i class="fas fa-file-alt mr-2"></i>Información del Documento
+            </h6>
+          </div>
+
+          <div class="card-body">
+            <!-- Primera fila -->
+            <div class="row">
+              <!-- Sucursal -->
+              <div class="col-md-3">
+                <label class="form-label font-weight-bold text-muted"
+                  >Sucursal</label
+                >
+                <div class="input-group input-group-sm">
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="encab-idsucursal"
+                    value="002"
+                    readonly
+                    style="max-width: 80px"
+                  />
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="encab-desc-sucursal"
+                    value="AGROINDUSTRIA CAMPO VERDE S.A.C."
+                    readonly
+                  />
+                </div>
+              </div>
+
+              <!-- Almacen -->
+              <div class="col-md-3">
+                <label class="form-label font-weight-bold text-muted"
+                  >Almacén</label
+                >
+                <div class="input-group input-group-sm">
+                  <select
+                    class="form-control"
+                    id="encab-idalmacen"
+                    style="max-width: 80px"
+                    onchange="document.getElementById('encab-desc-almacen').value = this.options[this.selectedIndex].getAttribute('data-descripcion')"
+                  >
+                    <option value="001" data-descripcion="ALMACEN CENTRAL">
+                      001
+                    </option>
+                    <option value="002" data-descripcion="VIVERO">002</option>
+                  </select>
+
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="encab-desc-almacen"
+                    value="ALMACEN CENTRAL"
+                    readonly
+                  />
+                </div>
+              </div>
+
+              <!-- Documento -->
+              <div class="col-md-2">
+                <label class="form-label font-weight-bold text-muted"
+                  >Documento</label
+                >
+                <div class="input-group input-group-sm">
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="encab-iddocumento"
+                    value="SAL"
+                    readonly
+                    style="max-width: 80px"
+                  />
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="encab-desc-documento"
+                    value="SALIDAS DE ALMACEN"
+                    readonly
+                  />
+                </div>
+              </div>
+
+              <!-- Periodo, Punto de emisión y Estado agrupados -->
+              <div class="col-md-4 mt-2">
+
+                <div class="row">
+
+
+                  <div class="col-3">
+                    <label class="form-label font-weight-bold text-muted small"
+                      >Periodo</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control form-control-sm"
+                      id="encab-periodo"
+                      style="max-width: 120px"
+                      readonly
+                    />
+                  </div>
+
+
+
+                  <div class="col-5">
+                    <label class="form-label font-weight-bold text-muted small"
+                      >P.Emisión</label
+                    >
+                    <div class="input-group input-group-sm">
+                      <select
+                        class="form-control"
+                        id="encab-idpunto"
+                        style="max-width: 70px"
+                      >
+                        <option value="001">001</option>
+                      </select>
+                      <input
+                        type="text"
+                        class="form-control"
+                        id="encab-desc-punto"
+                        value="ICA"
+                        readonly
+                      />
+                    </div>
+                  </div>
+
+
+
+                  <div class="col-4">
+                    <label class="form-label font-weight-bold text-muted small"
+                      >Estado <span class="text-danger">*</span></label
+                    >
+                    <input
+                      type="text"
+                      class="form-control form-control-sm"
+                      id="encab-estado"
+                      value="PENDIENTE"
+                      style="background-color: #ffc107"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Segunda fila -->
+            <div class="row mt-2">
+              <!-- Moneda -->
+              <div class="col-md-2">
+                <label class="form-label font-weight-bold text-muted"
+                  >Moneda</label
+                >
+                <div class="input-group input-group-sm">
+                  <select
+                    class="form-control"
+                    id="encab-idmoneda"
+                    style="max-width: 80px"
+                  >
+                    <option value="01">01</option>
+                    <option value="02">02</option>
+                  </select>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="encab-desc-moneda"
+                    value="SOLES"
+                    readonly
+                  />
+                </div>
+              </div>
+
+              <!-- T.Cambio -->
+              <div class="col-md-1">
+                <label class="form-label font-weight-bold text-muted"
+                  >T.Cambio</label
+                >
+                <input
+                  type="number"
+                  class="form-control form-control-sm"
+                  id="encab-tcambio"
+                  value="3.759"
+                  step="0.001"
+                />
+              </div>
+
+              <!-- Motivo de la Salida -->
+              <div class="col-md-3">
+                <label class="form-label font-weight-bold text-muted"
+                  >Motivo de la Salida</label
+                >
+                <div class="input-group input-group-sm">
+                  <select
+                    class="form-control"
+                    id="encab-motivo-salida"
+                    style="max-width: 80px"
+                    onclick="actualizarDescripcionMotivo()"
+                  >
+                    <option value="SCC" data-descripcion="SALIDA POR CONSUMO - AGRICOLA">SCC</option>
+                    <option value="SAD" data-descripcion="SALIDA POR CONSUMO - ADMINISTRATIVO">SAD</option>
+                    <option value="SCD" data-descripcion="SALIDA CONSUMO - DEFENSA RIBEREÑA">SCD</option>
+                    <option value="SCE" data-descripcion="SALIDA POR CONSUMO - EXPORTACION">SCE</option>
+                    <option value="SCN" data-descripcion="SALIDA CONSUMO CULT. NO COSECHADOS(ADMINISTRATIVO)">SCN</option>
+                    <option value="SCO" data-descripcion="SALIDA DE CAJAS POR CCE">SCO</option>
+                    
+                  </select>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="encab-desc-motivo-salida"
+                    value=""
+                    readonly
+                  />
+                </div>
+                <script>
+                function actualizarDescripcionMotivo() {
+                  
+                  const selectMotivo = document.getElementById('encab-motivo-salida');
+                  const inputDescripcion = document.getElementById('encab-desc-motivo-salida');
+                  
+                  if (selectMotivo) {
+                    const valorSeleccionado = selectMotivo.value;
+                    
+                    const opcionSeleccionada = selectMotivo.querySelector(`option[value="${valorSeleccionado}"]`);
+                    
+                    if (opcionSeleccionada && opcionSeleccionada.hasAttribute('data-descripcion')) {
+                      inputDescripcion.value = opcionSeleccionada.getAttribute('data-descripcion');
+                    } else {
+                      inputDescripcion.value = '';
+                    }
+                  }
+                }
+
+                
+                </script>
+              </div>
+
+              <!-- Responsable -->
+              <div class="col-md-4">
+                <label class="form-label font-weight-bold text-muted"
+                  >Responsable <span class="text-danger">*</span></label
+                >
+                <div class="input-group input-group-sm">
+                  <select
+                    class="form-control"
+                    id="encab-idresponsable" 
+                    style="max-width: 100px"
+                    required
+                    disabled
+                  >
+                    <option value="">Seleccione...</option>
+                  </select>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="encab-desc-responsable"
+                    value="Seleccione un responsable..."
+                    readonly
+                  />
+                </div>
+              </div>
+
+              <!-- Fecha -->
+              <div class="col-md-2">
+                <label class="form-label font-weight-bold text-muted"
+                  >Fecha <span class="text-danger">*</span></label
+                >
+                <input
+                  type="date"
+                  class="form-control form-control-sm"
+                  id="encab-fecha"
+                  required
+                />
+              </div>
+            </div>
+
+            <!-- Tercera fila -->
+            <div class="row mt-2"></div>
+
+            <!-- Cuarta fila -->
+            <div class="row mt-3"></div>
+
+            <!-- Quinta fila - Documento de Referencia -->
+
+            <div class="row mt-3">
+              <!-- Documento de Referencia -->
+              <div class="col-md-7">
+                <div class="card border-info">
+                  <div class="card-header bg-light py-2">
+                    <div
+                      class="d-flex justify-content-between align-items-center"
+                    >
+                      <h6 class="mb-0 font-weight-bold text-dark">
+                        <i class="fas fa-file-alt mr-1"></i>Doc.Referencia
+                      </h6>
+                      <button
+                        class="btn btn-primary btn-sm"
+                        type="button"
+                        id="btn-abrir-buscador-req"
+                      >
+                        <i class="fas fa-search mr-1"></i>Buscar
+                      </button>
+                    </div>
+                  </div>
+                  <div class="card-body p-3">
+                    <!-- Información en filas -->
+                    <div class="row">
+                      <!-- Campo oculto para IDREQINTERNO -->
+                      <input type="hidden" id="doc-ref-idreqinterno" value="" />
+                      <div class="col-md-2">
+                        <label
+                          class="form-label font-weight-bold text-muted small mb-1"
+                          >DOC:</label
+                        >
+                        <input
+                          type="text"
+                          class="form-control form-control-sm text-center bg-light"
+                          id="doc-ref-doc"
+                          value=""
+                          readonly
+                          placeholder="REQ"
+                        />
+                      </div>
+                      <div class="col-md-2">
+                        <label
+                          class="form-label font-weight-bold text-muted small mb-1"
+                          >SERIE:</label
+                        >
+                        <input
+                          type="text"
+                          class="form-control form-control-sm text-center bg-light"
+                          id="doc-ref-serie"
+                          value=""
+                          readonly
+                          placeholder="0001"
+                        />
+                      </div>
+                      <div class="col-md-3">
+                        <label
+                          class="form-label font-weight-bold text-muted small mb-1"
+                          >NÚMERO:</label
+                        >
+                        <input
+                          type="text"
+                          class="form-control form-control-sm text-center bg-light"
+                          id="doc-ref-numero"
+                          value=""
+                          readonly
+                          placeholder="0034324"
+                        />
+                      </div>
+
+                      <div class="col-md-3">
+                        <label
+                          class="form-label font-weight-bold text-muted small mb-1"
+                          >FECHA:</label
+                        >
+                        <input
+                          type="date"
+                          class="form-control form-control-sm bg-light"
+                          id="doc-ref-fecha"
+                          value=""
+                          readonly
+                        />
+                      </div>
+
+                      <div class="col-md-2">
+                        <label
+                          class="form-label font-weight-bold text-muted small mb-1"
+                          >ESTADO:</label
+                        >
+                        <div>
+                          <span
+                            class="badge badge-secondary"
+                            id="doc-ref-estado"
+                            >Sin seleccionar</span
+                          >
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="row mt-2">
+                      <div class="col-md-12">
+                        <label
+                          class="form-label font-weight-bold text-muted small mb-1"
+                          >RESPONSABLE:</label
+                        >
+                        <input
+                          type="text"
+                          class="form-control form-control-sm bg-light"
+                          id="doc-ref-responsable"
+                          value=""
+                          readonly
+                          placeholder="Seleccione un requerimiento..."
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Observaciones -->
+              <div class="col-md-5">
+                <label class="form-label font-weight-bold text-muted"
+                  >Detalle de la Salida
+                  <span class="text-danger">*</span></label
+                >
+                <textarea
+                  class="form-control"
+                  id="encab-glosa"
+                  rows="6"
+                  placeholder="Ingrese observaciones del documento..."
+                  
+                ></textarea>
+              </div>
+            </div>
+
+            <!-- Sexta fila - Observaciones -->
+            <div class="row mt-3"></div>
+          </div>
+
+
+          
+        </div>
+
+        <!-- Tabla de Productos Seleccionados -->
+        <div
+          class="card shadow-sm mt-3"
+          id="card-productos-seleccionados"
+          style="display: none"
+        >
+          <div class="card-header bg-gradient-success text-white">
+            <div class="d-flex justify-content-between align-items-center">
+              <h6 class="mb-0 font-weight-bold">
+                <i class="fas fa-boxes mr-2"></i>Productos Seleccionados
+              </h6>
+              <span class="badge badge-light" id="total-productos-seleccionados"
+                >0</span
+              >
+            </div>
+          </div>
+          <div class="card-body p-0">
+            <div
+              class="table-responsive"
+              style="max-height: 300px; overflow-y: auto"
+            >
+              <table
+                class="table table-sm table-striped mb-0"
+                id="tabla-productos-seleccionados"
+              >
+                <thead class="thead-light sticky-top">
+                  <tr style="font-size: 0.8rem">
+                    <th style="width: 50px; padding: 0.4rem">Item</th>
+                    <th style="width: 100px; padding: 0.4rem">Código</th>
+                    <th style="padding: 0.4rem">Descripción</th>
+                    <th style="width: 60px; padding: 0.4rem">U.M.</th>
+                    <th style="width: 100px; padding: 0.4rem">
+                      Cant. Pendiente
+                    </th>
+                    <th style="width: 100px; padding: 0.4rem">Cant. a Salir</th>
+                    <th style="width: 120px; padding: 0.4rem">Consumidor</th>
+                    <th
+                      style="width: 80px; padding: 0.4rem; text-align: center"
+                    >
+                      Acciones
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <!-- Los productos se cargarán dinámicamente -->
+                  <tr>
+                    <td colspan="8" class="text-center py-3 text-muted">
+                      <i class="fas fa-info-circle mr-2"></i>
+                      <span>No hay productos seleccionados</span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer del Modal -->
+      <div class="modal-footer bg-light">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+          <i class="fas fa-times mr-1"></i>Cancelar
+        </button>
+        <button
+          type="button"
+          class="btn btn-warning font-weight-bold"
+          onclick="guardarSalidaInterna()"
+        >
+          <i class="fas fa-save mr-1"></i>Guardar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+<!-- Modal para Buscar Requerimiento - DISEÑO COMPACTO -->
+<div
+  class="modal fade"
+  id="modalBuscarRequerimiento"
+  tabindex="-1"
+  aria-labelledby="modalBuscarRequerimientoLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-lg" style="max-width: 70%">
+    <div class="modal-content">
+      <!-- Header del Modal -->
+      <div class="modal-header bg-primary text-white py-2">
+        <h6
+          class="modal-title font-weight-bold mb-0"
+          id="modalBuscarRequerimientoLabel"
+        >
+          <i class="fas fa-search mr-1"></i>Documentos de Referencia
+        </h6>
+        <button
+          type="button"
+          class="close text-white"
+          data-dismiss="modal"
+          aria-label="Close"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+
+      <!-- Body del Modal -->
+      <div class="modal-body p-2">
+        <!-- Instrucciones compactas -->
+        <div class="alert alert-info py-1 mb-2 small">
+          <i class="fas fa-info-circle mr-1"></i>
+          <strong
+            >Doble click en [Pedir] para seleccionar/deseleccionar todos</strong
+          >
+        </div>
+
+        <!-- Filtros compactos -->
+        <div class="row mb-2">
+          <div class="col-md-2 pr-1">
+            <div class="input-group input-group-sm">
+              <input
+                type="text"
+                class="form-control form-control-sm"
+                id="filtro-numero-doc"
+                placeholder="número..."
+              />
+              <div class="input-group-append">
+                <button
+                  class="btn btn-outline-primary btn-sm"
+                  type="button"
+                  id="btn-buscar-documento"
+                >
+                  <i class="fas fa-search"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="col-md-2 px-1">
+            <select class="form-control form-control-sm" id="filtro-estado-doc">
+              <option value="">estado</option>
+              <option value="TP">Atendido parcial</option>
+              <option value="AP">Aprobado</option>
+            </select>
+          </div>
+
+          <div class="col-md-3 px-1">
+            <select class="form-control form-control-sm" id="filtro-responsable-doc">
+              <option value="">responsables</option>
+              <!-- Las opciones se cargarán dinámicamente -->
+            </select>
+          </div>
+
+          <div class="col-md-2 px-1">
+            <input
+              type="date"
+              class="form-control form-control-sm"
+              id="filtro-fecha-desde"
+              placeholder="Fecha desde"
+            />
+          </div>
+
+          <div class="col-md-2 px-1">
+            <input
+              type="date"
+              class="form-control form-control-sm"
+              id="filtro-fecha-hasta"
+              placeholder="Fecha hasta"
+            />
+          </div>
+
+          <div class="col-md-1 d-flex" style="padding: 0 !important; margin: 0 !important;">
+            <button
+              class="btn btn-outline-secondary btn-sm mr-1 flex-fill"
+              type="button"
+              id="btn-limpiar-filtros-doc"
+              title="Limpiar Filtros"
+            >
+              <i class="fas fa-eraser"></i>
+            </button>
+            <button
+              class="btn btn-primary btn-sm flex-fill"
+              type="button"
+              id="btn-aplicar-filtros-doc"
+              title="Aplicar Filtros"
+            >
+              <i class="fas fa-filter"></i>
+            </button>
+          </div>
+        </div>
+
+        
+        
+
+        <!-- Tabla Superior - Documentos de Referencia -->
+        <div class="mb-2">
+          <div class="bg-light px-2 py-1 border-bottom">
+            <small class="font-weight-bold text-dark">
+              <i class="fas fa-file-alt mr-1"></i>Documentos de Referencia
+            </small>
+          </div>
+          <div
+            class="table-responsive"
+            style="
+              max-height: 200px;
+              overflow-y: auto;
+              border: 1px solid #dee2e6;
+            "
+          >
+            <table
+              class="table table-sm table-hover mb-0"
+              id="tabla-documentos-referencia"
+            >
+              <thead class="thead-light sticky-top">
+                <tr style="font-size: 0.75rem">
+                  <th style="width: 40px; padding: 0.25rem">
+                    <input
+                      type="checkbox"
+                      id="chk-seleccionar-todos"
+                      style="transform: scale(0.9)"
+                    />
+                    <br /><small>Pedir</small>
+                  </th>
+                  <th style="width: 40px; padding: 0.25rem">TD</th>
+                  <th style="width: 50px; padding: 0.25rem">Serie</th>
+                  <th style="width: 70px; padding: 0.25rem">Número</th>
+                  <th style="width: 70px; padding: 0.25rem">Fecha</th>
+                  <th style="padding: 0.25rem">Razón Social</th>
+                  <th style="width: 50px; padding: 0.25rem">estado</th>
+                  <th style="width: 50px; padding: 0.25rem">motivo</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Datos de ejemplo más compactos -->
+                <tr style="font-size: 0.75rem"></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tabla Inferior - Detalles del Producto -->
+        <div>
+          <div class="bg-light px-2 py-1 border-bottom">
+            <small class="font-weight-bold text-dark">
+              <i class="fas fa-list mr-1"></i>Detalles del Producto Seleccionado
+            </small>
+          </div>
+          <div
+            class="table-responsive"
+            style="
+              max-height: 180px;
+              overflow-y: auto;
+              border: 1px solid #dee2e6;
+            "
+          >
+            <table
+              class="table table-sm table-striped mb-0"
+              id="tabla-detalles-producto"
+              style="min-width: 1200px"
+            >
+              <thead class="thead-light sticky-top">
+                <tr style="font-size: 0.75rem">
+                  <th
+                    style="
+                      width: 40px;
+                      padding: 0.25rem;
+                      min-width: 40px;
+                      text-align: center;
+                    "
+                  >
+                    <input
+                      type="checkbox"
+                      id="selectAllProductos"
+                      title="Seleccionar todos"
+                    />
+                  </th>
+                  <th style="width: 60px; padding: 0.25rem; min-width: 60px">
+                    Item
+                  </th>
+                  <th style="width: 80px; padding: 0.25rem; min-width: 80px">
+                    Código
+                  </th>
+                  <th style="padding: 0.25rem; min-width: 200px">Producto</th>
+                  <th style="width: 50px; padding: 0.25rem; min-width: 50px">
+                    U.M.
+                  </th>
+                  <th style="width: 80px; padding: 0.25rem; min-width: 80px">
+                    Cant. Aprobada
+                  </th>
+                  <th style="width: 80px; padding: 0.25rem; min-width: 80px">
+                    Cant. Atendida
+                  </th>
+                  <th style="width: 80px; padding: 0.25rem; min-width: 80px">
+                    Por Atender
+                  </th>
+                  <th style="width: 80px; padding: 0.25rem; min-width: 80px">
+                    Consumidor
+                  </th>
+                  <th style="width: 80px; padding: 0.25rem; min-width: 80px">
+                    Responsable
+                  </th>
+                  <th style="width: 80px; padding: 0.25rem; min-width: 80px">
+                    Estado
+                  </th>
+                  <th style="width: 80px; padding: 0.25rem; min-width: 80px">
+                    % Atención
+                  </th>
+                  <th style="width: 80px; padding: 0.25rem; min-width: 80px">
+                    Para Fecha
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Los datos se cargarán dinámicamente desde JavaScript -->
+                <tr>
+                  <td colspan="13" class="text-center py-3 text-muted">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    <span
+                      >Seleccione un requerimiento para ver los detalles</span
+                    >
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer del Modal compacto -->
+      <div class="modal-footer bg-light py-2">
+        <button
+          type="button"
+          class="btn btn-secondary btn-sm"
+          data-dismiss="modal"
+        >
+          <i class="fas fa-times mr-1"></i>Cancelar
+        </button>
+        <button
+          type="button"
+          class="btn btn-success btn-sm"
+          id="btn-seleccionar-requerimiento"
+        >
+          <i class="fas fa-check mr-1"></i>Aceptar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Estilos CSS para el Modal -->
+<style>
+  #modalDetallesSalidaInterna .modal-xl {
+    max-width: 90%;
+  }
+
+  #modalDetallesSalidaInterna .bg-gradient-primary {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+  }
+
+  #modalDetallesSalidaInterna .form-control-sm {
+    font-size: 0.875rem;
+    height: 32px;
+  }
+
+  #modalDetallesSalidaInterna .form-control:read-only {
+    background-color: #f8f9fa;
+    opacity: 1;
+  }
+
+  #modalDetallesSalidaInterna .table th {
+    font-size: 0.8rem;
+    padding: 0.5rem 0.75rem;
+    font-weight: 600;
+    border-bottom: 2px solid #dee2e6;
+  }
+
+  #modalDetallesSalidaInterna .table td {
+    font-size: 0.85rem;
+    padding: 0.5rem 0.75rem;
+    vertical-align: middle;
+  }
+
+  #modalDetallesSalidaInterna .sticky-top {
+    top: 0;
+    z-index: 1020;
+  }
+
+  #modalDetallesSalidaInterna .badge {
+    font-size: 0.75rem;
+  }
+
+  #modalDetallesSalidaInterna .rounded-pill {
+    border-radius: 50rem !important;
+  }
+
+  #modalDetallesSalidaInterna .shadow-sm {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important;
+  }
+
+  /* Animación para el spinner */
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  #modalDetallesSalidaInterna .spinner-border {
+    animation: spin 1s linear infinite;
+  }
+
+  /* Estado badges dinámicos */
+  #modalDetallesSalidaInterna .estado-pendiente {
+    background-color: #ffc107 !important;
+    color: #212529 !important;
+  }
+
+  #modalDetallesSalidaInterna .estado-confirmado {
+    background-color: #28a745 !important;
+    color: white !important;
+  }
+
+  #modalDetallesSalidaInterna .estado-anulado {
+    background-color: #dc3545 !important;
+    color: white !important;
+  }
+
+  /* Estilos para el documento de referencia */
+  #modalNuevaSalida .card.border-info {
+    border: 2px solid #17a2b8 !important;
+    border-radius: 6px;
+  }
+
+  #modalNuevaSalida .card-header {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-bottom: 1px solid #dee2e6;
+    font-size: 0.85rem;
+  }
+
+  #modalNuevaSalida .card-body {
+    font-size: 0.8rem;
+  }
+
+  #modalNuevaSalida .form-control-sm {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+  }
+
+  #modalNuevaSalida .form-label.small {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+  }
+
+  #modalNuevaSalida .badge {
+    font-size: 0.7rem;
+    padding: 0.25em 0.6em;
+  }
+
+  /* Estilos para el modal de buscar requerimiento */
+  #modalBuscarRequerimiento .card.border-primary {
+    border: 2px solid #007bff !important;
+    border-radius: 6px;
+  }
+
+  #modalBuscarRequerimiento .card.border-info {
+    border: 2px solid #17a2b8 !important;
+    border-radius: 6px;
+  }
+
+  #modalBuscarRequerimiento .card-header {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-bottom: 1px solid #dee2e6;
+    font-size: 0.85rem;
+  }
+
+  #modalBuscarRequerimiento .card-body {
+    font-size: 0.8rem;
+  }
+
+  #modalBuscarRequerimiento #modal-lista-requerimientos {
+    font-size: 0.75rem;
+    line-height: 1.2;
+    max-height: 200px;
+  }
+
+  #modalBuscarRequerimiento #modal-lista-requerimientos option {
+    padding: 4px 8px;
+    border-bottom: 1px solid #f8f9fa;
+  }
+
+  #modalBuscarRequerimiento #modal-lista-requerimientos option:hover {
+    background-color: #e3f2fd;
+  }
+
+  #modalBuscarRequerimiento #modal-lista-requerimientos option:selected {
+    background-color: #007bff;
+    color: white;
+  }
+
+  #modalBuscarRequerimiento .form-control-sm {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+  }
+
+  #modalBuscarRequerimiento .form-label.small {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+  }
+
+  #modalBuscarRequerimiento .badge {
+    font-size: 0.7rem;
+    padding: 0.25em 0.6em;
+  }
+
+  #modalBuscarRequerimiento .h-100 {
+    min-height: 350px;
+  }
+
+  #modalBuscarRequerimiento .card-body.p-2 {
+    padding: 0.75rem !important;
+  }
+</style>
+
+<!-- Librerías para generación de PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/3.0.1/jspdf.umd.min.js"></script>
+
+<!-- Script de verificación de jsPDF -->
+
+
+
+

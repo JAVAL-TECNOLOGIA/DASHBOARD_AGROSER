@@ -1,0 +1,73 @@
+{% load static %}		
+		<!-- begin scroll to top btn -->
+		<a href="javascript:;" class="btn btn-icon btn-circle btn-success btn-scroll-to-top fade" data-click="scroll-top"><i class="fa fa-angle-up"></i></a>
+		<!-- end scroll to top btn -->
+	</div>
+	<!-- end page container -->
+	<!-- ================== BEGIN BASE JS ================== -->
+	<script src="{% static 'assets/plugins/jquery/jquery-3.2.1.min.js' %}"></script>
+	<script src="{% static 'assets/plugins/jquery/jquery-migrate-1.1.0.min.js' %}"></script>
+	<script src="{% static 'assets/plugins/jquery-ui/jquery-ui.min.js' %}"></script>
+	<script src="{% static 'assets/plugins/bootstrap/4.0.0/js/bootstrap.bundle.min.js' %}"></script>
+	<script src="{% static 'assets/plugins/slimscroll/jquery.slimscroll.min.js' %}"></script>
+	<script src="{% static 'assets/plugins/js-cookie/js.cookie.js' %}"></script>
+	<script src="{% static 'assets/js/theme/default.min.js' %}"></script>
+	<script src="{% static 'assets/js/apps.min.js' %}"></script>
+	<!-- ================== END BASE JS ================== -->
+	
+	<script src="{% static 'assets/plugins/bootstrap-sweetalert/sweetalert.min.js' %}"></script>
+    <!-- ================== BEGIN PAGE LEVEL JS ================== -->
+	{% block js %}
+	
+	{% endblock %}
+	<script>
+	
+		function modal_update_password(url){
+			$("#modalUpdatePassword").load(url, function(){
+				$(this).modal('show');
+			});
+		}
+
+		function saveUpdatePasword(){
+            $.ajax({
+                data : $("#formUpdateUserPassword").serialize(),
+                url : $("#formUpdateUserPassword").attr('action'),
+                type : $("#formUpdateUserPassword").attr('method'),
+                success : function(response){
+					$("#modalUpdatePassword").modal('hide');
+					console.log("bien");					
+                    swal({
+                        title: 'Contraseña actualizada!',
+                        icon: 'success',
+                        buttons: {
+                            cancel: {
+                                text: 'Aceptar',
+                                value: null,
+                                visible: true,
+                                className: 'btn btn-success',
+                                closeModal: true,
+                            }
+                        }
+                    }).then(function() {
+						window.location = '../logout'
+					});
+                },
+                error : function(error){
+					console.log("mal");
+                    showerrorsUpdatePassword(error);
+                }
+            });
+        }
+
+
+        function showerrorsUpdatePassword(errors){
+            $("#errorsUpdatePassword").html("");
+            let error = "";
+            for (let item in errors.responseJSON.error){
+                error += '<div class="alert alert-danger"><strong>' +errors.responseJSON.error[item]+'</strong></div>';
+            }
+            $("#errorsUpdatePassword").append(error);
+        }
+	</script>
+</body>
+</html>

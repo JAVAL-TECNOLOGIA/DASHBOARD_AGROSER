@@ -1,0 +1,211 @@
+<div
+  class="modal fade"
+  id="Modal_Capex"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="ModalCapexLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="ModalCapexLabel">
+          Agregar Nuevo Presupuesto de CAPEX
+        </h5>
+        <button
+          type="button"
+          class="close text-bold"
+          data-dismiss="modal"
+          aria-label="Cerrar"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="registerMaterialForm_capex">
+          <div class="row" style="width: 100%">
+            <div class="col-md-6">
+              <div class="form-group" id="descripcion-container-computo">
+                <label for="descripcion_capex">Descripción</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="descripcion_capex"
+                  name="descripcion_capex"
+                  required
+                />
+              </div>
+              <div class="form-group">
+                <label for="idproducto_capex">ID Producto</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="idproducto_capex"
+                  name="idproducto_capex"
+                  required
+                  readonly
+                />
+              </div>
+              <div class="form-group">
+                <label for="precio_unitario_capex">Precio Unitario</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  class="form-control"
+                  id="precio_unitario_capex"
+                  name="precio_unitario_capex"
+                  required
+                  readonly
+                />
+              </div>
+
+              <!-- Campo de observación (inicialmente oculto) -->
+              <div
+                class="form-group"
+                id="observacion-container"
+                style="display: none"
+              >
+                <label for="observacion_capex">Observación</label>
+                <textarea
+                  class="form-control"
+                  id="observacion_capex"
+                  name="observacion_capex"
+                  rows="2"
+                  required
+                ></textarea>
+                <small class="form-text text-muted"
+                  >Este campo es obligatorio para productos nuevos.</small
+                >
+              </div>
+
+              <!-- asignacion familiar -->
+              <div class="form-group">
+                <div
+                  class="d-flex align-items-center bg-light p-3 rounded shadow-sm"
+                >
+                  <div
+                    class="custom-control custom-switch d-flex align-items-center"
+                  >
+                    <input
+                      type="checkbox"
+                      class="custom-control-input"
+                      id="nuevoProductoCheck"
+                    />
+                    <label
+                      class="custom-control-label font-weight-bold text-primary"
+                      for="nuevoProductoCheck"
+                    >
+                      <i class="fas fa-plus-circle mr-2"></i>
+                      AGREGAR PRODUCTO NUEVO
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="totales-container">
+                <div class="total-item">
+                  <span class="total-label">Cantidad Total:</span>
+                  <span id="cantidad_total_capex" class="total-value">0</span>
+                </div>
+                <div class="total-item">
+                  <span class="total-label">Precio Total:</span>
+                  <span id="precio_total_capex" class="total-value"
+                    >S/. 0.00</span
+                  >
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <h6>Seleccionar Meses y Cantidades</h6>
+              <div class="meses-container">
+                {% for mes in meses %}
+                <div class="custom-switch-container">
+                  <span class="mes-nombre">{{ mes|title }}</span>
+                  <label class="switch">
+                    <input
+                      type="checkbox"
+                      id="{{ mes }}_switch_capex"
+                      name="{{ mes }}_switch_capex"
+                    />
+                    <span class="slider round"></span>
+                  </label>
+                  <input
+                    type="number"
+                    class="form-control cantidad-mes-capex"
+                    id="{{ mes }}_cantidad_capex"
+                    name="{{ mes }}_cantidad_capex"
+                    placeholder="Cantidad"
+                    min="0"
+                    style="width: 80px; margin-left: 10px"
+                  />
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+          <button
+            type="submit"
+            id="submitBtn_capex"
+            class="btn btn-primary btn-block mt-3"
+          >
+            Guardar Presupuesto de CAPEX
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  $("#nuevoProductoCheck").on("change", function () {
+    console.log("Checkbox cambiado:", this.checked); // Debug
+    manejarProductoNuevo(this.checked);
+  });
+
+  function manejarProductoNuevo(activar, data = null) {
+    console.log("Ejecutando manejarProductoNuevo:", activar); // Debug
+
+    if (activar) {
+      // Activar modo producto nuevo
+      $("#idproducto_capex").val("11111111111");
+
+      // Desbloquear y marcar campos editables
+
+      $("#precio_unitario_capex")
+        .prop("readonly", false)
+        .addClass("editable-campo")
+        .val(data ? data.precio_unitario : "");
+
+      // Mostrar campo de observación
+      $("#observacion-container").fadeIn();
+
+      if (data && data.observacion) {
+        $("#observacion_capex").val(data.observacion);
+      }
+
+      // Desactivar autocompletado
+      $("#descripcion_capex").off("autocomplete");
+    } else {
+      // Desactivar modo producto nuevo
+      $("#idproducto_capex").val("");
+
+      // Bloquear y limpiar campos
+      $("#descripcion_capex")
+        .prop("readonly", true)
+        .removeClass("editable-campo")
+        .val("");
+
+      $("#precio_unitario_capex")
+        .prop("readonly", true)
+        .removeClass("editable-campo")
+        .val("");
+
+      // Ocultar y limpiar observación
+      $("#observacion-container").fadeOut();
+      $("#observacion_capex").val("");
+
+      // Reactivar autocompletado
+      inicializarAutocomplete_Capex("#descripcion_capex", "#idproducto_capex");
+    }
+  }
+</script>

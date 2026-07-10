@@ -1,0 +1,81 @@
+# Framework principal
+Django==2.1
+
+# Drivers y conectores para SQL Server
+django-pyodbc-azure-2019==2.1.0.0
+pyodbc==4.0.39
+
+# REST Framework
+djangorestframework==3.11.0
+#
+# CORS
+django-cors-headers==3.4.0
+
+# Manejo de imágenes
+Pillow==8.2.0
+
+# Dependencias del sistema
+pytz==2021.1
+sqlparse==0.4.1
+asgiref==3.3.4
+pywin32==300; platform_system == "Windows"
+
+# Seguridad
+python-decouple==3.8
+
+# Utilidades
+python-dateutil==2.8.2
+
+# Dependencias adicionales para el proyecto
+# Base de datos
+#pymssql==2.3.0
+
+# Herramientas de desarrollo
+django-debug-toolbar==2.2
+
+# Procesamiento de archivos
+openpyxl==3.0.7
+xlrd==2.0.1
+numpy==1.23.5
+pandas==1.5.3
+
+# Autenticación y permisos
+django-guardian==2.2.0
+
+# Caché
+django-redis==4.10.0
+
+# Logging y monitoreo
+django-extensions==3.1.3
+
+# Formularios mejorados
+django-crispy-forms==1.12.0
+
+# Manejo de archivos estáticos
+whitenoise==5.3.0
+
+# Validación de datos
+jsonschema==3.2.0
+
+# Reportes PDF
+reportlab==3.6.0
+weasyprint==54.3
+
+# Notificaciones
+django-notifications-hq==1.6.0
+
+# API y serialización
+django-filter==2.4.0
+djangorestframework-simplejwt==4.8.0
+
+# Internacionalización
+django-modeltranslation==0.17.3
+
+# Tareas en segundo plano
+celery==5.1.2
+redis==3.5.3
+
+# Utilidades adicionales
+requests==2.25.1
+python-slugify==5.0.2
+django-environ==0.7.0

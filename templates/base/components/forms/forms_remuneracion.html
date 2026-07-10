@@ -1,0 +1,566 @@
+<!-- SULEDO -->
+<div class="modal fade" id="ModalSueldoSalario" tabindex="-1" role="dialog" aria-labelledby="addSueldoSalarioModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+
+
+
+            
+            <div class="modal-header">
+                <h5 class="modal-title" id="addSueldoSalarioModalLabel">Agregar Nuevo Presupuesto</h5>
+                <button type="button" class="close text-bold" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div> 
+            
+
+
+            <div class="modal-body">
+                <form id="formSueldoSalario">
+                    <div class="row" style="width: 100%">
+
+
+                        
+
+                        <div class="col-md-6">
+
+                            <!-- Sección de información del empleado -->
+                            <div class="form-group">
+                                <label for="dni_sueldo_salario">DNI</label>
+                                <input type="number" 
+                                    class="form-control" 
+                                    id="dni_sueldo_salario" 
+                                    name="dni_sueldo_salario"
+                                    minlength="8"
+                                    maxlength="8"
+                                    oninput="if(this.value.length > 8) this.value=this.value.slice(0,8)"
+                                    required>
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle"></i>
+                                    Use el DNI 11111111 para crear un trabajador genérico temporal
+                                </small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="nombre_sueldo_salario">NOMBRE</label>
+                                <input type="text" 
+                                    class="form-control" 
+                                    id="nombre_sueldo_salario" 
+                                    name="nombre_sueldo_salario" 
+                                    readonly
+                                    data-generic-editable="true">
+                                <small class="text-muted generic-field-hint" style="display: none;">
+                                    <i class="fas fa-edit"></i>
+                                    Campo editable para trabajador genérico
+                                </small>
+                            </div>
+                            <div class="form-group">
+                                <label for="regimen_laboral_sueldo_salario">REGIMEN LABORAL</label>
+                                <input type="text" 
+                                    class="form-control" 
+                                    id="regimen_laboral_sueldo_salario" 
+                                    name="regimen_laboral_sueldo_salario" 
+                                    readonly
+                                    data-generic-editable="true">
+                                <small class="text-muted generic-field-hint" style="display: none;">
+                                    <i class="fas fa-edit"></i>
+                                    Campo editable para trabajador genérico
+                                </small>
+                            </div>
+                            <div class="form-group">
+                                <label for="cargo_sueldo_salario">CARGO</label>
+                                <input type="text" 
+                                    class="form-control" 
+                                    id="cargo_sueldo_salario" 
+                                    name="cargo_sueldo_salario" 
+                                    readonly
+                                    data-generic-editable="true">
+                                <small class="text-muted generic-field-hint" style="display: none;">
+                                    <i class="fas fa-edit"></i>
+                                    Campo editable para trabajador genérico
+                                </small>
+                            </div>
+                            <div class="form-group">
+                                <label for="fecha_ingreso_sueldo_salario">FECHA DE INGRESO</label>
+                                <input type="text" 
+                                    class="form-control" 
+                                    id="fecha_ingreso_sueldo_salario" 
+                                    name="fecha_ingreso_sueldo_salario" 
+                                    readonly
+                                    data-generic-editable="true">
+                                <small class="text-muted generic-field-hint" style="display: none;">
+                                    <i class="fas fa-edit"></i>
+                                    Campo editable para trabajador genérico
+                                </small>
+                            </div>
+
+                            <!-- asignacion familiar -->
+                            <div class="form-group">
+                                <div class="d-flex align-items-center bg-light p-3 rounded shadow-sm">
+                                    <div class="custom-control custom-switch d-flex align-items-center">
+                                        <input type="checkbox" class="custom-control-input" id="check_asignacion_familiar">
+                                        <label class="custom-control-label font-weight-bold text-primary" for="check_asignacion_familiar">
+                                            <i class="fas fa-users mr-2"></i>
+                                            ASIGNACIÓN FAMILIAR
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Total Anual -->
+                            <div class="totales-container">
+                        
+
+                                <div class="total-item">
+                                    <span class="total-label">Sueldo Acumulado Anual:</span>
+                                    <span id="sueldo_total_anual" class="total-value">S/. 0.00</span>
+                                </div>
+
+                                <div class="total-item">
+                                    <span class="total-label">Vacac./Cargas Sociales:</span>
+                                    <span id="Cargas_Sociales" class="total-value">S/. 0.00</span>
+                                </div>
+
+                                <div class="total-item">
+                                    <span class="total-label">Asignación Familiar:</span>
+                                    <span id="asignacion_familiar_total" class="total-value">S/. 0.00</span>
+                                </div>
+                                <div class="total-item">
+                                    <span class="total-label">Transporte:</span>
+                                    <span id="transporte_total" class="total-value">S/. 0.00</span>
+                                </div>
+                                <div class="total-item">
+                                    <span class="total-label">Alimentación:</span>
+                                    <span id="alimentacion_total" class="total-value">S/. 0.00</span>
+                                </div>
+
+                            </div>
+
+
+                        </div>
+
+
+                        
+
+
+
+                        <!-- Sección de meses -->
+                        <div class="col-md-6">
+                            <h6>Seleccionar Meses y Sueldos</h6>
+
+                            
+
+                            <div class="mb-3">
+                                <div class="cantidad-masiva-container p-2 rounded shadow-sm border border-primary" 
+                                     style="background: linear-gradient(to right, #f8f9fa, #e9ecef);">
+                                    <div class="input-group">
+                                        <input type="number" 
+                                               class="form-control border-primary" 
+                                               id="cantidad_masiva_sueldo"
+                                               placeholder="Sueldo para todos los meses" 
+                                               min="0"
+                                               style="border-radius: 5px 0 0 5px;">
+                                        <div class="input-group-append">
+                                            <button class="btn btn-primary px-3" 
+                                                    type="button" 
+                                                    id="aplicar_cantidad_masiva_sueldo"
+                                                    title="Aplicar sueldo a todos los meses"
+                                                    style="border-radius: 0 5px 5px 0; transition: all 0.3s ease;">
+                                                <i class="fas fa-fill me-1"></i>
+                                                <span>Aplicar</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <small class="text-muted mt-1 d-block">
+                                        <i class="fas fa-info-circle"></i> 
+                                        Ingrese un sueldo para aplicar a todos los meses
+                                    </small>
+                                </div>
+                            </div>
+
+                            <div class="meses-container">
+
+                                <!-- ================================================================================== -->
+                                <!-- Encabezados de columnas -->
+                                <!-- ================================================================================== -->
+                                
+                                <div class="custom-switch-container header-row">
+                                    <span class="mes-nombre"><strong>Mes</strong></span>
+                                    <span class="switch-header" style="margin-left: 10px;"><strong>Activar</strong></span>
+                                    <span class="cantidad-header" style="margin-left: 70px;"><strong>Monto</strong></span>
+                                    <span class="vacaciones-header" style="margin-left: 45px;"><strong>Vac.</strong></span>
+                                </div>
+                                <!-- ================================================================================== -->
+                                
+                                {% for mes in meses %}
+                                <div class="custom-switch-container">
+                                    <span class="mes-nombre">{{ mes|title }}</span>
+
+
+                                    
+
+                                    <label class="switch">
+                                        <input type="checkbox" 
+                                               id="{{ mes }}_switch_sueldo" 
+                                               name="{{ mes }}_switch_sueldo"
+                                               class="mes-switch">
+                                        <span class="slider round"></span>
+                                    </label>
+                                    <input type="number" 
+                                           class="form-control cantidad-mes-sueldo" 
+                                           id="{{ mes }}_cantidad_sueldo" 
+                                           name="{{ mes }}_cantidad_sueldo" 
+                                           placeholder="Sueldo" 
+                                           min="0" 
+                                           style="width: 100px; margin-left: 10px;"
+                                           disabled>
+
+                                    <div class="custom-control custom-checkbox d-inline-block mx-2">
+                                        <input type="checkbox" 
+                                            class="custom-control-input vacaciones-checkbox-sueldoSalario" 
+                                            id="{{ mes }}_vacaciones_sueldoSalario" 
+                                            name="{{ mes }}_vacaciones_sueldoSalario">
+                                        <label class="custom-control-label" for="{{ mes }}_vacaciones_sueldoSalario">
+                                            <i class="fas fa-umbrella-beach text-info" title="Mes de vacaciones"></i>
+                                        </label>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botón de guardar -->
+                    <div class="row mt-3">
+                        <div class="col-12">
+
+                          <button type="submit" class="btn btn-primary btn-block">
+                            Guardar Presupuesto
+                          </button>
+                          
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+
+
+            
+        </div>
+    </div>
+</div>
+
+
+
+<!-- SALARIO -->
+<div class="modal fade" id="ModalSalario" tabindex="-1" role="dialog" aria-labelledby="addSalarioModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addSalarioModalLabel">Agregar Nuevo Presupuesto Salario</h5>
+                <button type="button" class="close text-bold" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="formSalario">
+                    
+                    <div class="row" style="width: 100%">
+
+                    {% comment %} 
+                        <div class="col-md-6">
+                            <!-- Sección de información del empleado -->
+                            <div class="form-group">
+                                <label for="dni_salario">DNI</label>
+                                <input type="number" class="form-control" id="dni_salario" name="dni_salario" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="nombre_salario">NOMBRE</label>
+                                <input type="text" class="form-control" id="nombre_salario" name="nombre_salario" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label for="regimen_laboral_salario">REGIMEN LABORAL</label>
+                                <input type="text" class="form-control" id="regimen_laboral_salario" name="regimen_laboral_salario" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label for="cargo_salario">CARGO</label>
+                                <input type="text" class="form-control" id="cargo_salario" name="cargo_salario" readonly>
+                            </div>
+                            <div class="form-group">
+                                <label for="fecha_ingreso_salario">FECHA DE INGRESO</label>
+                                <input type="text" class="form-control" id="fecha_ingreso_salario" name="fecha_ingreso_salario" readonly>
+                            </div>
+
+                            <!-- asignacion familiar -->
+                            <div class="form-group">
+                                <div class="d-flex align-items-center bg-light p-3 rounded shadow-sm">
+                                    <div class="custom-control custom-switch d-flex align-items-center">
+                                        <input type="checkbox" class="custom-control-input" id="check_asignacion_familiar_salario">
+                                        <label class="custom-control-label font-weight-bold text-primary" for="check_asignacion_familiar_salario">
+                                            <i class="fas fa-users mr-2"></i>
+                                            ASIGNACIÓN FAMILIAR
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="totales-container">
+                                <div class="total-item">
+                                    <span class="total-label">Salario Acumulado Anual:</span>
+                                    <span id="salario_total_anual" class="total-value">S/. 0.00</span>
+                                </div>
+                            
+                                <div class="total-item">
+                                    <span class="total-label">Vacac./Cargas Sociales:</span>
+                                    <span id="Cargas_Sociales_salario" class="total-value">S/. 0.00</span>
+                                </div>
+                            
+                                <div class="total-item">
+                                    <span class="total-label">Asignación Familiar:</span>
+                                    <span id="asignacion_familiar_total_salario" class="total-value">S/. 0.00</span>
+                                </div>
+
+                                <div class="total-item">
+                                    <span class="total-label">Transporte:</span>
+                                    <span id="transporte_total_salario" class="total-value">S/. 0.00</span>
+                                </div>
+                                <div class="total-item">
+                                    <span class="total-label">Alimentación:</span>
+                                    <span id="alimentacion_total_salario" class="total-value">S/. 0.00</span>
+                                </div>
+                                
+                            </div>
+
+                        </div>
+
+                    {% endcomment %}
+
+
+
+
+                        <div class="col-md-6">
+                            <!-- Sección de información del empleado -->
+                            <div class="form-group">
+                                <label for="dni_salario">DNI</label>
+                                <input type="number" 
+                                    class="form-control" 
+                                    id="dni_salario" 
+                                    name="dni_salario" 
+                                    minlength="8"
+                                    maxlength="8"
+                                    oninput="if(this.value.length > 8) this.value=this.value.slice(0,8)"
+                                    required>
+                                    
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle"></i>
+                                    Use el DNI 11111111 para crear un trabajador genérico temporal
+                                </small>
+                            </div>
+                            <div class="form-group">
+                                <label for="nombre_salario">NOMBRE</label>
+                                <input type="text" 
+                                    class="form-control" 
+                                    id="nombre_salario" 
+                                    name="nombre_salario" 
+                                    readonly
+                                    data-generic-editable="true">
+                                <small class="text-muted generic-field-hint" style="display: none;">
+                                    <i class="fas fa-edit"></i>
+                                    Campo editable para trabajador genérico
+                                </small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="regimen_laboral_salario">REGIMEN LABORAL</label>
+                                <input type="text" 
+                                    class="form-control" 
+                                    id="regimen_laboral_salario" 
+                                    name="regimen_laboral_salario" 
+                                    readonly
+                                    data-generic-editable="true">
+                                <small class="text-muted generic-field-hint" style="display: none;">
+                                    <i class="fas fa-edit"></i>
+                                    Campo editable para trabajador genérico
+                                </small>
+                            </div>
+                            <div class="form-group">
+                                <label for="cargo_salario">CARGO</label>
+                                <input type="text" 
+                                    class="form-control" 
+                                    id="cargo_salario" 
+                                    name="cargo_salario" 
+                                    readonly
+                                    data-generic-editable="true">
+                                <small class="text-muted generic-field-hint" style="display: none;">
+                                    <i class="fas fa-edit"></i>
+                                    Campo editable para trabajador genérico
+                                </small>
+                            </div>
+                            <div class="form-group">
+                                <label for="fecha_ingreso_salario">FECHA DE INGRESO</label>
+                                <input type="text" 
+                                    class="form-control" 
+                                    id="fecha_ingreso_salario" 
+                                    name="fecha_ingreso_salario" 
+                                    readonly
+                                    data-generic-editable="true">
+                                <small class="text-muted generic-field-hint" style="display: none;">
+                                    <i class="fas fa-edit"></i>
+                                    Campo editable para trabajador genérico
+                                </small>
+                            </div>
+
+                            <!-- asignacion familiar -->
+                            <div class="form-group">
+                                <div class="d-flex align-items-center bg-light p-3 rounded shadow-sm">
+                                    <div class="custom-control custom-switch d-flex align-items-center">
+                                        <input type="checkbox" class="custom-control-input" id="check_asignacion_familiar_salario">
+                                        <label class="custom-control-label font-weight-bold text-primary" for="check_asignacion_familiar_salario">
+                                            <i class="fas fa-users mr-2"></i>
+                                            ASIGNACIÓN FAMILIAR
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="totales-container">
+                                <div class="total-item">
+                                    <span class="total-label">Salario Acumulado Anual:</span>
+                                    <span id="salario_total_anual" class="total-value">S/. 0.00</span>
+                                </div>
+                            
+                                <div class="total-item">
+                                    <span class="total-label">Vacac./Cargas Sociales:</span>
+                                    <span id="Cargas_Sociales_salario" class="total-value">S/. 0.00</span>
+                                </div>
+                            
+                                <div class="total-item">
+                                    <span class="total-label">Asignación Familiar:</span>
+                                    <span id="asignacion_familiar_total_salario" class="total-value">S/. 0.00</span>
+                                </div>
+
+                                <div class="total-item">
+                                    <span class="total-label">Transporte:</span>
+                                    <span id="transporte_total_salario" class="total-value">S/. 0.00</span>
+                                </div>
+                                <div class="total-item">
+                                    <span class="total-label">Alimentación:</span>
+                                    <span id="alimentacion_total_salario" class="total-value">S/. 0.00</span>
+                                </div>
+                                
+                            </div>
+
+
+
+                        </div>
+
+
+                        
+                        <!-- Sección de meses -->
+                        <div class="col-md-6">
+                            <h6>Seleccionar Meses y Sueldos</h6>
+
+                            <div class="mb-3">
+                                <div class="cantidad-masiva-container p-2 rounded shadow-sm border border-primary" 
+                                     style="background: linear-gradient(to right, #f8f9fa, #e9ecef);">
+                                    <div class="input-group">
+                                        <input type="number" 
+                                               class="form-control border-primary" 
+                                               id="cantidad_masiva_salario"
+                                               placeholder="Salario para todos los meses" 
+                                               min="0"
+                                               style="border-radius: 5px 0 0 5px;">
+                                        <div class="input-group-append">
+                                            <button class="btn btn-primary px-3" 
+                                                    type="button" 
+                                                    id="aplicar_cantidad_masiva_salario"
+                                                    title="Aplicar salario a todos los meses"
+                                                    style="border-radius: 0 5px 5px 0; transition: all 0.3s ease;">
+                                                <i class="fas fa-fill me-1"></i>
+                                                <span>Aplicar</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <small class="text-muted mt-1 d-block">
+                                        <i class="fas fa-info-circle"></i> 
+                                        Ingrese un salario para aplicar a todos los meses
+                                    </small>
+                                </div>
+                            </div>
+
+                            <div class="meses-container">
+
+                                <!-- ================================================================================== -->
+                                <!-- Encabezados de columnas -->
+                                <!-- ================================================================================== -->
+                                
+                                <div class="custom-switch-container header-row">
+                                    <span class="mes-nombre"><strong>Mes</strong></span>
+                                    <span class="switch-header" style="margin-left: 10px;"><strong>Activar</strong></span>
+                                    <span class="cantidad-header" style="margin-left: 70px;"><strong>Monto</strong></span>
+                                    <span class="vacaciones-header" style="margin-left: 45px;"><strong>Vac.</strong></span>
+                                </div>
+                                <!-- ================================================================================== -->
+                                
+                                
+                                {% for mes in meses %}
+                                <div class="custom-switch-container">
+                                    <span class="mes-nombre">{{ mes|title }}</span>
+
+                                    
+
+
+                                    <label class="switch">
+                                        <input type="checkbox" 
+                                               id="{{ mes }}_switch_salario" 
+                                               name="{{ mes }}_switch_salario"
+                                               class="mes-switch">
+                                        <span class="slider round"></span>
+                                    </label>
+                                    <input type="number" 
+                                           class="form-control cantidad-mes-salario" 
+                                           id="{{ mes }}_cantidad_salario" 
+                                           name="{{ mes }}_cantidad_salario" 
+                                           placeholder="Salario" 
+                                           min="0" 
+                                           style="width: 100px; margin-left: 10px;"
+                                           disabled>
+
+                                    <!-- ================================================================================== -->
+                                    <!-- Checkbox de vacaciones -->
+                                    <!-- ================================================================================== -->
+                                    <div class="custom-control custom-checkbox d-inline-block mx-2" >
+                                        <input type="checkbox" 
+                                               class="custom-control-input vacaciones-checkbox-sueldo" 
+                                               id="{{ mes }}_vacaciones_sueldo" 
+                                               
+                                               name="{{ mes }}_vacaciones_sueldo">
+                                               
+                                        <label class="custom-control-label" for="{{ mes }}_vacaciones_sueldo">
+                                            <i class="fas fa-umbrella-beach text-info" title="Mes de vacaciones"></i>
+                                        </label>
+                                    </div>
+                                    <!-- ================================================================================== -->
+
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Botón de guardar -->
+                    <div class="row mt-3">
+                        <div class="col-12">
+
+                          <button type="submit" class="btn btn-primary btn-block">
+                            Guardar Presupuesto
+                          </button>
+                          
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+      

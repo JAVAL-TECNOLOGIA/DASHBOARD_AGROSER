@@ -1,0 +1,334 @@
+{% load static %}
+{% include 'base/header.html' %}
+{% include 'base/sidebar.html' %}
+{% block css %}
+	<link href="{% static 'assets/plugins/DataTables/media/css/dataTables.bootstrap.min.css' %}" rel="stylesheet" />
+	<link href="{% static 'assets/plugins/DataTables/extensions/Responsive/css/responsive.bootstrap.min.css' %}" rel="stylesheet" />
+	<link href="{% static 'assets/plugins/bootstrap-datepicker/css/bootstrap-datepicker.css' %}" rel="stylesheet" />
+	<link href="{% static 'assets/plugins/bootstrap-datepicker/css/bootstrap-datepicker3.css' %}" rel="stylesheet" />
+	<link href="{% static 'assets/plugins/gritter/css/jquery.gritter.css' %}" rel="stylesheet" />
+	<script src="{% static 'assets/plugins/pace/pace.min.js' %}"></script>
+{% endblock %}
+
+<div id="content" class="content">
+	<div class="panel panel-inverse">
+		<div class="panel-heading">
+			<h3 class="panel-title">Configuración Tipo de Trabajo</h3>
+		</div>
+		<div class="panel-body"><br>
+			<div class="row">
+				<div class="col-md-3">
+					<button onclick="modal_create_config()" class="btn btn-success" style="color:white;"><i class="fa fa-plus"></i> Agregar Configuración</button>
+				</div>
+			</div>
+			<br>
+			<div class="table-responsive">
+				<table class="table table-hover m-b-0 text-inverse" id="tableListConfigTipoTrabajo">
+					<thead>
+						<tr>
+							<th>ID</th>
+							<th>Tipo de Labor</th>
+							<th>Tipo de Cálculo</th>
+							<th>Campaña</th>
+							<th>Observación</th>
+							<th>Acciones</th>
+						</tr>
+					</thead>
+					<tbody>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div class="modal fade" id="modalCreateConfig">
+	<form id="formCreateConfig">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h4 class="modal-title">Agregar Configuración Tipo de Labor</h4>
+					<button type="button" class="close" data-dismiss="modal">&times;</button>
+				</div>
+				<div class="modal-body">
+					<div class="form-group">
+						<label>Tipo de Labor</label>
+						<select name="id_tipo_trabajo" class="form-control" required>
+							<option value="">Seleccionar...</option>
+							{% for tipo in tipos_trabajo %}
+							<option value="{{ tipo.ID_TP_TRABAJO }}">{{ tipo.NOM_CORTO }}</option>
+							{% endfor %}
+						</select>
+					</div>
+					<div class="form-group">
+						<label>Tipo de Cálculo</label>
+						<select name="id_tipo_calculo" class="form-control" required>
+							<option value="">Seleccionar...</option>
+							{% for tipo in tipos_calculo %}
+							<option value="{{ tipo.ID_TP_CALCULO }}">{{ tipo.NOM_CORTO }}</option>
+							{% endfor %}
+						</select>
+					</div>
+					<div class="form-group">
+						<label>Campaña</label>
+						<select name="id_campania" class="form-control" required>
+							<option value="">Seleccionar...</option>
+							{% for campania in campanias %}
+							<option value="{{ campania.ID_CAMPANIA }}">{{ campania.DESCRIPCION }}</option>
+							{% endfor %}
+						</select>
+					</div>
+					<div class="form-group">
+						<label>Observación</label>
+						<textarea name="observacion" class="form-control" placeholder="Observaciones adicionales..."></textarea>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="submit" class="btn btn-primary">Guardar</button>
+					<button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+				</div>
+			</div>
+		</div>
+	</form>
+</div>
+<div class="modal fade" id="modalUpdateConfig"></div>
+<div class="modal fade" id="modalDeleteConfig"></div>
+
+{% include 'base/footer.html' %}
+{% block js %}
+	<script src="{% static 'assets/plugins/bootstrap-datepicker/js/bootstrap-datepicker.js' %}"></script>
+	<script src="{% static 'assets/plugins/DataTables/media/js/jquery.dataTables.js' %}"></script>
+	<script src="{% static 'assets/plugins/DataTables/media/js/dataTables.bootstrap.min.js' %}"></script>
+	<script src="{% static 'assets/plugins/DataTables/extensions/Responsive/js/dataTables.responsive.min.js' %}"></script>
+	<script src="{% static 'assets/js/demo/table-manage-default.demo.js' %}"></script>
+	<script src="{% static 'assets/js/demo/form-plugins.demo.js' %}"></script>
+	<script src="{% static 'assets/plugins/masked-input/masked-input.min.js' %}"></script>
+	<script src="{% static 'assets/plugins/ionRangeSlider/js/ion-rangeSlider/ion.rangeSlider.min.js' %}"></script>
+	<script src="{% static 'assets/plugins/gritter/js/jquery.gritter.js' %}"></script>
+	<script src="{% static 'assets/plugins/bootstrap-sweetalert/sweetalert.min.js' %}"></script>
+	<script src="{% static 'assets/js/demo/ui-modal-notification.demo.min.js' %}"></script>
+
+	<script>
+		var es_admin = {{ es_admin|yesno:"true,false" }};
+
+		$(document).ready(function(){
+			App.init();
+			cargarConfiguraciones();
+		});
+
+		function cargarConfiguraciones(){
+			if ($.fn.DataTable.isDataTable('#tableListConfigTipoTrabajo')) {
+				$('#tableListConfigTipoTrabajo').DataTable().destroy();
+			}
+			
+			$.get('/presupuesto-agricola/config_tipo_trabajo/api/config-tipo-trabajo/', function(response){
+				let tbody = '';
+				response.data.forEach(function(config){
+					let idConfigStr = String(config.ID_CONFIG_TTRAB).replace(/'/g, "\\'");
+					let opciones = `<button class=\"btn btn-warning btn-xs\" onclick=\"modal_update_config('${idConfigStr}')\"><i class=\"fa fa-edit\"></i></button>`;
+					if (es_admin) {
+						opciones += ` <button class=\"btn btn-danger btn-xs\" onclick=\"modal_delete_config('${idConfigStr}')\"><i class=\"fa fa-trash\"></i></button>`;
+					}
+					tbody += `<tr>
+						<td>${config.ID_CONFIG_TTRAB}</td>
+						<td>${config.nombre_tipo_trabajo || 'N/A'}</td>
+						<td>${config.nombre_tipo_calculo || 'N/A'}</td>
+						<td>${config.descripcion_campania || 'N/A'}</td>
+						<td>${config.OBSERVACION || ''}</td>
+						<td>${opciones}</td>
+					</tr>`;
+				});
+				$('#tableListConfigTipoTrabajo tbody').html(tbody);
+				$('#tableListConfigTipoTrabajo').DataTable({
+					language: {
+						url: "//cdn.datatables.net/plug-ins/1.10.21/i18n/Spanish.json"
+					}
+				});
+			});
+		}
+
+		function modal_create_config(){
+			$('#modalCreateConfig').modal('show');
+		}
+
+		// Manejar envío del formulario de crear
+		$(document).on('submit', '#formCreateConfig', function(e){
+			e.preventDefault();
+			let formData = {
+				id_tipo_trabajo: $('select[name="id_tipo_trabajo"]').val(),
+				id_tipo_calculo: $('select[name="id_tipo_calculo"]').val(),
+				id_campania: $('select[name="id_campania"]').val(),
+				observacion: $('textarea[name="observacion"]').val()
+			};
+
+			$.ajax({
+				url: '/presupuesto-agricola/config_tipo_trabajo/api/config-tipo-trabajo/',
+				method: 'POST',
+				data: JSON.stringify(formData),
+				contentType: 'application/json',
+				success: function(response){
+					if(response.status === 'success'){
+						swal('¡Éxito!', 'Configuración creada correctamente', 'success');
+						$('#modalCreateConfig').modal('hide');
+						cargarConfiguraciones();
+					} else {
+						swal('Error', response.message, 'error');
+					}
+				},
+				error: function(xhr){
+					swal('Error', 'Error al crear la configuración', 'error');
+				}
+			});
+		});
+
+		function saveCreateConfig(){
+			let data = {
+				id_tipo_trabajo: $('#formCreateConfig [name="id_tipo_trabajo"]').val(),
+				id_tipo_calculo: $('#formCreateConfig [name="id_tipo_calculo"]').val(),
+				id_campania: $('#formCreateConfig [name="id_campania"]').val(),
+				observacion: $('#formCreateConfig [name="observacion"]').val()
+			};
+			$.ajax({
+				url: '/presupuesto-agricola/config_tipo_trabajo/api/config-tipo-trabajo/',
+				type: 'POST',
+				contentType: 'application/json',
+				data: JSON.stringify(data),
+				success: function(response){
+					$('#modalCreateConfig').modal('hide');
+					swal('Configuración registrada!', '', 'success');
+					cargarConfiguraciones();
+				},
+				error: function(xhr, status, error){
+					let errorMessage = 'Error al crear configuración';
+					if (xhr.responseJSON && xhr.responseJSON.message) {
+						errorMessage = xhr.responseJSON.message;
+					}
+					console.log('Error completo:', xhr.responseText);
+					alert(errorMessage);
+				}
+			});
+		}
+
+		function modal_update_config(id){
+			let tipos_trabajo = {{ tipos_trabajo|safe }};
+			let tipos_calculo = {{ tipos_calculo|safe }};
+			let campanias = {{ campanias|safe }};
+			
+			$.get(`/presupuesto-agricola/config_tipo_trabajo/api/config-tipo-trabajo/${id}/`, function(response){
+				let config = response.data;
+				let idStr = String(id).replace(/'/g, "\\'");
+				
+				let tiposTrabajoOptions = '<option value="">Seleccionar...</option>' + tipos_trabajo.map(t => `<option value="${t.ID_TP_TRABAJO}" ${t.ID_TP_TRABAJO === config.ID_TP_TRABAJO ? 'selected' : ''}>${t.NOM_CORTO}</option>`).join('');
+				let tiposCalculoOptions = '<option value="">Seleccionar...</option>' + tipos_calculo.map(tc => `<option value="${tc.ID_TP_CALCULO}" ${tc.ID_TP_CALCULO === config.ID_TP_CALCULO ? 'selected' : ''}>${tc.NOM_CORTO}</option>`).join('');
+				let campaniasOptions = '<option value="">Seleccionar...</option>' + campanias.map(c => `<option value="${c.ID_CAMPANIA}" ${c.ID_CAMPANIA === config.ID_CAMPANIA ? 'selected' : ''}>${c.DESCRIPCION}</option>`).join('');
+
+				let html = `<form id=\"formUpdateConfig\">
+					<div class=\"modal-dialog\">
+						<div class=\"modal-content\">
+							<div class=\"modal-header\">
+								<h4 class=\"modal-title\">Editar Configuración Tipo de Labor</h4>
+								<button type=\"button\" class=\"close\" data-dismiss=\"modal\">&times;</button>
+							</div>
+							<div class=\"modal-body\">
+								<div class=\"form-group\">
+									<label>Tipo de Labor</label>
+									<select name=\"id_tipo_trabajo\" class=\"form-control\" required>
+										${tiposTrabajoOptions}
+									</select>
+								</div>
+								<div class=\"form-group\">
+									<label>Tipo de Cálculo</label>
+									<select name=\"id_tipo_calculo\" class=\"form-control\" required>
+										${tiposCalculoOptions}
+									</select>
+								</div>
+								<div class=\"form-group\">
+									<label>Campaña</label>
+									<select name=\"id_campania\" class=\"form-control\" required>
+										${campaniasOptions}
+									</select>
+								</div>
+								<div class=\"form-group\">
+									<label>Observación</label>
+									<textarea name=\"observacion\" class=\"form-control\" rows=\"3\">${config.OBSERVACION || ''}</textarea>
+								</div>
+							</div>
+							<div class=\"modal-footer\">
+								<button type=\"button\" class=\"btn btn-primary\" onclick=\"saveUpdateConfig('${idStr}')\">Guardar</button>
+								<button type=\"button\" class=\"btn btn-secondary\" data-dismiss=\"modal\">Cancelar</button>
+							</div>
+						</div>
+					</div>
+				</form>`;
+				$('#modalUpdateConfig').html(html).modal('show');
+			});
+		}
+
+		function saveUpdateConfig(id){
+			let data = {
+				id_tipo_trabajo: $('#formUpdateConfig [name="id_tipo_trabajo"]').val(),
+				id_tipo_calculo: $('#formUpdateConfig [name="id_tipo_calculo"]').val(),
+				id_campania: $('#formUpdateConfig [name="id_campania"]').val(),
+				observacion: $('#formUpdateConfig [name="observacion"]').val()
+			};
+			$.ajax({
+				url: `/presupuesto-agricola/config_tipo_trabajo/api/config-tipo-trabajo/${id}/`,
+				type: 'PUT',
+				contentType: 'application/json',
+				data: JSON.stringify(data),
+				success: function(response){
+					$('#modalUpdateConfig').modal('hide');
+					swal('Configuración actualizada!', '', 'success');
+					cargarConfiguraciones();
+				},
+				error: function(xhr, status, error){
+					let errorMessage = 'Error al actualizar configuración';
+					if (xhr.responseJSON && xhr.responseJSON.message) {
+						errorMessage = xhr.responseJSON.message;
+					}
+					console.log('Error completo:', xhr.responseText);
+					alert(errorMessage);
+				}
+			});
+		}
+
+		function modal_delete_config(id){
+			let html = `<div class=\"modal-dialog\">
+				<div class=\"modal-content\">
+					<div class=\"modal-header\">
+						<h4 class=\"modal-title\">Eliminar Configuración</h4>
+						<button type=\"button\" class=\"close\" data-dismiss=\"modal\">&times;</button>
+					</div>
+					<div class=\"modal-body\">
+						¿Estás seguro de eliminar esta configuración de tipo de labor?
+					</div>
+					<div class=\"modal-footer\">
+						<button type=\"button\" class=\"btn btn-danger\" onclick=\"deleteConfig('${id}')\">Eliminar</button>
+						<button type=\"button\" class=\"btn btn-secondary\" data-dismiss=\"modal\">Cancelar</button>
+					</div>
+				</div>
+			</div>`;
+			$('#modalDeleteConfig').html(html).modal('show');
+		}
+
+		function deleteConfig(id){
+			$.ajax({
+				url: `/presupuesto-agricola/config_tipo_trabajo/api/config-tipo-trabajo/delete/${id}/`,
+				type: 'POST',
+				success: function(response){
+					$('#modalDeleteConfig').modal('hide');
+					swal('Configuración eliminada!', '', 'success');
+					cargarConfiguraciones();
+				},
+				error: function(xhr, status, error){
+					let errorMessage = 'Error al eliminar configuración';
+					if (xhr.responseJSON && xhr.responseJSON.message) {
+						errorMessage = xhr.responseJSON.message;
+					}
+					console.log('Error completo:', xhr.responseText);
+					alert(errorMessage);
+				}
+			});
+		}
+	</script>
+{% endblock %}

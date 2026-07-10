@@ -1,0 +1,97 @@
+<div class="table-responsive mt-3">
+<table id="tablaConsolidadoProduccion" class="table table-bordered table-striped table-sm" style="font-size: 12px;">
+
+   <thead>
+
+<tr class="text-center bg-light font-weight-bold">
+    <th colspan="7">DATOS GENERALES</th>
+    <th colspan="8" class="bg-info text-white">COSTO DIRECTO DE PRODUCCIÓN</th>
+    <th colspan="6" class="bg-warning">COSTO INDIRECTO DE PRODUCCIÓN</th>
+    <th colspan="3" class="bg-success text-white">EXPORTACIÓN</th>
+    <th rowspan="2" class="align-middle bg-dark text-white">COSTO TOTAL POR LOTE</th>
+</tr>
+
+<tr class="bg-secondary text-white text-center">
+
+    <!-- DATOS GENERALES (7) -->
+    <th>Sector</th>
+    <th>Condición</th>
+    <th>Lote</th>
+    <th>Área Total</th>
+    <th>Variedad</th>
+    <th>Plantas por Lote</th>
+    <th>Plantas x Ha</th>
+
+    <!-- Costo Directo (8) -->
+    <th>Compras</th>
+    <th>Mano de Obra</th>
+    <th>Servicios de Terceros</th>
+    <th>Total Directo</th>
+    <th>Depreciación Act. Biológicos</th>
+    <th>Depreciación Act. Agrícolas</th>
+    <th>Total Costo Directo</th>
+    <th>Gasto Administrativo</th>
+
+    <!-- COSTO INDIRECTO (6) -->
+    <th>Tributos</th>
+    <th>Gastos de Venta</th>
+    <th>Gasto Financiero</th>
+    <th>Total Costos Indirectos</th>
+
+    <!-- ➕ COLUMNAS FALTANTES (LAS 2 QUE ROMPÍAN TODO) -->
+    <th>Otros Indirectos</th>
+    <th>Total Indirecto Final</th>
+
+    <!-- EXPORTACIÓN (3) -->
+    <th>Regalías Marca DIVA</th>
+    <th>Costo de Exportación</th>
+    <th>Total Exportación</th>
+
+</tr>
+
+</thead>
+
+    <!-- ======================= -->
+    <!-- CUERPO DE LA TABLA -->
+    <!-- ======================= -->
+    <tbody>
+        {% for fila in consolidado %}
+        <tr>
+            <!-- DATOS GENERALES -->
+            <td>{{ fila.sector }}</td>
+            <td>{{ fila.condicion }}</td>
+            <td>{{ fila.lote }}</td>
+            <td>{{ fila.area_total }}</td>
+            <td>{{ fila.variedad }}</td>
+            <td>{{ fila.plantas_lote }}</td>
+            <td>{{ fila.plantas_ha }}</td>
+
+            <!-- COSTO DIRECTO -->
+            <td>{{ fila.compras }}</td>
+            <td>{{ fila.mano_obra }}</td>
+            <td>{{ fila.servicios_terceros }}</td>
+            <td>{{ fila.total_directo }}</td>
+            <td>{{ fila.dep_biologicos }}</td>
+            <td>{{ fila.dep_agricolas }}</td>
+            <td>{{ fila.total_costo_directo }}</td>
+            <td>{{ fila.gasto_admin }}</td>
+
+            <!-- COSTO INDIRECTO -->
+            <td>{{ fila.tributos }}</td>
+            <td>{{ fila.gastos_venta }}</td>
+            <td>{{ fila.gasto_financiero }}</td>
+            <td>{{ fila.total_indirecto }}</td>
+
+            <!-- EXPORTACIÓN -->
+            <td>{{ fila.regalias }}</td>
+            <td>{{ fila.costo_export }}</td>
+            <td>{{ fila.total_exportacion }}</td>
+
+            <!-- TOTAL LOTE -->
+            <td class="font-weight-bold text-success">{{ fila.total_lote }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+
+</table>
+</div>

@@ -1,0 +1,600 @@
+{% load static %} 
+{% include 'base/header.html'%} 
+
+{% block css %}
+<link
+  href="{% static 'assets/plugins/DataTables/media/css/dataTables.bootstrap.min.css' %}"
+  rel="stylesheet"
+/>
+<link
+  href="{% static 'assets/plugins/DataTables/extensions/Buttons/css/buttons.bootstrap.min.css' %}"
+  rel="stylesheet"
+/>
+<link href="{% static 'core/css/oc_orden_compra_log.css' %}" rel="stylesheet" />
+
+
+{% endblock %} 
+{% include 'base/sidebar.html' %}
+
+
+<!-- begin #content -->
+<div id="content" class="content">
+  <!-- begin panel -->
+  <div class="panel panel-inverse">
+    <div class="panel-heading">
+      <div class="panel-heading-btn">
+        <a
+          href="javascript:;"
+          class="btn btn-xs btn-icon btn-circle btn-default"
+          data-click="panel-expand"
+          ><i class="fa fa-expand"></i
+        ></a>
+      </div>
+      <h4 class="panel-title">REGISTRO DE APLICACIONES FITOSANITARIAS</h4>
+    </div>
+    <!-- begin panel-body -->
+    <div class="panel-body">
+      <div class="table-responsive">
+        <table class="table m-b-0 table-striped" id="lst_aplfitosanitarias_diario">
+          <thead>
+            <tr>
+              <th>IDENTIFICADOR</th>
+              <th>ALMACEN</th>
+              <th>SUCURSAL</th>
+              <th>FECHA</th>
+              <th>DOCUMENTO</th>
+              <th>CONSUMIDOR</th>
+              <th>RESPONSABLE</th>
+              <th>ESTADO</th>  
+              <th>ACCIONES</th>            
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <!-- end panel-body -->
+  </div>
+  <!-- end panel -->
+</div>
+<!-- end #content -->
+
+
+<!-- Modal para detalles -->
+<div class="modal fade" id="detallesModal" tabindex="2" role="dialog" aria-labelledby="detallesModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="ventanaModalLabel">Formulario de Aplicación Fitosanitaria - DETALLES</h5>
+        <button type="button" class="close text-black" data-dismiss="modal" aria-label="Cerrar">
+          <span aria-hidden="true">&times;</span>
+      </button>
+      </div>
+      <div class="modal-body">
+        <form>
+          
+
+          <!-- Fila 2 -->
+          <div class="row mb-3">
+            <!-- Sucursal -->
+            <div class="col-md-3">
+              <label class="form-label">Sucursal</label>
+              <div class="input-group">
+                <input type="text" name="sucursal_codigo" class="form-control" style="width: 18%;" value="001" readonly>
+                <input type="text" name="sucursal_nombre" class="form-control" style="width: 82%;" value="SOCIEDAD AGRICOLA DON LUIS S.A." readonly>
+              </div>
+            </div>
+            <!-- Almacén -->
+            <div class="col-md-2">
+              <label class="form-label">Almacén</label>
+              <div class="input-group">
+                <input type="text" name="almacen_codigo" class="form-control" style="width: 25%;" value="001" readonly>
+                <input type="text" name="almacen_nombre" class="form-control" style="width: 75%;" value="ALMACEN CENTRAL" readonly>
+              </div>
+            </div>
+            <!-- Documento -->
+            <div class="col-md-1">
+              <label class="form-label">Documento</label>
+              <input type="text" name="documento" class="form-control" value="APF" readonly>
+            </div>
+            <!-- Serie y Número -->
+            <div class="col-md-1">
+              <label class="form-label">Serie</label>
+              <input type="text" name="serie" class="form-control" value="0001" readonly>
+            </div>
+
+            <div class="col-md-1">
+              <label class="form-label">Número</label>
+              <input type="text" name="numero" class="form-control" value="0024724" readonly>
+            </div>
+
+            <!-- fechas -->
+
+            
+            <div class="col-md-2">
+              <label class="form-label">Fecha Doc.</label>
+              <input type="text" name="fecha_doc" class="form-control" value="01/10/2024 01:14:14" readonly>
+            </div>
+
+            <div class="col-md-2">
+              <label class="form-label">Fecha Apl. Fitosanitaria</label>
+              <input type="text" name="fecha_apl" class="form-control" value="01/10/2024 01:14:18" readonly>
+            </div>
+
+            
+
+          </div>
+
+          <!-- Fila 3 -->
+          <div class="row mb-3">
+            <!-- Lote -->
+            <div class="col-md-4">
+              <label class="form-label">Lote</label>
+              <div class="input-group">
+                <input type="text" name="lote_codigo" class="form-control" style="width: 20%;" value="FLSGA2" readonly>
+                <input type="text" name="lote_nombre" class="form-control" style="width: 80%;" value="LOTE A-2 UVA SWEET GLOBE_FLORESTA" readonly>
+              </div>
+            </div>
+            <!-- Área (ha) y Gasto -->
+            <div class="col-md-4">
+              <label class="form-label">Área (ha) y Gasto</label>
+              <div class="input-group">
+                <input type="decimal" name="area" class="form-control"  readonly>
+                <input type="decimal" name="gasto" class="form-control"  readonly>
+              </div>
+            </div>
+            <!-- Fecha de Cosecha -->
+            <div class="col-md-4">
+              <label class="form-label">Fecha de Cosecha</label>
+              <input type="date" name="fecha_cosecha"class="form-control" value="01/10/2024" readonly>
+            </div>
+          </div>
+
+          <!-- Fila 4 -->
+          <div class="row mb-3">
+            <!-- Tipo Aplicación -->
+            <div class="col-md-3">
+              <label class="form-label">Tipo Aplicación</label>
+              <div class="input-group">
+                <input type="text" name="tipo_aplicacion_codigo" class="form-control" style="width: 20%;" value="001" readonly>
+                <input type="text" name="tipo_aplicacion_nombre" class="form-control" style="width: 80%;" value="APLICACION MECANICA PULVERIZACION" readonly>
+              </div>
+            </div>
+            <!-- Tanque de Aplicación -->
+            <div class="col-md-3">
+              <label class="form-label">Tanque de Aplicación</label>
+              <div class="input-group">
+                <input type="text" name="tanque_aplicacion_codigo" class="form-control" style="width: 20%;" value="005" readonly>
+                <input type="text" name="tanque_aplicacion_nombre" class="form-control" style="width: 80%;" value="CHASKY DE 2000 LT" readonly>
+              </div>
+            </div>
+            <!-- Lt. Aplicados -->
+            <div class="col-md-2">
+              <label class="form-label">Lt.</label>
+              <input type="number" name="litros" class="form-control" value="20000.000" readonly>
+            </div>
+            <!-- Cantidad -->
+            <div class="col-md-1">
+              <label class="form-label">Cantidad</label>
+              <input type="decimal" name="cantidad" class="form-control"  readonly>
+            </div>
+            <!-- Total -->
+            <div class="col-md-3">
+              <label class="form-label">Total</label>
+              <input type="decimal" name="total" class="form-control"  readonly>
+            </div>
+
+
+          </div>
+
+
+          <!-- Fila 5 -->
+          <div class="row mb-3">
+            <!-- Reingreso (Hr.) -->
+            <div class="col-md-3">
+              <label class="form-label">Reingreso (Hr.)</label>
+              <input type="number" name="reingreso" class="form-control"  value="0.00" readonly>
+            </div>
+            <!-- Responsable -->
+            <div class="col-md-9">
+              <label class="form-label">Responsable</label>
+              <div class="input-group">
+                <input type="text" name="responsable_codigo" class="form-control" style="width: 20%;" value="000025" readonly>
+                <input type="text" name="responsable_nombre" class="form-control" style="width: 80%;" value="SIGUAS ESPINO LUIS GUILLERMO" readonly>
+              </div>
+            </div>
+          </div>
+
+          
+
+
+          <!-- TABLAS --> 
+          <div class="table-responsive">
+            <table id="lst_det_aplfitosanitarias_diario" class="table table-striped table-bordered">
+                <thead>
+                    <tr>
+                        <th>ITEM</th>
+                        <th>PRODUCTO</th>
+                        <th>MEDIDA</th>
+                        <th>Ing._Act.</th>
+                        <th>DESCRIPCION IAC</th>
+                        <th>UAC</th>
+                        <th>Dosis_x_Ha</th>
+                        <th>Total_Dosis</th>
+                        <th>dosis</th>
+                        <th>objetivo</th>
+                        <th>Dosis_Fracc.</th>
+                        <th>SECTOR</th>
+                        <th>DOSIS_x_CILINDRO</th>
+                        <th>Dias_Carencia</th>
+                        <th>Reingreso</th>
+                        <th>FRECUENCIA</th>
+                        <th>OBSERVACIONES</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- DataTables -->
+                </tbody>
+            </table>
+          </div>
+
+          <!--========= CAMPOS PARA EL REGISTRO DEL USUARIO =========-->
+          <!-- Subtítulo para el registro de formato -->
+          <h4 class="mb-3">REGISTRO DE FORMATO</h4>
+
+
+          <!-- Fila 6 y 7 combinadas -->
+          <div class="row mb-3">
+            <!-- Columna 1: Campos de la Fila 6 -->
+            <div class="col-md-6">
+              <!-- FUNDO -->
+              <div class="mb-1">
+                <label class="form-label">FUNDO</label>
+                <input type="number" class="form-control" >
+              </div>
+              <!-- CULTIVO -->
+              <div class="mb-1">
+                <label class="form-label">CULTIVO</label>
+                <input type="number" class="form-control" value="0.00">
+              </div>
+              <!-- VARIEDAD -->
+              <div class="mb-1">
+                <label class="form-label">VARIEDAD</label>
+                <input type="number" class="form-control" value="0.00">
+              </div>
+            </div>
+            
+            <!-- Columna 2: Campos de la Fila 7 -->
+            <div class="col-md-6">
+              <!-- PARTE NÚMERO: -->
+              <div class="mb-1">
+                <label class="form-label">PARTE NÚMERO:</label>
+                <input class="form-control" value="0.00">
+              </div>
+              <!--  FECHA APROX. COS.: -->
+              <div class="mb-1">
+                <label class="form-label">FECHA APROX. COS.:</label>
+                <input type="date" class="form-control">
+              </div>
+              <!--  DIAS ANTES DE COS. -->
+              <div class="mb-1">
+                <label class="form-label">DIAS ANTES DE COS.</label>
+                <input class="form-control">
+              </div>
+            </div>
+          </div>
+
+
+          <!-- Fila 8 -->
+          <div class="row mb-3">
+            
+            <div class="col-md-3">
+              <!-- LOTE -->
+              <div class="mb-1">
+                <label class="form-label">LOTE</label>
+                <input type="number" class="form-control">
+              </div>
+
+              <!-- HECTARIAS -->
+              <div class="mb-1">
+                <label class="form-label">HECTARIAS</label>
+                <input type="number" class="form-control">
+              </div>
+
+              <div class="mb-1">
+                <label class="form-label">N° TANCADAS</label>
+                <input type="number" class="form-control">
+              </div>
+
+
+              <!-- FRACCION TANCADA -->
+              <div class="mb-1">
+                <label class="form-label">FRACCION TANCADA</label>
+                <input type="number" class="form-control">
+              </div>
+
+
+            </div>
+
+            <div class="col-md-2">
+
+              <div class="mb-1">
+                <label class="form-label">N° rayas/Ha</label>
+                <input type="number" class="form-control">
+              </div>
+
+              <!-- UNIDAD -->
+              <div class="mb-1">
+                <label class="form-label" id="labelUnidad">Kg./Ha</label>
+                <input type="number" class="form-control" id="inputUnidad" onchange="cambiarEtiqueta()">
+                <script>
+                  function cambiarEtiqueta() {
+                    let input = document.getElementById('inputUnidad');
+                    let label = document.getElementById('labelUnidad');
+                    input.value < 80 ? label.textContent = 'Kg./Ha' : label.textContent = 'Lts./ha';
+                    
+                  }
+                </script>
+              </div>
+
+              <div class="mb-1">
+                <label class="form-label">vuel/tanc</label>
+                <input type="number" class="form-control">
+              </div>
+
+              <div class="mb-1">
+                <label class="form-label">cantidad/tanc.</label>
+                <input type="number" class="form-control">
+              </div>
+
+            </div>
+
+            <div class="col-md-3">
+              
+              <div class="mb-1">
+                <label class="form-label">PRESIÓN</label>
+                <input type="number" class="form-control">
+              </div>
+
+              <div class="mb-1">
+                <label class="form-label">RPM</label>
+                <input type="number" class="form-control">
+              </div>
+
+              <div class="mb-1">
+                <label class="form-label">MARCHA</label>
+                <input type="number" class="form-control">
+              </div>
+
+            </div>
+          
+
+          </div>
+
+          <!-- Línea horizontal para separar secciones -->
+          <hr class="my-3" style="border-top: 2px solid #bbb;">
+          
+          <div class="row md-3">
+
+            <div class="col mb-3">
+              <!-- MAQUINARIA-->
+              <div class="mb-1">
+                <label class="form-label">MAQUINARIA</label>
+                <input type="number" class="form-control">
+              </div>
+
+
+              <!-- METODO DE APLICAC.-->
+              <div class="mb-1">
+                <label class="form-label">METODO DE APLICAC.</label>
+                <input type="number" class="form-control">
+              </div>
+
+              <!-- EQUIPO-->
+              <div class="mb-1">
+                <label class="form-label">EQUIPO</label>
+                <input type="number" class="form-control">
+              </div>
+            </div>
+          
+
+          
+          
+            <div class="col md-3">
+              <!-- ENFERMEDADES-->
+              <div class="mb-1">
+                <label class="form-label">ENFERMEDADES</label>
+                <input type="number" class="form-control">
+              </div>
+
+              <!-- PLAGAS-->
+              <div class="mb-1">
+                <label class="form-label">PLAGAS</label>
+                <input type="number" class="form-control">
+              </div>
+
+
+              <!-- OTROS-->
+              <div class="mb-1">
+                <label class="form-label">OTROS</label>
+                <input type="number" class="form-control">
+              </div>
+
+            </div>
+          
+
+          
+              <div class="col mb-3">
+      
+                <!-- OPERADOR-->
+                <div class="mb-1">
+                  <label class="form-label">OPERADOR</label>
+                  <input type="number" class="form-control">
+                </div>
+
+                <!-- MESCLADOR-->
+                <div class="mb-1">
+                  <label class="form-label">MESCLADOR</label>
+                  <input type="number" class="form-control">
+                </div>
+
+                <!-- OBSERVACIONES-->
+                <div class="mb-1">
+                  <label class="form-label">OBSERVACIONES</label>
+                  <input type="number" class="form-control">
+                </div>
+
+              </div>
+          </div>
+
+
+          <!-- Línea horizontal para separar secciones -->
+          <hr class="my-3" style="border-top: 2px solid #bbb;">
+
+          <h5 class="mb-3">CONFIRMACION DE APLICACIÓN</h5>
+          
+          
+
+
+        <!-- Sección de Confirmación de Aplicación -->
+        <div class="row mb-3">
+          <div class="col-md-4">
+            <div class="mb-1">
+              <label class="form-label">FECHA DE APLICACIÓN</label>
+              <input type="date" class="form-control" name="fecha_apl">
+            </div>
+            <div class="mb-1">
+              <label class="form-label">HORA INICIAL</label>
+              <input type="time" class="form-control" name="hora_inicial">
+            </div>
+            <div class="mb-1">
+              <label class="form-label">HORA FINAL</label>
+              <input type="time" class="form-control" name="hora_final">
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="mb-1">
+              <label class="form-label">TEMPERATURA</label>
+              <input type="number" class="form-control" name="temperatura">
+            </div>
+            <div class="mb-1">
+              <label class="form-label">HUMEDAD</label>
+              <input type="number" class="form-control" name="humedad">
+            </div>
+            <div class="mb-1">
+              <label class="form-label">CLIMA</label>
+              <input type="text" class="form-control" name="clima">
+            </div>
+            <div class="mb-1">
+              <label class="form-label">VIENTO</label>
+              <input type="text" class="form-control" name="viento">
+            </div>
+          </div>
+        </div>
+
+        <!-- Sección de Aplicadores -->
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <h6>APLICADORES</h6>
+            <div class="mb-1">
+              <input type="text" class="form-control" placeholder="Aplicador 1">
+            </div>
+            <div class="mb-1">
+              <input type="text" class="form-control" placeholder="Aplicador 2">
+            </div>
+            <div class="mb-1">
+              <input type="text" class="form-control" placeholder="Aplicador 3">
+            </div>
+            <div class="mb-1">
+              <input type="text" class="form-control" placeholder="Aplicador 4">
+            </div>
+            <div class="mb-1">
+              <input type="text" class="form-control" placeholder="Aplicador 5">
+            </div>
+          </div>
+          
+        </div>
+
+        
+
+        <!-- Sección de Observaciones -->
+        <div class="row mb-3">
+          <div class="col-md-12">
+            <h6>OBSERVACIONES</h6>
+            <textarea class="form-control" rows="3" name="observaciones"></textarea>
+          </div>
+        </div>
+
+
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+        <button type="button" class="btn btn-primary">Guardar Cambios</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .modal-dialog.modal-xl {
+    max-width: 90%;
+    width: 90%;
+  }
+  
+  .modal-content {
+    border-radius: 0.3rem;
+    height: 90vh; /* Altura del 90% de la ventana */
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .modal-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+  }
+
+  .modal-body {
+    flex-grow: 1;
+    overflow-y: auto; /* Agrega scroll vertical */
+  }
+  
+  .modal-title {
+    color: #495057;
+  }
+  
+  .form-label {
+    font-weight: bold;
+    color: #495057;
+  }
+  
+  .form-control:read-only {
+    background-color: #e9ecef;
+  }
+  
+  .btn-close {
+    color: #000;
+  }
+  
+  .modal-footer {
+    border-top: 1px solid #dee2e6;
+  }
+</style>
+
+
+
+
+{% include 'base/footer.html' %} {% block js %}
+<script
+  type="text/javascript"
+  src="https://cdn.datatables.net/v/bs4/jszip-2.5.0/dt-1.10.21/b-1.6.2/b-html5-1.6.2/datatables.min.js"
+></script>
+<script src="{% static 'assets/js/buttons.html5.styles.min.js' %}"></script>
+<script src="{% static 'assets/js/buttons.html5.styles.templates.min.js' %}"></script>
+<script src="{% static 'core/js/script/script_fito_apl_diario.js' %}"></script>
+<script>
+  $(document).ready(function () {
+    App.init();
+  });
+</script>
+{% endblock %}

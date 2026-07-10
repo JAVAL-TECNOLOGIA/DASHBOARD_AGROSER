@@ -1,0 +1,963 @@
+
+
+
+
+<!--#######################################################################-->
+<!-- Modal para Sweet Globe -->
+<!--#######################################################################-->
+
+<!-- Modal para Sweet Globe -->
+<div
+  class="modal fade"
+  id="AGRICOLAmodalSweetGlobe"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="AGRICOLAmodalSweetGlobeLabel"
+  aria-hidden="true"
+  style="z-index: 1050"
+>
+  <div
+    class="modal-dialog modal-xl"
+    style="max-width: 75%; width: 75%"
+    role="document"
+  >
+    <div class="modal-content">
+      <div class="modal-header bg-gradient-primary text-white">
+        <h5 class="modal-title" id="AGRICOLAmodalSweetGlobeLabel">
+          <i class="fas fa-leaf mr-2"></i> Programas de MATERIAL AGRICOLA - HASS
+        </h5>
+
+        <div class="panel-heading-btn">
+          <a
+            href="javascript:;"
+            class="btn btn-xs btn-icon btn-circle btn-warning"
+            data-click="panel-expand "
+            title="Expandir"
+            ><i class="fa fa-expand"></i
+          ></a>
+          <a
+            href="javascript:;"
+            class="btn btn-xs btn-icon btn-circle btn-success"
+            data-click="panel-reload"
+            title="Recargar"
+            ><i class="fas fa-sync-alt"></i
+          ></a>
+          <a
+            href="javascript:;"
+            class="btn btn-xs btn-icon btn-circle btn-danger"
+            data-click="panel-remove-face-sweet-globe"
+            title="Cerrar"
+            ><i class="fa fa-times"></i
+          ></a>
+        </div>
+      </div>
+
+      <!-- Pestañas de navegación -->
+      <ul class="nav nav-tabs" id="AGRICOLAsweetGlobeTabs" role="tablist">
+        <li class="nav-item">
+          <a
+            class="nav-link"
+            id="AGRICOLAplantines-tab"
+            data-toggle="tab"
+            href="#AGRICOLAplantines"
+            role="tab"
+            aria-controls="AGRICOLAplantines"
+            aria-selected="false"
+            >PLANTINES</a
+          >
+        </li>
+        <li class="nav-item">
+          <a
+            class="nav-link active"
+            id="AGRICOLApostcosecha-tab"
+            data-toggle="tab"
+            href="#AGRICOLApostcosecha"
+            role="tab"
+            aria-controls="AGRICOLApostcosecha"
+            aria-selected="true"
+            >POST COSECHA</a
+          >
+        </li>
+        <li class="nav-item">
+          <a
+            class="nav-link"
+            id="AGRICOLAcosecha-tab"
+            data-toggle="tab"
+            href="#AGRICOLAcosecha"
+            role="tab"
+            aria-controls="AGRICOLAcosecha"
+            aria-selected="false"
+            >PRODUCCIÓN</a
+          >
+        </li>
+      </ul>
+
+      <div class="modal-body bg-light">
+        <div class="tab-content" id="AGRICOLAsweetGlobeTabContent">
+          <!--#######################################################################-->
+          <!-- Contenido de Plantines -->
+          <!--#######################################################################-->
+
+          <div
+            class="tab-pane fade"
+            id="AGRICOLAplantines"
+            role="tabpanel"
+            aria-labelledby="AGRICOLAplantines-tab"
+          >
+            <!-- Aquí irá el contenido para plantines -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+              <div>
+                <h6 class="text-muted mb-1">Variedad de Uva - Plantines</h6>
+                <h4 class="font-weight-bold">HASS</h4>
+              </div>
+              <button class="btn btn-primary AGRICOLAbtnAñadirFaseSG" id="btnCrearFaseSG">
+                <i class="fas fa-plus-circle mr-1"></i> Crear fase
+              </button>
+            </div>
+
+            <!-- Contenido adicional para plantines -->
+
+            <div class="card border-0 shadow-sm mb-4">
+              <div class="card-body p-0">
+                <div class="row m-0">
+                  <div class="col-md-4 p-3 border-right">
+                    <h6 class="text-muted mb-1">Faces Registrados</h6>
+                    <h3 class="font-weight-bold mb-0 text-primary" id="AGRICOLAfacesRegistradosSG_PLANTINES"></h3>
+                    <small class="text-success"
+                      ><i class="fas fa-arrow-up"></i> 0% más que el periodo
+                      anterior</small
+                    >
+                  </div>
+                  <div class="col-md-4 p-3 border-right">
+                    <h6 class="text-muted mb-1">Precio Total($) / lt-kg</h6>
+                    <h3 class="font-weight-bold mb-0 text-primary" id="AGRICOLAprecioTotalSG_PLANTINES">$ 00.00</h3>
+                    <small class="text-muted"
+                      >Promedio por programa: 0.00</small
+                    >
+                  </div>
+                  <div class="col-md-4 p-3">
+                    <h6 class="text-muted mb-1">Costo Total por hectárea</h6>
+                    <h3 class="font-weight-bold mb-0 text-primary" id="AGRICOLAcostoTotalSG_PLANTINES">
+                      $ 00.00
+                    </h3>
+                    <small class="text-danger"
+                      ><i class="fas fa-arrow-down"></i> 5% menos eficiente que
+                      el estándar</small
+                    >
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tabla de programas -->
+
+            <div class="card shadow-sm border-0">
+              <div
+                class="card-header bg-white py-3 d-flex justify-content-between align-items-center"
+              >
+                <h5 class="mb-0 font-weight-bold">
+                  <i class="fas fa-list-alt mr-2 text-primary"></i> Fases de
+                  Materia Agricola registradas
+                </h5>
+                <div class="btn-group">
+                  <button class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-filter mr-1"></i> Filtrar
+                  </button>
+                  <button class="btn btn-sm btn-outline-success">
+                    <i class="fas fa-file-excel mr-1"></i> Exportar
+                  </button>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table
+                    id="AGRICOLAAGRICOLAtablaFertilizacionPlantines_SG"
+                    class="table table-hover border-0 display nowrap"
+                    width="100%"
+                  >
+                    <thead class="bg-light">
+                      <tr>
+                        <th>Nº</th>
+                        <th>DESCRIPCIÓN</th>
+                        <th>FECHA INICIO</th>
+                        <th>FECHA FIN</th>
+                        <th>SECTOR Y LOTE</th>
+                      </tr>
+                    </thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!--#######################################################################-->
+          <!-- Contenido de Post Cosecha -->
+          <!--#######################################################################-->
+
+          <div
+            class="tab-pane fade show active"
+            id="AGRICOLApostcosecha"
+            role="tabpanel"
+            aria-labelledby="AGRICOLApostcosecha-tab"
+          >
+            <!-- Cabecera con información y botón de acción -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+              <div>
+                <h6 class="text-muted mb-1">Variedad de Uva - Post Cosecha</h6>
+                <h4 class="font-weight-bold">HASS</h4>
+              </div>
+              <button class="btn btn-primary AGRICOLAbtnAñadirFaseSG" id="btnCrearFaseSG">
+                <i class="fas fa-plus-circle mr-1"></i> Crear fase
+              </button>
+            </div>
+
+            <!-- Resumen estadístico en una sola fila -->
+            <div class="card border-0 shadow-sm mb-4">
+              <div class="card-body p-0">
+                <div class="row m-0">
+                  <div class="col-md-4 p-3 border-right">
+                    <h6 class="text-muted mb-1">Fases Registradas</h6>
+                    <h3 class="font-weight-bold mb-0 text-primary" id="AGRICOLAfacesRegistradosSG_POSTCOSECHA"></h3>
+                    <small class="text-success"
+                      ><i class="fas fa-arrow-up"></i> 20% más que el periodo
+                      anterior</small
+                    >
+                  </div>
+                  <div class="col-md-4 p-3 border-right">
+                    <h6 class="text-muted mb-1">Precio Total($) / lt-kg</h6>
+                    <h3 class="font-weight-bold mb-0 text-primary" id="precioTotalSG_POSTCOSECHA"> $ 00.00</h3>
+                    <small class="text-muted"
+                      >Promedio por programa: 0.00</small
+                    >
+                  </div>
+                  <div class="col-md-4 p-3">
+                    <h6 class="text-muted mb-1">Costo Total por hectárea</h6>
+                    <h3 class="font-weight-bold mb-0 text-primary" id="costoTotalSG_POSTCOSECHA">
+                      $ 00.00
+                    </h3>
+                    <small class="text-danger"
+                      ><i class="fas fa-arrow-down"></i> 5% menos eficiente que
+                      el estándar</small
+                    >
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tabla de programas -->
+            <div class="card shadow-sm border-0">
+              <div
+                class="card-header bg-white py-3 d-flex justify-content-between align-items-center"
+              >
+                <h5 class="mb-0 font-weight-bold">
+                  <i class="fas fa-list-alt mr-2 text-primary"></i>  Fases de Materia AGRICOLA registradas
+
+                </h5>
+                <div class="btn-group">
+                  <button class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-filter mr-1"></i> Filtrar
+                  </button>
+                  <button class="btn btn-sm btn-outline-success">
+                    <i class="fas fa-file-excel mr-1"></i> Exportar
+                  </button>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table
+                    id="AGRICOLAtablaFertilizacionPostCosecha_SG"
+                    class="table table-hover border-0 display nowrap"
+                    width="100%"
+                  >
+                    <thead class="bg-light">
+                      <tr>
+                        <th>Nº</th>
+                        <th>DESCRIPCIÓN</th>
+                        <th>FECHA INICIO</th>
+                        <th>FECHA FIN</th>
+                        <th>SECTOR Y LOTE</th>
+                      </tr>
+                    </thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!--#######################################################################-->
+          <!-- Contenido de Producción -->
+          <!--#######################################################################-->
+          <div
+            class="tab-pane fade"
+            id="AGRICOLAcosecha"
+            role="tabpanel"
+            aria-labelledby="AGRICOLAcosecha-tab"
+          >
+            <div class="d-flex justify-content-between align-items-center mb-4">
+              <div>
+                <h6 class="text-muted mb-1">Variedad de Uva - Producción</h6>
+                <h4 class="font-weight-bold">HASS</h4>
+              </div>
+              <button class="btn btn-primary AGRICOLAbtnAñadirFaseSG" id="btnCrearFaseSG">
+                <i class="fas fa-plus-circle mr-1"></i> Crear fase
+              </button>
+            </div>
+
+            <!-- Contenido adicional para cosecha -->
+
+            <!-- Resumen estadístico en una sola fila -->
+            <div class="card border-0 shadow-sm mb-4">
+              <div class="card-body p-0">
+                <div class="row m-0">
+                  <div class="col-md-4 p-3 border-right">
+                    <h6 class="text-muted mb-1">Faces Registrados</h6>
+                    <h3 class="font-weight-bold mb-0 text-primary" id="AGRICOLAfacesRegistradosSG_PRODUCCION"></h3>
+                    <small class="text-success"
+                      ><i class="fas fa-arrow-up"></i> 20% más que el periodo
+                      anterior</small
+                    >
+                  </div>
+                  <div class="col-md-4 p-3 border-right">
+                    <h6 class="text-muted mb-1">Precio Total($) / lt-kg</h6>
+                    <h3 class="font-weight-bold mb-0 text-primary" id="precioTotalSG_PRODUCCION">$ 00.00</h3>
+                    <small class="text-muted"
+                      >Promedio por programa: 0.00</small
+                    >
+                  </div>
+                  <div class="col-md-4 p-3">
+                    <h6 class="text-muted mb-1">Costo Total por hectárea</h6>
+                    <h3 class="font-weight-bold mb-0 text-primary" id="costoTotalSG_PRODUCCION">
+                      $ 00.00
+                    </h3>
+                    <small class="text-danger"
+                      ><i class="fas fa-arrow-down"></i> 5% menos eficiente que
+                      el estándar</small
+                    >
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tabla de programas -->
+            <div class="card shadow-sm border-0">
+              <div
+                class="card-header bg-white py-3 d-flex justify-content-between align-items-center"
+              >
+                <h5 class="mb-0 font-weight-bold">
+                  <i class="fas fa-list-alt mr-2 text-primary"></i> Fases de
+                  Materia AGRICOLA registradas
+                </h5>
+                <div class="btn-group">
+                  <button class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-filter mr-1"></i> Filtrar
+                  </button>
+                  <button class="btn btn-sm btn-outline-success">
+                    <i class="fas fa-file-excel mr-1"></i> Exportar
+                  </button>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table
+                    id="AGRICOLAtablaFertilizacionProduccion_SG"
+                    class="table table-hover border-0 display nowrap"
+                    width="100%"
+                  >
+                    <thead class="bg-light">
+                      <tr>
+                        <th>Nº</th>
+                        <th>DESCRIPCIÓN</th>
+                        <th>FECHA INICIO</th>
+                        <th>FECHA FIN</th>
+                        <th>SECTOR Y LOTE</th>
+                      </tr>
+                    </thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        
+        
+      </div>
+    </div>
+  </div>
+</div>
+
+<!--#######################################################################-->
+<!-- MODAL CREAR PROGRAMA DE FERTILIZACION -->
+<!--#######################################################################-->
+
+<div
+  class="modal fade"
+  id="AGRICOLAmodalCrearPrograma"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="AGRICOLAmodalCrearProgramaLabel"
+  aria-hidden="true"
+  style="z-index: 1070"
+>
+  <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-gradient-primary text-white">
+        <h5 class="modal-title" id="AGRICOLAmodalCrearProgramaLabel">
+          <i class="fas fa-plus-circle mr-2 titulomodalfase"></i> Crear Nuevo
+          fase de Materia AGRICOLA - HASS
+        </h5>
+
+        <div class="panel-heading-btn">
+          <a
+            href="javascript:;"
+            class="btn btn-xs btn-icon btn-circle btn-warning"
+            data-click="panel-expand"
+            title="Expandir"
+            ><i class="fa fa-expand"></i
+          ></a>
+          <a
+            href="javascript:;"
+            class="btn btn-xs btn-icon btn-circle btn-success"
+            data-click="panel-reload"
+            title="Recargar"
+            ><i class="fas fa-sync-alt"></i
+          ></a>
+          <a
+            href="javascript:;"
+            class="btn btn-xs btn-icon btn-circle btn-danger"
+            data-click="panel-remove-crear-programa-sweet-globe"
+            title="Cerrar"
+            ><i class="fa fa-times"></i
+          ></a>
+        </div>
+      </div>
+
+      <div class="modal-body">
+        <form id="AGRICOLAformCrearPrograma">
+
+          <!-- Campos ocultos para fase y variedad -->
+          <input type="hidden" id="AGRICOLAidfase" name="AGRICOLAidfase" value="">
+          <input type="hidden" id="AGRICOLAidvariedad" name="AGRICOLAidvariedad" value="">
+          <input type="hidden" id="AGRICOLAidusuario" name="AGRICOLAidusuario" value="{{ request.user.id }}">
+          
+
+          <!-- Información general del programa -->
+          <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-light">
+              <h6 class="mb-0 font-weight-bold">Información General</h6>
+            </div>
+            <div class="card-body">
+              
+              <!-- Selección de Lote -->
+              <div class="form-group">
+                <label for="AGRICOLAselectLote">
+                  Lote <span class="text-danger">*</span>
+                </label>
+                <select
+                  class="form-control"
+                  id="AGRICOLAselectLote"
+                  name="AGRICOLAselectLote"
+                  required
+                >
+                  <option value="">Seleccione un lote</option>
+                  <!-- Los lotes se cargarán dinámicamente -->
+                </select>
+                <small class="form-text text-muted">
+                  <i class="fas fa-info-circle mr-1"></i>
+                  Selecciona el lote donde se aplicará esta fase de Materia AGRICOLA - HASS
+                </small>
+              </div>
+
+              <!-- Nombre del programa -->
+              <div class="form-group">
+                <label for="AGRICOLAnombrePrograma"
+                  >Nombre de la Fase <span class="text-danger">*</span></label
+                >
+                <input
+                  type="text"
+                  class="form-control"
+                  id="AGRICOLAnombrePrograma"
+                  name="AGRICOLAnombrePrograma"
+                  placeholder="Ej: Fase 1"
+                  required
+                />
+              </div>
+
+              <!-- Fechas -->
+              <div class="row mt-3">
+                <div class="col-12 col-md-6 mb-3">
+                  <div class="form-group mb-md-0">
+                    <label for="AGRICOLAfechaInicio"
+                      >Fecha de Inicio <span class="text-danger">*</span></label
+                    >
+                    <input
+                      type="date"
+                      class="form-control"
+                      id="AGRICOLAfechaInicio"
+                      name="AGRICOLAfechaInicio"
+                      required
+                    />
+                  </div>
+                </div>
+                <div class="col-12 col-md-6 mb-3">
+                  <div class="form-group mb-md-0">
+                    <label for="AGRICOLAfechaFin"
+                      >Fecha de Fin <span class="text-danger">*</span></label
+                    >
+                    <input
+                      type="date"
+                      class="form-control"
+                      id="AGRICOLAfechaFin"
+                      name="AGRICOLAfechaFin"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Descripción -->
+              <div class="form-group mt-3">
+                <label for="descripcion">Descripción</label>
+                <textarea
+                  class="form-control"
+                  id="AGRICOLAdescripcion_riego"
+                  name="AGRICOLAdescripcion_riego"
+                  rows="3"
+                  placeholder="Descripción detallada de la fase"
+                ></textarea>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer d-flex flex-wrap justify-content-end">
+        <button
+          type="button"
+          class="btn btn-outline-secondary m-1"
+          data-dismiss="modal"
+        >
+          <i class="fas fa-times mr-1"></i> Cancelar
+        </button>
+        <button
+          type="button"
+          class="btn btn-primary m-1"
+          id="AGRICOLAbtnGuardarProgramaSG"
+        >
+          <i class="fas fa-save mr-1"></i> Guardar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+<!--#######################################################################-->
+<!-- MODAL DETALLE PRODUCTOS -->
+<!--#######################################################################-->
+
+<!--#######################################################################-->
+<!-- MODAL DETALLE PRODUCTOS DEL PROGRAMA -->
+<!--#######################################################################-->
+
+<div
+  class="modal fade"
+  id="AGRICOLAmodalDetalleProductos"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="AGRICOLAmodalDetalleProductosLabel"
+  aria-hidden="true"
+  style="z-index: 1060"
+>
+  <div
+    class="modal-dialog modal-xl"
+    style="max-width: 90%; width: 90%"
+    role="document"
+  >
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-gradient-primary text-white py-3">
+        <h5
+          class="modal-title font-weight-bold"
+          id="AGRICOLAmodalDetalleProductosLabel"
+        >
+          <i class="fas fa-flask mr-2"></i> Productos del Programa:
+          <span
+            id="AGRICOLAnombreProgramaDetalle"
+            class="badge badge-light text-primary ml-2"
+          >
+            Programa Preventivo Brotamiento
+          </span>
+        </h5>
+
+
+
+        <!-- Indicador de Lote -->
+        <div class="d-flex align-items-center mr-3">
+          <!-- Sector -->
+          <div class="badge-container position-relative mr-2">
+            <span class="badge badge-secondary px-3 py-2 rounded-pill shadow-sm border-0" style="font-size: 0.8rem; background: linear-gradient(135deg, #6c757d, #5a6268);">
+              <i class="fas fa-layer-group mr-1"></i>
+              <strong>Sector:</strong>
+              <span id="AGRICOLAsectorProgramaDetalle" class="ml-1 font-weight-bold">
+                no definido
+              </span>
+            </span>
+          </div>
+          
+          <!-- Lote -->
+          <div class="badge-container position-relative">
+            <span class="badge badge-info px-3 py-2 rounded-pill shadow-sm border-0" style="font-size: 0.8rem; background: linear-gradient(135deg, #17a2b8, #138496);">
+              <i class="fas fa-map-marker-alt mr-1"></i>
+              <strong>Lote:</strong>
+              <span id="AGRICOLAloteProgramaDetalle" class="ml-1 font-weight-bold">
+                no definido
+              </span>
+            </span>
+          </div>
+        </div>
+
+
+        
+
+        <div class="panel-heading-btn">
+          <a
+            href="javascript:;"
+            class="btn btn-xs btn-icon btn-circle btn-warning"
+            data-click="panel-expand"
+            title="Expandir"
+            ><i class="fa fa-expand"></i
+          ></a>
+          <a
+            href="javascript:;"
+            class="btn btn-xs btn-icon btn-circle btn-success"
+            data-click="panel-reload"
+            title="Recargar"
+            ><i class="fas fa-sync-alt"></i
+          ></a>
+          <a
+            href="javascript:;"
+            class="btn btn-xs btn-icon btn-circle btn-danger"
+            data-click="panel-remove-detalle-productos-sweet-globe"
+            title="Cerrar"
+            ><i class="fa fa-times"></i
+          ></a>
+        </div>
+      </div>
+
+      <div class="modal-body bg-light p-4">
+        <!-- Información del programa y botones de acción -->
+        <div class="row mb-4">
+          <div class="col-md-8">
+            <div class="card border-0 shadow-sm hover-shadow-lg transition-300">
+              <div class="card-body p-4">
+                <div class="row">
+                  <div class="col-md-6">
+                    <p class="mb-2">
+                      <strong class="text-primary"
+                        ><i class="far fa-calendar-alt mr-1"></i> Fecha
+                        Inicio:</strong
+                      >
+                      <span id="AGRICOLAfechaInicioProgramaDetalle" class="ml-2"
+                        >01/01/2025</span
+                      >
+                    </p>
+                    <p class="mb-2">
+                      <strong class="text-primary"
+                        ><i class="far fa-calendar-check mr-1"></i> Fecha
+                        Fin:</strong
+                      >
+                      <span id="AGRICOLAfechaFinProgramaDetalle" class="ml-2"
+                        >31/12/2025</span
+                      >
+                    </p>
+                    <p class="mb-2">
+                      <strong class="text-primary"
+                        ><i class="far fa-file-alt mr-1"></i>
+                        Descripción:</strong
+                      >
+                      <span
+                        id="AGRICOLAdescripcionProgramaDetalle"
+                        class="ml-2 text-muted"
+                      >
+                        Programa para prevención de plagas durante el
+                        brotamiento
+                      </span>
+                    </p>
+                  </div>
+                  <div class="col-md-6">
+                    <p class="mb-2">
+                      <strong class="text-primary"
+                        ><i class="fas fa-list-ol mr-1"></i> Total
+                        Productos:</strong
+                      >
+                      <span
+                        id="AGRICOLAtotalProductosProgramaDetalle_plantines"
+                        class="ml-2 badge badge-info"
+                        >0</span
+                      >
+                    </p>
+                    <p class="mb-2">
+                      <strong class="text-primary"
+                        ><i class="fas fa-dollar-sign mr-1"></i> Costo
+                        Total:</strong
+                      >
+                      <span
+                        id="AGRICOLAcostoTotalProgramaDetalle"
+                        class="ml-2 font-weight-bold"
+                        >$ 26.955</span
+                      >
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabla de productos -->
+        <div class="card shadow-sm border-0 mb-0">
+          <div class="card-header bg-white py-3">
+            <div class="d-flex justify-content-between align-items-center">
+              <h6 class="mb-0 font-weight-bold text-primary">
+                <i class="fas fa-table mr-2"></i> Listado de Productos
+              </h6>
+              <button class="btn btn-primary" id="AGRICOLAbtnAñadirProducto">
+                <i class="fas fa-plus-circle mr-1"></i> AÑADIR
+              </button>
+            </div>
+          </div>
+
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table
+                id="AGRICOLAtablaDetalleProductos"
+                class="table table-striped table-bordered"
+                width="100%"
+              >
+                <thead class="bg-light text-dark">
+                  <tr>
+                    <th rowspan="2" class="text-center align-middle">N°</th>
+                    <th rowspan="2" class="text-center align-middle" style="min-width: 100px; white-space: nowrap;">ID Producto</th>
+                    <th rowspan="2" class="text-center align-middle" style="min-width: 280px; white-space: nowrap;">Descripción</th>
+                    <th colspan="2" class="text-center">Enero</th>
+                    <th colspan="2" class="text-center">Febrero</th>
+                    <th colspan="2" class="text-center">Marzo</th>
+                    <th colspan="2" class="text-center">Abril</th>
+                    <th colspan="2" class="text-center">Mayo</th>
+                    <th colspan="2" class="text-center">Junio</th>
+                    <th colspan="2" class="text-center">Julio</th>
+                    <th colspan="2" class="text-center">Agosto</th>
+                    <th colspan="2" class="text-center">Septiembre</th>
+                    <th colspan="2" class="text-center">Octubre</th>
+                    <th colspan="2" class="text-center">Noviembre</th>
+                    <th colspan="2" class="text-center">Diciembre</th>
+                    <th rowspan="2" class="text-center align-middle" style="min-width: 100px; white-space: nowrap;">Total</th>
+                    <th rowspan="2" class="text-center align-middle" style="min-width: 90px; white-space: nowrap;">Acciones</th>
+                  </tr>
+                  <tr>
+                    <th>Cant.</th>
+                    <th>Total</th>
+                    <th>Cant.</th>
+                    <th>Total</th>
+                    <th>Cant.</th>
+                    <th>Total</th>
+                    <th>Cant.</th>
+                    <th>Total</th>
+                    <th>Cant.</th>
+                    <th>Total</th>
+                    <th>Cant.</th>
+                    <th>Total</th>
+                    <th>Cant.</th>
+                    <th>Total</th>
+                    <th>Cant.</th>
+                    <th>Total</th>
+                    <th>Cant.</th>
+                    <th>Total</th>
+                    <th>Cant.</th>
+                    <th>Total</th>
+                    <th>Cant.</th>
+                    <th>Total</th>
+                    <th>Cant.</th>
+                    <th>Total</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+
+        <!-- final tabla-->
+        </div>
+      </div>
+
+      <div class="modal-footer bg-white py-3"></div>
+    </div>
+  </div>
+</div>
+
+<!--#######################################################################-->
+<!-- MODAL AGREGAR/EDITAR PRODUCTO -->
+<!--#######################################################################-->
+
+<div
+  class="modal fade"
+  id="AGRICOLAmodalProducto"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="AGRICOLAmodalProductoLabel"
+  aria-hidden="true"
+  data-backdrop="static"
+  style="z-index: 1070"
+>
+  <div
+    class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable"
+    style="max-width: 90%; width: 90%"
+    role="document"
+  >
+    <div class="modal-content">
+      <div class="modal-header bg-gradient-primary text-white">
+        <h5 class="modal-title" id="AGRICOLAmodalProductoLabel">
+          <i class="fas fa-plus-circle mr-2"></i> Agregar suministro al programa
+        </h5>
+        <div class="panel-heading-btn">
+          <a
+            href="javascript:;"
+            class="btn btn-xs btn-icon btn-circle btn-danger"
+            data-dismiss="modal"
+            title="Cerrar"
+            ><i class="fa fa-times"></i
+          ></a>
+        </div>
+      </div>
+
+      <div class="modal-body">
+        <form id="AGRICOLAformProducto">
+          <input type="hidden" id="AGRICOLAproductoId" value="" />
+          <input type="hidden" id="AGRICOLAprogramaId" value="" />
+          <input type="hidden" id="AGRICOLA_id_area_sum" value="11" />
+          <input type="hidden" id="AGRICOLA_id_tipo_suministro_sum" value="1" />
+
+          <div class="row" style="width: 100%;">
+            <div class="col-md-6">
+              <div class="form-group" id="AGRICOLA_descripcion_sum_container">
+                <label for="AGRICOLA_descripcion_sum">Descripción</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="AGRICOLA_descripcion_sum"
+                  name="AGRICOLA_descripcion_sum"
+                  required
+                  autocomplete="off"
+                />
+              </div>
+              <div class="form-group">
+                <label for="AGRICOLA_idproducto_sum">ID Producto</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="AGRICOLA_idproducto_sum"
+                  name="AGRICOLA_idproducto_sum"
+                  required
+                  readonly
+                />
+              </div>
+              <div class="form-group">
+                <label for="AGRICOLA_precio_unitario_sum">Precio unitario</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  class="form-control"
+                  id="AGRICOLA_precio_unitario_sum"
+                  name="AGRICOLA_precio_unitario_sum"
+                  value="0.00"
+                />
+              </div>
+              <div class="totales-container border rounded p-2 mb-2 bg-light">
+                <div class="d-flex justify-content-between">
+                  <span class="font-weight-bold">Cantidad total:</span>
+                  <span id="AGRICOLA_cantidad_total_sum" class="font-weight-bold">0</span>
+                </div>
+                <div class="d-flex justify-content-between">
+                  <span class="font-weight-bold">Precio total:</span>
+                  <span id="AGRICOLA_precio_total_sum" class="font-weight-bold">S/ 0.00</span>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <h6 class="mb-2">Seleccionar meses y cantidades</h6>
+              <div class="mb-3">
+                <div class="input-group">
+                  {% comment %} <input
+                    type="number"
+                    class="form-control"
+                    id="AGRICOLA_cantidad_masiva_sum"
+                    placeholder="Cantidad para todos los meses"
+                    min="0"
+                    step="0.01"
+                  />
+                  <div class="input-group-append">
+                    <button
+                      class="btn btn-primary"
+                      type="button"
+                      id="AGRICOLA_aplicar_cantidad_masiva_sum"
+                    >
+                      Aplicar
+                    </button>
+                  </div> {% endcomment %}
+                </div>
+              </div>
+              <div class="meses-container" style="max-height: 320px; overflow-y: auto;">
+                {% for mes in meses %}
+                <div class="custom-switch-container d-flex align-items-center mb-1">
+                  <span class="mes-nombre text-capitalize" style="min-width: 90px;">{{ mes }}</span>
+                  <label class="switch mb-0 ml-2">
+                    <input type="checkbox" id="AGRICOLA_sum_{{ mes }}_switch" />
+                    <span class="slider round"></span>
+                  </label>
+                  <input
+                    type="number"
+                    class="form-control AGRICOLA_sum_cantidad_mes ml-2"
+                    id="AGRICOLA_sum_{{ mes }}_cantidad"
+                    placeholder="Cant."
+                    min="0"
+                    step="0.01"
+                    style="max-width: 100px;"
+                    disabled
+                  />
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <button
+          type="button"
+          class="btn btn-outline-secondary"
+          data-dismiss="modal"
+        >
+          <i class="fas fa-times mr-1"></i> Cancelar
+        </button>
+        <button type="button" class="btn btn-primary" id="AGRICOLAbtnGuardarProducto">
+          <i class="fas fa-save mr-1"></i> Guardar
+        </button>
+      </div>
+    </div>
+  </div>
+  
+</div>

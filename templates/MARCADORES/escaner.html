@@ -1,0 +1,364 @@
+
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Escáner de Marcaciones</title>
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body, html {
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
+            font-family: 'Rajdhani', sans-serif;
+        }
+        
+        .content {
+            min-height: 100vh;
+            max-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 !important;
+            margin: 0 !important;
+            margin-left: 0 !important;
+            
+  background-image: url("/static/assets/css/transparent/images/fondo-marcador2.png");
+    background-size: contain;
+    background-repeat: repeat;
+    background-position: center;            
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+            z-index: 1000;
+        }
+        
+        #content.content::before {
+            display: none;
+        }
+        
+        .clock-container {
+            text-align: center;
+            width: 100%;
+            max-width: 1200px;
+            margin-bottom: 150px;
+            padding: 10px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .clock-container h1 {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #222;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            text-shadow: none;
+            animation: none;
+        }
+        
+        .analog-clock {
+            margin: 8px auto;
+            border: 6px solid #00d4ff;
+            border-radius: 50%;
+            box-shadow: 
+                0 0 25px rgba(0, 212, 255, 0.6),
+                inset 0 0 25px rgba(0, 212, 255, 0.2);
+            background: rgba(15, 32, 39, 0.8);
+            backdrop-filter: blur(10px);
+        }
+        
+        .digital-clock {
+            font-family: 'Rajdhani', monospace;
+            font-size: 2.5em;
+            font-weight: 700;
+            color: #222;
+            background: #fff;
+            border-radius: 8px;
+            padding: 10px 30px;
+            margin: 18px 0 18px 0;
+            letter-spacing: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            border: 1px solid #e0e0e0;
+            display: inline-block;
+        }
+        
+        .scanner-section {
+            max-width: 400px;
+            margin: 10px auto;
+            background: #fff;
+            padding: 24px 18px 18px 18px;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+            border: 1px solid #e0e0e0;
+        }
+        
+        .scanner-section h3 {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #222;
+            margin-bottom: 12px;
+            letter-spacing: 1px;
+        }
+        
+        .scanner-input {
+            width: 100%;
+            padding: 12px;
+            font-size: 1.2em;
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 600;
+            text-align: center;
+            border: 1.5px solid #bbb;
+            border-radius: 8px;
+            background: #fafafa;
+            color: #222;
+            letter-spacing: 2px;
+            transition: border-color 0.2s;
+        }
+
+        .scanner-input:focus {
+            outline: none;
+            border-color: #888;
+            box-shadow: 0 0 0 2px #e0e0e0;
+            transform: none;
+        }
+        
+        .scanner-input::placeholder {
+            color: #aaa;
+            font-weight: 400;
+        }
+        
+        .scanner-icon {
+            font-size: 2.2em;
+            color: #888;
+            margin-bottom: 10px;
+            filter: none;
+            animation: none;
+        }
+        
+        .message-box {
+            margin-top: 12px;
+            padding: 12px;
+            border-radius: 8px;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1em;
+            font-weight: 600;
+            display: none;
+            background: #f2f2f2;
+            color: #222;
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+        }
+
+        .message-success {
+            background: #e6f4ea;
+            color: #1a4d2e;
+            border: 1px solid #b7e4c7;
+        }
+
+        .message-error {
+            background: #fbeaea;
+            color: #a94442;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .attendance-link {
+            margin-top: 12px;
+            text-align: center;
+        }
+        
+        .attendance-link a {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.95em;
+            font-weight: 600;
+            color: #444;
+            text-decoration: none;
+            padding: 10px 25px;
+            border: 1.5px solid #bbb;
+            border-radius: 30px;
+            transition: background 0.2s, color 0.2s;
+            display: inline-block;
+            letter-spacing: 1px;
+            background: #fafafa;
+        }
+
+        .attendance-link a:hover {
+            background: #e0e0e0;
+            color: #111;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+            border-color: #888;
+        }
+        
+        .attendance-link a i {
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="content">
+        <div class="container-fluid">
+        <div class="clock-container">
+            <h1 style="color: #000000ff; margin-bottom: 10px;">
+                <i class="fas fa-clock"></i> SISTEMA DE CONTROL DE ASISTENCIA
+            </h1>
+            <div style="background: #fff; padding: 12px 25px; border-radius: 8px; margin-bottom: 20px; display: inline-block; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <h2 style="margin: 0; color: #00d4ff; font-size: 1.3em; font-weight: 600;">
+                    <i class="fas fa-map-marker-alt"></i> {{ sede_nombre }}
+                </h2>
+                <p style="margin: 5px 0 0 0; color: #666; font-size: 0.95em;">
+                    <i class="fas fa-location-arrow"></i> {{ sede_ubicacion }}
+                </p>
+            </div>
+            
+            <div class="digital-clock" id="digitalClock">00:00:00</div>
+            
+            <div class="scanner-section">
+                <div class="scanner-icon">
+                    <i class="fas fa-barcode"></i>
+                </div>
+                <h3 style="color: #00d4ff; margin-bottom: 20px;">Escanee su código de barras</h3>
+                <form id="scannerForm">
+                    {% csrf_token %}
+                    <input 
+                        type="text" 
+                        id="scannerInput" 
+                        class="scanner-input" 
+                        placeholder="Código de barras"
+                        autofocus
+                        autocomplete="off"
+                        maxlength="8"
+                        pattern="\d{8}"
+                        inputmode="numeric"
+                    >
+                </form>
+                
+                <div id="messageBox" class="message-box"></div>
+            </div>
+            
+            <div class="attendance-link">
+                <a href="{% url 'marcaciones_sede' id_sede %}">
+                    <i class="fas fa-list"></i> Ver Marcaciones de esta Sede
+                </a>
+                <a href="{% url 'marcadores' %}" style="margin-left: 10px;">
+                    <i class="fas fa-arrow-left"></i> Volver a Sedes
+                </a>
+            </div>
+        </div>
+    </div>
+    </div>
+
+<script>
+$(document).ready(function() {
+    
+    function updateDigitalClock() {
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        $('#digitalClock').text(`${hours}:${minutes}:${seconds}`);
+    }
+
+    setInterval(updateDigitalClock, 1000);
+    updateDigitalClock();
+    
+    
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    const csrftoken = getCookie('csrftoken');
+    
+    $.ajaxSetup({
+        beforeSend: function(xhr, settings) {
+            if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type) && !this.crossDomain) {
+                xhr.setRequestHeader("X-CSRFToken", csrftoken);
+            }
+        }
+    });
+    
+    $('#scannerForm').on('submit', function(e) {
+        e.preventDefault();
+        const codigo = $('#scannerInput').val().trim();
+        if(!/^\d{8}$/.test(codigo)) {
+            showMessage('Por favor ingrese o escanee el código personal', 'error');
+            return;
+        }
+        $.ajax({
+            url: '/marcadores/api/procesar-marcacion/',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ 
+                codigo_personal: codigo,
+                id_sede: {{ id_sede }}
+            }),
+            success: function(response) {
+                if(response.status === 'success' || response.status === 'warning' || response.status === 'primary') {
+                    showMessage(response.message, response.tipo || 'success');
+                } else {
+                    showMessage(response.message, 'error');
+                }
+                $('#scannerInput').val('').focus();
+            },
+            error: function(xhr) {
+                let message = 'Error al procesar la marcación';
+                if(xhr.responseJSON && xhr.responseJSON.message) {
+                    message = xhr.responseJSON.message;
+                }
+                showMessage(message, 'error');
+                $('#scannerInput').val('').focus();
+            }
+        });
+    });
+    
+    
+    function showMessage(message, type) {
+        const messageBox = $('#messageBox');
+        messageBox.removeClass('message-success message-error');
+        
+        if(type === 'success' || type === 'entrada' || type === 'salida') {
+            messageBox.addClass('message-success');
+        } else {
+            messageBox.addClass('message-error');
+        }
+        
+        messageBox.text(message).fadeIn();
+        
+        setTimeout(function() {
+            messageBox.fadeOut();
+        }, 5000);
+    }
+    
+    $(document).on('click', function() {
+        $('#scannerInput').focus();
+    });
+});
+</script>
+</body>
+</html>

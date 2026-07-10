@@ -1,0 +1,314 @@
+{% load static %}
+{% include 'base/header.html' %}
+{% include 'base/sidebar.html' %}
+
+{% block css %}
+<link href="{% static 'assets/plugins/DataTables/media/css/dataTables.bootstrap.min.css' %}" rel="stylesheet" />
+<link href="{% static 'assets/plugins/DataTables/extensions/Responsive/css/responsive.bootstrap.min.css' %}" rel="stylesheet" />
+<link href="{% static 'assets/plugins/bootstrap-datepicker/css/bootstrap-datepicker.css' %}" rel="stylesheet" />
+<link href="{% static 'assets/plugins/bootstrap-datepicker/css/bootstrap-datepicker3.css' %}" rel="stylesheet" />
+<link href="{% static 'assets/plugins/gritter/css/jquery.gritter.css' %}" rel="stylesheet" />
+<script src="{% static 'assets/plugins/pace/pace.min.js' %}"></script>
+{% endblock %}
+
+<div id="content" class="content">
+    <div class="panel panel-inverse">
+        <div class="panel-heading">
+            <h3 class="panel-title">Listado de Lotes</h3>
+        </div>
+        <div class="panel-body"><br>
+            <div class="row">
+                <div class="col-md-2">
+                    <button onclick="modal_create_lote()" class="btn btn-success" style="color:white;">
+                        <i class="fa fa-plus"></i> Agregar Lote
+                    </button>
+                </div>
+                <div class="col-md-3">
+                    <label>Filtrar por Campaña</label>
+                    <select id="filtroCampania" class="form-control" onchange="cargarLotes()">
+                        <option value="">Todas</option>
+                    </select>
+                </div>
+            </div>
+            <br>
+            <div class="table-responsive">
+                <table class="table table-bordered" id="tableListLotes">
+                    <thead>
+                        <tr>
+                            <th>ID Lote</th>
+                            <th>Descripción</th>
+                            <th>Área Total</th>
+                            <th>ID Fundo</th>
+                            <th>CECO</th>
+                            <th>ID Variedad</th>
+                            <th>Campaña</th>
+                            <th>Opciones</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalCreateLote"></div>
+<div class="modal fade" id="modalUpdateLote"></div>
+<div class="modal fade" id="modalDeleteLote"></div>
+
+{% include 'base/footer.html' %}
+
+{% block js %}
+<script src="{% static 'assets/plugins/bootstrap-datepicker/js/bootstrap-datepicker.js' %}"></script>
+<script src="{% static 'assets/plugins/DataTables/media/js/jquery.dataTables.js' %}"></script>
+<script src="{% static 'assets/plugins/DataTables/media/js/dataTables.bootstrap.min.js' %}"></script>
+<script src="{% static 'assets/plugins/DataTables/extensions/Responsive/js/dataTables.responsive.min.js' %}"></script>
+<script src="{% static 'assets/js/demo/table-manage-default.demo.js' %}"></script>
+<script src="{% static 'assets/js/demo/form-plugins.demo.js' %}"></script>
+<script src="{% static 'assets/plugins/masked-input/masked-input.min.js' %}"></script>
+<script src="{% static 'assets/plugins/ionRangeSlider/js/ion-rangeSlider/ion.rangeSlider.min.js' %}"></script>
+<script src="{% static 'assets/plugins/gritter/js/jquery.gritter.js' %}"></script>
+<script src="{% static 'assets/plugins/bootstrap-sweetalert/sweetalert.min.js' %}"></script>
+<script src="{% static 'assets/js/demo/ui-modal-notification.demo.min.js' %}"></script>
+
+<script>
+    $(document).ready(function(){
+        App.init();
+        cargarFiltroCampanias();
+        cargarLotes();
+    });
+
+    function cargarLotes(){
+    let fundos = {{ fundos|safe }};
+    let variedades = {{ variedades|safe }};
+    let campania = $('#filtroCampania').val();
+    
+    let url = '/presupuesto-agricola/lotes/api/lotes/';
+    if(campania){
+        url += '?id_campania=' + campania;
+    }
+
+    $.get(url, function(response){
+        let tbody = '';
+        response.data.forEach(function(lote){
+            let fundoDesc = fundos.map(f => f.id === lote.ID_FUNDO ? f.descripcion : '').join('');
+            let variedadDesc = variedades.map(v => v.id === lote.ID_VARIEDAD ? v.descripcion : '').join('');
+
+            tbody += `<tr>
+                <td>${lote.ID_LOTE}</td>
+                <td>${lote.DESCRIPCION}</td>
+                <td>${lote.AREA_TOTAL}</td>
+                <td>${fundoDesc}</td>
+                <td>${lote.CECO}</td>
+                <td>${variedadDesc}</td>
+                <td>${lote.CAMPANIA}</td>
+                <td>
+                    <button class="btn btn-warning btn-xs" onclick="modal_update_lote(${lote.ID_LOTE})"><i class="fa fa-edit"></i></button>
+                    <button class="btn btn-danger btn-xs" onclick="modal_delete_lote(${lote.ID_LOTE})"><i class="fa fa-trash"></i></button>
+                </td>
+            </tr>`;
+        });
+
+        if ($.fn.DataTable.isDataTable('#tableListLotes')) {
+            $('#tableListLotes').DataTable().destroy();
+        }
+        $('#tableListLotes tbody').html(tbody);
+        $('#tableListLotes').DataTable();
+    });
+}
+
+    function modal_create_lote(){
+    let fundos = {{ fundos|safe }};
+    let variedades = {{ variedades|safe }};
+    let campanias = {{ campanias|safe }};
+
+    let fundosOptions = fundos.map(f => `<option value="${f.id}">${f.descripcion}</option>`).join('');
+    let variedadesOptions = variedades.map(v => `<option value="${v.id}">${v.descripcion}</option>`).join('');
+    let campaniasOptions = campanias.map(c => `<option value="${c.id}">${c.descripcion}</option>`).join('');
+
+    let html = `<form id="formCreateLote">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Agregar Lote</h4>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group"><label>Descripción</label>
+                        <input type="text" name="descripcion" class="form-control" required></div>
+                    <div class="form-group"><label>Área Total</label>
+                        <input type="number" step="0.01" name="area_total" class="form-control" required></div>
+                    <div class="form-group"><label>Fundo</label>
+                        <select name="id_fundo" class="form-control" required>${fundosOptions}</select></div>
+                    <div class="form-group"><label>CECO</label>
+                        <input type="text" name="ceco" class="form-control"></div>
+                    <div class="form-group"><label>Variedad</label>
+                        <select name="id_variedad" class="form-control" required>${variedadesOptions}</select></div>
+                    <div class="form-group"><label>Campaña</label>
+                        <select name="id_campania" class="form-control" required>${campaniasOptions}</select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" onclick="saveCreateLote()">Guardar</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </form>`;
+
+    $('#modalCreateLote').html(html).modal('show');
+}
+
+    function saveCreateLote(){
+        let data = {
+            DESCRIPCION: $('#formCreateLote [name="descripcion"]').val(),
+            AREA_TOTAL: $('#formCreateLote [name="area_total"]').val(),
+            ID_FUNDO: $('#formCreateLote [name="id_fundo"]').val(),
+            CECO: $('#formCreateLote [name="ceco"]').val(),
+            ID_VARIEDAD: $('#formCreateLote [name="id_variedad"]').val(),
+            ID_CAMPANIA: $('#formCreateLote [name="id_campania"]').val()
+        };
+        $.ajax({
+            url: '/presupuesto-agricola/lotes/api/lotes/',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(data),
+            success: function(response){
+                $('#modalCreateLote').modal('hide');
+                swal('Lote registrado!', '', 'success');
+                cargarLotes();
+            },
+            error: function(error){
+                console.log(error.responseText);
+                alert('Error al crear lote');
+            }
+        });
+    }
+
+function modal_update_lote(id){
+    $.get(`/presupuesto-agricola/lotes/api/lotes/${id}/`, function(response){
+        let lote = response.data;
+        let fundos = {{ fundos|safe }};
+        let variedades = {{ variedades|safe }};
+        let campanias = {{ campanias|safe }};
+
+        let fundosOptions = fundos.map(f => 
+            `<option value="${f.id}" ${lote.ID_FUNDO == f.id ? 'selected' : ''}>${f.descripcion}</option>`
+        ).join('');
+
+        let variedadesOptions = variedades.map(v => 
+            `<option value="${v.id}" ${lote.ID_VARIEDAD == v.id ? 'selected' : ''}>${v.descripcion}</option>`
+        ).join('');
+
+        let campaniasOptions = campanias.map(c => 
+            `<option value="${c.id}" ${lote.ID_CAMPANIA == c.id ? 'selected' : ''}>${c.descripcion}</option>`
+        ).join('');
+
+        let html = `<form id="formUpdateLote">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title">Editar Lote</h4>
+                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group"><label>ID Lote</label>
+                            <input type="number" name="id_lote" id="id_lote" class="form-control" value="${lote.ID_LOTE}" readonly/></div>
+                        <div class="form-group"><label>Descripción</label>
+                            <input type="text" name="descripcion" class="form-control" value="${lote.DESCRIPCION}" required></div>
+                        <div class="form-group"><label>Área Total</label>
+                            <input type="number" step="0.01" name="area_total" class="form-control" value="${lote.AREA_TOTAL}" required></div>
+                        <div class="form-group"><label>Fundo</label>
+                            <select name="id_fundo" class="form-control" required>${fundosOptions}</select></div>
+                        <div class="form-group"><label>CECO</label>
+                            <input type="text" name="ceco" class="form-control" value="${lote.CECO}"></div>
+                        <div class="form-group"><label>Variedad</label>
+                            <select name="id_variedad" class="form-control" required>${variedadesOptions}</select></div>
+                        <div class="form-group"><label>Campaña</label>
+                            <select name="id_campania" class="form-control" required>
+                            ${campaniasOptions}
+                            </select>
+                        </div>
+                        
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" onclick="saveUpdateLote(${id})">Guardar</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    </div>
+                </div>
+            </div>
+        </form>`;
+        $('#modalUpdateLote').html(html).modal('show');
+    });
+}
+
+    function saveUpdateLote(id){
+        let data = {
+            descripcion: $('#formUpdateLote [name="descripcion"]').val(),
+            area_total: $('#formUpdateLote [name="area_total"]').val(),
+            id_fundo: $('#formUpdateLote [name="id_fundo"]').val(),
+            ceco: $('#formUpdateLote [name="ceco"]').val(),
+            id_variedad: $('#formUpdateLote [name="id_variedad"]').val(),
+            id_campania: $('#formUpdateLote [name="id_campania"]').val()
+        };
+        $.ajax({
+            url: `/presupuesto-agricola/lotes/api/lotes/${id}/`,
+            type: 'PUT',
+            contentType: 'application/json',
+            data: JSON.stringify(data),
+            success: function(response){
+                $('#modalUpdateLote').modal('hide');
+                swal('Lote actualizado!', '', 'success');
+                cargarLotes();
+            },
+            error: function(error){
+                console.log(error.responseText);
+                alert('Error al actualizar lote');
+            }
+        });
+    }
+
+    function modal_delete_lote(id){
+        let html = `<div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Eliminar Lote</h4>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">¿Estás seguro de eliminar este lote?</div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" onclick="deleteLote(${id})">Eliminar</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                </div>
+            </div>
+        </div>`;
+        $('#modalDeleteLote').html(html).modal('show');
+    }
+
+    function deleteLote(id){
+        $.ajax({
+            url: `/presupuesto-agricola/lotes/api/lotes/${id}/`,
+            type: 'DELETE',
+            success: function(response){
+                $('#modalDeleteLote').modal('hide');
+                swal('Lote eliminado!', '', 'success');
+                cargarLotes();
+            },
+            error: function(error){
+                alert('Error al eliminar lote');
+            }
+        });
+    }
+
+    function cargarFiltroCampanias(){
+        let campanias = {{ campanias|safe }};
+        let options = '<option value="">Todas</option>';
+
+        campanias.forEach(c => {
+            options += `<option value="${c.id}">${c.descripcion}</option>`;
+        });
+
+        $('#filtroCampania').html(options);
+    }
+</script>
+{% endblock %}

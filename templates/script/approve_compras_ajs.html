@@ -1,0 +1,578 @@
+{% load static %}
+{% include 'base/header.html' %}
+{% include 'base/sidebar.html' %}
+{% block css %}
+   <!-- ================== BEGIN PAGE LEVEL STYLE ================== -->
+    <link href="{% static 'assets/plugins/DataTables/media/css/dataTables.bootstrap.min.css' %}" rel="stylesheet" />
+    <link href="{% static 'assets/plugins/DataTables/extensions/Responsive/css/responsive.bootstrap.min.css' %}" rel="stylesheet" />
+    <link href="{% static 'assets/plugins/bootstrap-datepicker/css/bootstrap-datepicker.css' %}" rel="stylesheet" />
+    <link href="{% static 'assets/plugins/bootstrap-datepicker/css/bootstrap-datepicker3.css' %}" rel="stylesheet" />
+    <!-- ================== END PAGE LEVEL STYLE ================== -->
+    <link href="{% static 'assets/plugins/gritter/css/jquery.gritter.css' %}" rel="stylesheet" />
+    <script src="{% static 'assets/plugins/pace/pace.min.js' %}"></script>
+    <!-- ================== END BASE JS ================== -->
+{% endblock %}
+{% comment %} 
+    	<!-- begin #content -->
+		<div id="content" class="content">
+        	<!-- begin panel -->
+			<div class="panel panel-inverse">
+				<!-- begin panel-heading -->
+				<div class="panel-heading">
+					<div class="panel-heading-btn">
+						<a href="javascript:;" class="btn btn-xs btn-icon btn-circle btn-default" data-click="panel-expand"><i class="fa fa-expand"></i></a>
+					</div>
+					<h4 class="panel-title">
+						<span class="badge badge-secondary badge-pill mr-2" style="font-size: 12px; padding: 8px 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+							<i class="fa fa-building"></i> INVERSIONES AJS
+						</span>
+						Órdenes de Compras
+					</h4>
+				</div>
+				<!-- begin panel-body -->
+				<div class="panel-body">
+						<!-- begin table-responsive -->
+					<div class="row">
+						<div class="col-md-6">
+							<input type="hidden" id="User" name="hiddenUser" value="{{ request.user.username }}">
+							<input type="hidden" id="UserId" name="hiddenUserId" value="{{ request.user.id }}">
+							<label class="">Seleccionar área</label> 
+							<div class="form-group m-b-10">
+								<select class="form-control" id="selectApproveArea">
+								</select>
+							</div>
+						</div>
+						
+						<div class="col-md-2">
+							<label class="invisible">.</label>
+							<input type="button" id="btnApproveShow" class="btn btn-primary form-control"  value="Filtrar" />
+						</div>
+						<div class="col-md-2">
+							<label class="invisible">.</label>
+							<button type="button" id="btnAprobacionMasiva" class="btn btn-success form-control" disabled>
+								<i class="fa fa-check-circle mr-1"></i>
+								<span id="textoBtnMasivo">Aprobar Masivo</span>
+							</button>
+						</div>
+					</div>
+					
+					<!-- Panel de información de selección -->
+					<div class="row mb-3" id="panelSeleccion" style="display: none;">
+						<div class="col-md-12">
+							<div class="alert alert-info mb-0 d-flex flex-wrap align-items-center justify-content-between">
+								<div class="d-flex align-items-center flex-wrap">
+									<i class="fa fa-info-circle mr-2"></i>
+									<span id="contadorSeleccion">0 registros seleccionados</span>
+								</div>
+								<div class="mt-2 mt-md-0 d-flex flex-column flex-md-row align-items-stretch align-items-md-center">
+									<button type="button" class="btn btn-sm btn-outline-info mb-2 mb-md-0 mr-0 mr-md-2" id="btnSeleccionarTodos">
+										<i class="fa fa-check-square-o mr-1"></i>
+										Seleccionar Todos
+									</button>
+									<button type="button" class="btn btn-sm btn-outline-secondary" id="btnDeseleccionarTodos">
+										<i class="fa fa-square-o mr-1"></i>
+										Deseleccionar Todos
+									</button>
+								</div>
+							</div>
+						</div>
+					</div>
+					<style>
+						@media (max-width: 768px) {
+							#panelSeleccion .alert {
+								flex-direction: column !important;
+								align-items: flex-start !important;
+							}
+							#panelSeleccion .alert > div:first-child {
+								margin-bottom: 0.5rem;
+							}
+							#panelSeleccion .btn {
+								width: 100%;
+							}
+							#panelSeleccion .btn + .btn {
+								margin-left: 0 !important;
+								margin-top: 0.5rem;
+							}
+							#panelSeleccion .d-flex.flex-column {
+								width: 100%;
+							}
+						}
+					</style><br>
+					<div class="table-responsive">					
+						<table class="table table-hover m-b-0 text-inverse" id="tableApproveOrders">
+							<thead>
+								<tr>
+									<th>Estado</th>
+									<th>Fecha</th>
+									<th>Producto</th>
+									<th>Doc/Serie/Número</th>
+									<th>Razón Social</th>
+									<th>Área</th>
+									<th>Consumidor</th>
+									<th>Mon.</th>
+									<th>Importe</th>
+									<th width="50px">
+										<div class="form-check">
+											<input type="checkbox" class="form-check-input" id="checkboxSelectAll">
+											<label class="form-check-label" for="checkboxSelectAll"></label>
+										</div>
+									</th>
+								</tr>
+							</thead>
+							<tbody>
+							</tbody>
+						</table>
+					</div>
+				</div>
+				<!-- end panel-body -->
+			</div>
+			<!-- end panel -->
+		</div>
+		<!-- end #content -->
+
+
+	<!-- #modal-dialog -->
+		<div class="modal fade" id="modalApproveOrders">
+			<div class="modal-dialog modal-dialog-centered modal-lg">
+				<div class="modal-content">
+
+
+					<div class="modal-header d-block p-3">
+						<!-- Fila superior con título y estado -->
+						<div class="d-flex justify-content-between align-items-center mb-2">
+							<h4 class="modal-title">Detalle de órdenes de compras</h4>
+							<div class="d-flex align-items-center">
+								<div class="status-indicator bg-warning px-3 py-2 mr-3">
+									<i class="fa fa-clock-o mr-2"></i>
+									<span  class="text-dark font-weight-medium">Estado: <b id="lblEstado"></b></span>
+								</div>
+								<button type="button" class="btn btn-danger shadow-sm border-0 p-2" data-dismiss="modal" aria-hidden="true" style="width: 35px; height: 35px; transition: all 0.3s ease;">
+									<i class="fa fa-times" style="font-size: 16px;"></i>
+								</button>
+							</div>
+						</div>
+
+					</div>
+
+
+					<div class="modal-body">
+
+						<div class="row">
+							<div class="col-8">
+								<div class="float-left">
+
+								
+									<div class="d-flex mb-4">
+										<div class="mr-4">
+											<div class="d-flex align-items-center">
+												<div class="bg-light rounded-circle p-2 mr-2">
+													<i class="fa fa-building text-primary"></i>
+												</div>
+												<div>
+													<small class="text-muted d-block">Proveedor</small>
+													<b id="lblProveedor" class="h6 mb-0">-</b>
+												</div>
+											</div>
+										</div>
+
+										<div>
+											<div class="d-flex align-items-center">
+												<div class="bg-light rounded-circle p-2 mr-2 ">
+													<i class="fa fa-id-card text-primary"></i>
+												</div>
+												<div>
+													<small class="text-muted d-block">RUC</small>
+													<b id="lblRuc" class="h6 mb-0">-</b>
+												</div>
+											</div>
+										</div>
+
+									</div>
+
+
+									<div class="d-flex mb-4">
+
+										<div class="mt-3">
+											<div class="d-flex align-items-center mb-2">
+												<div class="bg-light rounded-circle p-2 mr-2">
+													<i class="fa fa-comment text-primary"></i>
+												</div>
+												<small class="text-muted">Condición</small>
+											</div>
+											<div class="bg-light p-3 rounded">
+												<b id="lblCondicion" class="text-dark">-</b>
+											</div>
+										</div>
+
+										<div class="mt-3">
+											<div class="d-flex align-items-center mb-2">
+												<div class="bg-light rounded-circle p-2 mr-2">
+													<i class="fa fa-user text-primary"></i>
+												</div>
+												<small class="text-muted">Responsable</small>
+											</div>
+											<div class="bg-light p-3 rounded">
+												<b id="lblResponsable" class="text-dark">-</b>
+											</div>
+										</div>
+									</div>
+
+
+
+									<div class="d-flex mb-4">
+
+										<div class="mt-3">
+											<div class="d-flex align-items-center mb-2">
+												<div class="bg-light rounded-circle p-2 mr-2">
+													<i class="fa fa-map-marker text-primary"></i>
+												</div>
+												<small class="text-muted">Area</small>
+											</div>
+											<div class="bg-light p-3 rounded">
+												<b id="lblArea" class="text-dark">-</b>
+											</div>
+										</div>
+	
+
+										
+										<div class="mt-3">
+											<div class="d-flex align-items-center mb-2">
+												<div class="bg-light rounded-circle p-2 mr-2">
+													<i class="fa fa-cogs text-primary"></i>
+												</div>
+												<small class="text-muted">Serie/Número</small>
+											</div>
+											<div class="bg-light p-3 rounded">
+												<b id="lblSerieNumero" class="text-dark">-</b>
+											</div>
+										</div>
+	
+										
+									</div>
+
+
+
+									<hr class="my-2 border-gray border-dark ">
+								
+								</div>
+							</div>
+							<!-- Botones de Acción -->
+							<div class="col-4">
+								<div class="float-right d-flex flex-column">
+									<!-- Spinner de carga -->
+									<div id="buttons-loading">
+										<div class="d-flex align-items-center">
+											<div class="spinner-border text-primary mr-2" role="status">
+												<span class="sr-only">Cargando...</span>
+											</div>
+											<span class="text-muted">Cargando...</span>
+										</div>
+									</div>
+
+									<!-- Botones (inicialmente ocultos) -->
+									<button id='btn-aprobar' class="btn btn-success btn-lg shadow-sm d-none">
+										<i class="fa fa-check-circle mr-2"></i>
+										APROBAR
+									</button>
+									
+									<button id='btn-vb' class="btn btn-warning btn-lg mt-3 shadow-sm d-none">
+										<i class="fa fa-eye mr-2"></i>
+										VISTO BUENO
+									</button>
+								</div>
+							</div>
+						</div>
+
+						<!-- begin table-responsive -->
+						<div class="table-responsive">
+							<table class="table m-b-0" id="tableApproveOrdersLogDetail">
+								<thead>
+									<tr>
+										<th>PRODUCTO</th>
+										<th>MEDIDA</th>
+										<th>CANTIDAD</th>
+										<th>PRECIO UNI</th>
+										<th>MONEDA</th>
+										<th>IMPUESTO</th>
+										<th>TOTAL</th>
+									</tr>
+								</thead>
+								<tbody id="tableBodyApproveOrdersLogDetail">
+								</tbody>
+								<tfoot>
+									<tr>
+										
+										<th></th>
+										<th></th>
+										<th></th>
+										<th></th>
+										<th></th>
+										<th>Total:</th>
+										<th><b id="lblTotal"></b></th>
+									</tr>
+								</tfoot>
+							</table>
+						</div>
+                    <!-- end table-responsive -->
+					</div>
+					<div class="modal-footer">
+						<a href="javascript:;" class="btn btn-white" data-dismiss="modal">Cerrar</a>
+					</div>
+
+					
+				</div>
+			</div>       
+		</div> {% endcomment %}
+
+
+
+
+
+		<style>
+			/* Estilos para checkboxes */
+			.form-check {
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				margin: 0;
+			}
+
+			.form-check-input {
+				width: 18px;
+				height: 18px;
+				cursor: pointer;
+				margin: 0;
+			}
+
+			.form-check-label {
+				margin: 0;
+				cursor: pointer;
+			}
+
+			/* Estilos para el botón de aprobación masiva */
+			#btnAprobacionMasiva:disabled {
+				opacity: 0.6;
+				cursor: not-allowed;
+			}
+
+			#btnAprobacionMasiva:not(:disabled) {
+				animation: pulse 2s infinite;
+			}
+
+			@keyframes pulse {
+				0% {
+					transform: scale(1);
+				}
+				50% {
+					transform: scale(1.05);
+				}
+				100% {
+					transform: scale(1);
+				}
+			}
+
+			/* Estilos para el panel de selección */
+			#panelSeleccion .alert {
+				border-left: 4px solid #17a2b8;
+			}
+
+			/* Estilos para filas seleccionadas */
+			.row-selected {
+				background-color: #e3f2fd !important;
+				border-left: 4px solid #2196f3;
+			}
+
+			/* Hover effect para checkboxes */
+			.form-check-input:hover {
+				transform: scale(1.1);
+				transition: transform 0.2s ease;
+			}
+
+			/* Estilos para botones del panel de selección */
+			.btn-outline-info:hover {
+				background-color: #17a2b8;
+				border-color: #17a2b8;
+				color: white;
+			}
+
+			.btn-outline-secondary:hover {
+				background-color: #6c757d;
+				border-color: #6c757d;
+				color: white;
+			}
+
+			/* Estilos para el modal en dispositivos móviles */
+			@media (max-width: 768px) {
+				.modal-dialog {
+					margin: 0.5rem;
+				}
+		
+				.modal-header {
+					padding: 0.75rem;
+				}
+		
+				.modal-title {
+					font-size: 0.7rem;
+				}
+		
+				.status-indicator {
+					padding: 0.25rem 0.5rem !important;
+					font-size: 0.9rem;
+				}
+		
+				.modal-body {
+					padding: 0.75rem;
+				}
+		
+				/* Ajustes para la información principal */
+				.col-8, .col-4 {
+					flex: 0 0 100%;
+					max-width: 100%;
+					margin-bottom: 1rem;
+				}
+		
+				.float-left, .float-right {
+					float: none !important;
+					width: 100%;
+				}
+		
+				/* Ajustes para los iconos y textos */
+				.rounded-circle {
+					padding: 0.5rem !important;
+				}
+		
+				.h6 {
+					font-size: 0.9rem;
+				}
+		
+				/* Ajustes para los botones */
+				.btn-lg {
+					padding: 0.5rem 1rem;
+					font-size: 1rem;
+				}
+		
+				/* Ajustes para la tabla */
+				.table {
+					font-size: 0.8rem;
+				}
+		
+				.table th, .table td {
+					padding: 0.5rem;
+				}
+		
+				/* Ajustes para el spinner */
+				#buttons-loading {
+					text-align: center;
+				}
+		
+				/* Ajustes para la observación */
+				.bg-light.p-3 {
+					padding: 0.75rem !important;
+				}
+			}
+		
+			/* Ajustes adicionales para pantallas muy pequeñas */
+			@media (max-width: 576px) {
+				.d-flex.mb-4 {
+					flex-direction: column;
+				}
+		
+				.mr-4 {
+					margin-right: 0 !important;
+					margin-bottom: 1rem;
+				}
+		
+				.modal-dialog {
+					margin: 0;
+					max-width: 100%;
+					height: 100%;
+				}
+		
+				.modal-content {
+					border-radius: 0;
+					min-height: 100vh;
+				}
+			}
+		</style>
+		
+
+
+{% include 'base/footer.html' %}
+{% block js %}
+	<!-- ================== END BASE JS ================== -->
+    <script src="{% static 'assets/plugins/bootstrap-datepicker/js/bootstrap-datepicker.js' %}"></script>
+    <script src="{% static 'assets/plugins/DataTables/media/js/jquery.dataTables.js' %}"></script>
+	<script src="{% static 'assets/plugins/DataTables/media/js/dataTables.bootstrap.min.js' %}"></script>
+    <script src="{% static 'assets/js/demo/form-plugins.demo.js' %}"></script>
+    <script src="{% static 'assets/plugins/masked-input/masked-input.min.js' %}"></script>
+	<script src="{% static 'assets/plugins/ionRangeSlider/js/ion-rangeSlider/ion.rangeSlider.min.js' %}"></script>
+	<!-- ================== BEGIN PAGE LEVEL JS ================== -->
+	<script src="{% static 'assets/plugins/gritter/js/jquery.gritter.js' %}"></script>
+	<script src="{% static 'assets/plugins/bootstrap-sweetalert/sweetalert.min.js' %}"></script>
+	<script src="{% static 'assets/js/demo/ui-modal-notification.demo.min.js' %}"></script>
+	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script src="{% static 'core/js/script/script_approve_compras_ajs.js' %}"></script>
+    {% comment %} <script>
+        $(document).ready(function(){    
+            App.init();
+
+			// Crear el observador fuera del evento del modal
+			const observerEstado = new MutationObserver(function(mutations) {
+				mutations.forEach(function(mutation) {
+					if (mutation.target.id === 'lblEstado') {
+						const estado = mutation.target.textContent;
+						
+						
+						
+						// Ocultar spinner
+						$('#buttons-loading').addClass('d-none');
+						
+						// Mostrar botón según el estado
+						if (estado === 'Vº Bº 1') {
+							
+							$('#btn-aprobar').removeClass('d-none');
+							$('#btn-vb').addClass('d-none');
+						} else if (estado === 'PENDIENTE') {
+							
+							$('#btn-vb').removeClass('d-none');
+							$('#btn-aprobar').addClass('d-none');
+						} else {
+							
+							$('#btn-aprobar, #btn-vb').addClass('d-none');
+						}
+					}
+				});
+			});
+	
+			// Evento cuando se abre el modal
+			$('#modalApproveOrders').on('show.bs.modal', function () {
+				
+				
+				// Mostrar el spinner cada vez que se abre el modal
+				$('#buttons-loading').removeClass('d-none');
+				// Ocultar los botones
+				$('#btn-aprobar, #btn-vb').addClass('d-none');
+				
+				// Iniciar la observación del elemento lblEstado
+				const elementoEstado = document.getElementById('lblEstado');
+				if (elementoEstado) {
+					
+					observerEstado.observe(elementoEstado, {
+						childList: true,
+						characterData: true,
+						subtree: true
+					});
+				} 
+			});
+	
+			// Evento cuando se cierra el modal
+			$('#modalApproveOrders').on('hide.bs.modal', function () {
+				
+				observerEstado.disconnect();
+			});
+
+			
+        });
+    </script> {% endcomment %}
+{% endblock %}

@@ -1,0 +1,177 @@
+{% load static %}
+{% include 'base/header.html' %}
+{% block css %}
+<link href="{% static 'assets/plugins/DataTables/media/css/dataTables.bootstrap.min.css' %}" rel="stylesheet" />
+<link href="{% static 'assets/plugins/DataTables/extensions/Buttons/css/buttons.bootstrap.min.css' %}" rel="stylesheet" />
+<link href="{% static 'core/css/oc_orden_compra_log.css' %}" rel="stylesheet" />
+<style>
+  /* Estilos para el spinner overlay */
+  .spinner-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    display: none; /* Oculto por defecto */
+  }
+  .table-responsive {
+    position: relative; /* Necesario para posicionar el spinner */
+  }
+</style>
+
+{% endblock %}
+{% include 'base/sidebar.html' %}
+
+<!-- begin #content -->
+<div id="content" class="content">
+  <!-- begin panel -->
+  <div class="panel panel-inverse">
+    <div class="panel-heading">
+      <div class="panel-heading-btn">
+        <a href="javascript:;" class="btn btn-xs btn-icon btn-circle btn-default" data-click="panel-expand">
+          <i class="fa fa-expand"></i>
+        </a>
+      </div>
+      <h4 class="panel-title">Reporte de Activos Fijos</h4>
+    </div>
+    <!-- begin panel-body -->
+    <div class="panel-body">
+      <div class="table-responsive">
+
+        <!-- FILTRO  -->
+        <div class="d-flex justify-content-end">
+
+          <!-- Formulario de Filtrado -->
+          <div class="row mb-4">
+            <div class="col-md-3">
+              <label for="year">Año:</label>
+              <input type="number" id="year" class="form-control" placeholder="Ingrese el año">
+            </div>
+            <div class="col-md-3">
+              <label for="month">Mes:</label>
+              <select id="month" class="form-control">
+                <option value="">Seleccione el mes</option>
+                <option value="01">Enero</option>
+                <option value="02">Febrero</option>
+                <option value="03">Marzo</option>
+                <option value="04">Abril</option>
+                <option value="05">Mayo</option>
+                <option value="06">Junio</option>
+                <option value="07">Julio</option>
+                <option value="08">Agosto</option>
+                <option value="09">Septiembre</option>
+                <option value="10">Octubre</option>
+                <option value="11">Noviembre</option>
+                <option value="12">Diciembre</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label for="reportType">Tipo de Reporte:</label>
+              <select id="reportType" class="form-control">
+                <option value="">Seleccione el tipo de reporte</option>
+                <option value="detallado">Detallado</option>
+                <option value="resumido">Resumido</option>
+              </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+              <button id="filterButton" class="btn btn-primary btn-block">
+                <i class="fas fa-filter"></i> Filtrar
+              </button>
+            </div>
+          </div>
+
+        </div>
+        <!-- END FILTRO  -->
+
+        <!-- Spinner Overlay -->
+        <div class="spinner-overlay" id="spinnerOverlay">
+            <div class="d-flex align-items-center">
+            <div class="spinner-border text-primary mr-2" role="status">
+                <span class="sr-only">Cargando...</span>
+            </div>
+            <span>Cargando...</span>
+            </div>
+        </div>
+
+        <!-- Tabla de Datos -->
+        <table class="table m-b-0 table-striped" id="tb_conta_libro_af">
+          <thead>
+            <tr>
+              <th>IDTIPOACTIVO</th>
+              <th>DSC_TIPOACTIVO</th>
+              <th>IDACTIVO</th>
+              <th>CODALTERNO</th>
+              <th>CODMANUAL</th>
+              <th>IDCTAACTIVO</th>
+              <th>DESCRIPCION</th>
+              <th>FECHACOMPRA</th>
+              <th>FECHAACTIVACION</th>
+              <th>IDMARCA</th>
+              <th>MARCA</th>
+              <th>IDMODELO</th>
+              <th>MODELO</th>
+              <th>SERIE</th>
+              <th>FUNCION</th>
+              <th>VIDAUTIL</th>
+              <th>IDMEDIDA</th>
+              <th>TASA_ANUAL</th>
+              <th>HCOMPRASMOF</th>
+              <th>HCOMPRASMEX</th>
+              <th>ACOMPRASMOF</th>
+              <th>ACOMPRASMEX</th>
+              <th>MCOMPRASMOF</th>
+              <th>MCOMPRASMEX</th>
+              <th>AINFLACION</th>
+              <th>HBAJAMOF</th>
+              <th>HBAJAMEX</th>
+              <th>OAJUSTESMOF</th>
+              <th>OAJUSTESMEX</th>
+              <th>LIBACTIMOF</th>
+              <th>LIBACTIMEX</th>
+              <th>HDEPRECIACIONESMOF</th>
+              <th>HDEPRECIACIONESMEX</th>
+              <th>ADEPRECIACIONESMOF</th>
+              <th>ADEPRECIACIONESMEX</th>
+              <th>BDEPRECIACIONESMOF</th>
+              <th>BDEPRECIACIONESMEX</th>
+              <th>ODEPRECIACIONESMOF</th>
+              <th>ODEPRECIACIONESMEX</th>
+              <th>DLIBACTIMOF</th>
+              <th>DLIBACTIMEX</th>
+              <th>ULTIMO_CCOSTO</th>
+              <th>DSC_CUENTA</th>
+              <th>DSC_UBICACION</th>
+              <th>PROVEEDOR</th>
+              <th>DSC_FACTURA</th>
+              <th>CANTIDADI</th>
+              <th>CANTIDADS</th>
+              <th>CANTIDAD</th>
+              <th>IDPRODUCTO</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <!-- end panel-body -->
+  </div>
+  <!-- end panel -->
+</div>
+<!-- end #content -->
+{% include 'base/footer.html' %}
+{% block js %}
+<script type="text/javascript" src="https://cdn.datatables.net/v/bs4/jszip-2.5.0/dt-1.10.21/b-1.6.2/b-html5-1.6.2/datatables.min.js"></script>
+<script src="{% static 'assets/js/buttons.html5.styles.min.js' %}"></script>
+<script src="{% static 'assets/js/buttons.html5.styles.templates.min.js' %}"></script>
+<script src="{% static 'core/js/script/script_contabilidad_libro_af.js' %}"></script>
+<script>
+  $(document).ready(function () {
+    App.init();
+  });
+</script>
+{% endblock %}

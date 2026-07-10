@@ -1,0 +1,898 @@
+{% load static %}
+
+<!-- Modal SERVICIOS -->
+<div
+  class="modal fade"
+  id="PresupuestoModalServicios"
+  tabindex="2"
+  role="dialog"
+  aria-labelledby="PresupuestoModalServiciosLabel"
+  aria-hidden="true"
+>
+  <div
+    class="modal-dialog modal-xl"
+    style="max-width: 75%; width: 75%"
+    role="document"
+  >
+    <div class="modal-content">
+      {% comment %}
+      <div class="modal-header bg-dark text-white">
+        <h5 class="modal-title text-white" id="PresupuestoModalServiciosLabel">
+          SERVICIOS DE TERCEROS
+        </h5>
+        <div class="ml-auto d-flex justify-content-end">
+          <button
+            type="button"
+            class="close text-white"
+            data-dismiss="modal"
+            aria-label="Cerrar"
+            style="
+              background-color: red;
+              width: 30px;
+              height: 30px;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+            "
+          >
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+      </div>
+      {% endcomment %}
+
+      <div class="modal-header bg-dark text-white">
+        <h5 class="modal-title text-white" id="PresupuestoModalServiciosLabel">
+          SERVICIOS DE TERCEROS
+        </h5>
+
+        <div class="panel-heading-btn">
+          <a
+            href="javascript:;"
+            class="btn btn-xs btn-icon btn-circle btn-default"
+            data-click="panel-expand"
+            title="Expandir"
+            ><i class="fa fa-expand"></i
+          ></a>
+          <a
+            href="javascript:;"
+            class="btn btn-xs btn-icon btn-circle btn-success"
+            data-click="panel-reload"
+            title="Recargar"
+            ><i class="fas fa-sync-alt"></i
+          ></a>
+          <a
+            href="javascript:;"
+            class="btn btn-xs btn-icon btn-circle btn-danger"
+            data-click="panel-remove"
+            title="Cerrar"
+            ><i class="fa fa-times"></i
+          ></a>
+        </div>
+      </div>
+
+      <div class="modal-body">
+        <div class="table-responsive">
+          <table class="table table-striped table-bordered" id="serviciosTable">
+            <thead>
+              <tr>
+                <th
+                  rowspan="2"
+                  class="text-center align-middle"
+                  style="min-width: 80px; white-space: nowrap"
+                >
+                  ID
+                </th>
+                <th
+                  rowspan="2"
+                  class="text-center align-middle"
+                  style="min-width: 60px; white-space: nowrap"
+                >
+                  N°
+                </th>
+
+                {% comment %}
+                <th
+                  rowspan="2"
+                  class="text-center align-middle"
+                  style="min-width: 110px; white-space: nowrap"
+                >
+                  Grupo
+                </th>
+                <th
+                  rowspan="2"
+                  class="text-center align-middle"
+                  style="min-width: 80px; white-space: nowrap"
+                >
+                  Subgrupo
+                </th>
+                {% endcomment %}
+
+                <th
+                  rowspan="2"
+                  class="text-center align-middle"
+                  style="min-width: 90px; white-space: nowrap"
+                >
+                  ID Producto
+                </th>
+                <th
+                  rowspan="2"
+                  class="text-center align-middle"
+                  style="min-width: 300px; white-space: nowrap"
+                >
+                  Descripción
+                </th>
+                <th
+                  rowspan="2"
+                  class="text-center align-middle"
+                  style="min-width: 200px; white-space: nowrap"
+                >
+                  Observación
+                </th>
+                <th
+                  rowspan="2"
+                  class="text-center align-middle"
+                  style="min-width: 130px; white-space: nowrap"
+                >
+                  Precio Unitario
+                </th>
+                <th
+                  colspan="2"
+                  class="text-center"
+                  style="min-width: 200px; white-space: nowrap"
+                >
+                  Enero
+                </th>
+                <th
+                  colspan="2"
+                  class="text-center"
+                  style="min-width: 200px; white-space: nowrap"
+                >
+                  Febrero
+                </th>
+                <th
+                  colspan="2"
+                  class="text-center"
+                  style="min-width: 200px; white-space: nowrap"
+                >
+                  Marzo
+                </th>
+                <th
+                  colspan="2"
+                  class="text-center"
+                  style="min-width: 200px; white-space: nowrap"
+                >
+                  Abril
+                </th>
+                <th
+                  colspan="2"
+                  class="text-center"
+                  style="min-width: 200px; white-space: nowrap"
+                >
+                  Mayo
+                </th>
+                <th
+                  colspan="2"
+                  class="text-center"
+                  style="min-width: 200px; white-space: nowrap"
+                >
+                  Junio
+                </th>
+                <th
+                  colspan="2"
+                  class="text-center"
+                  style="min-width: 200px; white-space: nowrap"
+                >
+                  Julio
+                </th>
+                <th
+                  colspan="2"
+                  class="text-center"
+                  style="min-width: 200px; white-space: nowrap"
+                >
+                  Agosto
+                </th>
+                <th
+                  colspan="2"
+                  class="text-center"
+                  style="min-width: 200px; white-space: nowrap"
+                >
+                  Septiembre
+                </th>
+                <th
+                  colspan="2"
+                  class="text-center"
+                  style="min-width: 200px; white-space: nowrap"
+                >
+                  Octubre
+                </th>
+                <th
+                  colspan="2"
+                  class="text-center"
+                  style="min-width: 200px; white-space: nowrap"
+                >
+                  Noviembre
+                </th>
+                <th
+                  colspan="2"
+                  class="text-center"
+                  style="min-width: 200px; white-space: nowrap"
+                >
+                  Diciembre
+                </th>
+                <th
+                  rowspan="2"
+                  class="text-center align-middle"
+                  style="min-width: 100px; white-space: nowrap"
+                >
+                  Total
+                </th>
+                <th
+                  rowspan="2"
+                  class="text-center align-middle"
+                  style="min-width: 90px; white-space: nowrap"
+                >
+                  Acciones
+                </th>
+              </tr>
+              <tr>
+                <th class="text-center">Cant.</th>
+                <th class="text-center">Total</th>
+                <th class="text-center">Cant.</th>
+                <th class="text-center">Total</th>
+                <th class="text-center">Cant.</th>
+                <th class="text-center">Total</th>
+                <th class="text-center">Cant.</th>
+                <th class="text-center">Total</th>
+                <th class="text-center">Cant.</th>
+                <th class="text-center">Total</th>
+                <th class="text-center">Cant.</th>
+                <th class="text-center">Total</th>
+                <th class="text-center">Cant.</th>
+                <th class="text-center">Total</th>
+                <th class="text-center">Cant.</th>
+                <th class="text-center">Total</th>
+                <th class="text-center">Cant.</th>
+                <th class="text-center">Total</th>
+                <th class="text-center">Cant.</th>
+                <th class="text-center">Total</th>
+                <th class="text-center">Cant.</th>
+                <th class="text-center">Total</th>
+                <th class="text-center">Cant.</th>
+                <th class="text-center">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Aquí se agregarán filas dinámicamente con JavaScript -->
+            </tbody>
+
+            <tfoot>
+              <tr>
+                <th style="min-width: 80px; white-space: nowrap"></th>
+                <!-- ID -->
+                <th style="min-width: 60px; white-space: nowrap"></th>
+                <!-- N° -->
+
+                {% comment %}
+                <th style="min-width: 80px; white-space: nowrap"></th>
+                <!-- Grupo -->
+                <th style="min-width: 80px; white-space: nowrap"></th>
+                <!-- Subgrupo -->
+                {% endcomment %}
+
+                <th style="min-width: 90px; white-space: nowrap"></th>
+                <!-- ID Producto -->
+                <th style="min-width: 300px; white-space: nowrap"></th>
+                <!-- Descripción -->
+                <th style="min-width: 200px; white-space: nowrap"></th>
+                <!-- Observación -->
+                <th style="min-width: 130px; white-space: nowrap">TOTALES</th>
+                <!-- Precio Unitario -->
+                <!-- Enero -->
+                <th style="min-width: 100px; white-space: nowrap"></th>
+                <!-- Cantidad -->
+                <th style="min-width: 100px; white-space: nowrap"></th>
+                <!-- Total -->
+                <!-- Febrero -->
+                <th style="min-width: 100px; white-space: nowrap"></th>
+                <th style="min-width: 100px; white-space: nowrap"></th>
+                <!-- Marzo -->
+                <th style="min-width: 100px; white-space: nowrap"></th>
+                <th style="min-width: 100px; white-space: nowrap"></th>
+                <!-- Abril -->
+                <th style="min-width: 100px; white-space: nowrap"></th>
+                <th style="min-width: 100px; white-space: nowrap"></th>
+                <!-- Mayo -->
+                <th style="min-width: 100px; white-space: nowrap"></th>
+                <th style="min-width: 100px; white-space: nowrap"></th>
+                <!-- Junio -->
+                <th style="min-width: 100px; white-space: nowrap"></th>
+                <th style="min-width: 100px; white-space: nowrap"></th>
+                <!-- Julio -->
+                <th style="min-width: 100px; white-space: nowrap"></th>
+                <th style="min-width: 100px; white-space: nowrap"></th>
+                <!-- Agosto -->
+                <th style="min-width: 100px; white-space: nowrap"></th>
+                <th style="min-width: 100px; white-space: nowrap"></th>
+                <!-- Septiembre -->
+                <th style="min-width: 100px; white-space: nowrap"></th>
+                <th style="min-width: 100px; white-space: nowrap"></th>
+                <!-- Octubre -->
+                <th style="min-width: 100px; white-space: nowrap"></th>
+                <th style="min-width: 100px; white-space: nowrap"></th>
+                <!-- Noviembre -->
+                <th style="min-width: 100px; white-space: nowrap"></th>
+                <th style="min-width: 100px; white-space: nowrap"></th>
+                <!-- Diciembre -->
+                <th style="min-width: 100px; white-space: nowrap"></th>
+                <th style="min-width: 100px; white-space: nowrap"></th>
+                <!-- Total -->
+                <th style="min-width: 100px; white-space: nowrap"></th>
+                <!-- Acciones -->
+                <th style="min-width: 90px; white-space: nowrap"></th>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        {% comment %}
+        <div class="modal-footer d-flex justify-content-end">
+          <button
+            id="btnAgregarServicio"
+            type="button"
+            class="btn btn-success px-4"
+          >
+            <i class="fas fa-plus mr-2"></i>AGREGAR
+          </button>
+        </div>
+        {% endcomment %}
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Fin Modal CAPEX -->
+
+<!-- Modal para agregar nuevo presupuesto de CAPEX -->
+
+<div
+  class="modal fade"
+  id="Modal_Servicios"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="ModalServiciosLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="ModalServiciosLabel">
+          Agregar Nuevo Presupuesto de Servicios
+        </h5>
+        <button
+          type="button"
+          class="close text-bold"
+          data-dismiss="modal"
+          aria-label="Cerrar"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="registerMaterialForm_servicios">
+          <div class="row" style="width: 100%">
+            <div class="col-md-6">
+              <div class="form-group">
+                <label for="grupo_servicio">GRUPO DE SERVICIOS</label>
+                <select
+                  class="form-control"
+                  id="grupo_servicio"
+                  name="grupo_servicio"
+                >
+                  <option value="" selected disabled>
+                    Seleccione un grupo de servicios
+                  </option>
+                  <option value="6000">6000 - Servicio de Transporte</option>
+                  <option value="6001">
+                    6001 - Servicio de Almacenamiento
+                  </option>
+                  <option value="6002">
+                    6002 - Servicio de Telecomunicaciones
+                  </option>
+                  <option value="6003">6003 - Servicio de Asesoría</option>
+                  <option value="6004">6004 - Servicios Documentarios</option>
+                  <option value="6005">6005 - Servicio de Fabricación</option>
+                  <option value="6006">6006 - Servicio de Mantenimiento</option>
+                  <option value="6007">6007 - Servicio de Alquileres</option>
+                  <option value="6008">6008 - Servicio de Suministros</option>
+                  <option value="6009">6009 - Servicios al Personal</option>
+                  <option value="6010">6010 - Servicio de Publicidad</option>
+                  <option value="6011">6011 - Servicio de Terceros</option>
+                  <option value="6012">6012 - Servicio de Análisis</option>
+                  <option value="6013">6013 - Servicio de Seguros</option>
+                  <option value="6014">6014 - Servicios Administrativos</option>
+                  <option value="6015">6015 - Servicio Varios</option>
+                  <option value="6380">
+                    6380 - SERVICIOS PERSONALES - CONTRATISTAS
+                  </option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="subgrupo_servicio">SUBGRUPO DE SERVICIOS</label>
+                <select
+                  class="form-control"
+                  id="subgrupo_servicio"
+                  name="subgrupo_servicio"
+                  required
+                >
+                  <option value="">Seleccione un subgrupo de servicios</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label for="descripcion_servicio"
+                  >DESCRIPCIÓN DEL SERVICIO</label
+                >
+                <select
+                  class="form-control"
+                  id="descripcion_servicio"
+                  name="descripcion_servicio"
+                  required
+                >
+                  <option value="">Seleccione un servicio</option>
+                </select>
+              </div>
+
+              {% comment %}
+              <div class="form-group">
+                <label for="idproducto_servicios">ID Producto</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="idproducto_servicios"
+                  name="idproducto_servicios"
+                  required
+                  readonly
+                />
+              </div>
+              {% endcomment %}
+
+              <input
+                type="hidden"
+                id="idproducto_servicios"
+                name="idproducto_servicios"
+                required
+              />
+
+              <div class="form-group">
+                <label for="observacion_servicios">Observación</label>
+                <textarea
+                  class="form-control"
+                  id="observacion_servicios"
+                  name="observacion_servicios"
+                  rows="2"
+                  placeholder="Ingrese una observación "
+                  style="resize: vertical; min-height: 50px"
+                ></textarea>
+              </div>
+
+              {% comment %}
+              <div class="form-group">
+                <label for="precio_unitario_servicios">Precio Unitario</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  class="form-control"
+                  id="precio_unitario_servicios"
+                  name="precio_unitario_servicios"
+                  required
+                  readonly
+                />
+              </div>
+              {% endcomment %}
+
+              <div class="form-group">
+                <label for="precio_unitario_servicios">Precio Unitario</label>
+                <div class="input-group">
+                  <input
+                    type="number"
+                    step="0.01"
+                    class="form-control"
+                    id="precio_unitario_servicios"
+                    name="precio_unitario_servicios"
+                    required
+                  />
+                  <div class="input-group-append"></div>
+                </div>
+              </div>
+              <!-- TOTALES -->
+              <div class="totales-container">
+                <div class="total-item">
+                  <span class="total-label">Cantidad Total:</span>
+                  <span id="cantidad_total_servicios" class="total-value"
+                    >0</span
+                  >
+                </div>
+                <div class="total-item">
+                  <span class="total-label">Precio Total:</span>
+                  <span id="precio_total_servicios" class="total-value"
+                    >S/. 0.00</span
+                  >
+                </div>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <h6>Seleccionar Meses y Cantidades</h6>
+
+              <div class="mb-3">
+                <div
+                  class="cantidad-masiva-container p-2 rounded shadow-sm border border-primary"
+                  style="
+                    background: linear-gradient(to right, #f8f9fa, #e9ecef);
+                  "
+                >
+                  <div class="input-group">
+                    <input
+                      type="number"
+                      class="form-control border-primary"
+                      id="cantidad_masiva_servicios"
+                      placeholder="Cantidad para todos los meses"
+                      min="0"
+                      style="border-radius: 5px 0 0 5px"
+                    />
+                    <div class="input-group-append">
+                      <button
+                        class="btn btn-primary px-3"
+                        type="button"
+                        id="aplicar_cantidad_masiva_servicios"
+                        title="Aplicar cantidad a todos los meses"
+                        style="
+                          border-radius: 0 5px 5px 0;
+                          transition: all 0.3s ease;
+                        "
+                      >
+                        <i class="fas fa-fill me-1"></i>
+                        <span>Aplicar</span>
+                      </button>
+                    </div>
+                  </div>
+                  <small class="text-muted mt-1 d-block">
+                    <i class="fas fa-info-circle"></i>
+                    Ingrese una cantidad para aplicar a todos los meses
+                  </small>
+                </div>
+              </div>
+
+              <div class="meses-container">
+                {% for mes in meses %}
+                <div class="custom-switch-container">
+                  <span class="mes-nombre">{{ mes|title }}</span>
+                  <label class="switch">
+                    <input
+                      type="checkbox"
+                      id="{{ mes }}_switch_servicios"
+                      name="{{ mes }}_switch_servicios"
+                    />
+                    <span class="slider round"></span>
+                  </label>
+                  <input
+                    type="number"
+                    class="form-control cantidad-mes-servicios"
+                    id="{{ mes }}_cantidad_servicios"
+                    name="{{ mes }}_cantidad_servicios"
+                    placeholder="Cantidad"
+                    min="0"
+                    style="width: 80px; margin-left: 10px"
+                  />
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+          <button
+            type="submit"
+            id="submitBtn_servicios"
+            class="btn btn-primary btn-block mt-3"
+          >
+            Guardar Presupuesto de Servicios
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  #capexTable .descripcion-column {
+    text-align: left !important;
+    min-width: 400px !important;
+    white-space: nowrap !important;
+  }
+
+  /* Para asegurar que el encabezado también esté alineado */
+  #capexTable thead th:nth-child(3) {
+    text-align: right !important;
+  }
+
+  /* Estilos para la columna fija 
+    .sticky-col {
+        position: sticky !important;
+        right: 0 !important;
+        background-color: white !important;
+        z-index: 3 !important;
+        box-shadow: -5px 0 5px rgba(0,0,0,0.1) !important;
+    }
+    
+     Asegura que el encabezado de la columna fija también esté fijo 
+    thead th:last-child {
+        position: sticky !important;
+        right: 0 !important;
+        background-color: white !important;
+        z-index: 3 !important;
+    } */
+
+  .sticky-col {
+    position: sticky !important;
+    right: 0 !important;
+    background-color: white !important;
+    z-index: 1 !important; /* Aumentamos el z-index */
+    box-shadow: -5px 0 5px rgba(0, 0, 0, 0.1) !important;
+
+    border-left: 2px solid #34495e !important;
+    background-color: #fff !important;
+  }
+
+  /* Aseguramos que el encabezado de la columna fija tenga mayor z-index */
+  thead th:last-child {
+    position: sticky !important;
+    right: 0 !important;
+    background-color: white !important;
+    /* Mayor z-index que el contenido */
+  }
+
+  /* ESTILOS PARA LA COLUMNA FIJA */
+  /* Versión alternativa con colores más corporativos */
+
+  /* estilos para los totales */
+
+  #serviciosTable tfoot th {
+    background-color: #f8f9fa;
+    font-weight: bold;
+    padding: 10px;
+    border-top: 2px solid #dee2e6;
+  }
+
+  #serviciosTable tfoot th:nth-child(7) {
+    /* Columna "TOTALES:" */
+    text-align: center;
+    background-color: #e9ecef;
+  }
+
+  /* Alineación para cantidades */
+  #serviciosTable tfoot th div.text-center {
+    text-align: center !important;
+  }
+
+  /* Alineación para montos */
+  #serviciosTable tfoot th div.text-right {
+    text-align: right !important;
+  }
+
+  /* Estilo para el total general */
+  #serviciosTable tfoot th:nth-last-child(2) {
+    background-color: #e9ecef;
+    font-weight: bold;
+  }
+
+  /* Estilos para el botón de aplicar cantidad masiva */
+  .cantidad-masiva-container {
+    background-color: #f8f9fa;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+  }
+
+  #aplicar_cantidad_masiva {
+    white-space: nowrap;
+  }
+
+  #cantidad_masiva::-webkit-inner-spin-button,
+  #cantidad_masiva::-webkit-outer-spin-button {
+    opacity: 1;
+  }
+
+  /*===================================*/
+  /* Estilos para los botones del panel */
+  /*=====================================*/
+  .panel-heading-btn {
+    display: flex;
+    gap: 5px;
+  }
+
+  .panel-heading-btn .btn-circle {
+    width: 30px;
+    height: 30px;
+    padding: 6px 0;
+    border-radius: 15px;
+    text-align: center;
+    font-size: 12px;
+    line-height: 1.428571429;
+  }
+
+  .panel-heading-btn .btn-default {
+    background-color: #f8f9fa;
+    border-color: #ddd;
+  }
+
+  .panel-heading-btn .btn-success {
+    background-color: #28a745;
+    border-color: #28a745;
+  }
+
+  .panel-heading-btn .btn-danger {
+    background-color: #dc3545;
+    border-color: #dc3545;
+  }
+
+  /* Loader */
+  .panel-loader {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+
+  /* Mantener el sidebar visible */
+  body.modal-open {
+    overflow: hidden;
+    padding-right: 0 !important;
+  }
+
+  /*===================================================*/
+  /* Estilos para el botón de agregar servicio */
+  /*===================================================*/
+
+  .dt-buttons {
+    display: flex;
+    width: 100%;
+    align-items: center;
+  }
+
+  .dt-buttons .btn-success:last-child {
+    margin-left: auto;
+  }
+
+  .btn-agregar {
+    width: 150px !important;
+    margin-left: auto !important;
+  }
+
+  /* =================================================*/
+  /* Estilos para anclar las columnas de N°, idproducto, descripcion*/
+  /* =================================================*/
+
+  .sticky-col-left {
+    position: sticky !important;
+    left: 0 !important;
+    background-color: white !important;
+    z-index: 1 !important;
+  }
+
+  .sticky-col-left-1 {
+    left: 0 !important;
+  }
+
+  .sticky-col-left-2 {
+    left: 60px !important; /* Ancho de la columna N° */
+  }
+
+  .sticky-col-left-3 {
+    left: 170px !important; /* Ancho de la columna N° + ID Producto */
+  }
+
+  /* Aseguramos que los encabezados tengan mayor z-index */
+  thead th.sticky-col-left {
+    z-index: 2 !important;
+  }
+
+  /*===================================================*/
+  /* Estilos para el botón de recargar */
+  /*===================================================*/
+  .panel-loader {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+
+  .panel-loader .spinner-border {
+    width: 3rem;
+    height: 3rem;
+    color: #28a745;
+  }
+</style>
+
+<!-- Fin Modal para agregar nuevo presupuesto de CAPEX -->
+{% block js %}
+
+<script>
+  $(document).ready(function () {
+    // Botón expandir
+    $('[data-click="panel-expand"]').click(function (e) {
+      e.stopPropagation(); // Prevenir propagación del evento
+
+      var modal = $("#PresupuestoModalServicios");
+      var modalDialog = modal.find(".modal-dialog");
+      var modalContent = modal.find(".modal-content");
+
+      if (modal.hasClass("modal-fullscreen")) {
+        // Restaurar tamaño original
+        modal.removeClass("modal-fullscreen");
+        modalDialog.css({
+          "max-width": "75%",
+          width: "75%",
+          height: "auto",
+          margin: "1.75rem auto",
+          position: "relative",
+        });
+        modalContent.css({
+          height: "auto",
+        });
+      } else {
+        // Expandir a pantalla completa
+        modal.addClass("modal-fullscreen");
+        modalDialog.css({
+          "max-width": "100vw",
+          width: "100vw",
+          height: "100vh",
+          margin: "0",
+          position: "fixed",
+          top: "0",
+          left: "0",
+        });
+        modalContent.css({
+          height: "100vh",
+        });
+      }
+    });
+
+    // Botón recargar
+    $('[data-click="panel-reload"]').click(function (e) {
+      e.stopPropagation();
+      var panel = $(this).closest(".modal-content");
+
+      panel.append(
+        '<div class="panel-loader"><span class="spinner-border spinner-border-sm"></span></div>'
+      );
+
+      setTimeout(function () {
+        $(".panel-loader", panel).remove();
+        cargarDatosServicios();
+      }, 500);
+    });
+
+    // Botón cerrar
+    $('[data-click="panel-remove"]').click(function (e) {
+      e.stopPropagation();
+      $("#PresupuestoModalServicios").modal("hide");
+    });
+  });
+</script>
+
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+<script src="{% static 'core/js/EVALUACIONES/CampoVerde/servicios_cv.js' %}"></script>
+
+{% endblock %}

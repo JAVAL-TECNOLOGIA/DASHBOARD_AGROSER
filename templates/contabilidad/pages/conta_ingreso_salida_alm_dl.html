@@ -1,0 +1,270 @@
+{% load static %}
+{% include 'base/header.html' %}
+{% block page %} 
+    Inicio 
+{% endblock %}
+{% include 'base/sidebar.html' %}
+
+    	<!-- begin #content -->
+		<div id="content" class="content">
+           
+            
+        
+            
+            <!-- begin panel -->
+            <div class="panel panel-inverse">
+                <div class="panel-heading">
+                    <h4 class="panel-title">Registro de Movimientos</h4>
+                    <div class="panel-heading-btn">
+                        <a href="javascript:;" class="btn btn-xs btn-icon btn-circle btn-default" data-click="panel-expand"><i class="fa fa-expand"></i></a>
+                        <a href="javascript:;" class="btn btn-xs btn-icon btn-circle btn-success" data-click="panel-reload"><i class="fa fa-redo"></i></a>
+                        <a href="javascript:;" class="btn btn-xs btn-icon btn-circle btn-warning" data-click="panel-collapse"><i class="fa fa-minus"></i></a>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <!-- begin filter section -->
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text bg-primary text-white">Periodo</span>
+                                </div>
+                                <input type="text" id="filtro-periodo" class="form-control" placeholder="Ejemplo: 202401" maxlength="6" pattern="\d{6}" title="Ingrese 6 dígitos en formato AAAAMM" />
+                                <div class="input-group-append">
+                                    <span class="input-group-text bg-light">
+                                        <i class="far fa-calendar-alt"></i>
+                                    </span>
+                                </div>
+                            </div>
+                            <small class="text-muted">Formato: AAAAMM (202401)</small>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text bg-primary text-white">Estado</span>
+                                </div>
+                                <select id="filtro-estado" class="form-control">
+                                    <option value="">Todos</option>
+                                    <option value="PE" class="text-warning">Pendiente</option>
+                                    <option value="W1" class="text-success">Aceptado SUNAT</option>
+                                    <option value="W0" class="text-info">Pendiente SUNAT</option>
+                                    <option value="AN" class="text-danger">Anulado</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text bg-primary text-white">Operación</span>
+                                </div>
+                                <select id="filtro-operacion" class="form-control">
+                                    <option value="">Todas</option>
+                                    <option value="SALM">Salida Almacén</option>
+                                    <option value="IALM">Ingreso Almacén</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="d-flex">
+                                <button class="btn btn-primary" id="btn-filtrar">
+                                    <i class="fas fa-filter mr-1"></i> Filtrar
+                                </button>
+                                <button class="btn btn-outline-secondary ml-2" id="btn-limpiar-filtros">
+                                    <i class="fas fa-eraser mr-1"></i> Limpiar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- end filter section -->
+                    
+                    <!-- begin table info -->
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <span class="text-muted">
+                                Total registros: <span id="contador-registros" class="badge badge-primary">0</span>
+                            </span>
+                        </div>
+                    </div>
+                    <!-- end table info -->
+                    
+                    <!-- begin table -->
+                    <div class="row">
+                        <div class="col-md-12">
+                            <!-- Contenedor principal con scroll horizontal mejorado -->
+                            <div class="table-responsive" style="width: 100%; overflow-x: auto;">
+                                <table id="tabla-ingresos-salidas" class="table table-striped table-bordered table-hover" style="width: 100%;">
+                                    <thead>
+                                        <tr>
+                                            <!-- Columnas principales -->
+                                            <th>ID</th>
+                                            <th>Periodo</th>
+                                            <th>Fecha</th>
+                                            <th>Operación</th>
+                                            <th>Núm. Operación</th>
+                                            <th>Descripción</th>
+                                            <th>Estado</th>
+                                            <th>Fecha Creación</th>
+                                            
+                                            <!-- Datos de empresa y documentos -->
+                                            <th>IDEMPRESA</th>
+                                            <th>IDEMISOR</th>
+                                            <th>IDSUBDIARIO</th>
+                                            <th>VOUCHER</th>
+                                            <th>IDALMACEN</th>
+                                            <th>IDDOCUMENTO</th>
+                                            <th>SERIE</th>
+                                            <th>NUMERO</th>
+                                            
+                                            <!-- Datos de terceros y proyectos -->
+                                            <th>IDCLIEPROV</th>
+                                            <th>IDPROYECTO</th>
+                                            <th>IDRESPONSABLE</th>
+                                            
+                                            <!-- Datos monetarios -->
+                                            <th>IDMONEDA</th>
+                                            <th>TCAMBIO</th>
+                                            <th>TCMONEDA</th>
+                                            
+                                            <!-- Motivos y referencias -->
+                                            <th>IDMOTIVO</th>
+                                            <th>IDALMACEND</th>
+                                            <th>IDDOCORIGEN</th>
+                                            <th>SERIEDOCORIGEN</th>
+                                            <th>NUMDOCORIGEN</th>
+                                            <th>FECHADOCORIGEN</th>
+                                            
+                                            <!-- Transporte -->
+                                            <th>IDFLETE</th>
+                                            <th>IDTRANSPORTISTA</th>
+                                            <th>CERTIFTRANSPORTE</th>
+                                            <th>CERTIFTRANSPORTE1</th>
+                                            <th>PLACA</th>
+                                            <th>PLACA1</th>
+                                            <th>MARCA</th>
+                                            <th>MARCA1</th>
+                                            <th>CHOFER</th>
+                                            <th>BREVETE</th>
+                                            <th>LLEVADOPOR</th>
+                                            
+                                            <!-- Fechas y datos adicionales -->
+                                            <th>FECHATRASLADO</th>
+                                            <th>DIRECLLEGADA</th>
+                                            
+                                            <!-- Valores financieros -->
+                                            <th>PRECIOIGV</th>
+                                            <th>REDONDEO</th>
+                                            <th>TOTAL</th>
+                                            <th>ES_GASTOS</th>
+                                            <th>ES_PROVISION</th>
+                                            <th>ES_RIEGO</th>
+                                            <th>SINCRONIZA</th>
+                                            
+                                            <!-- Contabilización y estados -->
+                                            <th>IDCONTABILIZADO</th>
+                                            <th>IDCONSUMIDOR</th>
+                                            <th>IDLINEAPRODUC</th>
+                                            <th>IDLOTE</th>
+                                            <th>CONTABILIZADO</th>
+                                            
+                                            <!-- Información de sucursal y referencia -->
+                                            <th>IDSUCURSALD</th>
+                                            <th>IDDOCORIGEN2</th>
+                                            <th>SERIEDOCORIGEN2</th>
+                                            <th>NUMDOCORIGEN2</th>
+                                            <th>FECHADOCORIGEN2</th>
+                                            <th>IDSUCURSAL</th>
+                                            <th>VENTANA</th>
+                                            
+                                            <!-- Valores adicionales -->
+                                            <th>VVENTA</th>
+                                            <th>IMPUESTO</th>
+                                            <th>DESCUENTO</th>
+                                            <th>VOLUMEN</th>
+                                            <th>NUMBATCH</th>
+                                            <th>NUMAUTOCLAVE</th>
+                                            
+                                            <!-- Otros campos importantes -->
+                                            <th>FECHACOSECHA</th>
+                                            <th>OCCLIENTE</th>
+                                            <th>OTRADIRECCION</th>
+                                            <th>IMPRESO</th>
+                                            <th>HORA</th>
+                                            
+                                            <!-- Campos de flete y peso -->
+                                            <th>IDMONEDA_FLETE</th>
+                                            <th>IMPORTE_FLETE</th>
+                                            <th>PESO_TOTAL</th>
+                                            <th>IMPORTADO</th>
+                                            
+                                            <!-- Datos adicionales y referencias -->
+                                            <th>IDCONTROLADOR</th>
+                                            <th>IDCLIEPROVDEST</th>
+                                            <th>IDCOMPRA</th>
+                                            <th>IDUBIGEOLLEGADA</th>
+                                            
+                                            <!-- Documento origen 3 -->
+                                            <th>IDDOCORIGEN3</th>
+                                            <th>SERIEDOCORIGEN3</th>
+                                            <th>NUMDOCORIGEN3</th>
+                                            <th>FECHADOCORIGEN3</th>
+                                            
+                                            <!-- Otros campos de negocio -->
+                                            <th>IDUNIDADNEGOCIO</th>
+                                            <th>IDCNFDISTRIBUCION</th>
+                                            <th>IDTURNOTRABAJO</th>
+                                            <th>IDPRODUCTO</th>
+                                            <th>IDREFPROCESO</th>
+                                            <th>IDPROCESO</th>
+                                            <th>IDSUBPROCESO</th>
+                                            <th>FECHAEXPIRACION</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Los datos se cargarán dinámicamente -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <!-- Contenedor explícito para la paginación -->
+                            <div class="row mt-3">
+                                <div class="col-sm-12 col-md-5">
+                                    <div class="dataTables_info" id="info-registros" role="status" aria-live="polite"></div>
+                                </div>
+                                <div class="col-sm-12 col-md-7">
+                                    <div class="dataTables_paginate paging_simple_numbers" id="paginacion-tabla"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- end table -->
+                </div>
+            </div>
+            <!-- end panel -->
+        </div>
+		<!-- end #content -->
+
+{% include 'base/footer.html' %}
+{% block js %}
+
+
+
+    <!-- DataTables JS -->
+    <script type="text/javascript" src="https://cdn.datatables.net/v/bs4/jszip-2.5.0/dt-1.10.21/b-1.6.2/b-html5-1.6.2/datatables.min.js"></script>
+
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.68/pdfmake.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.68/vfs_fonts.js"></script> 
+    
+    
+    <script src="{% static 'assets/js/buttons.html5.styles.min.js' %}"></script>
+    <script src="{% static 'assets/js/buttons.html5.styles.templates.min.js' %}"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    
+    
+    <!-- SweetAlert2 para mensajes -->
+    <script src="{% static 'core/plugins/sweetalert2/dist/sweetalert2.min.js' %}"></script>
+    
+    <!-- Script personalizado para esta página -->
+    <script src="{% static 'core/js/CONTABILIDAD/script_ingreso_salida_alm_dl.js' %}"></script>
+{% endblock %}

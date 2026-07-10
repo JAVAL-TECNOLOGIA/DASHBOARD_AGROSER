@@ -1,0 +1,177 @@
+{% load static %}
+{% include 'base/header.html' %}
+{% include 'base/sidebar.html' %}
+
+{% block css %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+/* Título secciones */
+.section-title {
+    background: #0d4d29;
+    color: white;
+    padding: 10px 14px;
+    border-radius: 6px;
+    margin-bottom: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+/* Card de Yema */
+.yema-card {
+    border-radius: 10px;
+    border: 1px solid #e0e0e0;
+    padding: 12px;
+    margin-bottom: 15px;
+    background: #fafafa;
+}
+
+/* Botones */
+.btn-plus, .btn-minus {
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    font-size: 20px;
+}
+
+/* Botón de foto */
+.foto-btn {
+    width: 100%;
+    background: #b3b3b3;
+    color: white;
+    font-weight: 600;
+    padding: 12px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+</style>
+{% endblock %}
+
+<div id="content" class="content">
+    <div class="panel panel-inverse">
+
+        <div class="panel-heading">
+            <h3 class="panel-title">Análisis de Fertilidad – Evaluaciones</h3>
+        </div>
+
+        <div class="panel-body">
+
+            <!-- FORMULARIO -->
+            <form method="POST">
+                {% csrf_token %}
+
+                <div class="section-title">EVALUACIÓN GENERAL</div>
+
+                <!-- Lote -->
+                <div class="mb-3">
+                    <label class="form-label">Selecciona Lote</label>
+                    <select class="form-select">
+                        <option>Lote 7A – Sector Norte</option>
+                        <option>Lote 12B – Fundo Don Luis</option>
+                        <option>Lote 3C – Sector Sur</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Lote Manual (solo emergencia)</label>
+                    <input type="text" class="form-control" placeholder="Ej: Lote X23">
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Evaluación</label>
+                    <select class="form-select">
+                        <option>Evaluación 1</option>
+                        <option>Evaluación 2</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Tipo de cargador</label>
+                    <select class="form-select">
+                        <option>Cargador manual</option>
+                        <option>Cargador automático</option>
+                    </select>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Número de cargador</label>
+                    <div class="input-group">
+                        <button class="btn btn-outline-secondary btn-minus" type="button">-</button>
+                        <input type="number" class="form-control text-center" value="1">
+                        <button class="btn btn-outline-secondary btn-plus" type="button">+</button>
+                    </div>
+                </div>
+
+                <!-- ======================= YEMAS ======================== -->
+                <div class="section-title">EVALUACIÓN DE YEMAS</div>
+
+                {% for i in "1234567" %}
+                <div class="yema-card">
+                    <h6 class="fw-bold mb-2">YEMA {{ forloop.counter }}</h6>
+
+                    <label class="form-label">Número de yema</label>
+                    <div class="input-group mb-3">
+                        <button class="btn btn-outline-secondary btn-minus" type="button">-</button>
+                        <input type="number" class="form-control text-center" value="{{ forloop.counter }}">
+                        <button class="btn btn-outline-secondary btn-plus" type="button">+</button>
+                    </div>
+
+                    <label class="form-label">{{ forloop.counter }}. Parámetros</label>
+                    <select class="form-select mb-3">
+                        <option>Longitud</option>
+                        <option>Grosor</option>
+                        <option>Color</option>
+                    </select>
+
+                    <label class="form-label">{{ forloop.counter }}. Cat/Yema</label>
+                    <select class="form-select">
+                        <option>Cat A</option>
+                        <option>Cat B</option>
+                        <option>Cat C</option>
+                    </select>
+                </div>
+                {% endfor %}
+
+                <div class="mb-3">
+                    <label class="form-label">Observaciones</label>
+                    <input type="text" class="form-control" placeholder="Notas adicionales...">
+                </div>
+
+                <!-- FOTOS -->
+                <div class="section-title">REGISTRO FOTOGRÁFICO</div>
+
+                {% for f in "12345" %}
+                    <button type="button" class="foto-btn">📷 TOMAR FOTO {{ forloop.counter }}</button>
+                {% endfor %}
+
+                <button class="btn btn-success w-100 mt-3">Guardar Evaluación</button>
+
+            </form>
+        </div>
+    </div>
+</div>
+
+{% include 'base/footer.html' %}
+
+{% block js %}
+<script>
+      $(document).ready(function () {
+        App.init();
+    });
+    // Comportamiento de +/- botones
+    document.querySelectorAll(".btn-plus").forEach(btn => {
+        btn.addEventListener("click", function () {
+            let input = this.previousElementSibling;
+            input.value = parseInt(input.value) + 1;
+        });
+    });
+
+    document.querySelectorAll(".btn-minus").forEach(btn => {
+        btn.addEventListener("click", function () {
+            let input = this.nextElementSibling;
+            if (parseInt(input.value) > 0)
+                input.value = parseInt(input.value) - 1;
+        });
+    });
+</script>
+{% endblock %}

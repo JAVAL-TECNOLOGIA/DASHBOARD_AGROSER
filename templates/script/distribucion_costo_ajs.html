@@ -1,0 +1,107 @@
+{% load static %} {% include 'base/header.html' %} {% block css %}
+<link
+  href="{% static 'assets/plugins/DataTables/media/css/dataTables.bootstrap.min.css' %}"
+  rel="stylesheet"
+/>
+<link
+  href="{% static 'assets/plugins/DataTables/extensions/Buttons/css/buttons.bootstrap.min.css' %}"
+  rel="stylesheet"
+/>
+<link href="{% static 'core/css/oc_orden_compra_log.css' %}" rel="stylesheet" />
+{% endblock %} {% include 'base/sidebar.html' %}
+<!-- begin #content -->
+<div id="content" class="content">
+  <!-- begin panel -->
+  <div class="panel panel-inverse">
+    <div class="panel-heading">
+      <div class="panel-heading-btn">
+        <a
+          href="javascript:;"
+          class="btn btn-xs btn-icon btn-circle btn-default"
+          data-click="panel-expand"
+          ><i class="fa fa-expand"></i
+        ></a>
+      </div>
+      <h4 class="panel-title">
+        Reporte Distribución de costos Inversiones AJS
+      </h4>
+    </div>
+    <!-- begin panel-body -->
+    <div class="panel-body">
+      <div class="table-responsive">
+        <table class="table m-b-0 table-striped" id="table_dic_costo_ajs">
+          <thead>
+            <tr>
+              <th>IDEMPRESA</th>
+              <th>IDCABCONTA</th>
+              <th>IDEMISOR</th>
+              <th>PERIODO</th>
+              <th>IDSUBDIARIO</th>
+              <th>VOUCHER</th>
+              <th>FECHA</th>
+              <th>GLOSA</th>
+              <th>TABLAORIGEN</th>
+              <th>IDORIGEN</th>
+              <th>IDMONEDA</th>
+              <th>TCAMBIO</th>
+              <th>CARGO</th>
+              <th>ABONO</th>
+              <th>FECHA_CREACION</th>
+              <th>SINCRONIZA</th>
+              <th>IDESTADO</th>
+              <th>CENTRALIZADO</th>
+              <th>VENTANA</th>
+              <th>CONTABILIZADO</th>
+              <th>ES_APERTURA</th>
+              <th>ES_CIERRE</th>
+              <th>IDCLIEPROV</th>
+              <th>IDDOCUMENTO</th>
+              <th>IDCTACOBRANZA</th>
+              <th>IDCTAPROVISION</th>
+              <th>ABONO</th>
+              <th>IDCOSTO</th>
+              <th>TCMONEDA</th>
+              <th>CORRELATIVO_PLE</th>
+              <th>IDINGRESOSALIDAACIVO</th>
+              <th>VIENE_CIERRE</th>
+              <th>TIPO_CIERRE</th>
+              <th>IDCIERRE</th>
+              <th>IDTIPOMEDIOPAGO</th>
+              <th>IDTRANSF_23</th>
+              <th>IDPROCESOGENAPLICACION</th>
+              <th>IDREFERENCIA</th>
+              <th>TABLAREF</th>
+              <th>DOCREFERENCIA</th>
+              <th>VENTANAREF</th>
+              <th>OBSERVACIONES</th>
+              <th>IDCONTRATO</th>
+              <th>NUMVERSION</th>
+              <th>IDCLASECCOSTO_DISTRIBUCION</th>
+              <th>ORIGEN_DISTRIBUCION</th>
+              <th>IDORIGEN2</th>
+              <th>IDPLANTILLACIERRE</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <!-- end panel-body -->
+  </div>
+  <!-- end panel -->
+</div>
+<!-- end #content -->
+{% include 'base/footer.html' %} {% block js %}
+<script
+  type="text/javascript"
+  src="https://cdn.datatables.net/v/bs4/jszip-2.5.0/dt-1.10.21/b-1.6.2/b-html5-1.6.2/datatables.min.js"
+></script>
+<script src="{% static 'assets/js/buttons.html5.styles.min.js' %}"></script>
+<script src="{% static 'assets/js/buttons.html5.styles.templates.min.js' %}"></script>
+<script src="{% static 'core/js/script/script_distribucion_costo_ajs.js' %}"></script>
+<script>
+  $(document).ready(function () {
+    App.init();
+  });
+</script>
+{% endblock %}

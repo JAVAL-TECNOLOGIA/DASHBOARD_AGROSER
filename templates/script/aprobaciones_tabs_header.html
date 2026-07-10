@@ -1,0 +1,72 @@
+{% load static %}
+
+<style>
+    .aprobaciones-header {
+        background: linear-gradient(90deg, #f39c12 0%, #e67e22 100%);
+        color: white;
+        padding: 15px 20px;
+        margin-bottom: 0;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+    
+    .aprobaciones-header h4 {
+        margin: 0;
+        font-weight: 600;
+        font-size: 18px;
+    }
+    
+    .tabs-nav {
+        display: flex;
+        background: #f5f5f5;
+        border-bottom: 2px solid #ddd;
+        overflow-x: auto;
+        margin-bottom: 20px;
+    }
+    
+    .tab-item {
+        padding: 15px 25px;
+        cursor: pointer;
+        background: #e0e0e0;
+        border: none;
+        font-size: 14px;
+        font-weight: 500;
+        color: #333;
+        white-space: nowrap;
+        transition: all 0.3s ease;
+        border-right: 1px solid #ccc;
+        text-decoration: none;
+        display: inline-block;
+    }
+    
+    .tab-item:hover {
+        background: #d0d0d0;
+        color: #333;
+        text-decoration: none;
+    }
+    
+    .tab-item.active {
+        background: white;
+        color: #000;
+        border-bottom: 2px solid white;
+        margin-bottom: -2px;
+    }
+</style>
+
+<!-- Header de Aprobaciones -->
+<div class="aprobaciones-header">
+    <i class="fa fa-list-alt fa-2x"></i>
+    <div>
+        <h4>APROBACIONES - {{ empresa_nombre|upper }}</h4>
+    </div>
+</div>
+
+<!-- Tabs de navegación -->
+<div class="tabs-nav">
+    {% for tab in tabs_aprobaciones %}
+    <a href="{% url tab.url %}" class="tab-item {% if tab.active %}active{% endif %}">
+        {{ tab.nombre|upper }}
+    </a>
+    {% endfor %}
+</div>

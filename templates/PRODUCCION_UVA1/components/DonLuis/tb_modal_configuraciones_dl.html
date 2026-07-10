@@ -1,0 +1,137 @@
+{% load static %}
+
+<div
+  class="modal fade"
+  id="modalConfiguracion"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="modalConfiguracionLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title" id="modalConfiguracionLabel">
+          Configuraciones de Sueldos y Salarios
+        </h5>
+        <button
+          type="button"
+          class="close text-white"
+          data-dismiss="modal"
+          aria-label="Cerrar"
+        >
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="container mt-4">
+          <div class="card shadow">
+            <div class="card-body">
+              <form id="configForm">
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="form-group">
+                      <label for="sueldoMinimo">Sueldo Mínimo:</label>
+                      <input
+                        type="number"
+                        class="form-control"
+                        id="sueldoMinimo"
+                        step="0.01"
+                        min="0"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-group">
+                      <label for="tasaSueldo">Tasa Carga Social Sueldo:</label>
+                      <input
+                        type="number"
+                        class="form-control"
+                        id="tasaSueldo"
+                        step="0.0001"
+                        min="0"
+                        max="1"
+                        required
+                      />
+                      <small class="form-text text-muted"
+                        >Valor entre 0 y 1</small
+                      >
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-group">
+                      <label for="tasaSalario"
+                        >Tasa Carga Social Salario:</label
+                      >
+                      <input
+                        type="number"
+                        class="form-control"
+                        id="tasaSalario"
+                        step="0.0001"
+                        min="0"
+                        max="1"
+                        required
+                      />
+                      <small class="form-text text-muted"
+                        >Valor entre 0 y 1</small
+                      >
+                    </div>
+                  </div>
+
+                  <div class="col-md-6">
+                    <div class="form-group">
+                      <label for="montoTransporte">Monto Transporte:</label>
+                      <input
+                        type="number"
+                        class="form-control"
+                        id="montoTransporte"
+                        step="0.01"
+                        min="0"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="form-group">
+                      <label for="montoAlimentacion">Monto Alimentación:</label>
+                      <input
+                        type="number"
+                        class="form-control"
+                        id="montoAlimentacion"
+                        step="0.01"
+                        min="0"
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div class="mt-4">
+                  <button
+                    type="button"
+                    class="btn btn-primary"
+                    onclick="actualizarConfiguraciones()"
+                  >
+                    Guardar Cambios
+                  </button>
+                </div>
+
+                <div class="mt-4">
+                  <h5>Última actualización:</h5>
+                  <p>Fecha: <span id="ultimaActualizacion">-</span></p>
+                  <p>Usuario: <span id="usuarioActualizacion">-</span></p>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% block js %}
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+<script src="{% static 'core/js/PRODUCCION_UVA1/DonLuis/configuraciones_dl.js' %}"></script>
+{% endblock %}

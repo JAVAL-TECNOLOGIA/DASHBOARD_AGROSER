@@ -1,0 +1,178 @@
+{% load static %}
+{% include 'base/header.html' %}
+{% include 'base/sidebar.html' %}
+
+{% block css %}
+<link href="{% static 'assets/plugins/DataTables/media/css/dataTables.bootstrap.min.css' %}" rel="stylesheet" />
+<link href="{% static 'assets/plugins/DataTables/extensions/Buttons/css/buttons.bootstrap.min.css' %}" rel="stylesheet" />
+<link href="//cdn.datatables.net/2.1.8/css/dataTables.dataTables.min.css" rel="stylesheet" />
+{% endblock %}
+
+<!-- begin #content -->
+<div id="content" class="content">
+
+    <!-- Encabezado de la página -->
+    <div class="area-logo d-inline-flex align-items-center rounded shadow-sm mb-3" 
+        style="background: #4CAF50; padding: 0.5rem 1rem;">
+        <div class="d-flex align-items-center">
+            <div class="bg-white rounded-circle shadow mr-3 p-2">
+                <i class="fas fa-chart-line fa-2x" style="color: #4CAF50;"></i>
+            </div>
+            <div>
+                <h4 class="text-white font-weight-bold mb-0">
+                    PRODUCCIÓN UVA - DETALLE COMPLETO
+                </h4>
+            </div>
+        </div>
+    </div>
+
+    <!-- Botón de recarga -->
+    <div class="d-flex justify-content-end mb-3">
+        <button id="recargarTablaProdUva" class="btn btn-info btn-sm" title="Recargar">
+            <i class="fa fa-sync"></i> Recargar
+        </button>
+    </div>
+
+    <div class="card shadow">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table id="tablaProdUva" class="table table-bordered table-striped prod-uva-table" style="width:100%; min-width:2400px;">
+                    <thead class="thead-dark">
+                        <tr>
+                            <th>ID_PRODUVA</th>
+                            <th>RENDIMIENTO</th>
+                            <th>RAC_PLANTA</th>
+                            <th>RAC_LOTE</th>
+                            <th>RAC_PACKING</th>
+                            <th>RAC_NACIONAL</th>
+                            <th>PESO RAC</th>
+                            <th>KG_PROYEC_LOTE</th>
+                            <th>KG_EXPOR_LOTE</th>
+                            <th>KG_DESC_CAMP_LOTE</th>
+                            <th>KG_DESC_PROC_LOTE</th>
+                            <th>KG_PROYEC_HA</th>
+                            <th>KG_EXPOR_HA</th>
+                            <th>KG_DESC_CAMP_HA</th>
+                            <th>KG_DESC_PROC_HA</th>
+                            <th>CAJ_LOTE</th>
+                            <th>CAJ_HA</th>
+                            <th>CANT</th>
+                            <th>PORC</th>
+                            <th>ENV_FRU_PACK</th>
+                            <th>TOTAL_KG_ENV</th>
+                            <th>CAJAS</th>,
+                            <th>ID_DETALLE</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Se llena por JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<style>
+/* Estilos exclusivos para la tabla prod_uva, sin sticky y con scroll horizontal */
+.prod-uva-table th,
+.prod-uva-table td {
+    position: static !important;
+    right: auto !important;
+    left: auto !important;
+    z-index: auto !important;
+    background: #fff !important;
+    box-shadow: none !important;
+    white-space: nowrap;
+}
+
+.prod-uva-table thead th {
+    background: #f8f9fa !important;
+    color: #212529 !important;
+    font-weight: bold;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.prod-uva-table .sticky-col,
+.prod-uva-table th.sticky-col,
+.prod-uva-table td.sticky-col {
+    position: static !important;
+    right: auto !important;
+    left: auto !important;
+    z-index: auto !important;
+    background: #fff !important;
+    box-shadow: none !important;
+}
+
+.prod-uva-table th:last-child,
+.prod-uva-table td:last-child {
+    position: static !important;
+    right: auto !important;
+    left: auto !important;
+    z-index: auto !important;
+    background: #fff !important;
+    box-shadow: none !important;
+    border-left: 1px solid #dee2e6 !important;
+}
+
+.prod-uva-table {
+    min-width: 2400px;
+}
+
+.table-responsive {
+    overflow-x: auto;
+}
+
+#tablaProdUva th, #tablaProdUva td {
+    position: static !important;
+    z-index: auto !important;
+    background: #fff !important;
+    color: #212529 !important;
+    white-space: nowrap;
+}
+
+/* Encabezado normal */
+#tablaProdUva thead th {
+    background: #f8f9fa !important;
+    color: #212529 !important;
+    font-weight: bold;
+    border-bottom: 2px solid #dee2e6;
+}
+
+/* Quita sticky de la última columna si algún plugin lo puso */
+#tablaProdUva th:last-child, #tablaProdUva td:last-child {
+    position: static !important;
+    right: auto !important;
+    background: #fff !important;
+    z-index: auto !important;
+    box-shadow: none !important;
+    border-left: 1px solid #dee2e6 !important;
+}
+
+#tablaProdUva {
+    min-width: 2400px;
+}
+</style>
+
+{% include 'base/footer.html' %}
+
+{% block js %}
+<script>
+    App.init();
+    window.USER_ID = {{ request.user.id|default:'null' }};
+    window.dataTableEsUrl = "{% static 'assets/plugins/DataTables/i18n/es-ES.json' %}";
+</script>
+
+<script type="text/javascript" src="https://cdn.datatables.net/v/bs4/jszip-2.5.0/dt-1.10.21/b-1.6.2/b-html5-1.6.2/datatables.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.68/pdfmake.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.68/vfs_fonts.js"></script>
+
+<script src="{% static 'assets/js/buttons.html5.styles.min.js' %}"></script>
+<script src="{% static 'assets/js/buttons.html5.styles.templates.min.js' %}"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script src="{% static 'core/js/PRESUPUESTO_AGRICOLA/produccion_tabla_produva.js' %}"></script>
+
+{% endblock %}

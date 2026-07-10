@@ -1,0 +1,130 @@
+{% load static %}
+<!DOCTYPE html>
+<!--[if IE 8]> <html lang="en" class="ie8"> <![endif]-->
+<!--[if !IE]><!-->
+<html lang="en">
+<!--<![endif]-->
+<head>
+	<meta charset="utf-8" />
+	<title> AGROSERVICE</title>
+	<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport" />
+	<meta content="" name="description" />
+	<meta content="" name="author" />
+    <link rel="icon" type="image/png" href="{% static 'assets/img/logo/agroservice.png' %}">		
+	<!-- ================== BEGIN BASE CSS STYLE ================== -->
+	<link href="http://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700" rel="stylesheet" />
+	<link href="{% static 'assets/plugins/jquery-ui/jquery-ui.min.css' %}" rel="stylesheet" />
+	<link href="{% static 'assets/plugins/bootstrap/4.0.0/css/bootstrap.min.css' %}" rel="stylesheet" />
+	<link href="{% static 'assets/plugins/font-awesome/5.0/css/fontawesome-all.min.css' %}" rel="stylesheet" />
+	<link href="{% static 'assets/plugins/animate/animate.min.css' %}" rel="stylesheet" />
+	<link href="{% static 'assets/css/default/style.min.css' %}" rel="stylesheet" />
+	<link href="{% static 'assets/css/default/style-responsive.min.css' %}" rel="stylesheet" />
+	<link href="{% static 'assets/css/default/theme/default.css' %}" rel="stylesheet" id="theme" />
+	<!-- ================== END BASE CSS STYLE ================== -->
+	
+	<!-- ================== BEGIN BASE JS ================== -->
+	<script src="{% static 'assets/plugins/pace/pace.min.js' %}"></script>
+	<!-- ================== END BASE JS ================== -->
+</head>
+<body class="pace-top bg-white">
+	<!-- begin #page-loader -->
+	<div id="page-loader" class="fade show"><span class="spinner"></span></div>
+	<!-- end #page-loader -->
+	
+	<!-- begin #page-container -->
+	<div id="page-container" class="fade">
+	    <!-- begin login -->
+        <div class="login login-with-news-feed">
+            <!-- begin news-feed -->
+            <div class="news-feed">
+                <div class="news-image" style="background-image: url({% static 'assets/img/logo/fondo-esp.jpg' %})" ></div>
+                <div class="news-caption">
+                    <h4 class="caption-title"><b>Agroservice Ica Sur S.A.C</b></h4>
+                    <p>
+                        Desarrollado por el área de TI.
+                    </p>
+                </div>
+            </div>
+        
+            <!-- end news-feed -->
+            <!-- begin right-content -->
+            <div class="right-content">
+                <!-- begin login-header -->
+                <div class="login-header">
+                    <div class="brand">
+                        <img src="{% static 'assets/img/logo/agroservice.png' %}" width="100" alt="" style="padding-bottom:1px;">
+                        <b style="font-size: 27px;">|</b><span style="font-size: 20px;"> Plataforma Web</span>
+                    </div>
+                    <div class="icon">
+                        <i class="fa fa-sign-in"></i>
+                    </div>
+                </div>
+                <!-- end login-header -->
+                <!-- begin login-content -->
+                <div class="login-content">
+                    <form  method="POST" class="margin-bottom-0">
+                    {% csrf_token %}
+                        
+                        <div class="form-group m-b-15">
+                            {{form.username}}
+                        </div>
+                        <div class="form-group m-b-15">
+                            {{form.password}}
+                        </div>
+                        {% if  form.errors %}
+                        <div class="alert alert-danger fade show">
+                            <span class="close" data-dismiss="alert">×</span>
+                            <strong>Error:</strong>
+                            El usuario o contraseña son incorrectos.
+                        </div>
+                        {% endif %}
+                        {% if next %}
+                            {% if user.is_authenticated %}
+                                <div class="alert alert-danger fade show">
+                                    <span class="close" data-dismiss="alert">×</span>
+                                    <strong>Error:</strong>
+                                    Su usuario no tiene permiso para acceder al portal
+                                </div>
+                            {% endif %}
+                        {% endif %}
+                        <div class="login-buttons">
+                            <button type="submit"class="btn btn-success btn-block btn-lg">Iniciar sesión</button>
+                        </div>
+                        <hr />
+                        <div class="m-t-20 m-b-40 p-b-40 text-inverse">
+                            Olvidó su contraseña? Click <a href="#" class="text-success">aquí</a> para recuperarla.
+                        </div>
+                        <p class="text-center text-grey-darker">
+                            &copy; Desarrollado por el área de TI - 2026
+                        </p>
+                    </form>
+                </div>
+                <!-- end login-content -->
+            </div>
+            <!-- end right-container -->
+        </div>
+        <!-- end login -->
+	</div>
+	<!-- end page container -->
+	<!-- ================== BEGIN BASE JS ================== -->
+	<script src="{% static 'assets/plugins/jquery/jquery-3.2.1.min.js' %}"></script>
+	<script src="{% static 'assets/plugins/jquery-ui/jquery-ui.min.js' %}"></script>
+	<script src="{% static 'assets/plugins/bootstrap/4.0.0/js/bootstrap.bundle.min.js' %}"></script>
+	<!--[if lt IE 9]>
+		<script src="{% static 'assets/crossbrowserjs/html5shiv.js' %}"></script>
+		<script src="{% static 'assets/crossbrowserjs/respond.min.js' %}"></script>
+		<script src="{% static 'assets/crossbrowserjs/excanvas.min.js' %}"></script>
+	<![endif]-->
+	<script src="{% static 'assets/plugins/slimscroll/jquery.slimscroll.min.js' %}"></script>
+	<script src="{% static 'assets/plugins/js-cookie/js.cookie.js' %}"></script>
+	<script src="{% static 'assets/js/theme/default.min.js' %}"></script>
+	<script src="{% static 'assets/js/apps.min.js' %}"></script>
+	<!-- ================== END BASE JS ================== -->
+
+	<script>
+		$(document).ready(function() {
+			App.init();
+		});
+	</script>
+</body>
+</html>

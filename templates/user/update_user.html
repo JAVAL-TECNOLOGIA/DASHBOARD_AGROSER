@@ -1,0 +1,43 @@
+ <div class="modal-dialog">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h4 class="modal-title">Actualizar usuario {{object}}</h4>
+            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+        </div>
+        <div class="modal-body">
+            <div id="errorsUpdate"></div>
+            <form id="formUpdateUser" action="{% url 'update_user' object.pk %}" method="POST">
+                {% csrf_token %}
+                <div class="row form-group m-b-10">
+                    <label class="col-md-4 col-form-label">Correo </label>
+                    <div class="col-md-8">
+                    {{form.email}}
+                    </div>
+                </div>
+                <div class="row form-group m-b-10">
+                    <label class="col-md-4 col-form-label">Usuario</label>
+                    <div class="col-md-8">
+                    {{form.username}}
+                    </div>
+                </div>
+                <div class="row form-group m-b-10">
+                    <label class="col-md-4 col-form-label">Nombre</label>
+                    <div class="col-md-8">
+                    {{form.first_name}}
+                    </div>
+                </div>
+                <div class="row form-group m-b-10">
+                    <label class="col-md-4 col-form-label">Apellido</label>
+                    <div class="col-md-8">
+                    {{form.last_name}}
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-danger" data-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="saveUpdateUser();">Guardar</button>
+                </div>
+            </form>
+        </div>
+        
+    </div>
+</div>

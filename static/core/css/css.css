@@ -1,0 +1,129 @@
+/*Elementos de formulario de filtro*/
+.header.navbar-inverse {
+    background: #343d45 !important;
+}
+.col-search{
+    min-width: 150px;
+    max-width: 175px;
+}
+.col-descrip {
+    min-width: 300px;
+    max-width: 450px;
+}
+.col-show{
+    min-width: 100px;
+    max-width: 155px;
+}
+.col-fecha-inicio, .col-fecha-fin {
+    min-width: 125px;
+    max-width: 150px;
+}
+.col-show-data{
+    min-width: 120px;
+    max-width: 125px;
+}
+#tableCNLot{
+    cursor: pointer;
+    min-width: 470px;
+}
+
+#tableCNLot{
+    cursor: pointer;
+    min-width: 470px;
+}
+
+#tbodyRegisterPallet {
+    cursor: pointer;
+    overflow-x:hidden;
+}
+#data-table-responsive {
+    overflow-x:hidden;
+}
+
+#form_nro_pallet, #form_cantidad, #form_tipo_envase {
+    font-size: 18px;
+}
+
+.pagination>.active>a, .pagination>.active>a:focus, .pagination>.active>a:hover, .pagination>.active>span, .pagination>.active>span:focus, .pagination>.active>span:hover{
+    background: #008a8a !important;
+    border-color: #008a8a !important;
+}
+
+/* Estilos personalizados para modales de selección de lotes */
+.bg-purple {
+    background-color: #6f42c1 !important;
+}
+
+.bg-gradient-purple {
+    background: linear-gradient(45deg, #6f42c1, #8b5cf6) !important;
+}
+
+.border-purple {
+    border-color: #6f42c1 !important;
+}
+
+.text-purple {
+    color: #6f42c1 !important;
+}
+
+.btn-purple {
+    color: #fff;
+    background-color: #6f42c1;
+    border-color: #6f42c1;
+}
+
+.btn-purple:hover {
+    color: #fff;
+    background-color: #5a2d91;
+    border-color: #5a2d91;
+}
+
+.btn-purple:focus,
+.btn-purple.focus {
+    box-shadow: 0 0 0 0.2rem rgba(111, 66, 193, 0.5);
+}
+
+.btn-purple.disabled,
+.btn-purple:disabled {
+    color: #fff;
+    background-color: #6f42c1;
+    border-color: #6f42c1;
+    opacity: 0.65;
+}
+
+.btn-purple:not(:disabled):not(.disabled):active,
+.btn-purple:not(:disabled):not(.disabled).active {
+    color: #fff;
+    background-color: #4c1d95;
+    border-color: #4c1d95;
+}
+
+/* Efectos hover para botones de selección de lotes */
+.lote-selection:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.lote-selection {
+    transition: all 0.3s ease;
+    border-width: 2px;
+}
+
+/* Animaciones para modales */
+.modal.fade .modal-dialog {
+    transition: transform 0.3s ease-out;
+}
+
+.modal.show .modal-dialog {
+    transform: none;
+}
+
+/* Mejoras visuales para cards de sectores */
+.card {
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+}

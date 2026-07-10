@@ -1,0 +1,269 @@
+{% load static %}
+{% include 'base/header.html' %}
+{% include 'base/sidebar.html' %}
+
+{% block css %}
+<link href="{% static 'assets/plugins/DataTables/media/css/dataTables.bootstrap.min.css' %}" rel="stylesheet" />
+<link href="{% static 'assets/plugins/DataTables/extensions/Responsive/css/responsive.bootstrap.min.css' %}" rel="stylesheet" />
+<link href="{% static 'assets/plugins/bootstrap-datepicker/css/bootstrap-datepicker.css' %}" rel="stylesheet" />
+<script src="{% static 'assets/plugins/pace/pace.min.js' %}"></script>
+{% endblock %}
+
+<div id="content" class="content">
+    <div class="panel panel-inverse">
+        <div class="panel-heading">
+            <h3 class="panel-title">Gestión de Tipos de Costo Base</h3>
+        </div>
+        <div class="panel-body"><br>
+            <div class="row">
+                <div class="col-md-2">
+                    <button onclick="modal_create_tipo_jornal()" class="btn btn-success" style="color:white;">
+                        <i class="fa fa-plus"></i> Agregar Tipo de Costo Base
+                    </button>
+                </div>
+            </div>
+            <br>
+            <div class="table-responsive">
+                <table class="table table-hover" id="tableListTipoJornal">
+                    <thead>
+                        <tr>
+                            <th>Tipo Cálculo</th>
+                            <th>Nombre</th>
+                            <th>Opciones</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalCreateTipoJornal"></div>
+<div class="modal fade" id="modalUpdateTipoJornal"></div>
+<div class="modal fade" id="modalDeleteTipoJornal"></div>
+
+{% include 'base/footer.html' %}
+
+{% block js %}
+<script src="{% static 'assets/plugins/DataTables/media/js/jquery.dataTables.js' %}"></script>
+<script src="{% static 'assets/plugins/DataTables/media/js/dataTables.bootstrap.min.js' %}"></script>
+<script src="{% static 'assets/plugins/DataTables/extensions/Responsive/js/dataTables.responsive.min.js' %}"></script>
+<script src="{% static 'assets/plugins/bootstrap-sweetalert/sweetalert.min.js' %}"></script>
+
+<script>
+    $(document).ready(function(){
+        App.init();
+        cargarTiposJornal();
+    });
+
+    function cargarTiposJornal(){
+        $.get('/presupuesto-agricola/tipo_costo_base/tipo-costo/api/', function(response){
+            if ($.fn.DataTable.isDataTable('#tableListTipoJornal')) {
+                $('#tableListTipoJornal').DataTable().clear().destroy();
+            }
+
+            let tbody = '';
+            response.data.forEach(function(j){
+                tbody += `<tr>
+                    <td>${j.TIPO_CALCULO}</td>
+                    <td><b>${j.NOMBRE}</b></td>
+                    <td>
+                        <button class="btn btn-warning btn-xs" onclick="modal_update_tipo_jornal(${j.ID_TP_COSTO})"><i class="fa fa-edit"></i></button>
+                        <button class="btn btn-danger btn-xs" onclick="modal_delete_tipo_jornal(${j.ID_TP_COSTO})"><i class="fa fa-trash"></i></button>
+                    </td>
+                </tr>`;
+            });
+
+            $('#tableListTipoJornal tbody').html(tbody);
+
+            $('#tableListTipoJornal').DataTable({
+                responsive: true,
+                language: { url: '//cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json' },
+                order: [[0, 'asc']]
+            });
+        });
+    }
+
+    function modal_create_tipo_jornal(){
+        let html = `<form id="formCreateTipoJornal">
+            <div class="modal-dialog"><div class="modal-content">
+                <div class="modal-header"><h4>Nuevo Tipo de Jornal</h4></div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Tipo de Cálculo</label>
+                        <select name="id_tipo_calculo" id="selectTipoCalculo" class="form-control" required>
+                            <option value="">Cargando...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Nombre</label>
+                        <input type="text" name="nombre" class="form-control" required maxlength="50">
+                    </div>
+                    <div class="form-group">
+                        <label>Descripción</label>
+                        <textarea name="descripcion" class="form-control" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" onclick="saveCreateTipoJornal()">Guardar</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                </div>
+            </div></div>
+        </form>`;
+        cargarTiposCalculo();
+        $('#modalCreateTipoJornal').html(html).modal('show');
+    }
+
+    function cargarTiposCalculo() {
+        $.get('/presupuesto-agricola/tipo_costo_base/tipo-calculo/api/', function(response) {
+            if (response.status === 'success') {
+                let opciones = '<option value="">Seleccione...</option>';
+                response.data.forEach(function(item) {
+                    opciones += `<option value="${item.ID_TP_CALCULO}">${item.NOM_CORTO}</option>`;
+                });
+                $('#selectTipoCalculo').html(opciones);
+            } else {
+                $('#selectTipoCalculo').html('<option value="">Error al cargar</option>');
+            }
+        }).fail(function() {
+            $('#selectTipoCalculo').html('<option value="">Error de conexión</option>');
+        });
+    }
+
+    function saveCreateTipoJornal(){
+        let data = {
+            id_tp_calculo: $('#formCreateTipoJornal [name="id_tipo_calculo"]').val(),
+            nombre: $('#formCreateTipoJornal [name="nombre"]').val().trim(),
+            descripcion: $('#formCreateTipoJornal [name="descripcion"]').val().trim()
+        };
+
+        $.ajax({
+            url: '/presupuesto-agricola/tipo_costo_base/tipo-costo/api/',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(data),
+            success: function(){
+                $('#modalCreateTipoJornal').modal('hide');
+                swal('Éxito', 'Tipo de Jornal registrado correctamente', 'success');
+                cargarTiposJornal();
+            },
+            error: function(){ swal('Error', 'No se pudo crear el registro', 'error'); }
+        });
+    }
+
+   function modal_update_tipo_jornal(id){
+    // Primero obtenemos los datos del registro actual
+        $.get(`/presupuesto-agricola/tipo_costo_base/tipo-costo/api/${id}/`, function(response){
+            let tipoCosto = response.data;
+
+            // Luego traemos todos los tipos de cálculo disponibles
+            $.get('/presupuesto-agricola/tipo_costo_base/tipo-calculo/api/', function(respCalculos){
+                let options = '';
+                respCalculos.data.forEach(function(tc){
+                    let selected = (tc.NOM_CORTO === tipoCosto.TP_CALCULO) ? 'selected' : '';
+                    options += `<option value="${tc.ID_TP_CALCULO}" ${selected}>${tc.NOM_CORTO}</option>`;
+                });
+
+                // Construimos el formulario del modal
+                let html = `<form id="formUpdateTipoCosto">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header bg-warning text-dark">
+                                <h4 class="modal-title">Editar Tipo de Costo</h4>
+                                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                            </div>
+                            <div class="modal-body">
+                                <input type="hidden" name="id_tipo_costo" value="${tipoCosto.ID_TP_COSTO}">
+
+                                <div class="form-group">
+                                    <label>Tipo de Cálculo <span class="text-danger">*</span></label>
+                                    <select name="id_tipo_calculo" class="form-control" required>
+                                        ${options}
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Nombre <span class="text-danger">*</span></label>
+                                    <input type="text" name="nombre" class="form-control" value="${tipoCosto.NOMBRE}" maxlength="100" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Descripción</label>
+                                    <input type="text" name="descripcion" class="form-control" value="${tipoCosto.DESCRIPCION || ''}" maxlength="200">
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-primary" onclick="saveUpdateTipoJornal(${id})">
+                                    <i class="fa fa-save"></i> Actualizar
+                                </button>
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                                    <i class="fa fa-times"></i> Cancelar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>`;
+
+                $('#modalUpdateTipoJornal').html(html).modal('show');
+
+            }).fail(function(){
+                swal('Error', 'No se pudieron cargar los tipos de cálculo', 'error');
+            });
+
+        }).fail(function(){
+            swal('Error', 'No se pudo cargar la información del tipo de costo', 'error');
+        });
+    }
+
+    function saveUpdateTipoJornal(id){
+        let data = {
+            id_tipo_calculo: $('#formUpdateTipoCosto [name="id_tipo_calculo"]').val(),
+            id_tipo_costo: $('#formUpdateTipoCosto [name="id_tipo_costo"]').val(),
+            nombre: $('#formUpdateTipoCosto [name="nombre"]').val().trim(),
+            descripcion: $('#formUpdateTipoCosto [name="descripcion"]').val().trim()
+        };
+        console.log(data);
+
+        $.ajax({
+            url: `/presupuesto-agricola/tipo_costo_base/tipo-costo/api/${id}/`,
+            type: 'PUT',
+            contentType: 'application/json',
+            data: JSON.stringify(data),
+            success: function(){
+                $('#modalUpdateTipoJornal').modal('hide');
+                swal('Actualizado', 'Tipo de Jornal actualizado correctamente', 'success');
+                cargarTiposJornal();
+            },
+            error: function(){ swal('Error', 'No se pudo actualizar el registro', 'error'); }
+        });
+    }
+
+    function modal_delete_tipo_jornal(id){
+        let html = `<div class="modal-dialog"><div class="modal-content">
+            <div class="modal-header"><h4>Eliminar Tipo de Jornal</h4></div>
+            <div class="modal-body text-center">
+                <p>¿Deseas eliminar este tipo de jornal?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" onclick="deleteTipoJornal(${id})">Eliminar</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+            </div>
+        </div></div>`;
+        $('#modalDeleteTipoJornal').html(html).modal('show');
+    }
+
+    function deleteTipoJornal(id){
+        $.ajax({
+            url: `/presupuesto-agricola/tipo_costo_base/tipo-costo/api/${id}/`,
+            type: 'DELETE',
+            success: function(){
+                $('#modalDeleteTipoJornal').modal('hide');
+                swal('Eliminado', 'Tipo de Jornal eliminado correctamente', 'success');
+                cargarTiposJornal();
+            },
+            error: function(){ swal('Error', 'No se pudo eliminar el registro', 'error'); }
+        });
+    }
+</script>
+{% endblock %}

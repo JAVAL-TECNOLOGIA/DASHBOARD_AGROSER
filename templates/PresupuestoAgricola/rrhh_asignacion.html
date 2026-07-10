@@ -1,0 +1,569 @@
+{% load static %}
+{% include 'base/header.html' %}
+{% include 'base/sidebar.html' %}
+
+{% block css %}
+<link href="{% static 'assets/plugins/DataTables/media/css/dataTables.bootstrap.min.css' %}" rel="stylesheet"/>
+<link href="{% static 'assets/plugins/DataTables/extensions/Responsive/css/responsive.bootstrap.min.css' %}"
+      rel="stylesheet"/>
+<link href="{% static 'assets/plugins/bootstrap-datepicker/css/bootstrap-datepicker.css' %}" rel="stylesheet"/>
+<link href="{% static 'assets/plugins/bootstrap-datepicker/css/bootstrap-datepicker3.css' %}" rel="stylesheet"/>
+<link href="{% static 'assets/plugins/gritter/css/jquery.gritter.css' %}" rel="stylesheet"/>
+<script src="{% static 'assets/plugins/pace/pace.min.js' %}"></script>
+{% endblock %}
+
+<div id="content" class="content">
+    <div class="panel panel-inverse">
+        <div class="panel-heading">
+            <h3 class="panel-title">Asignación de Lotes a Ingenieros</h3>
+        </div>
+        <div class="panel-body"><br>
+            <div class="row mb-3">
+                <div class="col-md-2 mb-2">
+                    <button onclick="modal_asignar_ingeniero()" class="btn btn-success" style="color:white;">
+                        <i class="fa fa-plus"></i> Asignar
+                    </button>
+                    <button type="button" class="btn btn-light btn-xs mr-2" style="margin-right:10px;" onclick="refreshAsignacionesIngenieros()"><i class="fas fa-sync-alt"></i> Recargar</button>
+                </div>
+                <div class="col-md-3 mb-2">
+                    <label for="filtroCampania">Campaña</label>
+                    <input type="text" id="filtroCampania" class="form-control" placeholder="Buscar campaña...">
+                </div>
+                <div class="col-md-3 mb-2">
+                    <label for="filtroIngeniero">Ingeniero</label>
+                    <input type="text" id="filtroIngeniero" class="form-control" placeholder="Buscar ingeniero...">
+                </div>
+                <div class="col-md-3 mb-2">
+                    <label for="filtroLote">Lote</label>
+                    <input type="text" id="filtroLote" class="form-control" placeholder="Buscar lote...">
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-bordered" id="tableListAsignaciones">
+                    <thead>
+                    <tr>
+                        <th>ID Asignación</th>
+                        <th>Campaña</th>
+                        <th>Nombre Completo</th>
+                        <th>LOTE</th>
+                        <th>Acciones</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for a in asignaciones %}
+                    <tr>
+                        <td>{{ a.ID_ASIGNACION }}</td>
+                        <td>{{ a.CAMPANIA }}</td>
+                        <td>{{ a.NOMBRE }}</td>
+                        <td>{{ a.LOTE }}</td>
+                        <td>
+                            <button class="btn btn-warning btn-xs" onclick="modal_update_asignacion({{ a.ID_ASIGNACION }})"><i class="fa fa-edit"></i></button>
+                            <button class="btn btn-danger btn-xs" onclick="modal_delete_asignacion({{ a.ID_ASIGNACION }})"><i class="fa fa-trash"></i></button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center">No hay asignaciones disponibles</td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalCreateAsignacion"></div>
+<div class="modal fade" id="modalUpdateAsignacion"></div>
+<div class="modal fade" id="modalDeleteAsignacion"></div>
+
+{% include 'base/footer.html' %}
+
+{% block js %}
+<script src="{% static 'assets/plugins/bootstrap-datepicker/js/bootstrap-datepicker.js' %}"></script>
+<script src="{% static 'assets/plugins/DataTables/media/js/jquery.dataTables.js' %}"></script>
+<script src="{% static 'assets/plugins/DataTables/media/js/dataTables.bootstrap.min.js' %}"></script>
+<script src="{% static 'assets/plugins/DataTables/extensions/Responsive/js/dataTables.responsive.min.js' %}"></script>
+<script src="{% static 'assets/js/demo/table-manage-default.demo.js' %}"></script>
+<script src="{% static 'assets/js/demo/form-plugins.demo.js' %}"></script>
+<script src="{% static 'assets/plugins/masked-input/masked-input.min.js' %}"></script>
+<script src="{% static 'assets/plugins/ionRangeSlider/js/ion-rangeSlider/ion.rangeSlider.min.js' %}"></script>
+<script src="{% static 'assets/plugins/gritter/js/jquery.gritter.js' %}"></script>
+<script src="{% static 'assets/plugins/bootstrap-sweetalert/sweetalert.min.js' %}"></script>
+<script src="{% static 'assets/js/demo/ui-modal-notification.demo.min.js' %}"></script>
+
+<script>
+    let fundosExpandido = {};
+    let lotesPorFundo = {}; // { id_fundo: [{id_lote, descripcion}] }
+    let lotesSeleccionados = [];
+
+
+    $(document).ready(function () {
+        App.init();
+        $('#tableListAsignaciones').DataTable();
+
+        // Filtros de búsqueda
+        $('#filtroCampania, #filtroIngeniero, #filtroLote').on('input', function() {
+            filtrarAsignaciones();
+        });
+    });
+
+    // Refresh para la lista principal de asignaciones de ingenieros
+    function refreshAsignacionesIngenieros() {
+        cargarAsignaciones();
+    }
+
+    function filtrarAsignaciones() {
+        let campania = $('#filtroCampania').val().toLowerCase();
+        let ingeniero = $('#filtroIngeniero').val().toLowerCase();
+        let lote = $('#filtroLote').val().toLowerCase();
+        $('#tableListAsignaciones tbody tr').each(function() {
+            let tds = $(this).find('td');
+            if (tds.length < 5) return; // skip empty row
+            let match = true;
+            if (campania && !tds.eq(1).text().toLowerCase().includes(campania)) match = false;
+            if (ingeniero && !tds.eq(2).text().toLowerCase().includes(ingeniero)) match = false;
+            if (lote && !tds.eq(3).text().toLowerCase().includes(lote)) match = false;
+            $(this).toggle(match);
+        });
+    }
+
+    function modal_asignar_ingeniero() {
+        let html = `<form id="formCreateLote">
+    <div class="modal-dialog modal-xl" style="max-width: 75%; width: 75%;" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">Agregar Lote</h4>
+                <button type="button" class="btn btn-light btn-xs mr-2" style="margin-right:10px;" onclick="refreshModalCreateAsignacion()"><i class="fas fa-sync-alt"></i> Recargar</button>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+				<div class="col-md-8">
+					<table class="table table-hover m-b-0 text-inverse" id="tableFundos">
+						<thead>
+							<tr>
+								<th>Fundo</th>
+								<th>Descripción</th>
+								<th>Lotes</th>
+							</tr>
+						</thead>
+						<tbody></tbody>
+					</table>
+				</div>
+				<div class="col-md-4">
+					<div class="form-group">
+						<label>Ingeniero</label>
+						<select id="selectIngeniero" class="form-control"></select>
+					</div>
+					<div class="form-group">
+						<label>Campaña</label>
+						<select id="selectCampania" class="form-control"></select>
+					</div>
+					<div class="form-group">
+						<label>Lotes seleccionados</label>
+						<ul id="lotesSeleccionados" class="list-group"></ul>
+					</div>
+				</div>
+			</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="asignarLotesIngenieros()">Asignar Lotes</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</form>`;
+
+        $('#modalCreateAsignacion').html(html).modal('show');
+        cargarFundos();
+        cargarIngenieros();
+        cargarCampanias();
+        // Al cambiar campaña, refrescar lotes expandidos
+        setTimeout(function() {
+            $('#selectCampania').off('change').on('change', function() {
+                // Limpiar lotes expandidos y recargar lotes de fundos expandidos
+                fundosExpandido = {};
+                lotesPorFundo = {};
+                lotesSeleccionados = [];
+                // Recargar tabla de fundos (manteniendo la vista)
+                $('#tableFundos tbody tr').each(function() {
+                    const idFundo = $(this).data('id-fundo');
+                    // Si estaba expandido, volver a expandir
+                    if (idFundo) {
+                        toggleLotes(idFundo);
+                    }
+                });
+                renderLotesSeleccionados();
+            });
+        }, 500);
+    }
+
+    function refreshModalCreateAsignacion(){
+        lotesSeleccionados = [];
+        fundosExpandido = {};
+        lotesPorFundo = {};
+        cargarFundos();
+        cargarIngenieros();
+        cargarCampanias();
+        renderLotesSeleccionados();
+    }
+
+    function cargarAsignaciones() {
+
+        $.get('/presupuesto-agricola/asignacion/api/asignaciones/', function (response) {
+            let tbody = '';
+            response.data.forEach(function (a) {
+                tbody += `<tr>
+                        <td>${a.ID_ASIGNACION }</td>
+                        <td>${a.CAMPANIA}</td>
+                        <td>${a.NOMBRE}</td>
+                        <td>${a.LOTE}</td>
+                <td>
+                    <button class="btn btn-warning btn-xs" onclick="modal_update_asignacion(${a.ID_ASIGNACION})"><i class="fa fa-edit"></i></button>
+                    <button class="btn btn-danger btn-xs" onclick="modal_delete_asignacion(${a.ID_ASIGNACION})"><i class="fa fa-trash"></i></button>
+                </td>
+            </tr>`;
+            });
+            // Si ya existe una instancia de DataTable, solo actualiza los datos
+                let table = $('#tableListAsignaciones').DataTable();
+                table.clear();
+                response.data.forEach(function (a) {
+                    table.row.add([
+                        a.ID_ASIGNACION,
+                        a.CAMPANIA,
+                        a.NOMBRE,
+                        a.LOTE,
+                        `<button class="btn btn-warning btn-xs" onclick="modal_update_asignacion(${a.ID_ASIGNACION})"><i class="fa fa-edit"></i></button>` +
+                        `<button class="btn btn-danger btn-xs" onclick="modal_delete_asignacion(${a.ID_ASIGNACION})"><i class="fa fa-trash"></i></button>`
+                    ]);
+                });
+                table.draw();
+        });
+    }
+
+    function cargarCampanias() {
+            $.get('/presupuesto-agricola/mapeo/api/campanias/', function (response) {
+            if (response.status === 'success') {
+                let campanias = response.data;
+                let options = campanias.map(c => `<option value="${c.ID_CAMPANIA}">${c.DESCRIPCION}</option>`).join('');
+                $('#selectCampania').html(options);
+            } else {
+                $('#selectCampania').html('<option value="">Sin campañas</option>');
+            }
+        }).fail(function () {
+            $('#selectCampania').html('<option value="">Error al cargar campañas</option>');
+        });
+    }
+
+
+    // Guardar asignaciones actuales para filtrar lotes ya asignados
+    let asignacionesActuales = [];
+
+    function cargarFundos() {
+        // Obtener todas las asignaciones actuales
+            $.get('/presupuesto-agricola/asignacion/api/asignaciones/', function (respAsign) {
+            asignacionesActuales = respAsign.data || [];
+            $.get('/presupuesto-agricola/fundos/api/fundos/', function (response) {
+                let tbody = '';
+                let fundos = response.data;
+                fundos.forEach(function (fundo) {
+                    tbody += `<tr data-id-fundo="${fundo.ID_FUNDO}" style="cursor:pointer;">
+                        <td>${fundo.ID_FUNDO}</td>
+                        <td>${fundo.DESCRIPCION}</td>
+                        <td><span id="lotes-fundo-${fundo.ID_FUNDO}">-</span></td>
+                    </tr>`;
+                });
+                $('#tableFundos tbody').html(tbody);
+                $('#tableFundos').DataTable();
+
+                // Delegar el click solo si no es sobre un checkbox
+                $('#tableFundos tbody').off('click').on('click', 'tr', function (e) {
+                    if ($(e.target).is('input[type=checkbox]')) return;
+                    const idFundo = $(this).data('id-fundo');
+                    toggleLotes(idFundo);
+                });
+            });
+        });
+    }
+
+    function cargarIngenieros() {
+        // Endpoint para obtener usuarios tipo ingeniero
+            $.get('/presupuesto-agricola/asignacion/api/ingenieros/', function (response) {
+            let options = response.data.map(u => `<option value="${u.ID_USUARIO}">${u.NOMBRE}</option>`).join('');
+            $('#selectIngeniero').html(options);
+        });
+    }
+
+    function toggleLotes(idFundo) {
+        if (fundosExpandido[idFundo]) {
+            $(`#lotes-fundo-${idFundo}`).html('-');
+            fundosExpandido[idFundo] = false;
+            return;
+        }
+        // Si no se han cargado los lotes, pedirlos
+        if (!lotesPorFundo[idFundo]) {
+                $.get(`/presupuesto-agricola/lotes/api/lotes/?id_fundo=${idFundo}`, function (response) {
+                console.log(`Lotes obtenidos para fundo ${idFundo}:`, response);
+                // Filtrar lotes ya asignados en la campaña seleccionada
+                let idCampania = $('#selectCampania').val();
+                let lotes = response.data;
+                console.log(`Lotes sin filtrar:`, lotes);
+                if (idCampania) {
+                    // Normaliza el texto de la campaña seleccionada
+                    let campaniaTexto = ($('#selectCampania option:selected').text() || '').trim().toLowerCase();
+                    // Obtén los lotes ya asignados en esa campaña (también normalizados)
+                    let lotesAsignados = asignacionesActuales
+                        .filter(a => (a.CAMPANIA || '').trim().toLowerCase() === campaniaTexto)
+                        .map(a => (a.LOTE || '').trim().toLowerCase());
+                    console.log(`Lotes ya asignados en campaña "${campaniaTexto}":`, lotesAsignados);
+                    // Filtra los lotes que no están asignados en esa campaña
+                    lotes = lotes.filter(l => !lotesAsignados.includes((l.DESCRIPCION || l.descripcion || '').trim().toLowerCase()));
+                    console.log(`Lotes después del filtro:`, lotes);
+                }
+                lotesPorFundo[idFundo] = lotes;
+                renderLotes(idFundo);
+                fundosExpandido[idFundo] = true;
+            }).fail(function(xhr, status, error) {
+                console.error(`Error al cargar lotes para fundo ${idFundo}:`, xhr.responseText);
+                $(`#lotes-fundo-${idFundo}`).html('<span class="text-danger">Error al cargar lotes</span>');
+            });
+        } else {
+            renderLotes(idFundo);
+            fundosExpandido[idFundo] = true;
+        }
+    }
+
+    function renderLotes(idFundo) {
+        let lotes = lotesPorFundo[idFundo] || [];
+        console.log(`Renderizando lotes para fundo ${idFundo}:`, lotes);
+        if (lotes.length === 0) {
+            $(`#lotes-fundo-${idFundo}`).html('<span class="text-muted">Sin lotes disponibles</span>');
+            renderLotesSeleccionados();
+            return;
+        }
+        let html = '<ul class="list-group">';
+        lotes.forEach(lote => {
+            let loteId = lote.ID_LOTE || lote.id_lote;
+            let checked = lotesSeleccionados.some(l => (l.ID_LOTE || l.id_lote) == loteId);
+            html += `<li class="list-group-item">
+					<input type="checkbox" onchange="toggleLoteSeleccion('${idFundo}','${loteId}', this, event)" ${checked ? 'checked' : ''}> ${lote.DESCRIPCION || lote.descripcion}
+				</li>`;
+        });
+        html += '</ul>';
+        $(`#lotes-fundo-${idFundo}`).html(html);
+        renderLotesSeleccionados();
+    }
+
+    function toggleLoteSeleccion(idFundo, idLote, checkbox, event) {
+        if (event) event.stopPropagation();
+        let lote = (lotesPorFundo[idFundo] || []).find(l => (l.ID_LOTE || l.id_lote) == idLote);
+        if (!lote) return;
+        if (checkbox.checked) {
+            // Evitar duplicados
+            if (!lotesSeleccionados.some(l => (l.ID_LOTE || l.id_lote) == (lote.ID_LOTE || lote.id_lote))) {
+                lotesSeleccionados.push(lote);
+            }
+        } else {
+            lotesSeleccionados = lotesSeleccionados.filter(l => (l.ID_LOTE || l.id_lote) != idLote);
+        }
+        renderLotesSeleccionados();
+    }
+
+    function renderLotesSeleccionados() {
+        let html = '';
+        if (lotesSeleccionados.length === 0) {
+            html = '<li class="list-group-item text-muted">Ningún lote seleccionado</li>';
+        } else {
+            lotesSeleccionados.forEach(lote => {
+                html += `<li class="list-group-item">${lote.DESCRIPCION || lote.descripcion}</li>`;
+            });
+        }
+        $('#lotesSeleccionados').html(html);
+    }
+
+    function asignarLotesIngenieros() {
+        let idIngeniero = $('#selectIngeniero').val();
+        let idCampania = $('#selectCampania').val();
+        if (!idIngeniero || !idCampania || lotesSeleccionados.length === 0) {
+            swal('Selecciona un ingeniero, campaña y al menos un lote', '', 'warning');
+            return;
+        }
+        let total = lotesSeleccionados.length;
+        let completados = 0;
+        let errores = 0;
+        lotesSeleccionados.forEach(lote => {
+            let loteId = lote.ID_LOTE || lote.id_lote;
+            let data = {
+                ID_RESPONSABLE: idIngeniero,
+                ID_LOTE: loteId,
+                ID_CAMPANIA: idCampania
+            };
+            $.ajax({
+                url: '/presupuesto-agricola/asignacion/api/asignacion_lote/',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(data),
+                success: function (response) {
+                    completados++;
+                    if (completados + errores === total) {
+                        if (errores === 0) {
+                            swal('Lotes asignados!', '', 'success');
+                        } else {
+                            swal('Algunos lotes no se asignaron', '', 'warning');
+                        }
+                        lotesSeleccionados = [];
+                        renderLotesSeleccionados();
+                        $('#modalCreateAsignacion').modal('hide');
+                        cargarAsignaciones();
+                    }
+                },
+                error: function (xhr) {
+                    errores++;
+                    let msg = 'Algunos lotes no se asignaron';
+                    if (xhr && xhr.responseJSON && xhr.responseJSON.message) {
+                        msg = xhr.responseJSON.message;
+                    }
+                    if (completados + errores === total) {
+                        if (errores === 0) {
+                            swal('Lotes asignados!', '', 'success');
+                        } else {
+                            swal(msg, '', 'warning');
+                        }
+                        lotesSeleccionados = [];
+                        renderLotesSeleccionados();
+                    }
+                }
+            });
+        });
+    }
+
+     function modal_delete_asignacion(id){
+            let html = `<div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title">Eliminar Asignación</h4>
+                        <button type="button" class="btn btn-light btn-xs mr-2" style="margin-right:10px;" onclick="refreshModalDeleteAsignacion(${id})"><i class="fas fa-sync-alt"></i> Recargar</button>
+                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        ¿Estás seguro de eliminar esta asignación?
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-danger" onclick="deleteAsignacion('${id}')">Eliminar</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    </div>
+                </div>
+            </div>`;
+            $('#modalDeleteAsignacion').html(html).modal('show');
+        }
+
+        function deleteAsignacion(id){
+            $.ajax({
+                url: `/presupuesto-agricola/asignacion/api/asignacion_lote/${id}/`,
+                type: 'DELETE',
+                success: function(response){
+                    $('#modalDeleteAsignacion').modal('hide');
+                    swal('Asignación eliminada!', '', 'success');
+                    cargarAsignaciones();
+                },
+                error: function(xhr, status, error){
+                    let errorMessage = 'Error al eliminar asignación';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    }
+                    console.log('Error completo:', xhr.responseText);
+                    alert(errorMessage);
+                }
+            });
+        }
+
+        function modal_update_asignacion(id){
+        $.get(`/presupuesto-agricola/asignacion/api/asignacion_lote/${id}/`, function(response){
+        let asignacion = response.data;
+       let lotes = {{ lotes|safe }};
+        let ingenieros = {{ ingenieros|safe }};
+    let campanias = {{ campanias|safe }};
+        let lotesOptions = lotes.map(l => 
+            `<option value="${l.id}" ${asignacion.ID_LOTE == l.id ? 'selected' : ''}>${l.descripcion}</option>`
+        ).join('');
+
+        let campaniaOptions = campanias.map(c => 
+    `<option value="${c.id}" ${asignacion.ID_CAMPANIA == c.id ? 'selected' : ''}>${c.descripcion}</option>`
+).join('');
+
+let ingenieroOptions = ingenieros.map(u => 
+    `<option value="${u.ID_USUARIO}" ${asignacion.ID_RESPONSABLE == u.ID_USUARIO ? 'selected' : ''}>${u.NOMBRE}</option>`
+).join('');
+
+        cargarIngenieros();
+        
+
+        let html = `<form id="formUpdateLote">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title">Editar Lote</h4>
+                        <button type="button" class="btn btn-light btn-xs mr-2" style="margin-right:10px;" onclick="refreshModalUpdateAsignacion(${id})"><i class="fas fa-sync-alt"></i> Recargar</button>
+                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group"><label>ID Asignación</label>
+                            <input type="number" name="id_asignacion" id="id_asignacion" class="form-control" value="${asignacion.ID_ASIGNACION}" readonly/></div>
+                        <div class="form-group"><label>Campaña</label>
+                            <select name="id_campania" class="form-control" required>${campaniaOptions}</select></div>
+                        <div class="form-group"><label>Nombre Completo</label>
+                            <select name="nombre_completo" class="form-control" readonly>${ingenieroOptions}</select></div>
+                        <div class="form-group"><label>Lote</label>
+                            <select name="id_lote" class="form-control" required>${lotesOptions}</select></div>
+                        
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" onclick="saveUpdateAsignacion(${id})">Guardar</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    </div>
+                </div>
+            </div>
+        </form>`;
+        $('#modalUpdateAsignacion').html(html).modal('show');
+    });
+}
+
+function refreshModalUpdateAsignacion(id) {
+    $('#modalUpdateAsignacion').modal('hide');
+    setTimeout(function() { modal_update_asignacion(id); }, 300);
+}
+
+function saveUpdateAsignacion(id) {
+    let data = {
+        ID_ASIGNACION: $('#formUpdateLote [name="id_asignacion"]').val(),
+        ID_CAMPANIA: $('#formUpdateLote [name="id_campania"]').val(),
+        ID_RESPONSABLE: $('#formUpdateLote [name="nombre_completo"]').val(), 
+        ID_LOTE: $('#formUpdateLote [name="id_lote"]').val()
+    };
+
+    $.ajax({
+        url: `/presupuesto-agricola/asignacion/api/asignacion_lote/${id}/`,
+        type: 'PUT',
+        contentType: 'application/json',
+        data: JSON.stringify(data),
+        success: function (response) {
+            $('#modalUpdateAsignacion').modal('hide'); 
+            swal('Asignación actualizada!', '', 'success');
+            cargarAsignaciones();
+        },
+        error: function (xhr, status, error) {
+            let errorMessage = 'Error al actualizar asignación';
+            if (xhr.responseJSON && xhr.responseJSON.message) {
+                errorMessage = xhr.responseJSON.message;
+            }
+            console.log('Error completo:', xhr.responseText);
+            alert(errorMessage);
+        }
+    });
+}
+
+
+        
+</script>
+{% endblock %}

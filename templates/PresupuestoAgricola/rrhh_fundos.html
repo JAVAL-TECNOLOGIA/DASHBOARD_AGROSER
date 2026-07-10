@@ -1,0 +1,254 @@
+
+{% load static %}
+{% include 'base/header.html' %}
+{% include 'base/sidebar.html' %}
+{% block css %}
+	<link href="{% static 'assets/plugins/DataTables/media/css/dataTables.bootstrap.min.css' %}" rel="stylesheet" />
+	<link href="{% static 'assets/plugins/DataTables/extensions/Responsive/css/responsive.bootstrap.min.css' %}" rel="stylesheet" />
+	<link href="{% static 'assets/plugins/bootstrap-datepicker/css/bootstrap-datepicker.css' %}" rel="stylesheet" />
+	<link href="{% static 'assets/plugins/bootstrap-datepicker/css/bootstrap-datepicker3.css' %}" rel="stylesheet" />
+	<link href="{% static 'assets/plugins/gritter/css/jquery.gritter.css' %}" rel="stylesheet" />
+	<script src="{% static 'assets/plugins/pace/pace.min.js' %}"></script>
+{% endblock %}
+
+<div id="content" class="content">
+	<div class="panel panel-inverse">
+		<div class="panel-heading">
+			<h3 class="panel-title">Listado de Fundos</h3>
+		</div>
+		<div class="panel-body"><br>
+			<div class="row">
+				<div class="col-md-2">
+					<button onclick="modal_create_fundo()" class="btn btn-success" style="color:white;"><i class="fa fa-plus"></i> Agregar Fundo</button>
+				</div>
+			</div>
+			<br>
+			<div class="table-responsive">
+				<table class="table table-bordered" id="tableListFundos">
+					<thead>
+						<tr>
+							<th>ID</th>
+							<th>Descripción</th>
+							<th>Empresa</th>
+							<th>Opciones</th>
+						</tr>
+					</thead>
+					<tbody>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div class="modal fade" id="modalCreateFundo"></div>
+<div class="modal fade" id="modalUpdateFundo"></div>
+<div class="modal fade" id="modalDeleteFundo"></div>
+
+{% include 'base/footer.html' %}
+{% block js %}
+	<script src="{% static 'assets/plugins/bootstrap-datepicker/js/bootstrap-datepicker.js' %}"></script>
+	<script src="{% static 'assets/plugins/DataTables/media/js/jquery.dataTables.js' %}"></script>
+	<script src="{% static 'assets/plugins/DataTables/media/js/dataTables.bootstrap.min.js' %}"></script>
+	<script src="{% static 'assets/plugins/DataTables/extensions/Responsive/js/dataTables.responsive.min.js' %}"></script>
+	<script src="{% static 'assets/js/demo/table-manage-default.demo.js' %}"></script>
+	<script src="{% static 'assets/js/demo/form-plugins.demo.js' %}"></script>
+	<script src="{% static 'assets/plugins/masked-input/masked-input.min.js' %}"></script>
+	<script src="{% static 'assets/plugins/ionRangeSlider/js/ion-rangeSlider/ion.rangeSlider.min.js' %}"></script>
+	<script src="{% static 'assets/plugins/gritter/js/jquery.gritter.js' %}"></script>
+	<script src="{% static 'assets/plugins/bootstrap-sweetalert/sweetalert.min.js' %}"></script>
+	<script src="{% static 'assets/js/demo/ui-modal-notification.demo.min.js' %}"></script>
+
+	<script>
+		var es_admin = {{ es_admin|yesno:"true,false" }};
+		$(document).ready(function(){
+			App.init();
+			cargarFundos();
+		});
+
+		function cargarFundos(){
+			let empresas = {{ empresas|safe }};
+			$.get('/presupuesto-agricola/fundos/api/fundos/', function(response){
+				let tbody = '';
+				response.data.forEach(function(fundo){
+					let idFundoStr = String(fundo.ID_FUNDO).replace(/'/g, "\\'");
+					let opciones = `<button class=\"btn btn-warning btn-xs\" onclick=\"modal_update_fundo('${idFundoStr}')\"><i class=\"fa fa-edit\"></i></button>`;
+					if (es_admin) {
+						opciones += ` <button class=\"btn btn-danger btn-xs\" onclick=\"modal_delete_fundo('${idFundoStr}')\"><i class=\"fa fa-trash\"></i></button>`;
+					}
+					tbody += `<tr>
+						<td>${fundo.ID_FUNDO}</td>
+						<td>${fundo.DESCRIPCION}</td>
+						<td>${empresas.map(e => e.id === fundo.ID_EMPRESA ? e.descripcion : '').join('')}</td>
+						<td>${opciones}</td>
+					</tr>`;
+				});
+				$('#tableListFundos tbody').html(tbody);
+				$('#tableListFundos').DataTable();
+			});
+		}
+
+		function modal_create_fundo(){
+			let empresas = {{ empresas|safe }};
+			let options = '<option value="">Seleccione una empresa</option>' + empresas.map(e => `<option value=\"${e.id}\">${e.descripcion}</option>`).join('');
+			let html = `<form id=\"formCreateFundo\">
+				<div class=\"modal-dialog\">
+					<div class=\"modal-content\">
+						<div class=\"modal-header\">
+							<h4 class=\"modal-title\">Agregar Fundo</h4>
+							<button type=\"button\" class=\"close\" data-dismiss=\"modal\">&times;</button>
+						</div>
+						<div class=\"modal-body\">
+							<div class=\"form-group\">
+								<label>Centro de Costos</label>
+								<input type=\"text\" name=\"id_fundo\" class=\"form-control\" required 
+									   placeholder=\"Ej: FUNDO_NUEVO, F001, etc.\" 
+									   title=\"Ingrese un ID único para el fundo\">
+								<small class=\"form-text text-muted\">El ID debe ser único. No puede repetirse.</small>
+							</div>
+							<div class=\"form-group\">
+								<label>Descripción</label>
+								<input type=\"text\" name=\"descripcion\" class=\"form-control\" required>
+							</div>
+							<div class=\"form-group\">
+								<label>Empresa</label>
+								<select name=\"id_empresa\" class=\"form-control\" required>${options}</select>
+							</div>
+						</div>
+						<div class=\"modal-footer\">
+							<button type=\"button\" class=\"btn btn-primary\" onclick=\"saveCreateFundo()\">Guardar</button>
+							<button type=\"button\" class=\"btn btn-secondary\" data-dismiss=\"modal\">Cancelar</button>
+						</div>
+					</div>
+				</div>
+			</form>`;
+			$('#modalCreateFundo').html(html).modal('show');
+		}
+
+		function saveCreateFundo(){
+			let data = {
+				ID_FUNDO: $('#formCreateFundo [name="id_fundo"]').val(),
+				DESCRIPCION: $('#formCreateFundo [name="descripcion"]').val(),
+				ID_EMPRESA: $('#formCreateFundo [name="id_empresa"]').val()
+			};
+			$.ajax({
+				url: '/presupuesto-agricola/fundos/api/fundos/',
+				type: 'POST',
+				contentType: 'application/json',
+				data: JSON.stringify(data),
+				success: function(response){
+					$('#modalCreateFundo').modal('hide');
+					swal('Fundo registrado!', '', 'success');
+					cargarFundos();
+				},
+				error: function(xhr, status, error){
+					let errorMessage = 'Error al crear fundo';
+					if (xhr.responseJSON && xhr.responseJSON.message) {
+						errorMessage = xhr.responseJSON.message;
+					}
+					console.log('Error completo:', xhr.responseText);
+					alert(errorMessage);
+				}
+			});
+		}
+
+		function modal_update_fundo(id){
+			$.get(`/presupuesto-agricola/fundos/api/fundos/${id}/`, function(response){
+				let fundo = response.data;
+				let empresas = {{ empresas|safe }};
+				let options = empresas.map(e => `<option value=\"${e.id}\" ${fundo.ID_EMPRESA == e.id ? 'selected' : ''}>${e.descripcion}</option>`).join('');
+				let idStr = String(id).replace(/'/g, "\\'");
+				let html = `<form id=\"formUpdateFundo\">
+					<div class=\"modal-dialog\">
+						<div class=\"modal-content\">
+							<div class=\"modal-header\">
+								<h4 class=\"modal-title\">Editar Fundo</h4>
+								<button type=\"button\" class=\"close\" data-dismiss=\"modal\">&times;</button>
+							</div>
+							<div class=\"modal-body\">
+								<div class=\"form-group\">
+									<label>Descripción</label>
+									<input type=\"text\" name=\"descripcion\" class=\"form-control\" value=\"${fundo.DESCRIPCION}\" required>
+								</div>
+								<div class=\"form-group\">
+									<label>Empresa</label>
+									<select name=\"id_empresa\" class=\"form-control\" required>${options}</select>
+								</div>
+							</div>
+							<div class=\"modal-footer\">
+								<button type=\"button\" class=\"btn btn-primary\" onclick=\"saveUpdateFundo('${idStr}')\">Guardar</button>
+								<button type=\"button\" class=\"btn btn-secondary\" data-dismiss=\"modal\">Cancelar</button>
+							</div>
+						</div>
+					</div>
+				</form>`;
+				$('#modalUpdateFundo').html(html).modal('show');
+			});
+		}
+
+		function saveUpdateFundo(id){
+			let data = {
+				descripcion: $('#formUpdateFundo [name="descripcion"]').val(),
+				id_empresa: $('#formUpdateFundo [name="id_empresa"]').val()
+			};
+			$.ajax({
+				url: `/presupuesto-agricola/fundos/api/fundos/${id}/`,
+				type: 'PUT',
+				contentType: 'application/json',
+				data: JSON.stringify(data),
+				success: function(response){
+					$('#modalUpdateFundo').modal('hide');
+					swal('Fundo actualizado!', '', 'success');
+					cargarFundos();
+				},
+				error: function(xhr, status, error){
+					let errorMessage = 'Error al actualizar fundo';
+					if (xhr.responseJSON && xhr.responseJSON.message) {
+						errorMessage = xhr.responseJSON.message;
+					}
+					console.log('Error completo:', xhr.responseText);
+					alert(errorMessage);
+				}
+			});
+		}
+
+		function modal_delete_fundo(id){
+			let html = `<div class=\"modal-dialog\">
+				<div class=\"modal-content\">
+					<div class=\"modal-header\">
+						<h4 class=\"modal-title\">Eliminar Fundo</h4>
+						<button type=\"button\" class=\"close\" data-dismiss=\"modal\">&times;</button>
+					</div>
+					<div class=\"modal-body\">
+						¿Estás seguro de eliminar este fundo?
+					</div>
+					<div class=\"modal-footer\">
+						<button type=\"button\" class=\"btn btn-danger\" onclick=\"deleteFundo('${id}')\">Eliminar</button>
+						<button type=\"button\" class=\"btn btn-secondary\" data-dismiss=\"modal\">Cancelar</button>
+					</div>
+				</div>
+			</div>`;
+			$('#modalDeleteFundo').html(html).modal('show');
+		}
+
+		function deleteFundo(id){
+			$.ajax({
+				url: `/presupuesto-agricola/fundos/api/fundos/${id}/`,
+				type: 'DELETE',
+				success: function(response){
+					$('#modalDeleteFundo').modal('hide');
+					swal('Fundo eliminado!', '', 'success');
+					cargarFundos();
+				},
+				error: function(xhr, status, error){
+					let errorMessage = 'Error al eliminar fundo';
+					if (xhr.responseJSON && xhr.responseJSON.message) {
+						errorMessage = xhr.responseJSON.message;
+					}
+					console.log('Error completo:', xhr.responseText);
+					alert(errorMessage);
+				}
+			});
+		}
+	</script>
+{% endblock %}

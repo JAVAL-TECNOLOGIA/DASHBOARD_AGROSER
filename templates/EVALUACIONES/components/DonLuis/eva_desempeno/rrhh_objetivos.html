@@ -1,0 +1,594 @@
+
+{% load static %}
+
+
+<!-- MODAL PARA CREAR OBJETIVOS -->
+<div class="card-body">
+
+   
+  
+    
+  
+        <div class="tab-pane fade show active" id="pills-home" role="tabpanel" aria-labelledby="pills-home-tab">
+          
+          
+           
+  
+  
+          <div class="card border-0 shadow-sm">
+              <div class="card-body p-2">
+                  <table id="tablaEvaluaciones_objetivos" class="table table-sm table-bordered table-striped table-hover responsive nowrap" style="width:100%; font-size:0.7rem;">
+                      
+                      <tbody>
+                          <!-- Más filas similares -->
+                      </tbody>
+                  </table>
+              </div>
+          </div>
+  
+            
+        </div>
+  
+  
+  
+       
+  
+</div>
+
+
+
+
+<!--#####################################################################################################################-->
+<!--##############################-->
+<!-- MODAL PARA CREAR OBJETIVOS -->
+<!--##############################-->
+
+
+
+
+
+ <div class="modal fade" id="Modal_Objetivos" tabindex="-1" role="dialog" aria-labelledby="ModalObjetivosLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" style="max-width: 600px" role="document">
+        <div class="modal-content border-0">
+            <!-- Formulario de Evaluación de Objetivos -->
+            <div class="modal-header bg-white border-0">
+                <h5 class="modal-title font-weight-bold">
+                    <i class="fas fa-clipboard-check mr-2"></i>Nuevo Objetivo
+                </h5>
+                <div class="ml-auto">
+                    <span class="badge badge-primary p-3">Paso 1 de 2: Objetivos</span>
+                </div>
+                <button type="button" class="close ml-3" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                
+                <!-- Sección de Información de Evaluación -->
+                <div class="card mb-3">
+                    <div class="card-header bg-primary text-white">
+                        <i class="fas fa-user-check"></i> Información de Evaluación
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label><strong>Evaluador:</strong></label>
+                                    <select class="form-control" id="id_evaluador" required>
+                                        <option value="">Seleccione evaluador</option>
+                                        <option value="{{ user.id }}" selected>{{ user.get_full_name|default:user.first_name }} {{ user.last_name }}</option>
+                                        <!-- Se llenará dinámicamente -->
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label><strong>Evaluado:</strong></label>
+                                    <select class="form-control" id="id_evaluado" required>
+                                        <option value="">Seleccione evaluado</option>
+                                        <!-- Se llenará dinámicamente -->
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                   <label><strong>Período:</strong></label>
+                                    <input type="text" class="form-control" id="periodo_objetivos" readonly required 
+                                           style="background-color: #e9ecef; cursor: not-allowed;">
+                                    <small class="form-text text-muted">
+                                        <i class="fas fa-info-circle"></i> El período se toma del filtro principal
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label><strong>Área:</strong></label>
+                                    <select class="form-control" id="id_area" required>
+                                        <option value="">Seleccione área</option>
+                                        <option value="4">TIC</option>
+                                        <!-- Se llenará dinámicamente -->
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección de Objetivos -->
+                <div class="card" id="contenedor-objetivos">
+                    <div class="card-header bg-info text-white">
+                        <i class="fas fa-bullseye"></i> Definición de Objetivos
+                    </div>
+                    
+                    <!-- Primer objetivo (template inicial) -->
+                    <div class="card-body objetivo" id="objetivo-1">
+                        <div class="card mb-0 shadow-sm border-left-primary">
+                            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                <h5 class="text-primary mb-0"><i class="fas fa-star"></i> Objetivo 1</h5>
+                            </div>
+                            <div class="card-body">
+                                <form id="form-objetivo-1">
+                                    <div class="form-group">
+                                        <label>Descripción del Objetivo</label>
+                                        <textarea class="form-control objetivo-descripcion" rows="3"
+                                            placeholder="Describe el objetivo específico y medible" required></textarea>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="col">
+                                            <label>Fecha Inicio</label>
+                                            <input type="date" class="form-control objetivo-fecha-inicio" required>
+                                        </div>
+                                        <div class="col">
+                                            <label>Fecha Fin</label>
+                                            <input type="date" class="form-control objetivo-fecha-fin" required>
+                                        </div>
+                                    </div>
+                                    <div class="form-group mt-3">
+                                        <label>Indicador de Medición</label>
+                                        <input type="text" class="form-control objetivo-indicador" 
+                                            placeholder="Ej: % de cumplimiento, cantidad, etc." required>
+                                    </div>
+
+                                    <div class="form-group mt-3">
+                                        <label>Meta</label>
+                                        <textarea class="form-control objetivo-meta" rows="2"
+                                            placeholder="Describe la meta a alcanzar con este objetivo" required></textarea>
+                                    </div>
+
+                                    <div class="form-group mt-3" style="display: none;">
+                                        <label>Evaluación</label>
+                                        <div class="btn-group btn-group-toggle d-flex" data-toggle="buttons">
+                                            <label class="btn btn-outline-danger flex-fill">
+                                                <input type="radio" name="evaluacion-1" value="no_cumple"> No Cumple
+                                            </label>
+                                            <label class="btn btn-outline-primary flex-fill">
+                                                <input type="radio" name="evaluacion-1" value="cumple"> Cumple
+                                            </label>
+                                            <label class="btn btn-outline-success flex-fill">
+                                                <input type="radio" name="evaluacion-1" value="excede"> Excede
+                                            </label>
+                                            <label class="btn btn-outline-warning flex-fill">
+                                                <input type="radio" name="evaluacion-1" value="sobresaliente"> Sobresaliente
+                                            </label>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-primary" onclick="crearNuevoObjetivo()">
+                    <i class="fas fa-plus"></i> Añadir Objetivo
+                </button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fas fa-times mr-2"></i>Cancelar
+                </button>
+                <button type="button" class="btn btn-success" onclick="guardarObjetivoYSiguiente()">
+                    <i class="fas fa-save mr-2"></i>Guardar y Continuar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<!--##############################-->
+<!-- MODAL PARA EDITAR OBJETIVOS -->
+<!--##############################-->
+
+
+
+<div class="modal fade" id="Modal_Editar_Objetivo" tabindex="-1" role="dialog" aria-labelledby="ModalEditarObjetivoLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="ModalEditarObjetivoLabel">Editar Objetivo</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <!-- Referencia del Evaluado -->
+                <div class="form-group mb-3">
+                    <label><strong>Evaluado:</strong></label>
+                    <input type="text" class="form-control" id="edit_evaluado_nombre" readonly>
+                    <input type="hidden" id="edit_id_evaluado">
+                </div>
+
+                <!-- Sección de Objetivo -->
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <i class="fas fa-bullseye"></i> Detalles del Objetivo
+                    </div>
+                    <div class="card-body">
+                        <form id="form-editar-objetivo">
+                            <input type="hidden" id="edit_objetivo_id">
+                            <div class="form-group">
+                                <label>Descripción del Objetivo</label>
+                                <textarea class="form-control" id="edit_descripcion" 
+                                    placeholder="Describe el objetivo específico y medible" required></textarea>
+                            </div>
+                            <div class="form-row">
+                                <div class="col">
+                                    <label>Fecha Inicio</label>
+                                    <input type="date" class="form-control" id="edit_fecha_inicio" required>
+                                </div>
+                                <div class="col">
+                                    <label>Fecha Fin</label>
+                                    <input type="date" class="form-control" id="edit_fecha_fin" required>
+                                </div>
+                            </div>
+                            <div class="form-group mt-3">
+                                <label>Indicador de Medición</label>
+                                <input type="text" class="form-control" id="edit_indicador" 
+                                    placeholder="Ej: % de cumplimiento, cantidad, etc." required>
+                            </div>
+
+                            <div class="form-group mt-3">
+                                <label>Meta</label>
+                                <textarea class="form-control" id="edit_meta" rows="2"
+                                    placeholder="Describe la meta a alcanzar con este objetivo" required></textarea>
+                            </div>
+                            
+                            <div class="form-group mt-3" style="display: none;">
+                                <label>Evaluación</label>
+                                <div class="btn-group btn-group-toggle d-flex" data-toggle="buttons">
+                                    <label class="btn btn-outline-primary flex-fill ">
+                                        <input type="radio" name="edit_evaluacion" value="no_cumple" > No Cumple
+                                    </label>
+                                    <label class="btn btn-outline-primary flex-fill ">
+                                        <input type="radio" name="edit_evaluacion" value="cumple" > Cumple
+                                    </label>
+                                    <label class="btn btn-outline-primary flex-fill ">
+                                        <input type="radio" name="edit_evaluacion" value="excede" > Excede
+                                    </label>
+                                    <label class="btn btn-outline-primary flex-fill ">
+                                        <input type="radio" name="edit_evaluacion" value="sobresaliente" > Sobresaliente
+                                    </label>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" onclick="actualizarObjetivo()">
+                    <i class="fas fa-save"></i> Guardar Cambios
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!--########################################################-->
+<!-- MODAL PARA DETALLES DE OBJETIVOS-->
+<!--########################################################-->
+
+
+
+<!-- Modal unificado para mostrar detalles de objetivos y competencias -->
+<div class="modal fade" id="Modal_Detalles_Objetivos" tabindex="-1" role="dialog" aria-labelledby="ModalDetallesObjetivosLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl" style="max-width: 75%; width: 75%;" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-white">
+                <h5 class="modal-title" id="ModalDetallesObjetivosLabel">
+                    <i class="fas fa-clipboard-list mr-2"></i>Detalles de Evaluación
+                </h5>
+                <div class="ml-auto mr-3">
+                    <span class="badge badge-primary p-2 nombre-evaluado-detalles"></span>
+                </div>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Pestañas para cambiar entre objetivos y competencias -->
+                <ul class="nav nav-tabs mb-3" id="detallesTab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link active" id="objetivos-tab" data-toggle="tab" href="#objetivos-content" role="tab" aria-controls="objetivos-content" aria-selected="true">
+                            <i class="fas fa-bullseye mr-1"></i>Objetivos
+                        </a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link" id="competencias-tab" data-toggle="tab" href="#competencias-content" role="tab" aria-controls="competencias-content" aria-selected="false">
+                            <i class="fas fa-star mr-1"></i>Competencias
+                        </a>
+                    </li>
+                </ul>
+                
+                <div class="tab-content" id="detallesTabContent">
+                    <!-- Contenido de la pestaña Objetivos -->
+                    <div class="tab-pane fade show active" id="objetivos-content" role="tabpanel" aria-labelledby="objetivos-tab">
+                        
+                        <table id="tablaDetallesObjetivos" class="table table-sm table-bordered table-striped table-hover responsive nowrap" style="width:100%">
+                        </table>
+                    </div>
+                    
+                    <!-- Contenido de la pestaña Competencias -->
+                    <div class="tab-pane fade " id="competencias-content" role="tabpanel" aria-labelledby="competencias-tab">
+                        
+                        <table id="tablaDetallesCompetencias" class="table table-sm table-bordered table-striped table-hover responsive nowrap" style="width:100%">
+                        </table>
+
+
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fas fa-times mr-2"></i>Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+<!--######################################################################################################################-->
+
+
+<!--##############################-->
+<!-- MODAL PARA AÑADIR NUEVO OBJETIVO EN DETALLES -->
+<!--##############################-->
+<div class="modal fade" id="Modal_Nuevo_Objetivo_Detalle" tabindex="-1" role="dialog" aria-labelledby="ModalNuevoObjetivoDetalleLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="ModalNuevoObjetivoDetalleLabel">Añadir Nuevo Objetivo</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <!-- Sección de Objetivos -->
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <i class="fas fa-bullseye"></i> Definición del Objetivo
+                    </div>
+                    <div class="card-body">
+                        <form id="form-nuevo-objetivo-detalle">
+                            <input type="hidden" id="id_evaluacion_detalle">
+                            
+                            <div class="form-group">
+                                <label>Descripción del Objetivo</label>
+                                <textarea class="form-control" id="descripcion_detalle" 
+                                    placeholder="Describe el objetivo específico y medible" required></textarea>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="col">
+                                    <label>Fecha Inicio</label>
+                                    <input type="date" class="form-control" id="fecha_inicio_detalle" required>
+                                </div>
+                                <div class="col">
+                                    <label>Fecha Fin</label>
+                                    <input type="date" class="form-control" id="fecha_fin_detalle" required>
+                                </div>
+                            </div>
+                            
+                            <div class="form-group mt-3">
+                                <label>Indicador de Medición</label>
+                                <input type="text" class="form-control" id="indicador_detalle" 
+                                    placeholder="Ej: % de cumplimiento, cantidad, etc." required>
+                            </div>
+
+                            <div class="form-group mt-3">
+                                <label>Meta</label>
+                                <textarea class="form-control" id="meta_detalle" rows="2"
+                                    placeholder="Describe la meta a alcanzar con este objetivo" required></textarea>
+                            </div>
+                            
+                            <div class="form-group mt-3" style="display: none;">
+                                <label>Evaluación</label>
+                                <div class="btn-group btn-group-toggle d-flex" data-toggle="buttons">
+                                    <label class="btn btn-outline-primary flex-fill">
+                                        <input type="radio" name="evaluacion_detalle" value="no_cumple" > No Cumple
+                                    </label>
+                                    <label class="btn btn-outline-primary flex-fill">
+                                        <input type="radio" name="evaluacion_detalle" value="cumple" > Cumple
+                                    </label>
+                                    <label class="btn btn-outline-primary flex-fill ">
+                                        <input type="radio" name="evaluacion_detalle" value="excede" > Excede
+                                    </label>
+                                    <label class="btn btn-outline-primary flex-fill ">
+                                        <input type="radio" name="evaluacion_detalle" value="sobresaliente" > Sobresaliente
+                                    </label>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-success" onclick="guardarNuevoObjetivoDetalle()">
+                    <i class="fas fa-save"></i> Guardar Objetivo
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!--##############################-->
+<!-- VENTANAS MODALES PARA COMPETENCIAS -->
+<!--##############################-->
+
+
+
+{% include 'EVALUACIONES/components/DonLuis/eva_desempeno/rrhh_competencias.html' %}
+
+
+
+<style>
+    /* Añade estos estilos en tu archivo CSS o en una etiqueta <style> */
+    #Modal_Detalles_Objetivos {
+        z-index: 1050;
+    }
+
+    #Modal_Editar_Objetivo {
+        z-index: 1060;
+    }
+
+    /* También ajustamos el backdrop */
+    .modal-backdrop.show {
+        z-index: 1040;
+    }
+
+
+/* ESTILOS PARA LA TABLA DE DETALLES DE OBJETIVOS */
+
+</style>
+
+
+
+{% block js %}
+
+<script src="{% static 'core/js/EVALUACIONES/DonLuis/rrhh_ev_objetivos.js' %}"></script>
+<script src="{% static 'core/js/EVALUACIONES/DonLuis/rrhh_ev_competencias.js' %}"></script>
+<script src="{% static 'core/js/EVALUACIONES/DonLuis/evaluaciones_fase_final.js' %}"></script>
+
+
+
+ <script>
+    // Script para detectar cuando se hace clic en la pestaña de competencias
+    $(document).ready(function() {
+
+
+         // También probamos con el evento shown.bs.tab que se dispara cuando la pestaña se muestra completamente
+      $('#competencias-tab').on('shown.bs.tab', function(e) {
+        
+        // Obtener el ID de evaluación del modal
+        const id_evaluacion = $("#Modal_Detalles_Objetivos").data("id-evaluacion");
+        
+        // Mostrar un alert con el ID
+        alert("ID evaluación: " + id_evaluacion);
+      });
+      
+      // Cuando el modal se muestra, verificamos que tenemos acceso a los elementos
+      $('#Modal_Detalles_Objetivos').on('shown.bs.modal', function() {
+        
+        // Agregar los manejadores de eventos nuevamente por si acaso
+        $('#competencias-tab').off('shown.bs.tab').on('shown.bs.tab', function(e) {
+          
+          const id_evaluacion = $("#Modal_Detalles_Objetivos").data("id-evaluacion");
+          
+          inicializarTablaDetallesCompetencias(id_evaluacion);
+        });
+      });
+
+
+
+
+
+        //########################################################
+
+
+      
+      // Evento cuando se muestra la pestaña de competencias
+      $('#competencias-tab').on('shown.bs.tab', function(e) {
+        // Obtener el ID de evaluación del modal
+        const id_evaluacion = $("#Modal_Detalles_Objetivos").data("id-evaluacion");
+        
+        // Inicializar la tabla de competencias con el ID de evaluación
+        inicializarTablaDetallesCompetencias(id_evaluacion);
+      });
+      
+      // Cuando el modal se muestra completamente
+      $('#Modal_Detalles_Objetivos').on('shown.bs.modal', function() {
+        // Registrar el evento de clic para el botón de agregar competencia
+        $(document).on('click', '#btnAgregarCompetencia', function() {
+          const id_evaluacion = $("#Modal_Detalles_Objetivos").data("id-evaluacion");
+          const nombreEvaluado = $(".nombre-evaluado-detalles").text();
+          
+          if (id_evaluacion) {
+            // Abrir el modal de agregar competencia con los datos
+            abrirModalAgregarCompetenciaDetalle(id_evaluacion, nombreEvaluado);
+          } else {
+            Swal.fire({
+              icon: "error",
+              title: "Error",
+              text: "No se pudo obtener la información de la evaluación",
+              confirmButtonColor: "#dc3545",
+            });
+          }
+        });
+      });
+      
+      //#################################################################
+      
+        
+                  
+        
+
+        
+
+
+
+    });
+
+
+    // Script para cargar los años en el select de periodo
+    $(document).ready(function() {
+        const selectPeriodo = document.getElementById('periodo_objetivos');
+        const añoActual = new Date().getFullYear();
+                                                
+        // Agregar opciones para el año actual y los dos siguientes
+        for (let i = 0; i < 3; i++) {
+            const año = añoActual + i;
+            const option = document.createElement('option');
+            option.value = año;
+            option.textContent = año;
+                                                        
+            // Seleccionar el año actual por defecto
+            if (año === añoActual) {
+                option.selected = true;
+            }
+            
+            // Añadir la opción al select
+            selectPeriodo.appendChild(option);
+        }
+    });
+  </script>
+
+
+
+
+
+  {% endblock %}
+
+

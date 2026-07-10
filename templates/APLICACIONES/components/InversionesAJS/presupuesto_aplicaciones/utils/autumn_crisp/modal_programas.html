@@ -1,0 +1,369 @@
+<!-- Modal para Autumn Crisp -->
+<div
+  class="modal fade"
+  id="modalAutumnCrisp"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="modalAutumnCrispLabel"
+  aria-hidden="true"
+  style="z-index: 1050; overflow-y: auto;"
+>
+  <div  
+    class="modal-dialog modal-xl"
+    style="max-width: 75%; width: 75%"
+    role="document"
+  >
+    <div class="modal-content">
+      <div class="modal-header bg-gradient-primary text-white">
+        <h5 class="modal-title" id="modalAutumnCrispLabel">
+          <i class="fas fa-leaf mr-2"></i> Programas Fitosanitarios - AUTUMN
+          CRISP
+        </h5>
+
+        <div class="panel-heading-btn">
+          <a
+            href="javascript:;"
+            class="btn btn-xs btn-icon btn-circle btn-warning"
+            data-click="panel-expand"
+            title="Expandir"
+            ><i class="fa fa-expand"></i
+          ></a>
+          <a
+            href="javascript:;"
+            class="btn btn-xs btn-icon btn-circle btn-success"
+            data-click="panel-reload"
+            title="Recargar"
+            ><i class="fas fa-sync-alt"></i
+          ></a>
+          <a
+            href="javascript:;"
+            class="btn btn-xs btn-icon btn-circle btn-danger"
+            data-click="panel-remove-generales"
+            title="Cerrar"
+            ><i class="fa fa-times"></i
+          ></a>
+        </div>
+      </div>
+
+      <!-- Pestañas de navegación -->
+      <ul class="nav nav-tabs" id="autumnCrispTabs" role="tablist">
+        <li class="nav-item">
+          <a
+            class="nav-link active"
+            id="plantines-tab_AC"
+            data-toggle="tab"
+            href="#plantines_AC"
+            role="tab"
+            aria-controls="plantines_AC"
+            aria-selected="true"
+            >PLANTINES</a
+          >
+        </li>
+        <li class="nav-item">
+          <a
+            class="nav-link"
+            id="postcosecha-tab_AC"
+            data-toggle="tab"
+            href="#postcosecha_AC"
+            role="tab"
+            aria-controls="postcosecha_AC"
+            aria-selected="false"
+            >POST COSECHA</a
+          >
+        </li>
+        <li class="nav-item">
+          <a
+            class="nav-link"
+            id="cosecha-tab_AC"
+            data-toggle="tab"
+            href="#cosecha_AC"
+            role="tab"
+            aria-controls="cosecha_AC"
+            aria-selected="false"
+            >PRODUCCIÓN</a
+          >
+        </li>
+      </ul>
+
+      <div class="modal-body bg-light" style="max-height: 80vh; overflow-y: auto;">
+        <div class="tab-content" id="autumnCrispTabContent">
+
+          <!--#######################################################################-->
+          <!-- Contenido de Plantines -->
+          <!--#######################################################################-->
+          <div class="tab-pane fade show active" id="plantines_AC" role="tabpanel" aria-labelledby="plantines-tab_AC">
+            <!-- Aquí irá el contenido para plantines -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+              <div>
+                <h6 class="text-muted mb-1">Variedad de Uva - Plantines</h6>
+                <h4 class="font-weight-bold">AUTUMN CRISP</h4>
+              </div>
+              <button class="btn btn-primary" id="btnCrearProgramaACPlantines">
+                <i class="fas fa-plus-circle mr-1"></i> Crear Programa
+                Fitosanitario
+              </button>
+            </div>
+
+            <!-- Resumen estadístico en una sola fila -->
+            <div class="card border-0 shadow-sm mb-4">
+              <div class="card-body p-0">
+                <div class="row m-0">
+                  <div class="col-md-4 p-3 border-right">
+                    <h6 class="text-muted mb-1">Programas Registrados</h6>
+                    <h3 class="font-weight-bold mb-0 text-primary">3</h3>
+                    <small class="text-success"
+                      ><i class="fas fa-arrow-up"></i> 20% más que el periodo
+                      anterior</small
+                    >
+                  </div>
+                  <div class="col-md-4 p-3 border-right">
+                    <h6 class="text-muted mb-1">Precio Total($) / lt-kg</h6>
+                    <h3 class="font-weight-bold mb-0 text-primary">12.00</h3>
+                    <small class="text-muted"
+                      >Promedio por programa: 4.00</small
+                    >
+                  </div>
+                  <div class="col-md-4 p-3">
+                    <h6 class="text-muted mb-1">Costo Total por hectárea</h6>
+                    <h3 class="font-weight-bold mb-0 text-primary">
+                      S/ 1,200.00
+                    </h3>
+                    <small class="text-danger"
+                      ><i class="fas fa-arrow-down"></i> 5% menos eficiente que
+                      el estándar</small
+                    >
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tabla de programas -->
+            <div class="card shadow-sm border-0">
+              <div
+                class="card-header bg-white py-3 d-flex justify-content-between align-items-center"
+              >
+                <h5 class="mb-0 font-weight-bold">
+                  <i class="fas fa-list-alt mr-2 text-primary"></i> Programas
+                  Fitosanitarios Registrados
+                </h5>
+                <div class="btn-group">
+                  <button class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-filter mr-1"></i> Filtrar
+                  </button>
+                  <button class="btn btn-sm btn-outline-success">
+                    <i class="fas fa-file-excel mr-1"></i> Exportar
+                  </button>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table
+                    id="tablaPrograma_plantines_AC"
+                    class="table table-hover border-0 display nowrap"
+                    width="100%"
+                  >
+                    <thead class="bg-light">
+                      <tr>
+                        {% comment %} <th>Nº</th> {% endcomment %}
+                        <th>NOMBRE DEL PROGRAMA</th>
+                        <th>FECHA INICIO</th>
+                        <th>FECHA FIN</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            
+          </div>
+
+          <!--#######################################################################-->
+          <!-- Contenido de Post Cosecha -->
+          <!--#######################################################################-->
+          <div class="tab-pane fade" id="postcosecha_AC" role="tabpanel" aria-labelledby="postcosecha-tab_AC">
+            <!-- Cabecera con información y botón de acción -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+              <div>
+                <h6 class="text-muted mb-1">Variedad de Uva - Post Cosecha</h6>
+                <h4 class="font-weight-bold">AUTUMN CRISP</h4>
+              </div>
+              <button class="btn btn-primary" id="btnCrearProgramaACPostCosecha">
+                <i class="fas fa-plus-circle mr-1"></i> Crear Programa
+                Fitosanitario
+              </button>
+            </div>
+
+            <!-- Resumen estadístico en una sola fila -->
+            <div class="card border-0 shadow-sm mb-4">
+              <div class="card-body p-0">
+                <div class="row m-0">
+                  <div class="col-md-4 p-3 border-right">
+                    <h6 class="text-muted mb-1">Programas Registrados</h6>
+                    <h3 class="font-weight-bold mb-0 text-primary">3</h3>
+                    <small class="text-success"
+                      ><i class="fas fa-arrow-up"></i> 20% más que el periodo
+                      anterior</small
+                    >
+                  </div>
+                  <div class="col-md-4 p-3 border-right">
+                    <h6 class="text-muted mb-1">Precio Total($) / lt-kg</h6>
+                    <h3 class="font-weight-bold mb-0 text-primary">12.00</h3>
+                    <small class="text-muted"
+                      >Promedio por programa: 4.00</small
+                    >
+                  </div>
+                  <div class="col-md-4 p-3">
+                    <h6 class="text-muted mb-1">Costo Total por hectárea</h6>
+                    <h3 class="font-weight-bold mb-0 text-primary">
+                      S/ 1,200.00
+                    </h3>
+                    <small class="text-danger"
+                      ><i class="fas fa-arrow-down"></i> 5% menos eficiente que
+                      el estándar</small
+                    >
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tabla de programas -->
+            <div class="card shadow-sm border-0">
+              <div
+                class="card-header bg-white py-3 d-flex justify-content-between align-items-center"
+              >
+                <h5 class="mb-0 font-weight-bold">
+                  <i class="fas fa-list-alt mr-2 text-primary"></i> Programas
+                  Fitosanitarios Registrados
+                </h5>
+                <div class="btn-group">
+                  <button class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-filter mr-1"></i> Filtrar
+                  </button>
+                  <button class="btn btn-sm btn-outline-success">
+                    <i class="fas fa-file-excel mr-1"></i> Exportar
+                  </button>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table
+                    id="tablaPrograma_postcosecha_AC"
+                    class="table table-hover border-0 display nowrap"
+                    width="100%"
+                  >
+                    <thead class="bg-light">
+                      <tr>
+                        {% comment %} <th>Nº</th> {% endcomment %}
+                        <th>NOMBRE DEL PROGRAMA</th>
+                        <th>FECHA INICIO</th>
+                        <th>FECHA FIN</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!--#######################################################################-->
+          <!-- Contenido de Cosecha -->
+          <!--#######################################################################-->
+          <div class="tab-pane fade" id="cosecha_AC" role="tabpanel" aria-labelledby="cosecha-tab_AC">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+              <div>
+                <h6 class="text-muted mb-1">Variedad de Uva - Producción</h6>
+                <h4 class="font-weight-bold">AUTUMN CRISP</h4>
+              </div>
+              <button class="btn btn-primary" id="btnCrearProgramaACCosecha">
+                <i class="fas fa-plus-circle mr-1"></i> Crear Programa
+                Fitosanitario
+              </button>
+            </div>
+
+            <!-- Resumen estadístico en una sola fila -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-0">
+                  <div class="row m-0">
+                    <div class="col-md-4 p-3 border-right">
+                      <h6 class="text-muted mb-1">Programas Registrados</h6>
+                      <h3 class="font-weight-bold mb-0 text-primary">3</h3>
+                      <small class="text-success"
+                        ><i class="fas fa-arrow-up"></i> 20% más que el periodo
+                        anterior</small
+                      >
+                    </div>
+                    <div class="col-md-4 p-3 border-right">
+                      <h6 class="text-muted mb-1">Precio Total($) / lt-kg</h6>
+                      <h3 class="font-weight-bold mb-0 text-primary">12.00</h3>
+                      <small class="text-muted"
+                        >Promedio por programa: 4.00</small
+                      >
+                    </div>
+                    <div class="col-md-4 p-3">
+                      <h6 class="text-muted mb-1">Costo Total por hectárea</h6>
+                      <h3 class="font-weight-bold mb-0 text-primary">
+                        S/ 1,200.00
+                      </h3>
+                      <small class="text-danger"
+                        ><i class="fas fa-arrow-down"></i> 5% menos eficiente que
+                        el estándar</small
+                      >
+                    </div>
+                  </div>
+                </div>
+            </div>
+  
+              <!-- Tabla de programas -->
+            <div class="card shadow-sm border-0">
+                <div
+                  class="card-header bg-white py-3 d-flex justify-content-between align-items-center"
+                >
+                  <h5 class="mb-0 font-weight-bold">
+                    <i class="fas fa-list-alt mr-2 text-primary"></i> Programas
+                    Fitosanitarios Registrados
+                  </h5>
+                  <div class="btn-group">
+                    <button class="btn btn-sm btn-outline-primary">
+                      <i class="fas fa-filter mr-1"></i> Filtrar
+                    </button>
+                    <button class="btn btn-sm btn-outline-success">
+                      <i class="fas fa-file-excel mr-1"></i> Exportar
+                    </button>
+                  </div>
+                </div>
+                <div class="card-body">
+                  <div class="table-responsive">
+                    <table
+                      id="tablaPrograma_cosecha_AC"
+                      class="table table-hover border-0 display nowrap"
+                      width="100%"
+                    >
+                      <thead class="bg-light">
+                        <tr>
+                          {% comment %} <th>Nº</th> {% endcomment %}
+                          <th>NOMBRE DEL PROGRAMA</th>
+                          <th>FECHA INICIO</th>
+                          <th>FECHA FIN</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

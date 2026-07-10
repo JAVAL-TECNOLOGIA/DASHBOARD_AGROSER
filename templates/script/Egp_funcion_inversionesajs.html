@@ -1,0 +1,21 @@
+{% include 'base/header.html' %}
+{% block page %} 
+    Inicio 
+{% endblock %}
+{% include 'base/sidebar.html' %}
+
+    	<!-- begin #content -->
+        <div id="content" class="content" style="max-width: 100%; height: 560px;">
+            
+            <iframe title="ESTADO DE GANACIA Y PERDIDA - INVERSIONESAJS" width="100%" height="100%" src="https://app.powerbi.com/view?r=eyJrIjoiMjIzODUzZmQtZTk3ZC00NDUyLWE5YTQtNjRmYTgyNTRiNzAzIiwidCI6IjdmMjI0MWY4LTMwNGEtNDI1MC04OTU0LTdlZjU5ZDk3YjdjNiJ9" frameborder="0" allowFullScreen="true"></iframe>
+        </div>
+		<!-- end #content -->
+
+{% include 'base/footer.html' %}
+{% block js %}
+    <script>
+        $(document).ready(function(){    
+            App.init();
+        });
+    </script>
+{% endblock %}

@@ -1,0 +1,342 @@
+{% load static %}
+{% include 'base/header.html' %}
+{% include 'base/sidebar.html' %}
+
+{% block css %}
+<link href="{% static 'assets/plugins/DataTables/media/css/dataTables.bootstrap.min.css' %}" rel="stylesheet" />
+<link href="{% static 'assets/plugins/DataTables/extensions/Responsive/css/responsive.bootstrap.min.css' %}" rel="stylesheet" />
+<link href="{% static 'assets/plugins/bootstrap-datepicker/css/bootstrap-datepicker.css' %}" rel="stylesheet" />
+<link href="{% static 'assets/plugins/bootstrap-datepicker/css/bootstrap-datepicker3.css' %}" rel="stylesheet" />
+<link href="{% static 'assets/plugins/gritter/css/jquery.gritter.css' %}" rel="stylesheet" />
+<script src="{% static 'assets/plugins/pace/pace.min.js' %}"></script>
+{% endblock %}
+
+<div id="content" class="content">
+    <div class="panel panel-inverse">
+        <div class="panel-heading">
+            <h3 class="panel-title">Gestión de Tipos de Trabajo</h3>
+        </div>
+        <div class="panel-body"><br>
+            <div class="row">
+                <div class="col-md-2">
+                    <button onclick="modal_create_tipo_trabajo()" class="btn btn-success" style="color:white;">
+                        <i class="fa fa-plus"></i> Agregar Tipo de Labor
+                    </button>
+                </div>
+            </div>
+            <br>
+            <div class="table-responsive">
+                <table class="table table-hover m-b-0 text-inverse" id="tableListTipoTrabajo">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre Corto</th>
+                            <th>Descripción</th>
+                            <th>Opciones</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalCreateTipoTrabajo"></div>
+<div class="modal fade" id="modalUpdateTipoTrabajo"></div>
+<div class="modal fade" id="modalDeleteTipoTrabajo"></div>
+
+{% include 'base/footer.html' %}
+
+{% block js %}
+<script src="{% static 'assets/plugins/bootstrap-datepicker/js/bootstrap-datepicker.js' %}"></script>
+<script src="{% static 'assets/plugins/DataTables/media/js/jquery.dataTables.js' %}"></script>
+<script src="{% static 'assets/plugins/DataTables/media/js/dataTables.bootstrap.min.js' %}"></script>
+<script src="{% static 'assets/plugins/DataTables/extensions/Responsive/js/dataTables.responsive.min.js' %}"></script>
+<script src="{% static 'assets/js/demo/table-manage-default.demo.js' %}"></script>
+<script src="{% static 'assets/js/demo/form-plugins.demo.js' %}"></script>
+<script src="{% static 'assets/plugins/masked-input/masked-input.min.js' %}"></script>
+<script src="{% static 'assets/plugins/ionRangeSlider/js/ion-rangeSlider/ion.rangeSlider.min.js' %}"></script>
+<script src="{% static 'assets/plugins/gritter/js/jquery.gritter.js' %}"></script>
+<script src="{% static 'assets/plugins/bootstrap-sweetalert/sweetalert.min.js' %}"></script>
+<script src="{% static 'assets/js/demo/ui-modal-notification.demo.min.js' %}"></script>
+
+<script>
+    $(document).ready(function(){
+        App.init();
+        cargarTiposTrabajos();
+    });
+
+    function cargarTiposTrabajos(){
+        $.get('/presupuesto-agricola/tipo-trabajo/api/tipo-trabajo/', function(response){
+            // Destruir DataTable si ya existe ANTES de cambiar el HTML
+            if ($.fn.DataTable.isDataTable('#tableListTipoTrabajo')) {
+                $('#tableListTipoTrabajo').DataTable().clear().destroy();
+            }
+
+            let tbody = '';
+            response.data.forEach(function(tipoTrabajo){
+                tbody += `<tr>
+                    <td>${tipoTrabajo.ID_TP_TRABAJO}</td>
+                    <td><span class="badge badge-info">${tipoTrabajo.NOM_CORTO}</span></td>
+                    <td>${tipoTrabajo.DESCRIPCION}</td>
+                    <td>
+                        <button class="btn btn-warning btn-xs" onclick="modal_update_tipo_trabajo(${tipoTrabajo.ID_TP_TRABAJO})" title="Editar">
+                            <i class="fa fa-edit"></i>
+                        </button>
+                        <button class="btn btn-danger btn-xs" onclick="modal_delete_tipo_trabajo(${tipoTrabajo.ID_TP_TRABAJO})" title="Eliminar">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>`;
+            });
+            
+            // Cambiar el HTML
+            $('#tableListTipoTrabajo tbody').html(tbody);
+            
+            // Recrear DataTable con pequeño delay para asegurar que el DOM esté listo
+            setTimeout(function() {
+                $('#tableListTipoTrabajo').DataTable({
+                    responsive: true,
+                    destroy: true, // Permite recrear la tabla
+                    language: {
+                        url: '//cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json'
+                    },
+                    order: [[0, 'asc']] // Ordenar por ID ascendente por defecto
+                });
+            }, 100);
+            
+        }).fail(function(xhr, status, error) {
+            console.error('Error al cargar tipos de trabajos:', error);
+            swal('Error', 'No se pudieron cargar los tipos de trabajos', 'error');
+        });
+    }
+
+    function modal_create_tipo_trabajo(){
+        let html = `<form id="formCreateTipoTrabajo">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title">Agregar Tipo de Labor</h4>
+                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label>Nombre Corto <span class="text-danger">*</span></label>
+                            <input type="text" name="nom_corto" class="form-control" placeholder="Ej: CUL, CON, POD, etc." maxlength="50" required>
+                            <small class="form-text text-muted">Máximo 10 caracteres</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Descripción <span class="text-danger">*</span></label>
+                            <input type="text" name="descripcion" class="form-control" placeholder="Descripción del tipo de Labor" maxlength="255" required>
+                            <small class="form-text text-muted">Máximo 100 caracteres</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" onclick="saveCreateTipoTrabajo()">
+                            <i class="fa fa-save"></i> Guardar
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                            <i class="fa fa-times"></i> Cancelar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>`;
+
+        $('#modalCreateTipoTrabajo').html(html).modal('show');
+        
+        // Enfocar el primer campo
+        setTimeout(function() {
+            $('#formCreateTipoTrabajo [name="nom_corto"]').focus();
+        }, 500);
+    }
+
+    function saveCreateTipoTrabajo(){
+        let form = $('#formCreateTipoTrabajo');
+        let nomCorto = form.find('[name="nom_corto"]').val().trim();
+        let descripcion = form.find('[name="descripcion"]').val().trim();
+
+        if (!nomCorto) {
+            swal('Error', 'El nombre corto es obligatorio', 'error');
+            return;
+        }
+        if (!descripcion) {
+            swal('Error', 'La descripción es obligatoria', 'error');
+            return;
+        }
+
+        let data = {
+            nom_corto: nomCorto.toUpperCase(),
+            descripcion: descripcion
+        };
+
+        $.ajax({
+            url: '/presupuesto-agricola/tipo-trabajo/api/tipo-trabajo/',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(data),
+            success: function(response){
+                $('#modalCreateTipoTrabajo').modal('hide');
+                swal('¡Éxito!', 'Tipo de Labor registrado correctamente', 'success');
+                // Esperar un poco para que el modal se cierre completamente
+                setTimeout(function() {
+                    cargarTiposTrabajos();
+                }, 300);
+            },
+            error: function(xhr, status, error){
+                let errorMessage = 'Error al crear tipo de labor';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                }
+                console.error('Error:', xhr.responseText);
+                swal('Error', errorMessage, 'error');
+            }
+        });
+    }
+
+    function modal_update_tipo_trabajo(id){
+        $.get(`/presupuesto-agricola/tipo-trabajo/api/tipo-trabajo/${id}/`, function(response){
+            let tipoTrabajo = response.data;
+
+            let html = `<form id="formUpdateTipoTrabajo">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h4 class="modal-title">Editar Tipo de Labor</h4>
+                            <button type="button" class="close" data-dismiss="modal">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label>ID Tipo Trabajo</label>
+                                <input type="number" name="id_tipo_trabajo" class="form-control" value="${tipoTrabajo.ID_TP_TRABAJO}" readonly/>
+                            </div>
+                            <div class="form-group">
+                                <label>Nombre Corto <span class="text-danger">*</span></label>
+                                <input type="text" name="nom_corto" class="form-control" value="${tipoTrabajo.NOM_CORTO}" maxlength="50" required>
+                                <small class="form-text text-muted">Máximo 10 caracteres</small>
+                            </div>
+                            <div class="form-group">
+                                <label>Descripción <span class="text-danger">*</span></label>
+                                <input type="text" name="descripcion" class="form-control" value="${tipoTrabajo.DESCRIPCION}" maxlength="255" required>
+                                <small class="form-text text-muted">Máximo 100 caracteres</small>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" onclick="saveUpdateTipoTrabajo(${id})">
+                                <i class="fa fa-save"></i> Actualizar
+                            </button>
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                                <i class="fa fa-times"></i> Cancelar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>`;
+            
+            $('#modalUpdateTipoTrabajo').html(html).modal('show');
+            
+            // Enfocar el primer campo editable
+            setTimeout(function() {
+                $('#formUpdateTipoTrabajo [name="nom_corto"]').focus().select();
+            }, 500);
+        }).fail(function(xhr, status, error) {
+            swal('Error', 'No se pudo cargar la información del tipo de labor', 'error');
+        });
+    }
+
+    function saveUpdateTipoTrabajo(id){
+        let form = $('#formUpdateTipoTrabajo');
+        let nomCorto = form.find('[name="nom_corto"]').val().trim();
+        let descripcion = form.find('[name="descripcion"]').val().trim();
+
+        if (!nomCorto) {
+            swal('Error', 'El nombre corto es obligatorio', 'error');
+            return;
+        }
+        if (!descripcion) {
+            swal('Error', 'La descripción es obligatoria', 'error');
+            return;
+        }
+
+        let data = {
+            nom_corto: nomCorto.toUpperCase(),
+            descripcion: descripcion
+        };
+
+        $.ajax({
+            url: `/presupuesto-agricola/tipo-trabajo/api/tipo-trabajo/${id}/`,
+            type: 'PUT',
+            contentType: 'application/json',
+            data: JSON.stringify(data),
+            success: function(response){
+                $('#modalUpdateTipoTrabajo').modal('hide');
+                swal('¡Éxito!', 'Tipo de labor actualizado correctamente', 'success');
+                // Esperar un poco para que el modal se cierre completamente
+                setTimeout(function() {
+                    cargarTiposTrabajos();
+                }, 300);
+            },
+            error: function(xhr, status, error){
+                let errorMessage = 'Error al actualizar tipo de labor';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                }
+                console.error('Error:', xhr.responseText);
+                swal('Error', errorMessage, 'error');
+            }
+        });
+    }
+
+    function modal_delete_tipo_trabajo(id){
+        let html = `<div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Eliminar Tipo de Labor</h4>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center">
+                        <i class="fa fa-warning fa-4x text-warning"></i>
+                        <h4 class="m-t-10">¿Estás seguro?</h4>
+                        <p>Esta acción eliminará permanentemente este tipo de labor.<br>
+                        <strong>Esta acción no se puede deshacer.</strong></p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" onclick="deleteTipoTrabajo(${id})">
+                        <i class="fa fa-trash"></i> Sí, Eliminar
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fa fa-times"></i> Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>`;
+        $('#modalDeleteTipoTrabajo').html(html).modal('show');
+    }
+
+    function deleteTipoTrabajo(id){
+        $.ajax({
+            url: `/presupuesto-agricola/tipo-trabajo/api/tipo-trabajo/${id}/`,
+            type: 'DELETE',
+            success: function(response){
+                $('#modalDeleteTipoTrabajo').modal('hide');
+                swal('¡Eliminado!', 'Tipo de labor eliminado correctamente', 'success');
+                // Esperar un poco para que el modal se cierre completamente
+                setTimeout(function() {
+                    cargarTiposTrabajos();
+                }, 300);
+            },
+            error: function(xhr, status, error){
+                let errorMessage = 'Error al eliminar tipo de labor';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                }
+                console.error('Error:', xhr.responseText);
+                swal('Error', errorMessage, 'error');
+            }
+        });
+    }
+</script>
+{% endblock %}

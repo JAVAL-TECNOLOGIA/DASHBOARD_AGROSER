@@ -1,0 +1,254 @@
+
+{% load static %}
+{% include 'base/header.html' %}
+{% include 'base/sidebar.html' %}
+{% block css %}
+	<link href="{% static 'assets/plugins/DataTables/media/css/dataTables.bootstrap.min.css' %}" rel="stylesheet" />
+	<link href="{% static 'assets/plugins/DataTables/extensions/Responsive/css/responsive.bootstrap.min.css' %}" rel="stylesheet" />
+	<link href="{% static 'assets/plugins/bootstrap-datepicker/css/bootstrap-datepicker.css' %}" rel="stylesheet" />
+	<link href="{% static 'assets/plugins/bootstrap-datepicker/css/bootstrap-datepicker3.css' %}" rel="stylesheet" />
+	<link href="{% static 'assets/plugins/gritter/css/jquery.gritter.css' %}" rel="stylesheet" />
+	<script src="{% static 'assets/plugins/pace/pace.min.js' %}"></script>
+{% endblock %}
+
+<div id="content" class="content">
+	<div class="panel panel-inverse">
+		<div class="panel-heading">
+			<h3 class="panel-title">Listado de Tipos de Calculo</h3>
+		</div>
+		<div class="panel-body"><br>
+			<div class="row">
+				<div class="col-md-2">
+					<button onclick="modal_create_tipo_calculo()" class="btn btn-success" style="color:white;"><i class="fa fa-plus"></i> Agregar Tipo de Calculo</button>
+				</div>
+			</div>
+			<br>
+			<div class="table-responsive">
+				<table class="table table-hover m-b-0 text-inverse" id="tableListTiposCalculo">
+					<thead>
+						<tr>
+							<th>ID</th>
+							<th>Nombre Corto</th>
+							<th>Descripción</th>
+							<th>Acciones</th>
+						</tr>
+					</thead>
+					<tbody>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div class="modal fade" id="modalCreateTipoCalculo"></div>
+<div class="modal fade" id="modalUpdateTipoCalculo"></div>
+<div class="modal fade" id="modalDeleteTipoCalculo"></div>
+
+{% include 'base/footer.html' %}
+{% block js %}
+	<script src="{% static 'assets/plugins/bootstrap-datepicker/js/bootstrap-datepicker.js' %}"></script>
+	<script src="{% static 'assets/plugins/DataTables/media/js/jquery.dataTables.js' %}"></script>
+	<script src="{% static 'assets/plugins/DataTables/media/js/dataTables.bootstrap.min.js' %}"></script>
+	<script src="{% static 'assets/plugins/DataTables/extensions/Responsive/js/dataTables.responsive.min.js' %}"></script>
+	<script src="{% static 'assets/js/demo/table-manage-default.demo.js' %}"></script>
+	<script src="{% static 'assets/js/demo/form-plugins.demo.js' %}"></script>
+	<script src="{% static 'assets/plugins/masked-input/masked-input.min.js' %}"></script>
+	<script src="{% static 'assets/plugins/ionRangeSlider/js/ion-rangeSlider/ion.rangeSlider.min.js' %}"></script>
+	<script src="{% static 'assets/plugins/gritter/js/jquery.gritter.js' %}"></script>
+	<script src="{% static 'assets/plugins/bootstrap-sweetalert/sweetalert.min.js' %}"></script>
+	<script src="{% static 'assets/js/demo/ui-modal-notification.demo.min.js' %}"></script>
+
+	<script>
+		var es_admin = {{ es_admin|yesno:"true,false" }};
+		$(document).ready(function(){
+			App.init();
+			cargarTiposCalculo();
+		});
+
+		function cargarTiposCalculo(){
+			// Destruir DataTable si ya existe
+			if ($.fn.DataTable.isDataTable('#tableListTiposCalculo')) {
+				$('#tableListTiposCalculo').DataTable().destroy();
+			}
+			
+			$.get('/presupuesto-agricola/tipo_calculo/api/tipo-calculo/', function(response){
+				let tbody = '';
+				response.data.forEach(function(tipoCalculo){
+					let idTipoCalculoStr = String(tipoCalculo.ID_TP_CALCULO).replace(/'/g, "\\'");
+					let opciones = `<button class=\"btn btn-warning btn-xs\" onclick=\"modal_update_tipo_calculo('${idTipoCalculoStr}')\"><i class=\"fa fa-edit\"></i></button>`;
+					if (es_admin) {
+						opciones += ` <button class=\"btn btn-danger btn-xs\" onclick=\"modal_delete_tipo_calculo('${idTipoCalculoStr}')\"><i class=\"fa fa-trash\"></i></button>`;
+					}
+					tbody += `<tr>
+						<td>${tipoCalculo.ID_TP_CALCULO}</td>
+						<td>${tipoCalculo.NOM_CORTO}</td>
+						<td>${tipoCalculo.DESCRIPCION}</td>
+						<td>${opciones}</td>
+					</tr>`;
+				});
+				$('#tableListTiposCalculo tbody').html(tbody);
+				$('#tableListTiposCalculo').DataTable({
+					language: {
+						url: "//cdn.datatables.net/plug-ins/1.10.21/i18n/Spanish.json"
+					}
+				});
+			});
+		}
+
+		function modal_create_tipo_calculo(){
+			let html = `<form id=\"formCreateTipoCalculo\">
+				<div class=\"modal-dialog\">
+					<div class=\"modal-content\">
+						<div class=\"modal-header\">
+							<h4 class=\"modal-title\">Agregar Tipo de Cálculo</h4>
+							<button type=\"button\" class=\"close\" data-dismiss=\"modal\">&times;</button>
+						</div>
+						<div class=\"modal-body\">
+							<div class=\"form-group\">
+								<label>Nombre Corto</label>
+								<input type=\"text\" name=\"nom_corto\" class=\"form-control\" required 
+									   placeholder=\"Ej: CALC01, CALC02, etc.\" 
+									   title=\"Ingrese un nombre corto para el Tipo de cálculo\">
+								<small class=\"form-text text-muted\">El nombre corto debe ser único. No puede repetirse.</small>
+							</div>
+							<div class=\"form-group\">
+								<label>Descripción</label>
+								<input type=\"text\" name=\"descripcion\" class=\"form-control\" required>
+							</div>
+							
+						</div>
+						<div class=\"modal-footer\">
+							<button type=\"button\" class=\"btn btn-primary\" onclick=\"saveCreateTipoCalculo()\">Guardar</button>
+							<button type=\"button\" class=\"btn btn-secondary\" data-dismiss=\"modal\">Cancelar</button>
+						</div>
+					</div>
+				</div>
+			</form>`;
+			$('#modalCreateTipoCalculo').html(html).modal('show');
+		}
+
+		function saveCreateTipoCalculo(){
+			let data = {
+				NOM_CORTO: $('#formCreateTipoCalculo [name="nom_corto"]').val(),
+				DESCRIPCION: $('#formCreateTipoCalculo [name="descripcion"]').val()
+			};
+			$.ajax({
+				url: '/presupuesto-agricola/tipo_calculo/api/tipo-calculo/',
+				type: 'POST',
+				contentType: 'application/json',
+				data: JSON.stringify(data),
+				success: function(response){
+					$('#modalCreateTipoCalculo').modal('hide');
+					swal('Tipo de cálculo registrado!', '', 'success');
+					cargarTiposCalculo();
+				},
+				error: function(xhr, status, error){
+					let errorMessage = 'Error al crear tipo de cálculo';
+					if (xhr.responseJSON && xhr.responseJSON.message) {
+						errorMessage = xhr.responseJSON.message;
+					}
+					console.log('Error completo:', xhr.responseText);
+					alert(errorMessage);
+				}
+			});
+		}
+
+		function modal_update_tipo_calculo(id){
+			$.get(`/presupuesto-agricola/tipo_calculo/api/tipo-calculo/${id}/`, function(response){
+				let tipoCalculo = response.data;
+				let idStr = String(id).replace(/'/g, "\\'");
+				let html = `<form id=\"formUpdateTipoCalculo\">
+					<div class=\"modal-dialog\">
+						<div class=\"modal-content\">
+							<div class=\"modal-header\">
+								<h4 class=\"modal-title\">Editar Tipo de Cálculo</h4>
+								<button type=\"button\" class=\"close\" data-dismiss=\"modal\">&times;</button>
+							</div>
+							<div class=\"modal-body\">
+								<div class=\"form-group\">
+									<label>Nombre Corto</label>
+									<input type=\"text\" name=\"nom_corto\" class=\"form-control\" value=\"${tipoCalculo.NOM_CORTO}\" required>
+								</div>
+								<div class=\"form-group\">
+									<label>Descripción</label>
+									<input type=\"text\" name=\"descripcion\" class=\"form-control\" value=\"${tipoCalculo.DESCRIPCION}\" required>
+								</div>
+							</div>
+							<div class=\"modal-footer\">
+								<button type=\"button\" class=\"btn btn-primary\" onclick=\"saveUpdateTipoCalculo('${idStr}')\">Guardar</button>
+								<button type=\"button\" class=\"btn btn-secondary\" data-dismiss=\"modal\">Cancelar</button>
+							</div>
+						</div>
+					</div>
+				</form>`;
+				$('#modalUpdateTipoCalculo').html(html).modal('show');
+			});
+		}
+
+		function saveUpdateTipoCalculo(id){
+			let data = {
+				NOM_CORTO: $('#formUpdateTipoCalculo [name="nom_corto"]').val(),
+				DESCRIPCION: $('#formUpdateTipoCalculo [name="descripcion"]').val()
+			};
+			$.ajax({
+				url: `/presupuesto-agricola/tipo_calculo/api/tipo-calculo/${id}/`,
+				type: 'PUT',
+				contentType: 'application/json',
+				data: JSON.stringify(data),
+				success: function(response){
+					$('#modalUpdateTipoCalculo').modal('hide');
+					swal('Tipo de cálculo actualizado!', '', 'success');
+					cargarTiposCalculo();
+				},
+				error: function(xhr, status, error){
+					let errorMessage = 'Error al actualizar tipo de cálculo';
+					if (xhr.responseJSON && xhr.responseJSON.message) {
+						errorMessage = xhr.responseJSON.message;
+					}
+					console.log('Error completo:', xhr.responseText);
+					alert(errorMessage);
+				}
+			});
+		}
+
+		function modal_delete_tipo_calculo(id){
+			let html = `<div class=\"modal-dialog\">
+				<div class=\"modal-content\">
+					<div class=\"modal-header\">
+						<h4 class=\"modal-title\">Eliminar Tipo de Cálculo</h4>
+						<button type=\"button\" class=\"close\" data-dismiss=\"modal\">&times;</button>
+					</div>
+					<div class=\"modal-body\">
+						¿Estás seguro de eliminar este tipo de cálculo?
+					</div>
+					<div class=\"modal-footer\">
+						<button type=\"button\" class=\"btn btn-danger\" onclick=\"deleteTipoCalculo('${id}')\">Eliminar</button>
+						<button type=\"button\" class=\"btn btn-secondary\" data-dismiss=\"modal\">Cancelar</button>
+					</div>
+				</div>
+			</div>`;
+			$('#modalDeleteTipoCalculo').html(html).modal('show');
+		}
+
+		function deleteTipoCalculo(id){
+			$.ajax({
+				url: `/presupuesto-agricola/tipo_calculo/api/tipo-calculo/delete/${id}/`,
+				type: 'POST',
+				success: function(response){
+					$('#modalDeleteTipoCalculo').modal('hide');
+					swal('Tipo de cálculo eliminado!', '', 'success');
+					cargarTiposCalculo();
+				},
+				error: function(xhr, status, error){
+					let errorMessage = 'Error al eliminar tipo de cálculo';
+					if (xhr.responseJSON && xhr.responseJSON.message) {
+						errorMessage = xhr.responseJSON.message;
+					}
+					console.log('Error completo:', xhr.responseText);
+					alert(errorMessage);
+				}
+			});
+		}
+	</script>
+{% endblock %}

@@ -1,0 +1,67 @@
+{% load static %}
+{% include 'base/header.html' %}
+    {% block css %}
+	<!-- ================== END PAGE LEVEL STYLE ================== -->
+    <link href="{% static 'assets/plugins/gritter/css/jquery.gritter.css' %}" rel="stylesheet" />
+    <script src="{% static 'assets/plugins/pace/pace.min.js' %}"></script>
+    <!-- ================== END BASE JS ================== -->
+	{% endblock %}
+    
+{% include 'base/sidebar.html' %}
+        <!-- begin #content -->
+		<div id="content" class="content">
+        	<!-- begin panel -->
+			<div class="panel panel-inverse">
+				<!-- begin panel-heading -->
+				<div class="panel-heading">
+					<div class="panel-heading-btn">
+						<a href="javascript:;" class="btn btn-xs btn-icon btn-circle btn-default" data-click="panel-expand"><i class="fa fa-expand"></i></a>
+					</div>
+					<h4 class="panel-title">Registro de inventario de activos de TI</h4>
+				</div>
+				<!-- begin panel-body -->
+				<div class="panel-body">                        
+                    <br>
+                    <div class="row">
+                        <div class="col-md-2">
+                            <button onclick="" class="btn btn-success" style="color:white;"><i class="fa fa-plus-circle"></i> Agregar activo</button>
+                        </div>
+                    </div>
+                    <br>
+                    <div class="table-responsive">
+                        <table class="table table-hover m-b-0 text-inverse" id="" >
+                            <thead>
+                                <tr>
+                                    <th>Apellidos</th>
+                                    <th>Nombres</th>
+                                    <th>Sucursal</th>
+                                    <th>Área</th>
+                                    <th>Correo</th>
+                                    <th>Celular</th>
+                                    <th>IP</th>
+                                    <th>Anydesk</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+                        </table>
+                    </div>
+				</div>
+				<!-- end panel-body -->
+			</div>
+			<!-- end panel -->
+		</div>
+		<!-- end #content -->
+{% include 'base/footer.html' %}
+{% block js %}
+    <script src="{% static 'assets/plugins/gritter/js/jquery.gritter.js' %}"></script>
+    <script src="{% static 'assets/js/demo/form-plugins.demo.js' %}"></script>
+    <script src="{% static 'assets/plugins/masked-input/masked-input.min.js' %}"></script>
+    <script src="{% static 'assets/plugins/ionRangeSlider/js/ion-rangeSlider/ion.rangeSlider.min.js' %}"></script>
+    <script>
+        $(document).ready(function(){    
+            App.init();
+			FormPlugins.init();
+        });
+    </script>
+{% endblock %}

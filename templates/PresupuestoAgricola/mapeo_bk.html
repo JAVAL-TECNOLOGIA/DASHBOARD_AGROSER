@@ -1,0 +1,953 @@
+
+
+{% load static %}
+{% include 'base/header.html' %}
+{% include 'base/sidebar.html' %}
+
+{% block css %}
+<link href="{% static 'assets/plugins/DataTables/media/css/dataTables.bootstrap.min.css' %}" rel="stylesheet" />
+<link href="{% static 'assets/plugins/DataTables/extensions/Buttons/css/buttons.bootstrap.min.css' %}" rel="stylesheet" />
+<link href="//cdn.datatables.net/2.1.8/css/dataTables.dataTables.min.css" rel="stylesheet" />
+
+
+
+{% endblock %}
+
+
+
+<!-- begin #content -->
+
+<div id="content" class="content">
+
+   
+    <!-- Navegación de pestañas -->
+    <div class="nav-tabs-container ">
+
+        <div class="area-logo d-inline-flex align-items-center rounded shadow-sm mb-1 " 
+            style="background: #FB8C00; padding: 0.2rem;">
+            <div class="d-flex align-items-center">
+                <div class="bg-white rounded-circle shadow mr-2 p-1">
+                    <i class="fas fa-users-cog" style="color: #FB8C00;"></i>
+                </div>
+                <div>
+                    <h6 class="text-white font-weight-bold mb-0">
+                        PRESUPUESTO AGRICOLA - DON LUIS
+                    </h6>
+                </div>
+            </div>
+        </div>
+
+        <ul class="nav nav-tabs bg-dark">
+
+        
+            <li class="nav-item">
+            <a class="nav-link font-weight-bold hover-text-dark active" href="#default-tab-mapeo" data-toggle="tab">MAPEO</a>
+            </li>
+
+        </ul>
+
+    </div>
+
+    <div class="tab-content">
+
+        
+        
+       
+
+
+
+       
+
+            <!---HOJA 06 - MAPEO --->
+<div class="tab-pane fade show active" id="default-tab-mapeo">
+  <div class="container py-3">
+      <!-- SIN título ni buscador -->
+
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+  <!-- IZQUIERDA: label + select -->
+  <div class="d-flex align-items-center mb-2 mb-md-0">
+    <label for="select-campania" class="col-form-label me-2 mb-0">Seleccionar campaña</label>
+    <select id="select-campania" class="form-control">
+      {% for c in campanias %}
+        <option value="{{ c.id }}"
+          {% if campania_actual and c.id == campania_actual.id %}selected{% endif %}>
+          {{ c.descripcion }}
+        </option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <!-- DERECHA: botones -->
+  <div class="text-end">
+<button type="button" class="btn btn-success" data-toggle="modal" onclick="cargarTablaMapeo()" data-target="#modalMapeoCompleto">
+    <i class="fa fa-plus"></i> Ver Mapeo
+</button>
+
+<!-- Modal Mapeo Completo -->
+<div class="modal fade" id="modalMapeoCompleto" tabindex="-1" role="dialog" aria-labelledby="modalMapeoCompletoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl" style="max-width: 95vw; width: 95vw; min-width: 1200px;" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalMapeoCompletoLabel">Mapeo - Detalle Completo</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="d-flex justify-content-end mb-2">
+                    <button id="recargarTablaMapeo" class="btn btn-info btn-sm mr-2" title="Recargar">
+                        <i class="fas fa-sync-alt"></i> Recargar
+                    </button>
+                </div>
+                <div class="table-responsive">
+                    <table id="tablaMapeoCompleta" class="table table-bordered" style="width:100%; min-width:1800px;">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>FECHA</th>
+                                <th>ID_ASIGNACION</th>
+                                <th>HILERA</th>
+                                <th>PLANTA</th>
+                                <th>DENSIDAD</th>
+                                <th>ÁREA_PRODUCTIVA</th>
+                                <th>TOTAL_PLANTAS</th>
+                                <th>OBSERVACIÓN</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Se llena por JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{% static 'core/js/PRESUPUESTO_AGRICOLA/produccion_tabla_mapeo.js' %}"></script>
+
+    <!-- cards -->
+    <div id="mapeo-cards" class="row">
+      <!-- Los cards se cargan dinámicamente vía JavaScript -->
+    </div>
+  </div>
+
+  <!-- Modal Lotes -->
+    <div class="modal fade" id="mapeoLotesModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog" style="max-width:40vw; width:40vw; min-width:400px;" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title" id="mapeoLotesModalLabel">Lotes</h5>
+                    <div class="panel-heading-btn">
+                        <button id="mapeo-modal-reload" class="btn btn-success btn-sm mr-2" title="Recargar">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                        <button class="btn btn-danger btn-sm" data-dismiss="modal" title="Cerrar">
+                            <i class="fa fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="CAMPANIA" name="CAMPANIA">
+                    <div class="table-responsive">
+                        <table id="mapeoLotesTable" class="table table-striped table-bordered" style="min-width:700px;">
+                            <colgroup>
+                                <col style="width:40%">
+                                <col style="width:15%">
+                                <col style="width:25%">
+                                <col style="width:20%">
+                            </colgroup>
+                            <thead>
+                                <tr>
+                                    <th style="text-align:left;width:40%">Código / Lote</th>
+                                    <th style="text-align:right;width:15%">Área (ha)</th>
+                                    <th style="text-align:left;width:25%">Variedad</th>
+                                    <th style="text-align:left;width:20%">CECO</th>
+                                </tr>
+                            </thead>
+                            <tbody><!-- se llena por JS --></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+<!-- Modal CRUD MAPEO DE PLANTAS POR LOTE -->
+<div class="modal fade" id="modalMapeoCRUD" tabindex="-1" role="dialog" aria-labelledby="modalMapeoCRUDLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl" style="max-width: 75%; width: 75%;" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalMapeoCRUDLabel">Mapeo de Plantas por Lote</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="formMapeoCRUD">
+                    <input type="hidden" id="MAPEO_ID_LOTE" name="ID_LOTE">
+                    <input type="hidden" id="CAMPANIA" name="CAMPANIA">
+                    <input type="hidden" id="AREA_LOTE" name="AREA_LOTE">
+                    <input type="hidden" id="ID_ASIGNACION" name="ID_ASIGNACION">
+
+                    <div>
+                        <div class="row mt-3">
+                          <!-- Rendimiento -->
+                          <div class="col-md-3">
+                            <label for="rendimiento" class="form-label">Rendimiento (%)</label>
+                            <input type="number" class="form-control" id="rendimiento" name="rendimiento" min="0" max="100" placeholder="0 - 100">
+                          </div>
+
+                          <!-- Hilera -->
+                          <div class="col-md-3">
+                            <label for="hilera" class="form-label">Hilera (m)</label>
+                            <input type="number" step="0.01" class="form-control" id="hilera" name="hilera" placeholder="Ej: 3.3">
+                          </div>
+
+                          <!-- Planta -->
+                          <div class="col-md-3">
+                            <label for="planta" class="form-label">Planta (m)</label>
+                            <input type="number" step="0.01" class="form-control" id="planta" name="planta" placeholder="Ej: 1.5">
+                          </div>
+
+                          <!-- Densidad -->
+                          <div class="col-md-3">
+                            <label for="densidad" class="form-label">Densidad (Plantas x Ha)</label>
+                            <input type="number" step="0.01" class="form-control" id="densidad" name="densidad" readonly>
+                          </div>
+                        </div>
+
+                        <div class="row mt-3">
+                          <!-- Racimos por Planta -->
+                          <div class="col-md-3">
+                            <label for="racimosPlanta" class="form-label">Racimos por Planta</label>
+                            <input type="number" class="form-control" id="racimosPlanta" name="racimosPlanta">
+                          </div>
+
+                          <!-- Racimo Packing -->
+                          <div class="col-md-3">
+                            <label for="racimoPacking" class="form-label">Racimo Packing</label>
+                            <input type="number" class="form-control" id="racimoPacking" name="racimoPacking">
+                          </div>
+
+                          <!-- Racimo Nacional -->
+                          <div class="col-md-3">
+                            <label for="racimoNacional" class="form-label">Racimo Nacional</label>
+                            <input type="number" class="form-control" id="racimoNacional" name="racimoNacional" readonly>
+                          </div>
+
+                          <!-- Peso Racimo -->
+                          <div class="col-md-3">
+                            <label for="pesoRacimo" class="form-label">Peso Racimo (kg)</label>
+                            <input type="number" step="0.01" class="form-control" id="pesoRacimo" name="pesoRacimo">
+                          </div>
+                        </div>
+
+                        <div class="row mt-3">
+                          <!-- Cajas por Lote -->
+                          <div class="col-md-3">
+                            <label for="cajasLote" class="form-label">Cajas por Lote</label>
+                            <select class="form-control" id="cajasLote" name="cajasLote">
+                              <option value="1700" selected>1700 (defecto)</option>
+                              <option value="1800">1800</option>
+                              <option value="1900">1900</option>
+                              <option value="2000">2000</option>
+                            </select>
+                          </div>
+                             <div class="col-md-3">
+                                <label for="cajasLote" class="form-label">Cajas por Lote</label>
+                                <input type="date" class="form-control" id="fechaMapeo" name="fechaMapeo">
+                          </div>
+                        </div>
+                    </div>
+                    <br>
+                    <div class="table-responsive">
+                        <!-- Botón fijo arriba de la tabla -->
+                       <!-- <div class="d-flex justify-content-end mb-2">
+                            <button type="button" class="btn btn-info btn-sm" id="btnAgregarPlanta">
+                                <i class="fa fa-plus"></i> Agregar
+                            </button>
+                        </div>-->
+                        <table class="table table-bordered" id="tablaTipoPlantaMapeo">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>Plantas productivas</th>
+                                    <th>Plantas en Formación</th>
+                                    <th>Plantas Muertas</th>
+                                    <th>Plantas Ausentes</th>
+                                    <th>Plantas Enferma</th>
+                                    <th>Plantas en Cordon</th>
+                                    <th>Planta MOSCATEL ROJA</th>
+                                    <th>Planta MOSCATEL NEGRA</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                              <tr>
+                                    <td><input type="number" min="0" class="form-control" id="productiva" name="productiva"></td>
+                                    <td><input type="number" min="0" class="form-control" id="formacion" name="formacion"></td>
+                                    <td><input type="number" min="0" class="form-control" id="muertas" name="muertas"></td>
+                                    <td><input type="number" min="0" class="form-control" id="ausentes" name="ausentes"></td>
+                                    <td><input type="number" min="0" class="form-control" id="enferma" name="enferma"></td>
+                                    <td><input type="number" min="0" class="form-control" id="cordon" name="cordon"></td>
+                                    <td><input type="number" min="0" class="form-control" id="moscatel_roja" name="moscatel_roja"></td>
+                                    <td><input type="number" min="0" class="form-control" id="moscatel_negra" name="moscatel_negra"></td>
+                              </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </form>
+                <div class="alert alert-info mt-2" id="infoTotalPlantas" style="display:none;"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-primary" id="btnGuardarMapeo">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
+</div>
+        
+        
+</div>
+
+
+
+
+
+
+
+
+<style>
+/* Estilos exclusivos para la tabla prod_uva, sin sticky y con scroll horizontal */
+.prod-uva-table th,
+.prod-uva-table td {
+    position: static !important;
+    right: auto !important;
+    left: auto !important;
+    z-index: auto !important;
+    background: #fff !important;
+    box-shadow: none !important;
+    white-space: nowrap;
+}
+.prod-uva-table thead th {
+    background: #f8f9fa !important;
+    color: #212529 !important;
+    font-weight: bold;
+    border-bottom: 2px solid #dee2e6;
+}
+.prod-uva-table .sticky-col,
+.prod-uva-table th.sticky-col,
+.prod-uva-table td.sticky-col {
+    position: static !important;
+    right: auto !important;
+    left: auto !important;
+    z-index: auto !important;
+    background: #fff !important;
+    box-shadow: none !important;
+}
+.prod-uva-table th:last-child,
+.prod-uva-table td:last-child {
+    position: static !important;
+    right: auto !important;
+    left: auto !important;
+    z-index: auto !important;
+    background: #fff !important;
+    box-shadow: none !important;
+    border-left: 1px solid #dee2e6 !important;
+}
+.prod-uva-table {
+    min-width: 2400px;
+}
+.table-responsive {
+    overflow-x: auto;
+}
+</style>
+
+<style>
+
+    #capexTable thead th {
+        text-align: center;
+        vertical-align: middle;
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+      }
+      
+      #capexTable thead th[rowspan="2"] {
+        vertical-align: middle;
+      }
+      
+      #capexTable thead th[colspan="2"] {
+        border-bottom: 2px solid #dee2e6;
+      }
+      
+      #capexTable tbody td {
+        vertical-align: middle;
+      }
+      
+      /* Estilos para las columnas de cantidad y precio */
+      #capexTable td:nth-child(odd) {
+        text-align: center;
+      }
+      
+      #capexTable td:nth-child(even) {
+        text-align: right;
+      }
+    /* Estilos para el pie de tabla de CAPEX */
+    #capexTable tfoot tr {
+        background-color: #f8f9fa !important;
+    }
+    
+    #capexTable tfoot td {
+        font-weight: bold;
+        border-top: 2px solid #dee2e6;
+    }
+    
+    #capexTable tfoot td[id^="total_"] {
+        min-width: 80px;
+    }
+    
+    #capexTable tfoot td.text-right {
+        padding-right: 15px;
+    }
+    
+    /* Estilos para los botones de exportación ============================ */
+
+    .dt-buttons .btn-sm {
+        width: 60px; /* o el ancho que prefieras */
+        height: 30px;
+        padding: 5px;
+        font-size: 12px;
+        gap: 1px;
+    }
+
+    .bg-green-pastel {
+        background-color: #77dd77;
+    }
+
+    /* Estilos para el autocompletado */
+    .ui-autocomplete {
+        z-index: 2000 !important;
+        max-height: 200px;
+        overflow-y: auto;
+        overflow-x: auto; /* Cambiamos a auto para permitir scroll horizontal */
+        background-color: #fff;
+        border: 1px solid #ddd;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        font-size: 14px;
+    }
+
+    .ui-menu-item {
+        padding: 8px 12px;
+        cursor: pointer;
+        white-space: nowrap; /* Mantiene el texto en una sola línea */
+    }
+
+    .ui-menu-item-wrapper {
+        overflow-x: hidden; /* Oculta el overflow horizontal inicialmente */
+         /* Añade puntos suspensivos si el texto es muy largo */
+    }
+
+    .ui-menu-item:hover .ui-menu-item-wrapper {
+        overflow-x: auto; /* Permite scroll horizontal al hacer hover */
+    }
+
+    .ui-menu-item:hover {
+        background-color: #f0f0f0;
+    }
+
+    /* Asegura que el modal tenga un z-index menor que el autocompletado */
+    .modal {
+        z-index: 1050;
+    }
+
+    /* Estilo para el contenedor del campo de descripción */
+    #descripcion-container {
+        position: relative;
+    }
+
+    /* Ajusta el ancho del campo de descripción al 100% de su contenedor */
+    #descripcion {
+        width: 100%;
+    }
+
+    #descripcion_utiles {
+        width: 100%;
+    }
+
+
+    /* Estilo para el contenedor de meses */
+
+    .meses-container {
+        max-height: 450px;
+        overflow-y: auto;
+        padding-right: 10px;
+    }
+
+
+    
+    .custom-switch-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    
+    .mes-nombre {
+        font-size: 14px;
+    }
+    
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 24px;
+    }
+
+    .switch_utiles {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 24px;
+    }
+    
+    .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .switch_utiles input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: .4s;
+    }
+    
+    .slider:before {
+        position: absolute;
+        content: "";
+        height: 20px;
+        width: 20px;
+        left: 2px;
+        bottom: 2px;
+        background-color: white;
+        transition: .4s;
+    }
+    
+    input:checked + .slider {
+        background-color: #2196F3;
+    }
+
+    input:checked_utiles + .slider {
+        background-color: #2196F3;
+    }
+    
+    input:checked + .slider:before {
+        transform: translateX(26px);
+    }
+
+    input:checked_utiles + .slider:before {
+        transform: translateX(26px);
+    }
+    
+    .slider.round {
+        border-radius: 34px;
+    }
+    
+    .slider.round:before {
+        border-radius: 50%;
+    }
+
+      #tablaMapeoCompleta th, #tablaMapeoCompleta td {
+        position: static !important;
+        z-index: auto !important;
+    }
+
+    .custom-switch-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    
+    .mes-nombre {
+        flex: 1;
+        font-size: 14px;
+    }
+    
+    .switch {
+        margin-right: 10px;
+    }
+
+    .switch_utiles {
+        margin-right: 10px;
+    }
+    
+    .cantidad-mes {
+        width: 80px !important;
+    }
+
+    .cantidad-mes_utiles {
+        width: 80px !important;
+    }
+
+    
+
+    
+
+    #materialOficinaTable tbody tr:hover {
+        background-color: #f1f3f5;
+    }
+
+    #tablaProdUva th,
+#tablaProdUva td,
+#tablaProdUva th:last-child,
+#tablaProdUva td:last-child {
+    position: static !important;
+    right: auto !important;
+    left: auto !important;
+    z-index: auto !important;
+    background: #fff !important;
+    box-shadow: none !important;
+}
+
+/* Si alguna clase sticky-col se aplica por error, la anulamos aquí */
+#tablaProdUva .sticky-col,
+#tablaProdUva th.sticky-col,
+#tablaProdUva td.sticky-col {
+    position: static !important;
+    right: auto !important;
+    left: auto !important;
+    z-index: auto !important;
+    background: #fff !important;
+    box-shadow: none !important;
+}
+
+    /* Ajusta el ancho de las columnas */
+    #materialOficinaTable th:nth-child(1),
+    #materialOficinaTable th:nth-child(2) {
+        min-width: 30px;
+    }
+
+    #materialOficinaTable th:nth-child(3) {
+        width: 200px;
+    }
+
+    #materialOficinaTable th:nth-child(n+4) {
+        width: 80px;
+    }
+
+    /* Mejora la responsividad */
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .totales-container {
+        margin-top: 20px;
+        padding: 10px;
+        background-color: #f8f9fa;
+        border-radius: 5px;
+    }
+    .total-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 5px;
+    }
+    .total-label {
+        font-weight: bold;
+    }
+    .total-value {
+        font-size: 1.1em;
+    }
+
+    /* Estilo personalizado para el modal de combustibles */
+    @media (min-width: 1200px) {
+        #combustiblesModal .modal-lg {
+            max-width: 75%; /* o el porcentaje que prefiera */
+            width: 95%;
+        }
+    }
+
+    /* Asegúrese de que la tabla dentro del modal sea responsive */
+    #combustiblesModal .table-responsive {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    .config-section {
+        background-color: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+    }
+
+    .config-section-title {
+        color: #2c3e50;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #e9ecef;
+    }
+
+    .config-section .form-group {
+        margin-bottom: 1rem;
+    }
+
+    .config-section .input-group {
+        width: 200px;
+    }
+
+        #tablaProdUva th, #tablaProdUva td {
+    position: static !important;
+    z-index: auto !important;
+    background: #fff !important;
+    color: #212529 !important;
+    white-space: nowrap;
+}
+
+/* Encabezado normal */
+#tablaProdUva thead th {
+    background: #f8f9fa !important;
+    color: #212529 !important;
+    font-weight: bold;
+    border-bottom: 2px solid #dee2e6;
+}
+
+/* Quita sticky de la última columna si algún plugin lo puso */
+#tablaProdUva th:last-child, #tablaProdUva td:last-child {
+    position: static !important;
+    right: auto !important;
+    background: #fff !important;
+    z-index: auto !important;
+    box-shadow: none !important;
+    border-left: 1px solid #dee2e6 !important;
+}
+
+#tablaProdUva {
+    min-width: 1800px;
+}
+.table-responsive {
+    overflow-x: auto;
+}
+
+    .config-section .btn {
+        min-width: 120px;
+    }
+
+    /* Estilo para las pestañas de pills */
+    .nav-pills .nav-link {
+        color: #495057;
+        background-color: #f8f9fa;
+        border: 1px solid #dee2e6;
+        margin-right: 5px;
+    }
+
+    .nav-pills .nav-link.active {
+        color: #fff;
+        background-color: #007bff;
+        border-color: #007bff;
+    }
+    div.dt-container {
+        width: 800px;
+        margin: 0 auto;
+    }
+
+    /* ESTILOS PARA LA COLUMNA FIJA */
+
+    /* Agregar estos nuevos estilos para el texto de las tablas */
+    #materialOficinaTable, 
+    #utilesOficinaTable,
+    #equipoComputoTable,
+    #otrosSuministrosTable,
+    #materialConstruccionTable,
+    #repuestosAccesoriosTable,
+    #equipoProteccionTable,
+    #materialagriculturaTable,
+    #sueldosTable,
+    #salariosTable,
+    #equiposuitTable {
+        color: #000000 !important; /* Color negro para el texto */
+    }
+
+    #materialOficinaTable td, 
+    #utilesOficinaTable td,
+    #equipoComputoTable td,
+    #otrosSuministrosTable td,
+    #materialConstruccionTable td,
+    #repuestosAccesoriosTable td,
+    #equipoProteccionTable td,
+    #materialagriculturaTable td,
+    #sueldosTable td,
+    #salariosTable td,
+    #equiposuitTable td {
+        color: #000000 !important;
+    }
+
+    #materialOficinaTable thead th, 
+    #utilesOficinaTable thead th,
+    #equipoComputoTable thead th,
+    #otrosSuministrosTable thead th,
+    #materialConstruccionTable thead th,
+    #repuestosAccesoriosTable thead th,
+    #equipoProteccionTable thead th,
+    #materialagriculturaTable thead th,
+    #sueldosTable thead th,
+    #salariosTable thead th,
+    #equiposuitTable thead th {
+        color: #ffffff !important; /* Color blanco para los encabezados */
+    }
+
+
+    #materialOficinaTable, 
+    #utilesOficinaTable,
+    #equipoComputoTable,
+    #otrosSuministrosTable,
+    #materialConstruccionTable,
+    #repuestosAccesoriosTable,
+    #equiposuitTable,
+    #sueldosTable,
+    #salariosTable,
+    #materialagriculturaTable
+    .descripcion-column {
+        text-align: left !important;
+        min-width: 400px !important;
+        white-space: nowrap !important;
+    }
+    
+
+
+    /* Para asegurar que el encabezado también esté alineado */
+    #materialOficinaTable, 
+    #utilesOficinaTable,
+    #equipoComputoTable,
+    #otrosSuministrosTable,
+    #materialConstruccionTable,
+    #repuestosAccesoriosTable,
+    #equiposuitTable,
+    #sueldosTable,
+    #salariosTable,
+    #materialagriculturaTable
+    thead th:nth-child(3) {
+        text-align: right !important;
+    }
+
+    .sticky-col {
+        position: sticky !important;
+        right: 0 !important;
+        background-color: white !important;
+        z-index: 10 !important; /* Aumentamos el z-index */
+        box-shadow: -5px 0 10px 5px rgba(0,0,0,1) !important;
+
+        border-left: 2px solid #34495e !important;
+        background-color: #fff !important;
+    }
+    
+    /* Aseguramos que el encabezado de la columna fija tenga mayor z-index */
+    thead th:last-child {
+        position: sticky !important;
+        right: 0 !important;
+        background-color: white !important;
+         /* Mayor z-index que el contenido */
+    }
+
+
+    /* ESTILOS PARA LA COLUMNA FIJA */
+    /* Versión alternativa con colores más corporativos */
+    #materialOficinaTable, 
+    #utilesOficinaTable,
+    #equipoComputoTable,
+    #otrosSuministrosTable,
+    #materialConstruccionTable,
+    #repuestosAccesoriosTable,
+    #equiposuitTable,
+    #sueldosTable,
+    #salariosTable,
+    #materialagriculturaTable
+    thead th {
+        background-color: #2c3e50 !important;
+        color: white !important;
+        border-bottom: 2px solid #34495e !important;
+
+        
+    }
+
+    #materialOficinaTable, 
+    #utilesOficinaTable,
+    #equipoComputoTable,
+    #otrosSuministrosTable,
+    #materialConstruccionTable,
+    #repuestosAccesoriosTable,
+    #equiposuitTable,
+    #sueldosTable,
+    #salariosTable,
+    #materialagriculturaTable
+    tbody tr:nth-child(even) {
+        background-color: #f5f6fa !important;
+    }
+
+    #materialOficinaTable, 
+    #utilesOficinaTable,
+    #equipoComputoTable,
+    #otrosSuministrosTable,
+    #materialConstruccionTable,
+    #repuestosAccesoriosTable,
+    #equiposuitTable,
+    #sueldosTable,
+    #salariosTable,
+    #materialagriculturaTable tbody tr:hover {
+        background-color: #ebedef !important;
+        box-shadow: 5px 5px 5px 5px #34495e !important;
+    }
+
+    
+
+
+
+</style>
+
+
+{% include 'base/footer.html' %}
+
+
+{% block js %}
+
+<script>
+    App.init();
+    window.USER_ID = {{ request.user.id|default:'null' }};
+    window.dataTableEsUrl = "{% static 'assets/plugins/DataTables/i18n/es-ES.json' %}";
+</script>
+
+
+<script type="text/javascript" src="https://cdn.datatables.net/v/bs4/jszip-2.5.0/dt-1.10.21/b-1.6.2/b-html5-1.6.2/datatables.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.68/pdfmake.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.68/vfs_fonts.js"></script> 
+
+
+<script src="{% static 'assets/js/buttons.html5.styles.min.js' %}"></script>
+<script src="{% static 'assets/js/buttons.html5.styles.templates.min.js' %}"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+
+
+
+<script src="{% static 'core/js/PRESUPUESTO_AGRICOLA/mapeo.js' %}"></script>
+
+
+
+{% endblock %}
+
+

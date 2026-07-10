@@ -1,0 +1,281 @@
+{% if perms.script.MODULO_APROBACIONES_AJS_REQUERIMIENTOS %}
+<div class="req_interno-embed">
+        	<!-- begin #content -->
+    <div id="content-req_interno">
+        
+        <!-- begin panel -->
+        <div id="content">
+        	<!-- begin panel -->
+			<div class="panel panel-inverse">
+				<!-- begin panel-heading -->
+				<div class="panel-heading">
+					<div class="panel-heading-btn">
+						<a href="javascript:;" class="btn btn-xs btn-icon btn-circle btn-default" data-click="panel-expand"><i class="fa fa-expand"></i></a>
+					</div>
+					<h4 class="panel-title">
+						Aprobaciones Requerimientos Internos.
+					</h4>
+
+					
+
+				</div>
+				<!-- begin panel-body -->
+				<div class="panel-body">
+						<!-- begin table-responsive -->
+					<div class="row">
+						<div class="col-md-6">
+							<label class="">Seleccionar área</label>
+							<div class="form-group m-b-10">
+								<select class="form-control" id="AJREQselectApproveArea">
+								</select>
+							</div>
+						</div>
+						<div class="col-md-2">
+							<label class="invisible">.</label>
+							<input type="button" id="AJREQbtnApproveFilter" class="btn btn-primary form-control"  value="Filtrar" />
+						</div>
+						<div class="col-md-2">
+							<label class="invisible">.</label>
+							<button type="button" id="AJREQbtnAprobacionMasiva" class="btn btn-success form-control" disabled>
+								<i class="fa fa-check-circle mr-1"></i>
+								<span id="AJREQtextoBtnMasivo">Aprobar Masivo</span>
+							</button>
+						</div>
+					</div>
+					
+					<!-- Panel de información de selección -->
+					<div class="row mb-3" id="AJREQpanelSeleccion" style="display: none;">
+						<div class="col-md-12">
+							<div class="alert alert-info mb-0 d-flex flex-wrap align-items-center justify-content-between">
+								<div class="d-flex align-items-center flex-wrap">
+									<i class="fa fa-info-circle mr-2"></i>
+									<span id="AJREQcontadorSeleccion">0 registros seleccionados</span>
+								</div>
+								<div class="mt-2 mt-md-0 d-flex flex-column flex-md-row align-items-stretch align-items-md-center">
+									<button type="button" class="btn btn-sm btn-outline-info mb-2 mb-md-0 mr-0 mr-md-2" id="AJREQbtnSeleccionarTodos">
+										<i class="fa fa-check-square-o mr-1"></i>
+										Seleccionar Todos
+									</button>
+									<button type="button" class="btn btn-sm btn-outline-secondary" id="btnDeseleccionarTodos">
+										<i class="fa fa-square-o mr-1"></i>
+										Deseleccionar Todos
+									</button>
+								</div>
+							</div>
+						</div>
+					</div>
+					
+					<br>
+					<div class="table-responsive">
+						<table class="table table-bordered text-left" id="AJREQtableApproveOrders">
+							<thead>
+								<tr>
+									<th>ID</th>
+									<th>Item</th>
+									<th>Fecha</th>
+									<th>Medida</th>
+									<th>Producto</th>
+									<th>Cantidad</th>
+									<th>Observacion</th>
+									<th>Centro Costos</th>
+									<th>Area</th>
+									<th width="50px">
+										<div class="form-check">
+											<input class="form-check-input" type="checkbox" id="AJREQcheckboxSelectAll">
+											<label class="form-check-label" for="AJREQcheckboxSelectAll"></label>
+										</div>
+									</th>
+								</tr>
+							</thead>
+							<tbody>
+							</tbody>
+						</table>
+					</div>
+				</div>
+				<!-- end panel-body -->
+			</div>
+			<!-- end panel -->
+		</div>
+        <!-- end panel -->
+    </div>
+    <!-- end #content -->
+    <!-- #modal-dialog -->
+    <div class="modal fade" id="AJREQmodalApproveOrders">
+			<div class="modal-dialog modal-dialog-centered modal-lg">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h4 class="modal-title">Detalle Pedidos de requerimientos</h4>
+						<button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+					</div>
+					<div class="modal-body">
+						<div class="row">
+							<div class="col-8">
+							<div class="float-left">
+                                <p><br>Responsable :  <b id="lblResponsable"></b></p>
+                            </div>
+							</div>
+							<div class="col-4">
+								<div class="float-right">
+									<button id='AJREQbtn-aprobar' class="btn btn-sm btn-success " ><i class="fa fa-check-circle"></i> &nbsp; APROBAR</button>
+								
+								</div>
+							</div>
+						</div>
+						<!-- begin table-responsive -->
+						<div class="table-responsive">
+							<table class="table table-bordered text-left" id="AJREQtableApproveOrdersLogDetail">
+								<thead>
+									<tr>
+										<th>#</th>
+										<th>PRODUCTO</th>
+										<th>MEDIDA</th>
+										<th>CANTIDAD</th>
+										<th>CONSUMIDOR</th>
+
+									</tr>
+								</thead>
+								<tbody id="tableBodyApproveOrdersLogDetail">
+								</tbody>
+								<tfoot>
+									<tr>
+										<th></th>
+										<th></th>
+										<th>Total:</th>
+										<th></th>
+										<th></th>
+									</tr>
+								</tfoot>
+							</table>
+						</div>
+                    <!-- end table-responsive -->
+					</div>
+					<div class="modal-footer">
+						<a href="javascript:;" class="btn btn-white" data-dismiss="modal">Cerrar</a>
+					</div>
+				</div>
+			</div>
+		</div>
+
+    <!-- Estilos para aprobación masiva -->
+    <style>
+			/* Estilos para checkboxes */
+			.form-check {
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				margin: 0;
+			}
+
+			.form-check-input {
+				width: 18px;
+				height: 18px;
+				cursor: pointer;
+				margin: 0;
+			}
+
+			.form-check-label {
+				margin: 0;
+				cursor: pointer;
+			}
+
+			/* Estilos para el botón de aprobación masiva */
+			#AJREQbtnAprobacionMasiva:disabled {
+				opacity: 0.6;
+				cursor: not-allowed;
+			}
+
+			#AJREQbtnAprobacionMasiva:not(:disabled) {
+				animation: pulse 2s infinite;
+			}
+
+			@keyframes pulse {
+				0% {
+					transform: scale(1);
+				}
+				50% {
+					transform: scale(1.05);
+				}
+				100% {
+					transform: scale(1);
+				}
+			}
+
+			/* Estilos para el panel de selección */
+			#AJREQpanelSeleccion .alert {
+				border-left: 4px solid #17a2b8;
+			}
+
+			/* Estilos para filas seleccionadas */
+			.row-selected {
+				background-color: #e3f2fd !important;
+				border-left: 4px solid #2196f3;
+			}
+
+			/* Hover effect para checkboxes */
+			.form-check-input:hover {
+				transform: scale(1.1);
+				transition: transform 0.2s ease;
+			}
+
+			/* Estilos para botones del panel de selección */
+			.btn-outline-info:hover {
+				background-color: #17a2b8;
+				border-color: #17a2b8;
+				color: white;
+			}
+
+			.btn-outline-secondary:hover {
+				background-color: #6c757d;
+				border-color: #6c757d;
+				color: white;
+			}
+
+			/* Estilos para badges de estado */
+			.badge-warning {
+				background-color: #ffc107;
+				color: #fff;
+			}
+
+			.badge-success {
+				background-color: #28a745;
+				color: white;
+			}
+
+			.badge-danger {
+				background-color: #dc3545;
+				color: white;
+			}
+
+			.badge-secondary {
+				background-color: #6c757d;
+				color: white;
+			}
+
+			/* Responsive adjustments */
+			@media (max-width: 768px) {
+				#AJREQpanelSeleccion .alert {
+					flex-direction: column !important;
+					align-items: flex-start !important;
+				}
+				
+				#AJREQpanelSeleccion .alert > div:first-child {
+					margin-bottom: 0.5rem;
+				}
+				
+				#AJREQpanelSeleccion .btn {
+					width: 100%;
+				}
+				
+				#AJREQpanelSeleccion .btn + .btn {
+					margin-left: 0 !important;
+					margin-top: 0.5rem;
+				}
+				
+				#AJREQpanelSeleccion .d-flex.flex-column {
+					width: 100%;
+				}
+			}
+		</style>
+
+</div>
+{% endif %}

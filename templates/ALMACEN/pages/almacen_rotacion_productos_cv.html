@@ -1,0 +1,1147 @@
+{% load static %}
+{% include 'base/header.html' %}
+{% block page %} 
+    Rotación de Productos 
+{% endblock %}
+{% include 'base/sidebar.html' %}
+
+<div id="content" class="content">
+    <div class="container-fluid">
+        <!-- Header principal -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header text-white py-3" style="background: linear-gradient(135deg, #6c757d 0%, #495057 100%);">
+                        <h4 class="mb-0 font-weight-bold">
+                            <i class="fas fa-sync-alt mr-2"></i>Rotación de Productos
+                        </h4>
+                    </div>
+                    
+                    <!-- Panel de filtros -->
+                    <div class="card-body" style="background-color: #f8f9fa;">
+                        <h6 class="text-muted mb-3 font-weight-bold">Filtros de búsqueda</h6>
+                        
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label text-dark font-weight-bold small">
+                                    <i class="fas fa-calendar-alt text-primary mr-1"></i>Fecha Inicio
+                                </label>
+                                <input type="date" 
+                                       class="form-control form-control-sm" 
+                                       id="fecha-inicio"
+                                       style="border: 1px solid #ced4da;">
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label text-dark font-weight-bold small">
+                                    <i class="fas fa-calendar-alt text-primary mr-1"></i>Fecha Fin
+                                </label>
+                                <input type="date" 
+                                       class="form-control form-control-sm" 
+                                       id="fecha-fin"
+                                       style="border: 1px solid #ced4da;">
+                            </div>
+                            
+                            <div class="col-md-3 mb-3">
+                                <label class="form-label text-dark font-weight-bold small">
+                                    <i class="fas fa-filter text-primary mr-1"></i>Estado de Productos
+                                </label>
+                                <select class="form-control form-control-sm" id="filtro-estado">
+                                    <option value="">(Todos)</option>
+                                    <option value="con-movimiento">Con Movimiento</option>
+                                    <option value="sin-movimiento">Sin Movimiento</option>
+                                </select>
+                            </div>
+                            
+                            <div class="col-md-3 mb-3 d-flex align-items-end">
+                                <div class="btn-group w-100">
+                                    <button type="button" 
+                                            class="btn btn-primary btn-sm" 
+                                            id="btn-buscar"
+                                            style="background-color: #007bff; border-color: #007bff;">
+                                        <i class="fas fa-search mr-1"></i>Actualizar
+                                    </button>
+                                    <button type="button" 
+                                            class="btn btn-secondary btn-sm" 
+                                            id="btn-limpiar"
+                                            style="background-color: #6c757d; border-color: #6c757d;">
+                                        <i class="fas fa-eraser mr-1"></i>Limpiar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Sección de estadísticas mejorada -->
+                        <div class="row mt-3" id="info-resultados" style="display: none;">
+                            <div class="col-md-2">
+                                <div class="card border-left-primary shadow h-100 py-2">
+                                    <div class="card-body">
+                                        <div class="row no-gutters align-items-center">
+                                            <div class="col mr-2">
+                                                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                                    Total Productos
+                                                </div>
+                                                <div class="h5 mb-0 font-weight-bold text-gray-800" id="total-productos">0</div>
+                                            </div>
+                                            <div class="col-auto">
+                                                <i class="fas fa-box fa-2x text-gray-300"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-2">
+                                <div class="card border-left-success shadow h-100 py-2">
+                                    <div class="card-body">
+                                        <div class="row no-gutters align-items-center">
+                                            <div class="col mr-2">
+                                                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                                    Con Movimiento
+                                                </div>
+                                                <div class="h5 mb-0 font-weight-bold text-gray-800" id="con-movimiento">0</div>
+                                                <div class="progress progress-sm mt-2">
+                                                    <div class="progress-bar bg-success" id="progress-movimiento" style="width: 0%"></div>
+                                                </div>
+                                            </div>
+                                            <div class="col-auto">
+                                                <i class="fas fa-arrow-up fa-2x text-gray-300"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-2">
+                                <div class="card border-left-warning shadow h-100 py-2">
+                                    <div class="card-body">
+                                        <div class="row no-gutters align-items-center">
+                                            <div class="col mr-2">
+                                                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                                    Con GRC
+                                                </div>
+                                                <div class="h5 mb-0 font-weight-bold text-gray-800" id="con-grc">0</div>
+                                                <div class="progress progress-sm mt-2">
+                                                    <div class="progress-bar bg-warning" id="progress-grc" style="width: 0%"></div>
+                                                </div>
+                                            </div>
+                                            <div class="col-auto">
+                                                <i class="fas fa-file-alt fa-2x text-gray-300"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-2">
+                                <div class="card border-left-info shadow h-100 py-2">
+                                    <div class="card-body">
+                                        <div class="row no-gutters align-items-center">
+                                            <div class="col mr-2">
+                                                <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                                    Con Responsable
+                                                </div>
+                                                <div class="h5 mb-0 font-weight-bold text-gray-800" id="con-responsable">0</div>
+                                                <div class="progress progress-sm mt-2">
+                                                    <div class="progress-bar bg-info" id="progress-responsable" style="width: 0%"></div>
+                                                </div>
+                                            </div>
+                                            <div class="col-auto">
+                                                <i class="fas fa-user-check fa-2x text-gray-300"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-2">
+                                <div class="card border-left-danger shadow h-100 py-2">
+                                    <div class="card-body">
+                                        <div class="row no-gutters align-items-center">
+                                            <div class="col mr-2">
+                                                <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                                                    Sin Movimiento
+                                                </div>
+                                                <div class="h5 mb-0 font-weight-bold text-gray-800" id="sin-movimiento">0</div>
+                                                <div class="progress progress-sm mt-2">
+                                                    <div class="progress-bar bg-danger" id="progress-sin-movimiento" style="width: 0%"></div>
+                                                </div>
+                                            </div>
+                                            <div class="col-auto">
+                                                <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-2">
+                                <div class="card border-left-dark shadow h-100 py-2">
+                                    <div class="card-body">
+                                        <div class="row no-gutters align-items-center">
+                                            <div class="col mr-2">
+                                                <div class="text-xs font-weight-bold text-dark text-uppercase mb-1">
+                                                    Rotación Promedio
+                                                </div>
+                                                <div class="h6 mb-0 font-weight-bold text-gray-800" id="rotacion-promedio">0 días</div>
+                                                <small class="text-muted">Última salida</small>
+                                            </div>
+                                            <div class="col-auto">
+                                                <i class="fas fa-clock fa-2x text-gray-300"></i>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Panel de análisis avanzado -->
+                        <div class="row mt-4" id="panel-analisis" style="display: none;">
+                            <div class="col-md-6">
+                                <div class="card shadow h-100">
+                                    <div class="card-header bg-gradient-primary text-white">
+                                        <h6 class="m-0 font-weight-bold">
+                                            <i class="fas fa-chart-pie mr-2"></i>Análisis de Rotación
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="small font-weight-bold text-primary">Productos más activos:</label>
+                                                    <div id="productos-activos" class="small text-muted">
+                                                        <i class="fas fa-spinner fa-spin"></i> Calculando...
+                                                    </div>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="small font-weight-bold text-warning">Productos sin movimiento:</label>
+                                                    <div id="productos-inactivos" class="small text-muted">
+                                                        <i class="fas fa-spinner fa-spin"></i> Calculando...
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="mb-3">
+                                                    <label class="small font-weight-bold text-success">Responsable más activo:</label>
+                                                    <div id="responsable-activo" class="small text-muted">
+                                                        <i class="fas fa-spinner fa-spin"></i> Calculando...
+                                                    </div>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="small font-weight-bold text-info">Tiempo promedio desde GRC:</label>
+                                                    <div id="tiempo-grc" class="small text-muted">
+                                                        <i class="fas fa-spinner fa-spin"></i> Calculando...
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="card shadow h-100">
+                                    <div class="card-header bg-gradient-info text-white">
+                                        <h6 class="m-0 font-weight-bold">
+                                            <i class="fas fa-calculator mr-2"></i>Resumen Ejecutivo
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-borderless">
+                                                <tbody>
+                                                    <tr>
+                                                        <td class="font-weight-bold text-primary">Eficiencia de Rotación:</td>
+                                                        <td><span id="eficiencia-rotacion" class="badge badge-primary">0%</span></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="font-weight-bold text-success">Productos en Movimiento:</td>
+                                                        <td><span id="porcentaje-movimiento" class="badge badge-success">0%</span></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="font-weight-bold text-warning">Tiempo Promedio GRC-Salida:</td>
+                                                        <td><span id="tiempo-promedio" class="badge badge-warning">0 días</span></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="font-weight-bold text-info">Total Días Analizados:</td>
+                                                        <td><span id="dias-periodo" class="badge badge-info">0 días</span></td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td class="font-weight-bold text-secondary">Productos/Día Promedio:</td>
+                                                        <td><span id="productos-dia" class="badge badge-secondary">0.0</span></td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Barra de acciones -->
+        <div class="row mb-3">
+            <div class="col-md-6">
+                <div class="d-flex align-items-center">
+                    <label class="mr-2 text-muted small">Mostrar</label>
+                    <select class="form-control form-control-sm" style="width: 80px;" id="registros-por-pagina">
+                        <option value="10">10</option>
+                        <option value="25" selected>25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                    <label class="ml-2 text-muted small">registros</label>
+                </div>
+            </div>
+            
+            <div class="col-md-6 text-right">
+                <div class="btn-group mr-2">
+                    <button type="button" 
+                            class="btn btn-warning btn-sm" 
+                            id="btn-exportar-csv">
+                        <i class="fas fa-file-csv mr-1"></i>CSV
+                    </button>
+                    <button type="button" 
+                            class="btn btn-info btn-sm" 
+                            id="btn-reporte-ejecutivo">
+                        <i class="fas fa-chart-line mr-1"></i>Reporte Ejecutivo
+                    </button>
+                </div>
+                <div class="d-inline-block">
+                    <label class="mr-2 text-muted small">Buscar:</label>
+                    <input type="text" 
+                           class="form-control form-control-sm d-inline-block" 
+                           style="width: 200px;" 
+                           id="buscar-tabla"
+                           placeholder="Filtrar resultados...">
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla de resultados -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card shadow border-0">
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover mb-0" id="tabla-rotacion">
+                                <thead style="background-color: #4e73df; color: white;">
+                                    <tr>
+                                        <th class="text-center border-0 py-3">
+                                            <i class="fas fa-barcode mr-1"></i>Código Producto
+                                        </th>
+                                        <th class="text-center border-0 py-3">
+                                            <i class="fas fa-calendar mr-1"></i>Fecha Salida
+                                        </th>
+                                        <th class="border-0 py-3">
+                                            <i class="fas fa-user mr-1"></i>Responsable Salida
+                                        </th>
+                                        <th class="text-center border-0 py-3">
+                                            <i class="fas fa-calendar-check mr-1"></i>Fecha GRC
+                                        </th>
+                                        <th class="border-0 py-3">
+                                            <i class="fas fa-user-tie mr-1"></i>Responsable Pedido
+                                        </th>
+                                        <th class="text-center border-0 py-3">
+                                            <i class="fas fa-file-alt mr-1"></i>ID Salida
+                                        </th>
+                                        <th class="text-center border-0 py-3">
+                                            <i class="fas fa-hashtag mr-1"></i>Referencia
+                                        </th>
+                                        <th class="text-center border-0 py-3">
+                                            <i class="fas fa-receipt mr-1"></i>Pedido
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbody-rotacion">
+                                    <tr>
+                                        <td colspan="8" class="text-center py-5" style="background-color: #f8f9fa;">
+                                            <div class="text-muted">
+                                                <i class="fas fa-search fa-3x mb-3 d-block text-secondary"></i>
+                                                <h5 class="text-secondary">Seleccione un rango de fechas para consultar</h5>
+                                                <p class="text-muted mb-0">Use los filtros superiores para generar el reporte</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Footer de la tabla -->
+                    <div class="card-footer bg-light" id="footer-tabla" style="display: none;">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <small class="text-muted" id="info-tabla">
+                                    Mostrando 0 a 0 de 0 registros
+                                </small>
+                            </div>
+                            <div class="col-md-6 text-right">
+                                <small class="text-muted" id="fecha-consulta">
+                                    <!-- Información de fecha de consulta -->
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de loading -->
+<div class="modal fade" id="modalLoading" tabindex="-1" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-body text-center py-4">
+                <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                    <span class="sr-only">Cargando...</span>
+                </div>
+                <h6 class="text-dark">Procesando datos...</h6>
+                <p class="text-muted mb-0 small">Por favor espere</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Estilos adicionales -->
+<style>
+    .border-left-primary {
+        border-left: 0.25rem solid #4e73df !important;
+    }
+    .border-left-success {
+        border-left: 0.25rem solid #1cc88a !important;
+    }
+    .border-left-warning {
+        border-left: 0.25rem solid #f6c23e !important;
+    }
+    .border-left-info {
+        border-left: 0.25rem solid #36b9cc !important;
+    }
+    .border-left-danger {
+        border-left: 0.25rem solid #e74a3b !important;
+    }
+    .border-left-dark {
+        border-left: 0.25rem solid #5a5c69 !important;
+    }
+    
+    .text-gray-800 {
+        color: #5a5c69 !important;
+    }
+    
+    .text-gray-300 {
+        color: #dddfeb !important;
+    }
+    
+    .table tbody tr:hover {
+        background-color: #f2f2f2;
+    }
+    
+    .badge-status {
+        font-size: 0.75em;
+        padding: 0.375rem 0.75rem;
+    }
+    
+    .table td {
+        vertical-align: middle;
+        border-color: #e3e6f0;
+    }
+    
+    .table th {
+        border-color: #4e73df;
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .card {
+        border-radius: 0.35rem;
+    }
+    
+    .form-control:focus {
+        border-color: #4e73df;
+        box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+    }
+    
+    .btn-primary {
+        background-color: #4e73df;
+        border-color: #4e73df;
+    }
+    
+    .btn-primary:hover {
+        background-color: #2e59d9;
+        border-color: #2653d4;
+    }
+    
+    .progress-sm {
+        height: 0.5rem;
+    }
+    
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+    }
+    
+    .bg-gradient-info {
+        background: linear-gradient(135deg, #36b9cc 0%, #258391 100%);
+    }
+    
+    .badge {
+        font-size: 0.85em;
+        font-weight: 600;
+    }
+    
+    .card-header {
+        border-bottom: 1px solid rgba(0,0,0,.125);
+    }
+    
+    .table-borderless td {
+        padding: 0.5rem 0.75rem;
+        border-top: none;
+    }
+</style>
+
+{% include 'base/footer.html' %}
+
+{% block js %}
+<!-- SheetJS para generar reporte ejecutivo -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<script>
+// Variables globales
+let datosActuales = [];
+let datosFiltrados = [];
+
+$(document).ready(function() {
+    App.init();
+    
+    // Verificar que las librerías estén cargadas
+    console.log('🔧 Verificando librerías...');
+    console.log('📊 XLSX disponible:', typeof XLSX !== 'undefined');
+    console.log('🎯 jQuery disponible:', typeof $ !== 'undefined');
+    console.log('🚨 SweetAlert disponible:', typeof Swal !== 'undefined');
+    
+    // Configurar fechas por defecto (último mes)
+    const hoy = new Date();
+    const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+    
+    $('#fecha-inicio').val(inicioMes.toISOString().split('T')[0]);
+    $('#fecha-fin').val(hoy.toISOString().split('T')[0]);
+    
+    console.log('📅 Fechas por defecto configuradas:', inicioMes.toISOString().split('T')[0], 'al', hoy.toISOString().split('T')[0]);
+    
+    // Eventos de botones
+    $('#btn-buscar').click(function() {
+        console.log('🔍 Botón buscar clickeado');
+        buscarRotacionProductos();
+    });
+    
+    $('#btn-limpiar').click(function() {
+        console.log('🧹 Botón limpiar clickeado');
+        limpiarFiltros();
+    });
+    
+    $('#btn-exportar-csv').click(function() {
+        console.log('📄 Botón exportar CSV clickeado');
+        
+        // Verificar si hay datos antes de exportar
+        if (!datosActuales || datosActuales.length === 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Sin datos',
+                text: 'Primero debe realizar una búsqueda para obtener datos.',
+                confirmButtonColor: '#4e73df'
+            });
+            return;
+        }
+        
+        const datosParaExportar = datosFiltrados.length > 0 ? datosFiltrados : datosActuales;
+        exportarCSV(datosParaExportar);
+    });
+    
+    $('#btn-reporte-ejecutivo').click(function() {
+        console.log('📈 Botón reporte ejecutivo clickeado');
+        generarReporteEjecutivo();
+    });
+    
+    // Función de prueba para diagnóstico
+    window.probarDescarga = function() {
+        console.log('🔧 Iniciando prueba de descarga...');
+        
+        const contenido = 'Test,de,descarga\n1,2,3\n4,5,6';
+        const blob = new Blob([contenido], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        
+        link.href = url;
+        link.download = 'test_descarga.csv';
+        link.style.display = 'none';
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        console.log('✅ Prueba de descarga ejecutada');
+    };
+    
+    // Evento de búsqueda en tabla
+    $('#buscar-tabla').on('keyup', function() {
+        filtrarTabla();
+    });
+    
+    // Evento de cambio de filtro de estado
+    $('#filtro-estado').on('change', function() {
+        filtrarTabla();
+    });
+    
+    // Función para buscar rotación de productos
+    function buscarRotacionProductos() {
+        const fechaInicio = $('#fecha-inicio').val();
+        const fechaFin = $('#fecha-fin').val();
+        
+        // Validaciones
+        if (!fechaInicio || !fechaFin) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Datos incompletos',
+                text: 'Por favor seleccione ambas fechas para realizar la consulta',
+                confirmButtonColor: '#4e73df'
+            });
+            return;
+        }
+        
+        if (new Date(fechaInicio) > new Date(fechaFin)) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error en fechas',
+                text: 'La fecha de inicio no puede ser mayor a la fecha fin',
+                confirmButtonColor: '#e74a3b'
+            });
+            return;
+        }
+        
+        // Mostrar loading
+        $('#modalLoading').modal('show');
+        
+        // Realizar petición AJAX
+        $.ajax({
+            url: '/almacen/api/rotacion_productos/',
+            type: 'GET',
+            data: {
+                fecha_inicio: fechaInicio,
+                fecha_fin: fechaFin
+            },
+            success: function(response) {
+                $('#modalLoading').modal('hide');
+                
+                if (response.success) {
+                    // Guardar datos para exportación y filtrado
+                    datosActuales = response.data;
+                    datosFiltrados = response.data;
+                    
+                    mostrarResultados(response.data, response.estadisticas);
+                    actualizarInfoTabla();
+                    
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Consulta exitosa',
+                        text: `Se encontraron ${response.data.length} productos`,
+                        timer: 2000,
+                        showConfirmButton: false,
+                        toast: true,
+                        position: 'top-end'
+                    });
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error en la consulta',
+                        text: response.message || 'Error desconocido',
+                        confirmButtonColor: '#e74a3b'
+                    });
+                }
+            },
+            error: function(xhr, status, error) {
+                $('#modalLoading').modal('hide');
+                console.error('Error en AJAX:', error);
+                
+                let mensaje = 'No se pudo conectar con el servidor. Inténtelo nuevamente.';
+                
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    mensaje = xhr.responseJSON.message;
+                } else if (xhr.status === 500) {
+                    mensaje = 'Error interno del servidor. Verifique que el procedimiento almacenado existe.';
+                } else if (xhr.status === 404) {
+                    mensaje = 'URL no encontrada. Verifique la configuración de URLs.';
+                }
+                
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error de conexión',
+                    text: mensaje,
+                    confirmButtonColor: '#e74a3b'
+                });
+            }
+        });
+    }
+    
+    // Función para mostrar resultados en la tabla
+    function mostrarResultados(datos, estadisticas) {
+        const tbody = $('#tbody-rotacion');
+        tbody.empty();
+        
+        if (!datos || datos.length === 0) {
+            tbody.html(`
+                <tr>
+                    <td colspan="8" class="text-center py-5" style="background-color: #f8f9fa;">
+                        <div class="text-muted">
+                            <i class="fas fa-inbox fa-3x mb-3 d-block text-secondary"></i>
+                            <h5 class="text-secondary">No se encontraron resultados</h5>
+                            <p class="text-muted mb-0">No hay productos con movimientos en el rango de fechas seleccionado</p>
+                        </div>
+                    </td>
+                </tr>
+            `);
+            $('#info-resultados').hide();
+            $('#footer-tabla').hide();
+            return;
+        }
+        
+        // Llenar tabla
+        datos.forEach(function(item, index) {
+            const fecha = item.FECHA ? formatearFecha(item.FECHA) : '-';
+            const fechaGrc = item.FECHA_GRC ? formatearFecha(item.FECHA_GRC) : '-';
+            
+            // Determinar estado del producto
+            const tieneMovimiento = item.FECHA && item.RESPONSABLE_SALIDA;
+            const badgeEstado = tieneMovimiento 
+                ? '<span class="badge badge-success badge-status">Activo</span>'
+                : '<span class="badge badge-warning badge-status">Sin Movimiento</span>';
+            
+            const fila = `
+                <tr data-tiene-movimiento="${tieneMovimiento ? 'si' : 'no'}">
+                    <td class="text-center">
+                        <div class="d-flex flex-column align-items-center">
+                            <strong class="text-primary">${item.IDPRODUCTO || '-'}</strong>
+                            ${badgeEstado}
+                        </div>
+                    </td>
+                    <td class="text-center">
+                        ${fecha !== '-' ? `<span class="text-dark">${fecha}</span>` : '<span class="text-muted">-</span>'}
+                    </td>
+                    <td>
+                        <div class="text-truncate" style="max-width: 200px;" title="${item.RESPONSABLE_SALIDA || ''}">
+                            <i class="fas fa-user text-muted mr-1"></i>
+                            ${item.RESPONSABLE_SALIDA || '<span class="text-muted">No asignado</span>'}
+                        </div>
+                    </td>
+                    <td class="text-center">
+                        ${fechaGrc !== '-' ? `<span class="text-success">${fechaGrc}</span>` : '<span class="text-muted">-</span>'}
+                    </td>
+                    <td>
+                        <div class="text-truncate" style="max-width: 200px;" title="${item.RESPONSABLE_PEDIDO || ''}">
+                            <i class="fas fa-user-tie text-muted mr-1"></i>
+                            ${item.RESPONSABLE_PEDIDO || '<span class="text-muted">No asignado</span>'}
+                        </div>
+                    </td>
+                    <td class="text-center">
+                        <small class="text-muted">${item.IDISALM_SAL_DEBUG || '-'}</small>
+                    </td>
+                    <td class="text-center">
+                        <small class="text-info">${item.IDREFERENCIA_DEBUG || '-'}</small>
+                    </td>
+                    <td class="text-center">
+                        <small class="text-warning">${item.IDPEDIDO_DEBUG || '-'}</small>
+                    </td>
+                </tr>
+            `;
+            tbody.append(fila);
+        });
+        
+        // Calcular estadísticas mejoradas
+        calcularEstadisticasAvanzadas(datos);
+        
+        // Mostrar estadísticas básicas
+        if (estadisticas) {
+            $('#total-productos').text(estadisticas.TOTAL_PRODUCTOS || datos.length);
+            $('#con-salida').text(estadisticas.CON_SALIDA || 0);
+            $('#con-grc').text(estadisticas.CON_GRC || 0);
+            $('#con-responsable').text(estadisticas.CON_RESPONSABLE_PEDIDO || 0);
+        } else {
+            // Si no hay estadísticas del servidor, calcularlas localmente
+            const total = datos.length;
+            const conMovimiento = datos.filter(item => item.FECHA && item.RESPONSABLE_SALIDA).length;
+            const conGrc = datos.filter(item => item.FECHA_GRC).length;
+            const conResponsable = datos.filter(item => item.RESPONSABLE_PEDIDO && item.RESPONSABLE_PEDIDO !== 'LOGISTICA').length;
+            const sinMovimiento = total - conMovimiento;
+            
+            $('#total-productos').text(total);
+            $('#con-movimiento').text(conMovimiento);
+            $('#con-grc').text(conGrc);
+            $('#con-responsable').text(conResponsable);
+            $('#sin-movimiento').text(sinMovimiento);
+            
+            // Calcular porcentajes para barras de progreso
+            if (total > 0) {
+                $('#progress-movimiento').css('width', `${(conMovimiento/total*100).toFixed(1)}%`);
+                $('#progress-grc').css('width', `${(conGrc/total*100).toFixed(1)}%`);
+                $('#progress-responsable').css('width', `${(conResponsable/total*100).toFixed(1)}%`);
+                $('#progress-sin-movimiento').css('width', `${(sinMovimiento/total*100).toFixed(1)}%`);
+            }
+        }
+        
+        $('#info-resultados').show();
+        $('#panel-analisis').show();
+        
+        $('#footer-tabla').show();
+    }
+    
+    // Función para filtrar tabla
+    function filtrarTabla() {
+        const busqueda = $('#buscar-tabla').val().toLowerCase();
+        const filtroEstado = $('#filtro-estado').val();
+        
+        let datosVisibles = datosActuales.filter(item => {
+            // Filtro de texto
+            const textoItem = `${item.IDPRODUCTO} ${item.RESPONSABLE_SALIDA} ${item.RESPONSABLE_PEDIDO}`.toLowerCase();
+            const coincideTexto = textoItem.includes(busqueda);
+            
+            // Filtro de estado
+            let coincideEstado = true;
+            if (filtroEstado === 'con-movimiento') {
+                coincideEstado = item.FECHA && item.RESPONSABLE_SALIDA;
+            } else if (filtroEstado === 'sin-movimiento') {
+                coincideEstado = !item.FECHA || !item.RESPONSABLE_SALIDA;
+            }
+            
+            return coincideTexto && coincideEstado;
+        });
+        
+        datosFiltrados = datosVisibles;
+        mostrarResultados(datosVisibles, null);
+        actualizarInfoTabla();
+    }
+    
+    // Función para actualizar información de la tabla
+    function actualizarInfoTabla() {
+        const total = datosFiltrados.length;
+        const fechaInicio = $('#fecha-inicio').val();
+        const fechaFin = $('#fecha-fin').val();
+        
+        $('#info-tabla').text(`Mostrando ${total} registros`);
+        $('#fecha-consulta').text(`Período: ${fechaInicio} al ${fechaFin}`);
+    }
+    
+    // Función para formatear fechas
+    function formatearFecha(fechaStr) {
+        try {
+            const fecha = new Date(fechaStr);
+            return fecha.toLocaleDateString('es-PE', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            }) + ' ' + fecha.toLocaleTimeString('es-PE', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        } catch (e) {
+            return fechaStr;
+        }
+    }
+    
+    // Función para limpiar filtros
+    function limpiarFiltros() {
+        $('#fecha-inicio').val('');
+        $('#fecha-fin').val('');
+        $('#filtro-estado').val('');
+        $('#buscar-tabla').val('');
+        
+        datosActuales = [];
+        datosFiltrados = [];
+        
+        $('#tbody-rotacion').html(`
+            <tr>
+                <td colspan="8" class="text-center py-5" style="background-color: #f8f9fa;">
+                    <div class="text-muted">
+                        <i class="fas fa-search fa-3x mb-3 d-block text-secondary"></i>
+                        <h5 class="text-secondary">Seleccione un rango de fechas para consultar</h5>
+                        <p class="text-muted mb-0">Use los filtros superiores para generar el reporte</p>
+                    </div>
+                </td>
+            </tr>
+        `);
+        
+        $('#info-resultados').hide();
+        $('#footer-tabla').hide();
+        $('#panel-analisis').hide();
+        
+        // Configurar fechas por defecto nuevamente
+        const hoy = new Date();
+        const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+        $('#fecha-inicio').val(inicioMes.toISOString().split('T')[0]);
+        $('#fecha-fin').val(hoy.toISOString().split('T')[0]);
+    }
+    
+    
+     
+
+     
+     // Función de exportación CSV como alternativa
+     function exportarCSV(datos) {
+         console.log('📄 Exportando como CSV...');
+         
+         if (!datos || datos.length === 0) {
+             Swal.fire({
+                 icon: 'warning',
+                 title: 'Sin datos',
+                 text: 'No hay datos para exportar.',
+                 confirmButtonColor: '#4e73df'
+             });
+             return;
+         }
+         
+         // Crear encabezados CSV
+         const headers = [
+             'Código Producto',
+             'Fecha Salida',
+             'Responsable Salida',
+             'Fecha GRC',
+             'Responsable Pedido',
+             'ID Salida',
+             'ID GRC',
+             'Referencia',
+             'Pedido',
+             'Responsable ID'
+         ];
+         
+         // Crear contenido CSV
+         let csvContent = headers.join(',') + '\n';
+         
+         datos.forEach(item => {
+             const row = [
+                 `"${item.IDPRODUCTO || ''}"`,
+                 `"${item.FECHA || ''}"`,
+                 `"${item.RESPONSABLE_SALIDA || ''}"`,
+                 `"${item.FECHA_GRC || ''}"`,
+                 `"${item.RESPONSABLE_PEDIDO || ''}"`,
+                 `"${item.IDISALM_SAL_DEBUG || ''}"`,
+                 `"${item.IDISALM_GRC_DEBUG || ''}"`,
+                 `"${item.IDREFERENCIA_DEBUG || ''}"`,
+                 `"${item.IDPEDIDO_DEBUG || ''}"`,
+                 `"${item.IDRESPONSABLE_DEBUG || ''}"`
+             ];
+             csvContent += row.join(',') + '\n';
+         });
+         
+         console.log('📝 Contenido CSV generado, longitud:', csvContent.length);
+         
+         // Crear blob y descargar
+         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+         console.log('📦 Blob creado, tamaño:', blob.size, 'bytes');
+         
+         const link = document.createElement('a');
+         console.log('🔗 Elemento <a> creado');
+         
+         // Verificar soporte de descarga
+         console.log('💾 Soporte de descarga:', link.download !== undefined);
+         console.log('🌐 URL.createObjectURL disponible:', typeof URL.createObjectURL !== 'undefined');
+         
+         if (link.download !== undefined && typeof URL.createObjectURL !== 'undefined') {
+             const url = URL.createObjectURL(blob);
+             console.log('🔗 URL del blob creada:', url);
+             
+             link.setAttribute('href', url);
+             
+             const fechaInicio = $('#fecha-inicio').val();
+             const fechaFin = $('#fecha-fin').val();
+             const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+             const filename = `rotacion_productos_${fechaInicio}_${fechaFin}_${timestamp}.csv`;
+             
+             console.log('📂 Nombre de archivo:', filename);
+             
+             link.setAttribute('download', filename);
+             link.style.visibility = 'hidden';
+             document.body.appendChild(link);
+             
+             console.log('👆 Simulando click en el enlace...');
+             link.click();
+             
+             // Pequeño retraso antes de limpiar
+             setTimeout(() => {
+                 document.body.removeChild(link);
+                 URL.revokeObjectURL(url);
+                 console.log('🧹 Enlace removido y URL revocada');
+             }, 100);
+             
+             console.log('✅ Archivo CSV procesado para descarga:', filename);
+             
+             Swal.fire({
+                 icon: 'success',
+                 title: 'Exportación exitosa',
+                 text: 'El archivo CSV se ha descargado correctamente',
+                 timer: 2000,
+                 showConfirmButton: false,
+                 toast: true,
+                 position: 'top-end'
+             });
+         } else {
+             console.error('❌ Descarga no soportada en este navegador');
+             Swal.fire({
+                 icon: 'error',
+                 title: 'Error de navegador',
+                 text: 'Su navegador no soporta la descarga de archivos.',
+                 confirmButtonColor: '#e74a3b'
+             });
+         }
+     }
+     
+     // =================== FUNCIONES DE CÁLCULOS AVANZADOS ===================
+    
+    function calcularEstadisticasAvanzadas(datos) {
+        if (!datos || datos.length === 0) return;
+        
+        const total = datos.length;
+        const conMovimiento = datos.filter(item => item.FECHA && item.RESPONSABLE_SALIDA);
+        const sinMovimiento = datos.filter(item => !item.FECHA || !item.RESPONSABLE_SALIDA);
+        
+        // Calcular rotación promedio
+        const fechasValidas = datos.filter(item => item.FECHA).map(item => new Date(item.FECHA));
+        if (fechasValidas.length > 0) {
+            const ahora = new Date();
+            const promedioMs = fechasValidas.reduce((sum, fecha) => sum + (ahora - fecha), 0) / fechasValidas.length;
+            const promedioDias = Math.round(promedioMs / (1000 * 60 * 60 * 24));
+            $('#rotacion-promedio').text(`${promedioDias} días`);
+        }
+        
+        // Análisis de productos más activos
+        const productosActivosTop = conMovimiento
+            .slice(0, 3)
+            .map(item => `<div class="mb-1"><span class="badge badge-success">${item.IDPRODUCTO}</span></div>`)
+            .join('');
+        $('#productos-activos').html(productosActivosTop || '<span class="text-muted">No hay datos</span>');
+        
+        // Productos inactivos
+        const productosInactivosTop = sinMovimiento
+            .slice(0, 3)
+            .map(item => `<div class="mb-1"><span class="badge badge-warning">${item.IDPRODUCTO}</span></div>`)
+            .join('');
+        $('#productos-inactivos').html(productosInactivosTop || '<span class="text-muted">Todos activos</span>');
+        
+        // Responsable más activo
+        const responsables = {};
+        conMovimiento.forEach(item => {
+            if (item.RESPONSABLE_SALIDA && item.RESPONSABLE_SALIDA !== 'LOGISTICA') {
+                const nombre = item.RESPONSABLE_SALIDA.split(' ').slice(0, 2).join(' ');
+                responsables[nombre] = (responsables[nombre] || 0) + 1;
+            }
+        });
+        
+        const responsableTop = Object.entries(responsables)
+            .sort(([,a], [,b]) => b - a)[0];
+        
+        if (responsableTop) {
+            $('#responsable-activo').html(`
+                <div><strong>${responsableTop[0]}</strong></div>
+                <small class="text-muted">${responsableTop[1]} productos</small>
+            `);
+        } else {
+            $('#responsable-activo').html('<span class="text-muted">No disponible</span>');
+        }
+        
+        // Tiempo promedio desde GRC
+        const tiemposGrc = datos.filter(item => item.FECHA_GRC && item.FECHA)
+            .map(item => {
+                const fechaGrc = new Date(item.FECHA_GRC);
+                const fechaSalida = new Date(item.FECHA);
+                return Math.abs(fechaSalida - fechaGrc) / (1000 * 60 * 60 * 24);
+            });
+        
+        if (tiemposGrc.length > 0) {
+            const promedioGrc = tiemposGrc.reduce((sum, tiempo) => sum + tiempo, 0) / tiemposGrc.length;
+            $('#tiempo-grc').html(`<strong>${promedioGrc.toFixed(1)} días</strong>`);
+        } else {
+            $('#tiempo-grc').html('<span class="text-muted">No disponible</span>');
+        }
+        
+        // Resumen ejecutivo
+        const fechaInicio = new Date($('#fecha-inicio').val());
+        const fechaFin = new Date($('#fecha-fin').val());
+        const diasPeriodo = Math.ceil((fechaFin - fechaInicio) / (1000 * 60 * 60 * 24));
+        
+        $('#eficiencia-rotacion').text(`${((conMovimiento.length / total) * 100).toFixed(1)}%`);
+        $('#porcentaje-movimiento').text(`${((conMovimiento.length / total) * 100).toFixed(1)}%`);
+        $('#tiempo-promedio').text(tiemposGrc.length > 0 ? `${(tiemposGrc.reduce((sum, tiempo) => sum + tiempo, 0) / tiemposGrc.length).toFixed(1)} días` : 'N/A');
+        $('#dias-periodo').text(`${diasPeriodo} días`);
+        $('#productos-dia').text(diasPeriodo > 0 ? (total / diasPeriodo).toFixed(1) : '0.0');
+    }
+    
+    function generarReporteEjecutivo() {
+        if (!datosFiltrados || datosFiltrados.length === 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Sin datos',
+                text: 'No hay datos para generar el reporte. Realice una consulta primero.',
+                confirmButtonColor: '#4e73df'
+            });
+            return;
+        }
+        
+        // Crear reporte ejecutivo con datos más detallados
+        const fechaInicio = $('#fecha-inicio').val();
+        const fechaFin = $('#fecha-fin').val();
+        const total = datosFiltrados.length;
+        const conMovimiento = datosFiltrados.filter(item => item.FECHA && item.RESPONSABLE_SALIDA).length;
+        
+        const reporteData = [
+            ['REPORTE EJECUTIVO - ROTACIÓN DE PRODUCTOS', '', '', ''],
+            ['Período:', `${fechaInicio} al ${fechaFin}`, '', ''],
+            ['Fecha de generación:', new Date().toLocaleDateString('es-PE'), '', ''],
+            ['', '', '', ''],
+            ['RESUMEN GENERAL', '', '', ''],
+            ['Total de productos analizados:', total, '', ''],
+            ['Productos con movimiento:', conMovimiento, '', ''],
+            ['Porcentaje de eficiencia:', `${((conMovimiento/total)*100).toFixed(2)}%`, '', ''],
+            ['', '', '', ''],
+            ['DETALLE POR PRODUCTO', '', '', ''],
+            ['Código Producto', 'Fecha Salida', 'Responsable', 'Estado']
+        ];
+        
+        datosFiltrados.forEach(item => {
+            reporteData.push([
+                item.IDPRODUCTO || '',
+                item.FECHA ? formatearFecha(item.FECHA) : 'Sin fecha',
+                item.RESPONSABLE_SALIDA || 'Sin asignar',
+                (item.FECHA && item.RESPONSABLE_SALIDA) ? 'Activo' : 'Inactivo'
+            ]);
+        });
+        
+        // Crear libro de Excel con formato ejecutivo
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(reporteData);
+        
+        // Aplicar estilos básicos (anchos de columna)
+        ws['!cols'] = [{wch: 25}, {wch: 20}, {wch: 30}, {wch: 15}];
+        
+        XLSX.utils.book_append_sheet(wb, ws, 'Reporte Ejecutivo');
+        
+        const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+        const filename = `reporte_ejecutivo_rotacion_${timestamp}.xlsx`;
+        
+        XLSX.writeFile(wb, filename);
+        
+        Swal.fire({
+            icon: 'success',
+            title: 'Reporte generado',
+            text: 'El reporte ejecutivo se ha descargado correctamente',
+            timer: 2000,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+        });
+    }
+});
+</script>
+{% endblock %}

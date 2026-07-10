@@ -1,0 +1,296 @@
+{% if perms.script.MODULO_APROBACIONES_DONLUIS_REQUERIMIENTOS %}
+<div class="req_interno-embed">
+        	<!-- begin #content -->
+    <div id="content-req_interno">
+
+        <div id="content" class="container-fluid px-0">
+        <!-- begin panel -->
+        <div class="panel panel-inverse">
+            <!-- begin panel-heading -->
+            <div class="panel-heading">
+                <div class="panel-heading-btn">
+                    <a href="javascript:;" class="btn btn-xs btn-icon btn-circle btn-default" data-click="panel-expand"><i class="fa fa-expand"></i></a>
+                </div>
+                <h4 class="panel-title">
+                    Aprobacion de Requerimientos Internos.
+                </h4>
+            </div>
+            <!-- begin panel-body -->
+            <div class="panel-body">
+                    <!-- begin table-responsive -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <label class="">Seleccionar área</label>
+                        <div class="form-group m-b-10">
+                            <select class="form-control" id="selectApproveAreaReq">
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="invisible">.</label>
+                        <input type="button" id="btnApproveFilterReq" class="btn btn-primary form-control"  value="Filtrar" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="invisible">.</label>
+                        <button type="button" id="btnAprobacionMasivaReq" class="btn btn-success form-control" disabled>
+                            <i class="fa fa-check-circle mr-1"></i>
+                            <span id="textoBtnMasivoReq">Aprobar Masivo</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Panel de información de selección -->
+                <div class="row mb-3" id="panelSeleccionReq" style="display: none;">
+                    <div class="col-md-12">
+                        <div class="alert alert-info mb-0 d-flex flex-wrap align-items-center justify-content-between">
+                            <div class="d-flex align-items-center flex-wrap">
+                                <i class="fa fa-info-circle mr-2"></i>
+                                <span id="contadorSeleccionReq">0 registros seleccionados</span>
+                            </div>
+                            <div class="mt-2 mt-md-0 d-flex flex-column flex-md-row align-items-stretch align-items-md-center">
+                                <button type="button" class="btn btn-sm btn-outline-info mb-2 mb-md-0 mr-0 mr-md-2" id="btnSeleccionarTodosReq">
+                                    <i class="fa fa-check-square-o mr-1"></i>
+                                    Seleccionar Todos
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="btnDeseleccionarTodosReq">
+                                    <i class="fa fa-square-o mr-1"></i>
+                                    Deseleccionar Todos
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <style>
+                    @media (max-width: 768px) {
+                        #panelSeleccionReq .alert {
+                            flex-direction: column !important;
+                            align-items: flex-start !important;
+                        }
+                        #panelSeleccionReq .alert > div:first-child {
+                            margin-bottom: 0.5rem;
+                        }
+                        #panelSeleccionReq .btn {
+                            width: 100%;
+                        }
+                        #panelSeleccionReq .btn + .btn {
+                            margin-left: 0 !important;
+                            margin-top: 0.5rem;
+                        }
+                        #panelSeleccionReq .d-flex.flex-column {
+                            width: 100%;
+                        }
+                    }
+				</style><br>
+                <div class="table-responsive">
+                    <table class="table table-bordered text-left" id="tableApproveOrdersReq">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Item</th>
+                                <th>Fecha</th>
+                                <th>Medida</th>
+                                <th>Producto</th>
+                                <th>Cantidad</th>
+                                <th>Observacion</th>
+                                <th>Centro Costos</th>
+                                <th>Area</th>
+                                <th width="50px">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="checkboxSelectAllReq">
+                                        <label class="form-check-label" for="checkboxSelectAllReq"></label>
+                                    </div>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <!-- end panel-body -->
+        </div>
+        <!-- end panel -->
+        </div>
+    </div>
+    <!-- end #content -->
+    <!-- #modal-dialog -->
+    <div class="modal fade" id="modalApproveOrdersReq">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Detalle Pedidos de requerimientos</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-8">
+                        <div class="float-left">
+                            <p><br>Responsable :  <b id="lblResponsableReq"></b></p>
+                        </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="float-right">
+                                <button id='btn-aprobar' class="btn btn-sm btn-success " ><i class="fa fa-check-circle"></i> &nbsp; APROBAR</button>
+                            
+                            </div>
+                        </div>
+                    </div>
+                    <!-- begin table-responsive -->
+                    <div class="table-responsive">
+                        <table class="table table-bordered text-left" id="tableApproveOrdersReqLogDetail">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Producto</th>
+                                    <th>Medida</th>
+                                    <th>Cantidad</th>
+                                    <th>Consumidor</th>
+
+                                </tr>
+                            </thead>
+                            <tbody id="tableBodyApproveOrdersLogDetailReq">
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <th></th>
+                                    <th></th>
+                                    <th>Total:</th>
+                                    <th></th>
+                                    <th></th>
+
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                <!-- end table-responsive -->
+                </div>
+                <div class="modal-footer">
+                    <a href="javascript:;" class="btn btn-white" data-dismiss="modal">Cerrar</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estilos para aprobación masiva -->
+    <style>
+        /* Estilos para checkboxes */
+        .form-check {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+        }
+
+        .form-check-input {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            margin: 0;
+        }
+
+        .form-check-label {
+            margin: 0;
+            cursor: pointer;
+        }
+
+        /* Estilos para el botón de aprobación masiva */
+        #btnAprobacionMasivaReq:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        #btnAprobacionMasivaReq:not(:disabled) {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        /* Estilos para el panel de selección */
+        #panelSeleccionReq .alert {
+            border-left: 4px solid #17a2b8;
+        }
+
+        /* Estilos para filas seleccionadas */
+        .row-selectedReq {
+            background-color: #e3f2fd !important;
+            border-left: 4px solid #2196f3;
+        }
+
+        /* Hover effect para checkboxes */
+        .form-check-input:hover {
+            transform: scale(1.1);
+            transition: transform 0.2s ease;
+        }
+
+        /* Estilos para botones del panel de selección */
+        .btn-outline-info:hover {
+            background-color: #17a2b8;
+            border-color: #17a2b8;
+            color: white;
+        }
+
+        .btn-outline-secondary:hover {
+            background-color: #6c757d;
+            border-color: #6c757d;
+            color: white;
+        }
+
+        /* Estilos para badges de estado */
+        .badge-warning {
+            background-color: #ffc107;
+            color: #fff;
+        }
+
+        .badge-success {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .badge-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .badge-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            #panelSeleccionReq .alert {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+            }
+            
+            #panelSeleccionReq .alert > div:first-child {
+                margin-bottom: 0.5rem;
+            }
+            
+            #panelSeleccionReq .btn {
+                width: 100%;
+            }
+            
+            #panelSeleccionReq .btn + .btn {
+                margin-left: 0 !important;
+                margin-top: 0.5rem;
+            }
+            
+            #panelSeleccionReq .d-flex.flex-column {
+                width: 100%;
+            }
+        }
+    </style>
+
+</div>
+{% endif %}

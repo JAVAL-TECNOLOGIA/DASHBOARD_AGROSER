@@ -1,0 +1,598 @@
+{% load static %}
+{% include 'base/header.html' %}
+{% include 'base/sidebar.html' %}
+
+{% block css %}
+<link href="{% static 'assets/plugins/DataTables/media/css/dataTables.bootstrap.min.css' %}" rel="stylesheet" />
+<link href="{% static 'assets/plugins/DataTables/extensions/Responsive/css/responsive.bootstrap.min.css' %}" rel="stylesheet" />
+<link href="{% static 'assets/plugins/bootstrap-datepicker/css/bootstrap-datepicker.css' %}" rel="stylesheet" />
+<link href="{% static 'assets/plugins/bootstrap-datepicker/css/bootstrap-datepicker3.css' %}" rel="stylesheet" />
+<link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet" />
+<style>
+/* ========== EVALUACIONES DASHBOARD - Layout optimizado por viewport ========== */
+/* Contenedor principal: flex column, usa alto disponible sin scroll innecesario */
+.evaluaciones-dashboard {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 160px);
+    max-height: calc(100vh - 160px);
+    padding-top: 4px;
+}
+/* Cabecera compacta: título + breadcrumb + filtros + KPIs en bloque condensado */
+.evaluaciones-dashboard-header {
+    flex-shrink: 0;
+    padding-bottom: 10px;
+}
+.evaluaciones-dashboard-header .evaluaciones-breadcrumb {
+    font-size: 12px;
+    margin-bottom: 8px;
+}
+/* Filtros en fila compacta, alineados */
+.evaluaciones-filtros {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 12px 16px;
+    margin-bottom: 10px;
+}
+.evaluaciones-filtros .form-group {
+    margin-bottom: 0;
+}
+.evaluaciones-filtros label {
+    font-size: 11px;
+    margin-bottom: 2px;
+    color: #6c757d;
+}
+.evaluaciones-filtros .form-control-sm {
+    min-height: 30px;
+    padding: 4px 8px;
+}
+/* KPIs compactos: misma banda horizontal, menos padding */
+#kpis-evaluaciones {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 8px 14px;
+}
+.kpi-item {
+    display: inline-block;
+    padding: 0 16px;
+    border-right: 1px solid #dee2e6;
+    text-align: center;
+}
+.kpi-item:last-child { border-right: none; }
+.kpi-item .kpi-label { font-size: 11px; color: #6c757d; }
+.kpi-item .kpi-value { font-size: 16px; font-weight: 600; color: #333; }
+#kpis-evaluaciones.opacity-50 { opacity: 0.5; }
+/* Zona principal: tabla 68% + mapa 32%, flex-grow ocupa resto */
+.evaluaciones-dashboard-main {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    gap: 12px;
+    margin-top: 4px;
+}
+.evaluaciones-tabla-col {
+    flex: 0 0 68%;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+.evaluaciones-mapa-col {
+    flex: 0 0 calc(32% - 12px);
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+/* Panel tabla: flex column, tabla como foco principal */
+.evaluaciones-tabla-panel {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+.evaluaciones-tabla-panel .panel-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+}
+/* Wrapper tabla: scroll interno, thead sticky */
+#tabla-registros-wrapper {
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+}
+#tabla-evaluaciones {
+    margin-bottom: 0;
+}
+#tabla-evaluaciones thead th {
+    position: sticky;
+    top: 0;
+    background: #f5f5f5;
+    z-index: 2;
+    box-shadow: 0 1px 0 #dee2e6;
+    white-space: nowrap;
+}
+/* Mapa: ocupa 100% del panel hasta abajo */
+.evaluaciones-mapa-panel {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+.evaluaciones-mapa-panel .panel-heading {
+    flex-shrink: 0;
+}
+.evaluaciones-mapa-panel .panel-body {
+    flex: 1;
+    min-height: 0;
+    padding: 0;
+    display: flex;
+}
+#evaluaciones-map {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    border-radius: 4px;
+    position: relative;
+    overflow: hidden;
+}
+#evaluaciones-map.evaluaciones-map-empty {
+    background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
+}
+#evaluaciones-map-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 4px;
+}
+.evaluaciones-map-placeholder {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: #6c757d;
+    pointer-events: none;
+}
+.evaluaciones-map-overlay {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 10;
+}
+.evaluaciones-map-overlay .btn { margin-left: 4px; }
+/* Marker custom para mapa */
+.evaluaciones-marker-custom { background: none !important; border: none !important; cursor: pointer; }
+.evaluaciones-marker-pin {
+    width: 24px; height: 24px;
+    background: #2c5aa0;
+    border: 2px solid #fff;
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    box-shadow: 0 2px 6px rgba(0,0,0,.3);
+}
+/* Etiqueta de lote en mapa (zoom >= 15 en JS) */
+.evaluaciones-lote-label-marker {
+    background: transparent !important;
+    border: none !important;
+}
+.evaluaciones-lote-label-inner {
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+    white-space: nowrap;
+}
+.evaluaciones-lote-label-text {
+    color: #fff;
+    font-weight: bold;
+    /* ~40 % menos que 13px (base anterior) */
+    font-size: calc(13px * 0.6);
+    line-height: 1.2;
+    text-shadow:
+        0 0 0 #000,
+        0.6px 0 0 #000,
+        -0.6px 0 0 #000,
+        0 0.6px 0 #000,
+        0 -0.6px 0 #000;
+}
+/* Filas clickeables y truncado */
+#tabla-evaluaciones tbody tr.evaluaciones-row-clickable { cursor: pointer; }
+#tabla-evaluaciones tbody tr.evaluaciones-row-clickable:hover { background-color: #e8f4fd !important; }
+.evaluaciones-cell-truncate { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* Responsive: tablet y móvil */
+@media (max-width: 991px) {
+    .evaluaciones-dashboard {
+        min-height: auto;
+        max-height: none;
+    }
+    .evaluaciones-dashboard-main {
+        flex-direction: column;
+    }
+    .evaluaciones-tabla-col,
+    .evaluaciones-mapa-col {
+        flex: 1 1 auto;
+        min-height: 380px;
+    }
+    .evaluaciones-mapa-col { min-height: 320px; }
+}
+@media (max-width: 767px) {
+    .evaluaciones-filtros { flex-direction: column; align-items: stretch; }
+    .evaluaciones-tabla-col,
+    .evaluaciones-mapa-col { min-height: 300px; }
+}
+@media print {
+    .evaluaciones-dashboard { max-height: none; min-height: auto; }
+    .evaluaciones-mapa-col { display: none; }
+}
+
+/* ========== Modal detalle registro (UI + Leaflet) ========== */
+.eval-modal-dialog {
+    width: 92%;
+    max-width: 920px;
+}
+.eval-modal-content {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 18px 48px rgba(15, 23, 42, 0.18);
+    overflow: hidden;
+}
+.eval-modal-header {
+    background: linear-gradient(135deg, #1e3a5f 0%, #2c5aa0 55%, #3d6fb8 100%);
+    color: #fff;
+    border-bottom: none;
+    padding: 18px 22px 16px;
+    border-radius: 12px 12px 0 0;
+}
+.eval-modal-header .close {
+    color: #fff;
+    opacity: 0.85;
+    text-shadow: none;
+    margin-top: 2px;
+}
+.eval-modal-header .close:hover { opacity: 1; color: #fff; }
+.eval-modal-header .modal-title {
+    font-weight: 600;
+    font-size: 18px;
+    letter-spacing: 0.02em;
+}
+.eval-modal-subtitle {
+    color: rgba(255,255,255,0.82) !important;
+    font-size: 13px;
+    margin-top: 6px;
+}
+.eval-modal-body {
+    padding: 20px 22px;
+    max-height: calc(100vh - 200px);
+    overflow-y: auto;
+    background: #f8fafc;
+}
+.eval-modal-section {
+    background: #fff;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    padding: 16px 18px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+.eval-modal-section:last-of-type { margin-bottom: 0; }
+.eval-modal-section-title {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #64748b;
+    margin: 0 0 14px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.eval-modal-section-title i {
+    color: #2c5aa0;
+    font-size: 14px;
+}
+.eval-modal-fields {
+    margin: 0 -8px;
+}
+.eval-modal-field {
+    padding: 0 8px;
+    margin-bottom: 14px;
+}
+.eval-modal-field-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #94a3b8;
+    margin-bottom: 4px;
+    line-height: 1.3;
+}
+.eval-modal-field-value {
+    font-size: 14px;
+    color: #1e293b;
+    line-height: 1.45;
+    word-break: break-word;
+    padding: 8px 10px;
+    background: #f1f5f9;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    min-height: 38px;
+}
+.eval-modal-map-block {
+    margin-top: 4px;
+}
+.eval-modal-map-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+.eval-modal-map-head h5 {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.eval-modal-map-head h5 i { color: #2c5aa0; }
+.eval-modal-map-coords {
+    font-size: 12px;
+    color: #64748b;
+    font-family: Consolas, monospace;
+}
+#modal-detalle-mapa-canvas.leaflet-modal-map {
+    width: 100%;
+    height: 300px;
+    min-height: 300px;
+    border-radius: 10px;
+    border: 1px solid #cbd5e1;
+    background: #e2e8f0;
+    z-index: 0;
+}
+.eval-modal-map-placeholder {
+    text-align: center;
+    padding: 36px 20px;
+    color: #94a3b8;
+    background: #f1f5f9;
+    border-radius: 10px;
+    border: 1px dashed #cbd5e1;
+    font-size: 14px;
+}
+.eval-modal-map-placeholder i {
+    font-size: 28px;
+    display: block;
+    margin-bottom: 10px;
+    opacity: 0.7;
+}
+.eval-modal-footer {
+    background: #fff;
+    border-top: 1px solid #e2e8f0;
+    padding: 14px 22px;
+    border-radius: 0 0 12px 12px;
+}
+.eval-modal-footer .btn-primary {
+    background: #2c5aa0;
+    border-color: #244a87;
+    padding: 8px 22px;
+    font-weight: 600;
+    border-radius: 8px;
+}
+.eval-modal-footer .btn-primary:hover {
+    background: #244a87;
+    border-color: #1e3d6f;
+}
+.eval-modal-badge {
+    display: inline-block;
+    background: rgba(255,255,255,0.2);
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-left: 8px;
+    vertical-align: middle;
+}
+</style>
+{% endblock %}
+
+{% csrf_token %}
+<div id="content" class="content" data-id-area="{{ id_area|default:'' }}" data-area-nombre="{{ area_nombre|default:'' }}">
+    <div class="panel panel-inverse">
+        <div class="panel-heading">
+            <h3 class="panel-title">{{ area_nombre|default:"Cartillas Agrícolas" }}</h3>
+        </div>
+        <div class="panel-body evaluaciones-dashboard">
+            <!-- Cabecera compacta: breadcrumb + filtros + KPIs -->
+            <div class="evaluaciones-dashboard-header">
+                <p class="text-muted evaluaciones-breadcrumb mb-0">Cartillas Agrícolas &gt; {{ area_nombre|default:"—" }}</p>
+                <div class="evaluaciones-filtros" id="filtros-evaluaciones">
+                    <div class="form-group mb-0">
+                        <label class="d-block">Cartilla</label>
+                        <select id="filtro-cartilla" class="form-control form-control-sm" style="min-width: 140px;">
+                            <option value="">Seleccione cartilla</option>
+                        </select>
+                    </div>
+                    <div class="form-group mb-0">
+                        <label class="d-block">Fecha</label>
+                        <input type="text" id="filtro-fecha" class="form-control form-control-sm" placeholder="dd/mm/yyyy" style="min-width: 100px;">
+                    </div>
+                    <div class="form-group mb-0">
+                        <label class="d-block">Descripción</label>
+                        <select id="filtro-lote" class="form-control form-control-sm" style="min-width: 160px;">
+                            <option value="">Todos los lotes</option>
+                        </select>
+                    </div>
+                    <div class="form-group mb-0">
+                        <label class="d-block">Evaluador</label>
+                        <select id="filtro-evaluador" class="form-control form-control-sm" style="min-width: 160px;">
+                            <option value="">Todos los evaluadores</option>
+                        </select>
+                    </div>
+                    <div class="form-group mb-0">
+                        <label class="d-block">Métrica principal</label>
+                        <select id="filtro-metrica" class="form-control form-control-sm" style="min-width: 150px;">
+                            <option value="muestras" selected>Cantidad de Muestras</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="kpis-evaluaciones" class="row no-gutters">
+                    <div class="col-12">
+                        <div class="kpi-item">
+                            <div class="kpi-label">Acumulado</div>
+                            <div class="kpi-value" id="kpi-acumulado">100</div>
+                        </div>
+                        <div class="kpi-item">
+                            <div class="kpi-label">Promedio</div>
+                            <div class="kpi-value" id="kpi-promedio">5</div>
+                        </div>
+                        <div class="kpi-item">
+                            <div class="kpi-label">Máximo</div>
+                            <div class="kpi-value" id="kpi-maximo">5</div>
+                        </div>
+                        <div class="kpi-item">
+                            <div class="kpi-label">Mínimo</div>
+                            <div class="kpi-value" id="kpi-minimo">5</div>
+                        </div>
+                        <div class="kpi-item">
+                            <div class="kpi-label">Muestras</div>
+                            <div class="kpi-value" id="kpi-muestras">20</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Zona principal: tabla (68%) + mapa (32%) -->
+            <div class="evaluaciones-dashboard-main">
+                <div class="evaluaciones-tabla-col">
+                    <div class="panel panel-default evaluaciones-tabla-panel">
+                        <div class="panel-heading d-flex justify-content-between align-items-center py-2">
+                            <h4 class="panel-title mb-0">Registros</h4>
+                            <div class="evaluaciones-toolbar d-flex align-items-center">
+                                <button type="button" class="btn btn-default btn-xs" title="Exportar CSV" id="btn-export-mock">
+                                    <i class="fa fa-download"></i>
+                                </button>
+                                <button type="button" class="btn btn-default btn-xs" title="Densidad tabla" id="btn-vista-tabla-mock">
+                                    <i class="fa fa-table"></i>
+                                </button>
+                                <button type="button" class="btn btn-default btn-xs" title="Mostrar/ocultar búsqueda" id="btn-filtro-mock">
+                                    <i class="fa fa-search"></i>
+                                </button>
+                                <div class="dropdown ml-1">
+                                    <button type="button" class="btn btn-default btn-xs dropdown-toggle" title="Más opciones" id="btn-mas-opciones-mock" data-toggle="dropdown">
+                                        <i class="fa fa-ellipsis-v"></i>
+                                    </button>
+                                    <div class="dropdown-menu dropdown-menu-right" id="dropdown-opciones-tabla">
+                                        <a class="dropdown-item" href="#" id="btn-export-csv-menu"><i class="fa fa-download mr-1"></i> Exportar CSV</a>
+                                        <a class="dropdown-item" href="#" id="btn-imprimir-menu"><i class="fa fa-print mr-1"></i> Imprimir</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="panel-body">
+                            <div id="tabla-registros-wrapper">
+                                <table class="table table-striped table-bordered table-hover mb-0" id="tabla-evaluaciones">
+                                    <thead id="tabla-evaluaciones-thead">
+                                        <tr>
+                                            <th>Fecha</th>
+                                            <th>Hora</th>
+                                            <th>GPS</th>
+                                            <th>Descripción</th>
+                                            <th>Campaña</th>
+                                            <th>Evaluador</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tabla-evaluaciones-body">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="evaluaciones-mapa-col">
+                    <div class="panel panel-default evaluaciones-mapa-panel">
+                        <div class="panel-heading py-2">
+                            <h4 class="panel-title mb-0">Mapa</h4>
+                        </div>
+                        <div class="panel-body">
+                            <div id="evaluaciones-map" class="evaluaciones-map-empty">
+                                <div class="evaluaciones-map-overlay">
+                                    <button type="button" class="btn btn-default btn-xs" title="Capa" id="btn-capa-mock">
+                                        <i class="fa fa-layer-group"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-default btn-xs" title="Mapa de calor" id="btn-calor-mock">
+                                        <i class="fa fa-fire"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-default btn-xs" title="Mostrar datos de áreas" id="btn-areas-mock">
+                                        <i class="fa fa-map-marked-alt"></i> Áreas
+                                    </button>
+                                </div>
+                                <div class="evaluaciones-map-placeholder" id="evaluaciones-map-placeholder">
+                                    <i class="fa fa-map fa-3x mb-2"></i>
+                                    <p class="mb-0">Sin puntos con coordenadas</p>
+                                    <p class="small">Los registros con GPS aparecerán aquí</p>
+                                </div>
+                                <div id="evaluaciones-map-canvas" style="display:none;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Detalle Registro -->
+<div class="modal fade eval-modal-registro" id="modal-detalle-registro" tabindex="-1" role="dialog" aria-labelledby="modal-detalle-titulo">
+    <div class="modal-dialog modal-lg eval-modal-dialog" role="document">
+        <div class="modal-content eval-modal-content">
+            <div class="modal-header eval-modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="modal-detalle-titulo">Detalle del registro</h4>
+                <p class="eval-modal-subtitle" id="modal-detalle-subtitle"></p>
+            </div>
+            <div class="modal-body eval-modal-body" id="modal-detalle-body">
+                <div id="modal-detalle-base"></div>
+                <div id="modal-detalle-dynamic"></div>
+                <div id="modal-detalle-mapa-wrapper" class="eval-modal-section eval-modal-map-block">
+                    <div class="eval-modal-map-head">
+                        <h5><i class="fa fa-map-marker-alt"></i> Ubicación GPS</h5>
+                        <span class="eval-modal-map-coords" id="modal-detalle-coords-label" style="display:none;"></span>
+                    </div>
+                    <div id="modal-detalle-mapa-canvas" class="leaflet-modal-map" style="display:none;"></div>
+                    <div id="modal-detalle-mapa-sin-coords" class="eval-modal-map-placeholder" style="display:none;">
+                        <i class="fa fa-location-arrow"></i>
+                        Sin coordenadas GPS para este registro
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer eval-modal-footer">
+                <button type="button" class="btn btn-primary" data-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% include 'base/footer.html' %}
+
+{% block js %}
+<script>
+    App.init();
+</script>
+<script src="{% static 'assets/plugins/bootstrap-datepicker/js/bootstrap-datepicker.js' %}"></script>
+<script src="{% static 'assets/plugins/DataTables/media/js/jquery.dataTables.js' %}"></script>
+<script src="{% static 'assets/plugins/DataTables/media/js/dataTables.bootstrap.min.js' %}"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="{% static 'core/js/CARTILLAS_AGRICOLAS/evaluaciones_cartillas.js' %}"></script>
+{% endblock %}

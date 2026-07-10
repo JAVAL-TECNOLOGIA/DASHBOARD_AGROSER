@@ -1,0 +1,878 @@
+{% load static %}
+
+
+
+
+<div class="modal fade" id="modalCompetencias" tabindex="-1" role="dialog" aria-labelledby="modalCompetenciasLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" style="max-width: 600px" role="document">
+      <div class="modal-content border-0">
+          <!-- Formulario de Evaluación de Competencias (Un solo paso) -->
+          <div class="modal-header bg-white border-0">
+              <h5 class="modal-title font-weight-bold">
+                  <i class="fas fa-clipboard-check mr-2"></i>Evaluar Competencia
+              </h5>
+              <div class="ml-auto">
+                  <span class="badge badge-success p-2">Paso 2 de 2: Competencias</span>
+              </div>
+              <button type="button" class="close ml-3" data-dismiss="modal" aria-label="Cerrar">
+                  <span aria-hidden="true">&times;</span>
+              </button>
+          </div>
+          <div class="modal-body">
+              <!-- Sección de Información de Evaluación -->
+              <div class="card mb-3">
+                  <div class="card-header bg-primary text-white">
+                      <i class="fas fa-user-check"></i> Información de Evaluación
+                  </div>
+                  <div class="card-body">
+                      <div class="row">
+                          <div class="col-md-12">
+                              <div class="form-group">
+                                  <label><strong>Evaluado:</strong></label>
+                                  <select class="form-control" id="evaluadoSelect" required>
+                                      <option value="">Seleccione al evaluado...</option>
+                                      <!-- Se llenará dinámicamente -->
+                                  </select>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+
+              <!-- Sección de Competencias -->
+              <div class="card" id="contenedor-competencias">
+                  <div class="card-header bg-info text-white">
+                      <i class="fas fa-tasks"></i> Definición de Competencias
+                  </div>
+                  
+                  <!-- Primera competencia (template inicial) -->
+                  <div class="card-body competencia" id="competencia-1">
+                    <div class="card mb-0 shadow-sm border-left-primary">
+                      <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                        <h5 class="text-primary mb-0"><i class="fas fa-star"></i> Competencia 1</h5>
+                      </div>
+                      <div class="card-body">
+                        <form id="form-competencia-1">
+
+                          
+
+
+
+                          <div class="form-group">
+                            <label>Tipo de Competencia</label>
+                            
+                            <!-- Leyenda de colores -->
+                            <div class="d-flex justify-content-end mb-2">
+                              <div class="badge badge-pill mr-2 d-flex align-items-center">
+                                <span class="color-indicator esencial-indicator mr-1"></span>
+                                <small>Esencial</small>
+                              </div>
+                              <div class="badge badge-pill d-flex align-items-center">
+                                <span class="color-indicator liderazgo-indicator mr-1"></span>
+                                <small>Liderazgo</small>
+                              </div>
+                            </div>
+                            
+                            <select class="form-control competencia-tipo" required>
+                              <option value="1" class="option-esencial">Compromiso con los resultados</option>
+                              <option value="2" class="option-esencial">Proactividad</option>
+                              <option value="3" class="option-esencial">Flexibilidad</option>
+                              <option value="4" class="option-esencial">Trabajo en Equipo</option>
+                              <option value="9" class="option-esencial">Capacitación</option>
+                              <option value="5" class="option-liderazgo">Visión de Negocio</option>
+                              <option value="6" class="option-liderazgo">Planificación y Organización</option>
+                              <option value="7" class="option-liderazgo">Toma de Decisiones</option>
+                              <option value="8" class="option-liderazgo">Gestión de Personas</option>
+                              
+                            </select>
+                          </div>
+                          
+
+                          <div class="form-group">
+                            <label>Meta de la Competencia</label>
+                            <textarea class="form-control competencia-meta" rows="3" 
+                              placeholder="Defina el resultado esperado para esta competencia" required></textarea>
+                          </div>
+                          <div class="form-row">
+                            <div class="col">
+                              <label>Fecha Inicio</label>
+                              <input type="date" class="form-control competencia-fecha-inicio" required>
+                            </div>
+                            <div class="col">
+                              <label>Fecha Fin</label>
+                              <input type="date" class="form-control competencia-fecha-fin" required>
+                            </div>
+                          </div>
+                          <div class="form-group mt-3">
+                            <label>Comentarios y/o Evidencias</label>
+                            <textarea class="form-control competencia-comentarios" rows="3"
+                              placeholder="Ingrese sus observaciones y evidencias que sustenten la evaluación..."></textarea>
+                          </div>
+                          <div class="form-group mt-3" style="display: none;">
+                            <label>Nivel de Cumplimiento</label>
+                            <div class="btn-group btn-group-toggle d-flex" data-toggle="buttons">
+                              <label class="btn btn-outline-danger flex-fill" >
+                                <input type="radio" name="nivel-1" value="no_cumple" > No Cumple
+                              </label>
+                              <label class="btn btn-outline-primary flex-fill" >
+                                <input type="radio" name="nivel-1" value="cumple" > Cumple
+                              </label>
+                              <label class="btn btn-outline-success flex-fill" >
+                                <input type="radio" name="nivel-1" value="excede" > Excede
+                              </label>
+                              <label class="btn btn-outline-warning flex-fill" >
+                                <input type="radio" name="nivel-1" value="sobresaliente" > Sobresaliente
+                              </label>
+                            </div>
+                          </div>
+                        </form>
+                      </div>
+                    </div>
+                  </div>
+
+
+
+              </div>
+          </div>
+
+          <div class="modal-footer bg-light">
+              <button type="button" class="btn btn-primary" onclick="crearNuevaCompetencia()">
+                  <i class="fas fa-plus"></i> Añadir Competencia
+              </button>
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                  <i class="fas fa-times mr-2"></i>Cancelar
+              </button>
+              <button type="button" class="btn btn-success" onclick="guardarCompetencias()">
+                  <i class="fas fa-save mr-2"></i>Guardar Competencias
+              </button>
+          </div>
+      </div>
+  </div>
+</div>
+
+
+
+<!-- Modal para añadir competencia en detalle -->
+<div class="modal fade" id="modalAgregarCompetenciaDetalle" tabindex="-1" role="dialog" aria-labelledby="modalAgregarCompetenciaDetalleLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" style="max-width: 600px" role="document">
+    <div class="modal-content border-0">
+        <div class="modal-header bg-white border-0">
+          <h5 class="modal-title font-weight-bold">
+          <i class="fas fa-plus-circle mr-2"></i>Agregar Competencia
+          </h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+        <!-- Sección de Información de Evaluación -->
+        <div class="card mb-3">
+          <div class="card-header bg-primary text-white">
+            <i class="fas fa-user-check"></i> Información de Evaluación
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-12">
+                <div class="form-group">
+                  <label><strong>Evaluado:</strong></label>
+                  <input type="text" id="evaluadoNombreDetalle" class="form-control" readonly>
+                  <input type="hidden" id="evaluadoIdDetalle">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sección de Competencia -->
+        <div class="card">
+          <div class="card-header bg-info text-white">
+            <i class="fas fa-tasks"></i> Definición de Competencia
+          </div>
+          <div class="card-body">
+            <form id="form-competencia-detalle">
+              <div class="form-group">
+                <label>Tipo de Competencia</label>
+                <select class="form-control competencia-tipo" required>
+                  <option value="1" class="option-esencial">Compromiso con los resultados</option>
+                  <option value="2" class="option-esencial">Proactividad</option>
+                  <option value="3" class="option-esencial">Flexibilidad</option>
+                  <option value="4" class="option-esencial">Trabajo en Equipo</option>
+                  <option value="9" class="option-esencial">Capacitación</option>
+                  <option value="5" class="option-liderazgo">Visión de Negocio</option>
+                  <option value="6" class="option-liderazgo">Planificación y Organización</option>
+                  <option value="7" class="option-liderazgo">Toma de Decisiones</option>
+                  <option value="8" class="option-liderazgo">Gestión de Personas</option>
+                  
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Meta de la Competencia</label>
+                <textarea class="form-control" id="competencia-meta-detalle" rows="3" 
+                  placeholder="Defina el resultado esperado para esta competencia" required></textarea>
+              </div>
+              <div class="form-row">
+                <div class="col">
+                  <label>Fecha Inicio</label>
+                  <input type="date" class="form-control" id="competencia-fecha-inicio-detalle" required>
+                </div>
+                <div class="col">
+                  <label>Fecha Fin</label>
+                  <input type="date" class="form-control" id="competencia-fecha-fin-detalle" required>
+                </div>
+              </div>
+              <div class="form-group mt-3">
+                <label>Comentarios y/o Evidencias</label>
+                <textarea class="form-control" id="competencia-comentarios-detalle" rows="3"
+                  placeholder="Ingrese sus observaciones y evidencias que sustenten la evaluación..."></textarea>
+              </div>
+              <div class="form-group mt-3" style="display: none;">
+                <label>Nivel de Cumplimiento <small class="text-muted">(Opcional - Puede completarse después) </small></label>
+                <div class="btn-group btn-group-toggle d-flex" data-toggle="buttons">
+                  <label class="btn btn-outline-danger flex-fill" >
+                    <input type="radio" name="nivel-detalle" value="no_cumple" > No Cumple 
+                  </label>
+                  <label class="btn btn-outline-primary flex-fill" >
+                    <input type="radio" name="nivel-detalle" value="cumple" > Cumple
+                  </label>
+                  <label class="btn btn-outline-success flex-fill" >
+                    <input type="radio" name="nivel-detalle" value="excede" > Excede
+                  </label>
+                  <label class="btn btn-outline-warning flex-fill" >
+                    <input type="radio" name="nivel-detalle" value="sobresaliente" > Sobresaliente
+                  </label>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer bg-light">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+          <i class="fas fa-times mr-2"></i>Cancelar
+        </button>
+        <button type="button" class="btn btn-success" onclick="guardarCompetenciaDetalle()">
+          <i class="fas fa-save mr-2"></i>Guardar Competencia
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+<!-- Template para competencia en evaluación -->
+
+<template id="templateCompetencia">
+  <div class="competencia-evaluacion mb-4">
+    <div class="card border-0 shadow-sm">
+      <div class="card-body">
+        <h6 class="font-weight-bold mb-3 competencia-titulo"></h6>
+
+        <!-- Nuevo campo para la meta -->
+        <div class="form-group mb-3">
+          <label class="text-muted small text-uppercase">
+            <i class="fas fa-bullseye mr-1"></i>Meta de la Competencia
+          </label>
+          <div class="meta-container">
+            <textarea
+              class="form-control competencia-meta"
+              rows="2"
+              placeholder="Describa la meta específica para esta competencia..."
+              style="font-size: 0.9rem; background-color: #f8f9fa"
+            ></textarea>
+            <small class="form-text text-muted">
+              Defina el resultado esperado para esta competencia
+            </small>
+          </div>
+        </div>
+
+        <div class="valoracion-section mb-3" style="display: none;">
+          <label class="text-muted small text-uppercase mb-2">
+            <i class="fas fa-chart-line mr-1"></i>Nivel de Cumplimiento
+          </label>
+          <div class="btn-group btn-group-toggle w-100" data-toggle="buttons">
+            <label class="btn btn-outline-danger">
+              <input type="radio" name="valoracion_{id}" value="no_cumple"  />
+              <i class="fas fa-times mr-1"></i>No Cumple
+            </label>
+            <label class="btn btn-outline-primary">
+              <input type="radio" name="valoracion_{id}" value="cumple"  />
+              <i class="fas fa-check mr-1"></i>Cumple
+            </label>
+            <label class="btn btn-outline-success">
+              <input type="radio" name="valoracion_{id}" value="excede"  />
+              <i class="fas fa-star mr-1"></i>Excede
+            </label>
+            <label class="btn btn-outline-warning">
+              <input
+                type="radio"
+                name="valoracion_{id}"
+                value="sobresaliente"
+              />
+              <i class="fas fa-medal mr-1"></i>Sobresaliente
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group mb-0">
+          <label class="text-muted small text-uppercase">
+            <i class="fas fa-comment-dots mr-1"></i>Comentarios y/o Evidencias
+          </label>
+          <textarea
+            class="form-control"
+            rows="3"
+            placeholder="Ingrese sus observaciones y evidencias que sustenten la evaluación..."
+          ></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+
+
+
+
+
+
+ <!-- Modal de Edición de Competencia -->
+<div class="modal fade" id="Modal_Editar_Competencia" tabindex="-1" role="dialog" aria-labelledby="modalEditarCompetenciaLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" style="max-width: 600px" role="document">
+    <div class="modal-content border-0">
+      <div class="modal-header bg-white border-0">
+        <h5 class="modal-title font-weight-bold">
+          <i class="fas fa-edit mr-2"></i>Evaluar Competencia
+        </h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <!-- Sección de Información de Evaluación -->
+        <div class="card mb-3">
+          <div class="card-header bg-primary text-white">
+            <i class="fas fa-user-check"></i> Información de Evaluación
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-md-12">
+                <div class="form-group">
+                  <label><strong>Evaluado:</strong></label>
+                  <input type="text" id="evaluado_nombre" class="form-control" readonly>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sección de Competencia -->
+        <div class="card">
+          <div class="card-header bg-info text-white">
+            <i class="fas fa-tasks"></i> Definición de Competencia
+          </div>
+          <div class="card-body">
+            <form id="form-competencia-edicion">
+              <div class="form-group">
+                <label>Tipo de Competencia</label>
+                <input type="text" id="competencia_nombre" class="form-control" readonly>
+              </div>
+              <div class="form-group">
+                <label>Meta de la Competencia</label>
+                <textarea class="form-control" id="meta_competencia" rows="3" 
+                  placeholder="Defina el resultado esperado para esta competencia" required></textarea>
+              </div>
+              <div class="form-row">
+                <div class="col">
+                  <label>Fecha Inicio</label>
+                  <input type="date" class="form-control" id="competencia-fecha-inicio-edicion" required>
+                </div>
+                <div class="col">
+                  <label>Fecha Fin</label>
+                  <input type="date" class="form-control" id="competencia-fecha-fin-edicion" required>
+                </div>
+              </div>
+              <div class="form-group mt-3">
+                <label>Comentarios y/o Evidencias</label>
+                <textarea class="form-control" id="comentarios_competencia" rows="3"
+                  placeholder="Ingrese sus observaciones y evidencias que sustenten la evaluación..."></textarea>
+              </div>
+              <div class="form-group mt-3" style="display: none;">
+                <label>Nivel de Cumplimiento <small class="text-muted">(Opcional - Puede completarse después)</small></label>
+                <div class="btn-group btn-group-toggle d-flex" data-toggle="buttons">
+                  <label class="btn btn-outline-danger flex-fill">
+                    <input type="radio" name="nivel_cumplimiento" value="no_cumple" > No Cumple
+                  </label>
+                  <label class="btn btn-outline-primary flex-fill">
+                    <input type="radio" name="nivel_cumplimiento" value="cumple" > Cumple
+                  </label>
+                  <label class="btn btn-outline-success flex-fill">
+                    <input type="radio" name="nivel_cumplimiento" value="excede" > Excede
+                  </label>
+                  <label class="btn btn-outline-warning flex-fill">
+                    <input type="radio" name="nivel_cumplimiento" value="sobresaliente" > Sobresaliente
+                  </label>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer bg-light">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+          <i class="fas fa-times mr-2"></i>Cancelar
+        </button>
+        <button type="button" class="btn btn-success" onclick="guardarEdicionCompetencia()">
+          <i class="fas fa-save mr-2"></i>Actualizar Competencia
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<style>
+  /* Estilos para el modal de competencias */
+  .modal-content {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    border-radius: 0.5rem;
+  }
+
+  .modal-header {
+    padding: 1rem 1.25rem 0.75rem;
+  }
+
+  .modal-body {
+    padding: 0.75rem 1.25rem;
+    background-color: #f8f9fa;
+  }
+
+  .modal-footer {
+    padding: 0.75rem 1.25rem;
+    border-top: none;
+  }
+
+  /* Estilos para las tarjetas de competencias */
+  .competencia-card {
+    background-color: #fff;
+    border-radius: 0.375rem;
+    padding: 0.75rem;
+    height: 100%;
+    transition: all 0.2s ease;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+  }
+
+  .competencia-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.25rem 0.75rem rgba(0, 0, 0, 0.05);
+    border-color: rgba(0, 0, 0, 0.12);
+  }
+
+  /* Estilos para los checkboxes */
+  .custom-checkbox .custom-control-label {
+    padding-left: 0.5rem;
+    font-size: 0.8125rem;
+    color: #495057;
+    cursor: pointer;
+  }
+
+  .custom-checkbox
+    .custom-control-input:checked
+    ~ .custom-control-label::before {
+    background-color: #007bff;
+    border-color: #007bff;
+  }
+
+  .custom-control-label::before {
+    background-color: #fff;
+    border: 1px solid #adb5bd;
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .custom-control-label::after {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  /* Estilos para los grupos de competencias */
+  .competencias-grupo h6 {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.75rem;
+  }
+
+  /* Estilos para los botones */
+  .btn {
+    padding: 0.375rem 1rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    border-radius: 0.25rem;
+  }
+
+  .btn-light {
+    background-color: #f8f9fa;
+    border-color: #e9ecef;
+  }
+
+  .btn-light:hover {
+    background-color: #e9ecef;
+    border-color: #dee2e6;
+  }
+
+  .btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+  }
+
+  .btn-primary:hover {
+    background-color: #0069d9;
+    border-color: #0062cc;
+  }
+
+  /* Estilos adicionales para el paso 2 */
+  #paso2Competencias .form-control-lg {
+    height: calc(1.5em + 0.75rem + 2px);
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    border-radius: 0.25rem;
+  }
+
+  #paso2Competencias .competencia-evaluacion .card {
+    border-radius: 0.375rem;
+  }
+
+  #paso2Competencias .competencia-evaluacion .card-body {
+    padding: 1rem;
+  }
+
+  .competencia-evaluacion .card-title {
+    font-size: 0.875rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .btn-group-toggle .btn {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8125rem;
+  }
+
+  .btn-group-toggle .btn i {
+    font-size: 0.75rem;
+  }
+
+  /* Estilos para los campos de texto */
+  .form-control {
+    font-size: 0.875rem;
+    line-height: 1.4;
+    padding: 0.375rem 0.75rem;
+  }
+
+  textarea.form-control {
+    min-height: 60px;
+    font-size: 0.8125rem !important;
+  }
+
+  /* Estilos para las etiquetas */
+  label {
+    font-size: 0.75rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .text-uppercase {
+    letter-spacing: 0.5px;
+  }
+
+  /* Ajustes para el modal */
+  .modal-title {
+    font-size: 1rem;
+  }
+
+  .close {
+    font-size: 1.25rem;
+    padding: 0.5rem;
+  }
+
+  /* Ajustes para los estados activos de los botones */
+  .btn-outline-success.active,
+  .btn-outline-primary.active,
+  .btn-outline-danger.active {
+    font-size: 0.8125rem;
+  }
+
+  /* Estilos para el nuevo campo de meta */
+  .meta-container {
+    position: relative;
+    border-radius: 0.25rem;
+  }
+
+  .competencia-meta {
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+  }
+
+  .competencia-meta:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+  }
+
+  /* Mejoras visuales generales */
+  .card-body {
+    padding: 1.5rem;
+  }
+
+  .form-group label {
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+  }
+
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .card-body {
+      padding: 1rem;
+    }
+
+    .btn-group-toggle .btn {
+      padding: 0.375rem 0.5rem;
+      font-size: 0.8rem;
+    }
+
+    .competencia-meta {
+      font-size: 0.85rem !important;
+    }
+  }
+
+  /* Ajustes responsive */
+  @media (max-width: 576px) {
+    .modal-dialog {
+      margin: 0.5rem;
+    }
+
+    .competencia-card {
+      padding: 0.625rem;
+    }
+
+    .form-control,
+    .btn {
+      font-size: 0.8125rem;
+    }
+
+    .custom-checkbox .custom-control-label {
+      font-size: 0.75rem;
+    }
+  }
+
+  /* Estilos para el modal de competencias */
+  .competencia {
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+  .border-left-primary {
+    border-left: 4px solid #4e73df !important;
+  }
+  .card-header h5 {
+    font-weight: 600;
+  }
+  .competencia .card {
+    transition: all 0.2s ease;
+  }
+  .competencia .card:hover {
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+  }
+
+
+
+  /* Estilos para manejar la superposición de modales */
+  .modal-backdrop + .modal-backdrop {
+    z-index: 1060;
+  }
+  
+  .modal {
+    z-index: 1050;
+  }
+  
+  .modal.show {
+    z-index: 1055;
+  }
+  
+  /* El modal de agregar competencia debe estar por encima */
+  #modalAgregarCompetenciaDetalle {
+    z-index: 1060;
+  }
+  
+  /* SweetAlert debe estar por encima de todos los modales */
+  .swal2-container {
+    z-index: 2000 !important;
+  }
+  /* ######################################################### */
+ 
+   /* Estilos para las opciones por tipo - Colores actualizados */
+   .option-esencial {
+    background-color: #e3f5fc !important; /* Fondo celeste claro para opciones Esenciales */
+  }
+  
+  .option-liderazgo {
+    background-color: #fff9e0 !important; /* Fondo amarillo claro para opciones de Liderazgo */
+  }
+  
+  /* Estilos para la leyenda de colores - Colores actualizados */
+  .color-indicator {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+  }
+  
+  .esencial-indicator {
+    background-color: #36b9cc; /* Color celeste para Esencial */
+  }
+  
+  .liderazgo-indicator {
+    background-color: #f6c23e; /* Color amarillo para Liderazgo */
+  }
+  
+  /* Estilo para el texto de las opciones */
+  .competencia-tipo option {
+    padding: 8px !important;
+    font-weight: normal;
+  }
+  
+  /* Estilo para la leyenda */
+  .badge {
+    background-color: #f8f9fa;
+    color: #666;
+    border: 1px solid #eee;
+    padding: 4px 8px;
+  }
+  
+  /* Estilos alternativos más visibles para los selects */
+  .select-esencial-active {
+    border-left: 4px solid #36b9cc !important;
+    background-color: #f2fbfc !important;
+  }
+  
+  .select-liderazgo-active {
+    border-left: 4px solid #f6c23e !important;
+    background-color: #fff9e0 !important;
+  }
+  
+  /* Opción alternativa: colores más marcados en el dropdown */
+  select.competencia-tipo option[value="1"],
+  select.competencia-tipo option[value="2"],
+  select.competencia-tipo option[value="3"],
+  select.competencia-tipo option[value="4"],
+  select.competencia-tipo option[value="9"],
+  #competencia-tipo-detalle option[value="1"],
+  #competencia-tipo-detalle option[value="2"],
+  #competencia-tipo-detalle option[value="3"],
+  #competencia-tipo-detalle option[value="4"] {
+    background-color: #c9f0f8 !important;
+    color: #0b6b7c;
+    font-weight: 500;
+    border-left: 8px solid #36b9cc;
+  }
+  
+  select.competencia-tipo option[value="5"],
+  select.competencia-tipo option[value="6"],
+  select.competencia-tipo option[value="7"],
+  select.competencia-tipo option[value="8"],
+  #competencia-tipo-detalle option[value="5"],
+  #competencia-tipo-detalle option[value="6"],
+  #competencia-tipo-detalle option[value="7"],
+  #competencia-tipo-detalle option[value="8"] {
+    background-color: #ffeeba !important;
+    color: #856404;
+    font-weight: 500;
+    border-left: 8px solid #f6c23e;
+  }
+  
+  /* Estilos para los elementos options modificados vía JavaScript */
+  .option-with-color {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+  }
+  
+  .option-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    color: white;
+    margin-left: 5px;
+  }
+  
+  .option-badge.esencial {
+    background-color: #36b9cc;
+  }
+  
+  .option-badge.liderazgo {
+    background-color: #f6c23e;
+  }
+
+</style>
+
+
+{% block js %}
+
+<script src="{% static 'core/js/RRHH/DonLuis/rrhh_ev_competencias.js' %}"></script>
+
+
+
+
+<script>
+
+  window.jspdf = window.jspdf || {};
+  window.html2canvas = window.html2canvas || {};
+
+  
+
+  // Función para mejorar la visualización de las competencias con colores
+  $(document).ready(function() {
+    // Función para aplicar estilos visuales a los selects de competencias
+    function mejorarVisualizacionCompetencias() {
+      // 1. Aplicar colores al select principal cuando cambia
+      $('.competencia-tipo, #competencia-tipo-detalle').on('change', function() {
+        const select = $(this);
+        const valorSeleccionado = select.val();
+        
+        // Quitar clases previas
+        select.removeClass('select-esencial-active select-liderazgo-active');
+        
+        // Aplicar clase según el tipo de competencia
+        if(['1', '2', '3', '4', '9'].includes(valorSeleccionado)) {
+          select.addClass('select-esencial-active');
+        } else if(['5', '6', '7', '8'].includes(valorSeleccionado)) {
+          select.addClass('select-liderazgo-active');
+        }
+      });
+      
+      // 2. Disparar el evento change para aplicar estilos iniciales
+      $('.competencia-tipo, #competencia-tipo-detalle').trigger('change');
+      
+      // 3. Agregar textos descriptivos más visibles a las opciones
+      $('.competencia-tipo option, #competencia-tipo-detalle option').each(function() {
+        const option = $(this);
+        const valor = option.val();
+        
+        // Asegurarnos de que no añadimos las etiquetas múltiples veces
+        const texto = option.text().split('⦿')[0].trim();
+        
+        if(['1', '2', '3', '4', '9'].includes(valor)) {
+          option.text(texto + ' ⦿ ESENCIAL');
+        } else if(['5', '6', '7', '8'].includes(valor)) {
+          option.text(texto + ' ⦿ LIDERAZGO');
+        }
+      });
+    }
+    
+    // Inicializar la función
+    mejorarVisualizacionCompetencias();
+    
+    // También aplicar al crear una nueva competencia
+    $(document).on('nuevaCompetenciaCreada', mejorarVisualizacionCompetencias);
+  });
+</script>
+  
+{% endblock %}

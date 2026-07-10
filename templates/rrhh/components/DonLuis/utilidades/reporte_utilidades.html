@@ -1,0 +1,283 @@
+{% load static %}
+
+{% include 'base/header.html' %}
+
+{% include 'base/sidebar.html' %}
+
+<!-- begin #content -->
+<div id="content" class="content">
+    <!-- begin breadcrumb -->
+    <ol class="breadcrumb float-xl-end">
+        <li class="breadcrumb-item"><a href="javascript:;">RRHH</a></li>
+        <li class="breadcrumb-item active">Reporte de Utilidades</li>
+    </ol>
+    <!-- end breadcrumb -->
+    
+    <!-- begin page-header -->
+    <h1 class="page-header">Reporte de Utilidades <small>Visualización de registros</small></h1>
+    <!-- end page-header -->
+    
+    <!-- begin panel -->
+    <div class="panel panel-inverse shadow-sm">
+        <div class="panel-heading bg-secondary">
+            <h4 class="panel-title">Filtros de Búsqueda</h4>
+            {% comment %} <div class="panel-heading-btn">
+                <a href="javascript:;" class="btn btn-xs btn-icon btn-default" data-toggle="panel-expand"><i class="fa fa-expand"></i></a>
+                <a href="javascript:;" class="btn btn-xs btn-icon btn-success" data-toggle="panel-reload"><i class="fa fa-redo"></i></a>
+                <a href="javascript:;" class="btn btn-xs btn-icon btn-warning" data-toggle="panel-collapse"><i class="fa fa-minus"></i></a>
+            </div> {% endcomment %}
+        </div>
+        <div class="panel-body p-0">
+
+
+            
+            <!-- Diseño moderno para filtros -->
+            <div class="bg-light-subtle p-3 border-bottom">
+                <div class="container-fluid">
+                    <!-- Primera fila de filtros -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-3">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-white text-dark border-secondary-subtle">
+                                    <i class="fa fa-calendar-alt"></i>
+                                </span>
+                                <label class="input-group-text bg-white text-dark border-secondary-subtle">Año:</label>
+                                <select id="filtro-periodo" class="form-select bg-white text-dark border-secondary-subtle">
+                                    <option value="2026">2026</option>
+                                    <option value="2025">2025</option>
+                                    <option value="2024">2024</option>
+                                    <option value="2023">2023</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-white text-dark border-secondary-subtle">
+                                    <i class="fa fa-id-card"></i>
+                                </span>
+                                <label class="input-group-text bg-white text-dark border-secondary-subtle">DNI:</label>
+                                <input type="text" id="filtro-dni" class="form-control bg-white text-dark border-secondary-subtle" placeholder="Ingrese DNI">
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-white text-dark border-secondary-subtle">
+                                    <i class="fa fa-university"></i>
+                                </span>
+                                <label class="input-group-text bg-white text-dark border-secondary-subtle">Banco:</label>
+                                <select id="filtro-banco" class="form-select bg-white text-dark border-secondary-subtle">
+                                    <option value="">Todos</option>
+                                    <option value="BCP">BCP</option>
+                                    <option value="BBVA">BBVA</option>
+                                    <option value="INTERBANK">INTERBANK</option>
+                                    <option value="SCOTIABANK">SCOTIABANK</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-2">
+                            <div class="d-flex">
+                                <button id="btn-buscar" class="btn btn-md flex-grow-1 d-flex align-items-center justify-content-center me-2 bg-primary text-white border-0 fw-bold" style="box-shadow: 0 2px 4px rgba(0,0,0,0.2); padding: 8px 15px;">
+                                    <i class="fas fa-search me-2"></i> Buscar
+                                </button>
+                                <button id="btn-limpiar" class="btn btn-md d-flex align-items-center justify-content-center bg-danger text-white border-0" title="Limpiar filtros" style="box-shadow: 0 2px 4px rgba(0,0,0,0.2); padding: 8px 12px; min-width: 45px;">
+                                    <i class="fas fa-eraser"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Segunda fila de filtros -->
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <div class="card bg-white border-secondary-subtle shadow-sm mb-2">
+                                <div class="card-header bg-gray-100 text-dark border-secondary-subtle py-1">
+                                    <i class="fa fa-filter me-1"></i> Filtrar por rango de fechas de registro
+                                </div>
+                                <div class="card-body py-2">
+                                    <div class="row g-2">
+                                        <div class="col-md-6">
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text bg-white text-dark border-secondary-subtle">
+                                                    <i class="fa fa-calendar"></i>
+                                                </span>
+                                                <label class="input-group-text bg-white text-dark border-secondary-subtle">Desde:</label>
+                                                <input type="date" id="filtro-fecha-inicio" class="form-control bg-white text-dark border-secondary-subtle">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="input-group input-group-sm">
+                                                <span class="input-group-text bg-white text-dark border-secondary-subtle">
+                                                    <i class="fa fa-calendar"></i>
+                                                </span>
+                                                <label class="input-group-text bg-white text-dark border-secondary-subtle">Hasta:</label>
+                                                <input type="date" id="filtro-fecha-fin" class="form-control bg-white text-dark border-secondary-subtle">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="d-flex justify-content-end align-items-center h-100">
+                                <button id="btn-exportar-excel" class="btn btn-outline-success btn-sm me-2" title="Exportar a Excel">
+                                    <i class="fas fa-file-excel"></i> Exportar
+                                </button>
+                                <button id="btn-imprimir" class="btn btn-outline-primary btn-sm" title="Imprimir">
+                                    <i class="fas fa-print me-1"></i> Imprimir
+                                </button>
+                            </div>
+                        </div>  
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-3">
+                <!-- Indicador de total registros -->
+                <div id="resumen-registros" class="text-end text-muted small mb-2"></div>
+                
+                <!-- begin table-responsive -->
+                <div class="table-responsive">
+                    <table id="tabla-utilidades" class="table table-striped table-bordered table-hover">
+                        <thead class="bg-gray-600 text-white">
+                            <tr>
+                                <th class="text-center">Código</th>
+                                <th class="text-center">Apellido Paterno</th>
+                                <th class="text-center">Apellido Materno</th>
+                                <th class="text-center">Nombres</th>
+                                <th class="text-center">DNI</th>
+                                <th class="text-center">Teléfono</th>
+                                <th class="text-center">Email</th>
+                                <th class="text-center">Banco</th>
+                                <th class="text-center">N° Cuenta</th>
+                                <th class="text-center">N° Interbancaria</th>
+                                <th class="text-center">Período</th>
+                                <th class="text-center">Fecha Registro</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Los datos se cargarán dinámicamente desde JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+                <!-- end table-responsive -->
+                
+                <!-- Indicador de carga -->
+                <div id="loading" class="d-none text-center my-5">
+                    <div class="spinner-border text-indigo" role="status" style="width: 3rem; height: 3rem;">
+                        <span class="visually-hidden">Cargando...</span>
+                    </div>
+                    <p class="mt-3 text-indigo fw-bold">Cargando datos, por favor espere...</p>
+                </div>
+                
+                <!-- Mensaje cuando no hay datos -->
+                <div id="no-data-message" class="d-none alert alert-info mt-4 shadow-sm">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-info-circle fa-2x me-3"></i>
+                        <div>
+                            <h5 class="mb-0">Sin resultados</h5>
+                            <p class="mb-0">No se encontraron registros con los filtros seleccionados.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    <!-- end panel -->
+</div>
+<!-- end #content -->
+
+{% include 'base/footer.html' %}
+{% block js %}
+<!-- DataTables -->
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+<!-- SheetJS para exportación a Excel -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<!-- SweetAlert2 para mensajes y modales -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.27/dist/sweetalert2.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.27/dist/sweetalert2.all.min.js"></script>
+
+<!-- Estilos personalizados para el diseño moderno -->
+<style>
+    /* Colores personalizados */
+    .bg-indigo {
+        background-color: #4b4e6d !important;
+    }
+    
+    .text-indigo {
+        color: #4b4e6d !important;
+    }
+    
+    .btn-outline-indigo {
+        border-color: #4b4e6d;
+        color: #4b4e6d;
+    }
+    
+    .btn-outline-indigo:hover {
+        background-color: #4b4e6d;
+        color: white;
+    }
+    
+    .bg-gray-100 {
+        background-color: #f8f9fa !important;
+    }
+    
+    .bg-gray-400 {
+        background-color: #6c757d !important;
+    }
+    
+    .bg-gray-600 {
+        background-color: #495057 !important;
+    }
+    
+    .border-secondary-subtle {
+        border-color: #dee2e6 !important;
+    }
+    
+    /* Estilos para el panel de filtros */
+    .panel-heading.bg-dark-subtle {
+        background-color: #e9ecef !important;
+        border-bottom: 0;
+    }
+    
+    /* Estilos para la tabla */
+    #tabla-utilidades thead.bg-gray-600 th {
+        background-color: #495057 !important;
+        color: white !important;
+        border-color: #6c757d !important;
+    }
+    
+    #tabla-utilidades {
+        border: 1px solid #dee2e6;
+        border-top: none;
+    }
+    
+    /* Estilos para los botones */
+    .btn-success, .btn-info, .btn-secondary, .btn-danger {
+        font-weight: 500;
+    }
+    
+    /* Estilo para el botón de limpiar */
+    #btn-limpiar {
+        transition: all 0.3s;
+    }
+    
+    #btn-limpiar:hover {
+        background-color: #5a6268;
+    }
+</style>
+
+<!-- Script personalizado -->
+<script src="{% static 'core/js/RRHH/DonLuis/rrhh_reporte_utilidades.js' %}"></script>
+<script>
+    $(document).ready(function(){    
+        App.init();
+    });
+</script>
+{% endblock %}

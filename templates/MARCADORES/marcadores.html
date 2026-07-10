@@ -1,0 +1,363 @@
+@ -1,182 +0,0 @@
+{% load static %}
+{% include 'base/header.html' %}
+{% include 'base/sidebar.html' %}
+
+{% block css %}
+<link href="{% static 'assets/plugins/DataTables/media/css/dataTables.bootstrap.min.css' %}" rel="stylesheet" />
+<link href="{% static 'assets/plugins/DataTables/extensions/Buttons/css/buttons.bootstrap.min.css' %}" rel="stylesheet" />
+<link href="//cdn.datatables.net/2.1.8/css/dataTables.dataTables.min.css" rel="stylesheet" />
+<style>
+    .mapeo-card {
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .mapeo-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.2) !important;
+    }
+    
+    .stats-title2 {
+        font-size: 0.9em;
+        font-weight: 600;
+        color: rgba(255,255,255,0.8);
+        margin-bottom: 5px;
+    }
+    
+    .stats-number2 {
+        font-size: 1.3em;
+        font-weight: 700;
+        color: #fff;
+        margin-bottom: 8px;
+    }
+    
+    .stats-desc2 {
+        font-size: 0.85em;
+        color: rgba(255,255,255,0.7);
+        margin-bottom: 5px;
+    }
+    
+    .stats-tota2 {
+        font-size: 0.9em;
+        font-weight: 600;
+        color: #fff;
+        margin-top: 8px;
+    }
+
+    .boton-exportar {
+        text-align: right;
+    }
+</style>
+{% endblock %}
+
+<div id="content" class="content">
+    <div class="panel panel-inverse">
+        <div class="panel-heading" style="display: flex; justify-content: space-between; align-items: center;">
+            <h3 class="panel-title" style="margin: 0;">
+                <i class="fa fa-building"></i> Sedes de Marcación
+            </h3>
+            <div>
+                <button type="button" class="btn btn-secondary btn-sm mr-2" onclick="verificarEstados()">
+                    <i class="fa fa-search"></i> Verificar Estados
+                </button>
+                <button type="button" class="btn btn-info btn-sm mr-2" onclick="actualizarEstados()">
+                    <i class="fa fa-sync"></i> Actualizar Estados
+                </button>
+                <button type="button" class="btn btn-warning btn-sm mr-2" onclick="exportarTodasSedes()">
+                    <i class="fa fa-file-export"></i> Exportar TXT
+                </button>
+                <button type="button" class="btn btn-success btn-sm" onclick="exportarExcelTodas()">
+                    <i class="fa fa-file-excel"></i> Exportar Excel
+                </button>
+            </div>
+        </div>
+        
+        <!-- Cards de sedes -->
+        <div id="sedes-cards" class="row mt-3 mx-3">
+            {% if error %}
+            <div class="col-12">
+                <div class="alert alert-danger">
+                    <i class="fa fa-exclamation-triangle"></i> {{ error }}
+                </div>
+            </div>
+            {% endif %}
+            
+            {% if sedes %}
+                {% for sede in sedes %}
+                <div class="col-md-4 col-sm-6 mb-3">
+                    <div class="widget widget-stats bg-green mapeo-card"
+                         data-id="{{ sede.ID_SEDE }}"
+                         data-nombre="{{ sede.NOMBRE_SEDE }}">
+                        <div class="stats-icon"><i class="fa fa-map-marker-alt"></i></div>
+                        <div class="stats-info">
+                            <div class="stats-title2">SEDE #{{ sede.ID_SEDE }}</div>
+                            <div class="stats-number2">{{ sede.NOMBRE_SEDE|default:'—' }}</div>
+                            <div class="stats-desc2">EMPRESA: {{ sede.IDEMPRESA }}</div>
+                            <div class="stats-tota2">Total Marcaciones: {{ sede.TOTAL_MARCACIONES }}</div>
+                        </div>
+                        <div class="stats-link">
+                            <a href="{% url 'marcaciones_sede' sede.ID_SEDE %}" class="text-white">
+                                Ver marcaciones <i class="fa fa-arrow-alt-circle-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="col-12">
+                    <div class="alert alert-warning mb-0">
+                        <i class="fa fa-info-circle"></i> No se encontraron sedes registradas.
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% include 'base/footer.html' %}
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    App.init();
+    
+    // Función para exportar todas las sedes
+    function exportarTodasSedes() {
+        // Mostrar modal de filtros
+        Swal.fire({
+            title: 'Exportar Todas las Sedes',
+            html: `
+                <div class="text-left">
+                    <div class="form-group">
+                        <label for="swal-fecha">Fecha (opcional):</label>
+                        <input type="date" id="swal-fecha-inicio" class="form-control">
+                        <input type="date" id="swal-fecha-final" class="form-control">
+
+                    </div>
+                    <div class="form-group">
+                        <label for="swal-empresa">Empresa (opcional):</label>
+                        <select id="swal-empresa" class="form-control">
+                            <option value="">Todas</option>
+                            {% for empresa in empresas %}
+                            <option value="{{ empresa.descripcion }}">{{ empresa.descripcion }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: '<i class="fa fa-download"></i> Exportar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#ffc107',
+            preConfirm: () => {
+                const fechaInicio = document.getElementById('swal-fecha-inicio').value;
+                const fechaFinal = document.getElementById('swal-fecha-final').value;
+
+                const empresa = document.getElementById('swal-empresa').value;
+                
+                // Construir URL con parámetros
+                let url = '/marcadores/api/exportar-txt/';
+                let params = [];
+                
+                if (fechaInicio) {
+                    params.push('fecha_inicio=' + fechaInicio);
+                }
+                if (fechaFinal) {
+                    params.push('fecha_final=' + fechaFinal);
+                }
+                if (empresa) {
+                    params.push('empresa=' + encodeURIComponent(empresa));
+                }
+                
+                if (params.length > 0) {
+                    url += '?' + params.join('&');
+                }
+                
+                // Abrir en nueva ventana para descargar
+                window.open(url, '_blank');
+                
+                return true;
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Exportación iniciada',
+                    text: 'Se está descargando el archivo TXT con todas las marcaciones',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            }
+        });
+    }
+    
+    // Función para actualizar estados manualmente
+    function actualizarEstados() {
+        Swal.fire({
+            title: '¿Actualizar Estados?',
+            text: 'Esto actualizará todos los registros con 6+ horas trabajadas a "Completado"',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, actualizar',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#17a2b8'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Mostrar loading
+                Swal.fire({
+                    title: 'Actualizando...',
+                    text: 'Por favor espere mientras se actualizan los estados',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading()
+                    }
+                });
+                
+                $.ajax({
+                    url: '/marcadores/api/actualizar-estados/',
+                    method: 'POST',
+                    success: function(response) {
+                        if (response.status === 'success') {
+                            let mensaje = response.message;
+                            if (response.registros_actualizados !== undefined) {
+                                mensaje += `\n\nDetalles:\n- Registros actualizados: ${response.registros_actualizados}\n- Total revisados: ${response.total_pendientes || 'N/A'}\n- Pendientes restantes: ${response.pendientes_restantes || 'N/A'}`;
+                            }
+                            
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Estados actualizados',
+                                text: mensaje,
+                                confirmButtonText: 'OK'
+                            });
+                        } else {
+                            Swal.fire('Error', response.message, 'error');
+                        }
+                    },
+                    error: function(xhr) {
+                        let message = 'Error al actualizar estados';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            message = xhr.responseJSON.message;
+                        }
+                        Swal.fire('Error', message, 'error');
+                    }
+                });
+            }
+        });
+    }
+    
+    // Función para exportar Excel de todas las sedes
+    function exportarExcelTodas() {
+        // Mostrar modal de filtros
+        Swal.fire({
+            title: 'Exportar Excel - Todas las Sedes',
+            html: `
+                <div class="text-left">
+                    <div class="form-group">
+                        <label for="swal-fecha-inicio">Fecha Inicio (opcional):</label>
+                        <input type="date" id="swal-fecha-inicio" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="swal-fecha-fin">Fecha Fin (opcional):</label>
+                        <input type="date" id="swal-fecha-fin" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="swal-empresa">Empresa (opcional):</label>
+                        <select id="swal-empresa" class="form-control">
+                            <option value="">Todas</option>
+                            {% for empresa in empresas %}
+                            <option value="{{ empresa.descripcion }}">{{ empresa.descripcion }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: '<i class="fa fa-file-excel"></i> Exportar Excel',
+            cancelButtonText: 'Cancelar',
+            confirmButtonColor: '#28a745',
+            preConfirm: () => {
+                const fechaInicio = document.getElementById('swal-fecha-inicio').value;
+                const fechaFin = document.getElementById('swal-fecha-fin').value;
+                const empresa = document.getElementById('swal-empresa').value;
+                
+                // Construir URL con parámetros
+                let url = '/marcadores/api/exportar-excel/';
+                let params = [];
+                
+                if (fechaInicio) {
+                    params.push('fecha_inicio=' + fechaInicio);
+                }
+                if (fechaFin) {
+                    params.push('fecha_fin=' + fechaFin);
+                }
+                if (empresa) {
+                    params.push('empresa=' + encodeURIComponent(empresa));
+                }
+                
+                if (params.length > 0) {
+                    url += '?' + params.join('&');
+                }
+                
+                // Abrir en nueva ventana para descargar
+                window.open(url, '_blank');
+                
+                return true;
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Exportación iniciada',
+                    text: 'Se está descargando el archivo Excel con todas las marcaciones',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            }
+        });
+    }
+    
+    // Función para verificar estados actuales (debug)
+    function verificarEstados() {
+        $.ajax({
+            url: '/marcadores/api/verificar-estados/',
+            method: 'GET',
+            success: function(response) {
+                if (response.status === 'success') {
+                    let data = response.data;
+                    let mensaje = 'Resumen de Estados:\n\n';
+                    
+                    data.estados_resumen.forEach(function(estado) {
+                        mensaje += `Estado ${estado.estado}: ${estado.cantidad} registros\n`;
+                    });
+                    
+                    mensaje += '\n\nEjemplos de registros recientes:\n';
+                    data.ejemplos_registros.forEach(function(ejemplo, index) {
+                        if (ejemplo.error) {
+                            mensaje += `${index + 1}. ID ${ejemplo.id}: Error - ${ejemplo.error}\n`;
+                        } else {
+                            mensaje += `${index + 1}. ID ${ejemplo.id}: ${ejemplo.horas_calculadas}h (Estado: ${ejemplo.estado}) - ${ejemplo.califica_completado ? 'Califica' : 'No califica'} para Completado\n`;
+                        }
+                    });
+                    
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Estado Actual de Registros',
+                        text: mensaje,
+                        confirmButtonText: 'OK',
+                        width: '600px'
+                    });
+                } else {
+                    Swal.fire('Error', response.message, 'error');
+                }
+            },
+            error: function(xhr) {
+                let message = 'Error al verificar estados';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    message = xhr.responseJSON.message;
+                }
+                Swal.fire('Error', message, 'error');
+            }
+        });
+    }
+</script>

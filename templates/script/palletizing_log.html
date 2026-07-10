@@ -1,0 +1,179 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+	<meta charset="utf-8" />
+	<title>Don Luis | Inicio</title>
+	<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport" />
+	<meta content="" name="description" />
+	<meta content="" name="author" />
+	<link rel="icon" type="image/png" href="{% static 'assets/img/logo/logo-donluis.png' %}">	
+	<!-- ================== BEGIN BASE CSS STYLE ================== -->
+	<link href="http://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700" rel="stylesheet" />
+	<link href="{% static 'assets/plugins/jquery-ui/jquery-ui.min.css' %}" rel="stylesheet" />
+	<link href="{% static 'assets/plugins/bootstrap/4.0.0/css/bootstrap.min.css' %}" rel="stylesheet" />
+	<link href="{% static 'assets/plugins/font-awesome/5.0/css/fontawesome-all.min.css' %}" rel="stylesheet" />
+	<link href="{% static 'assets/plugins/animate/animate.min.css' %}" rel="stylesheet" />
+	<link href="{% static 'assets/css/default/style.min.css' %}" rel="stylesheet" />
+	<link href="{% static 'assets/css/default/style-responsive.min.css' %}" rel="stylesheet" />
+	<link href="{% static 'assets/css/default/theme/default.css' %}" rel="stylesheet" id="theme" />
+	<!-- ================== END BASE CSS STYLE ================== -->	
+	<link href="{% static 'core/css/palletizing_log.css' %}" rel="stylesheet"/>
+    <link href="{% static 'core/css/css.css' %}" rel="stylesheet"/>
+    <!-- ================== BEGIN PAGE LEVEL STYLE ================== -->
+    <link href="{% static 'assets/plugins/DataTables/media/css/dataTables.bootstrap.min.css' %}" rel="stylesheet" />
+    <link href="{% static 'assets/plugins/DataTables/extensions/Responsive/css/responsive.bootstrap.min.css' %}" rel="stylesheet" />
+    <link href="{% static 'assets/plugins/bootstrap-datepicker/css/bootstrap-datepicker.css' %}" rel="stylesheet" />
+    <link href="{% static 'assets/plugins/bootstrap-datepicker/css/bootstrap-datepicker3.css' %}" rel="stylesheet" />
+    <!-- ================== END PAGE LEVEL STYLE ================== -->
+    <link href="{% static 'assets/plugins/gritter/css/jquery.gritter.css' %}" rel="stylesheet" />
+    <script src="{% static 'assets/plugins/pace/pace.min.js' %}"></script>
+    <!-- ================== END BASE JS ================== -->
+</head>
+<body style="background:white;">
+	<!-- begin #page-loader -->
+	<div id="page-loader" class="fade show"><span class="spinner"></span></div>
+	<!-- end #page-loader -->
+    <div id="content" class="content2"> 
+        <!-- begin panel -->
+        <div class="panel panel-inverse">
+            <div class="panel-heading">
+                <div class="panel-heading-btn">
+                    <a href="{% url 'palletizing_log'%}" class="btn btn-xs btn-icon btn-circle btn-default"><i class="fa fa-sync-alt"></i></a>
+                </div>
+                <h3 class="panel-title">REGISTRO DE PALETIZAJE </h3>
+            </div>
+            <!-- begin panel-body -->
+            <div class="panel-body"><br>
+                <!-- begin table-responsive -->
+                <div class="row">
+                    <div class="col-md-5">
+                    </div>
+                    <div class="col-md-1">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="">Desde</label>                
+                        <input type="text" id="txtPalletLogFrom" class="form-control"  data-date-format="dd/mm/yyyy" value="{% now "d/m/Y" %}"/>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="">Hasta</label>
+                        <input type="text" id="txtPalletLogUntil" class="form-control"  data-date-format="dd/mm/yyyy" value="{% now "d/m/Y" %}"/>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="invisible">.</label>
+                        <input type="button" id="btnPalletLogShow" class="btn btn-success form-control"  value="Mostrar" />
+                    </div>
+                </div><br>
+                <div class="table">
+                    <table class="table table-hover m-b-0 text-inverse" id="tablePalletizingLog">
+                        <thead>
+                            <tr>
+                                <th>FECHA</th>
+                                <th>ENV</th>
+                                <th>CLIENTE <r class="invisible">EXPORTADOR EXTRANJERO<r></th>
+                                <th>TIPO</th>
+                                <th>N° PALETA</th>
+                                <th>CANT</th>
+                                <th>CALIBRE</th>                            
+                                <th>ESTADO</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+                <!-- end table-responsive -->
+            </div>
+            <!-- end panel-body -->
+        </div>
+        <!-- end panel -->
+    </div>
+    <!-- end #content -->
+    <!-- #modal-dialog -->
+    <div class="modal fade" id="modalPalletizingLogDetail">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Detalle Registro de paletizaje</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-10">
+                            <div class="float-left">
+                                <p>N° Paleta : <b id="lblNroPallet"></b> &nbsp; &nbsp; Cantidad : <b id="lblCantidad"></b><br><br>Cliente de destino:  <b id="lblClienteDestino"></b><br><br>Tipo de envase :  <b id="lblPackage"></b></p>
+                            </div>
+                        </div>
+                        <div class="col-2">
+                            <div class="float-right">
+                                <div id="pdfBarcode"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- begin table-responsive -->
+                    <div class="table-responsive">
+                        <table class="table m-b-0" id="tablePalletizingLogDetails">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>PRODUCTOR</th>
+                                    <th>FEC. LOTE</th>
+                                    <th>ETIQUETA</th>
+                                    <th>DESCRIPCIÓN PRODUCTO</th>
+                                    <th>CAL.</th>
+                                    <th>PRES.</th>
+                                    <th>CANT.</th>
+                                </tr>
+                            </thead>
+                            <tbody id = "tableBodyPalletizingLogDetails">
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- end table-responsive -->
+                </div>
+                <div class="modal-footer">
+                    <a href="javascript:;" class="btn btn-white" data-dismiss="modal">Cerrar</a>
+                </div>
+            </div>
+        </div>       
+    </div>
+    <!-- begin scroll to top btn -->
+    <a href="javascript:;" class="btn btn-icon btn-circle btn-success btn-scroll-to-top fade" data-click="scroll-top"><i class="fa fa-angle-up"></i></a>
+	<!-- end page container -->
+	<!-- ================== BEGIN BASE JS ================== -->
+	<script src="{% static 'assets/plugins/jquery/jquery-3.2.1.min.js' %}"></script>
+	<script src="{% static 'assets/plugins/jquery/jquery-migrate-1.1.0.min.js' %}"></script>
+	<script src="{% static 'assets/plugins/jquery-ui/jquery-ui.min.js' %}"></script>
+	<script src="{% static 'assets/plugins/bootstrap/4.0.0/js/bootstrap.bundle.min.js' %}"></script>
+	<script src="{% static 'assets/plugins/slimscroll/jquery.slimscroll.min.js' %}"></script>
+	<script src="{% static 'assets/plugins/js-cookie/js.cookie.js' %}"></script>
+	<script src="{% static 'assets/js/theme/default.min.js' %}"></script>
+	<script src="{% static 'assets/js/apps.min.js' %}"></script>
+	<!-- ================== END BASE JS ================== -->
+    <script src="{% static 'assets/plugins/bootstrap-datepicker/js/bootstrap-datepicker.js' %}"></script>
+    <script src="{% static 'assets/plugins/DataTables/media/js/jquery.dataTables.js' %}"></script>
+	<script src="{% static 'assets/plugins/DataTables/media/js/dataTables.bootstrap.min.js' %}"></script>
+    <script src="{% static 'assets/js/demo/form-plugins.demo.js' %}"></script>
+    <script src="{% static 'assets/plugins/masked-input/masked-input.min.js' %}"></script>
+	<script src="{% static 'assets/plugins/ionRangeSlider/js/ion-rangeSlider/ion.rangeSlider.min.js' %}"></script>
+	<!-- ================== BEGIN PAGE LEVEL JS ================== -->
+	<script src="{% static 'assets/plugins/gritter/js/jquery.gritter.js' %}"></script>
+	<script src="{% static 'assets/plugins/bootstrap-sweetalert/sweetalert.min.js' %}"></script>
+	<script src="{% static 'assets/js/demo/ui-modal-notification.demo.min.js' %}"></script>
+	<!-- ================== END PAGE LEVEL JS ================== -->
+    <script src="{% static 'core/js/script/jquery-barcode.min.js' %}"></script>
+    <script src="{% static 'core/js/script/script_palletizing_log.js' %}"></script>
+    <script>
+        $(document).ready(function(){    
+            App.init();            
+			FormPlugins.init();
+            Notification.init();
+        });
+        $(function(){
+            $(document).bind("contextmenu",function(e){
+                return false;
+            });
+        });
+    </script>
+</body>
+</html>

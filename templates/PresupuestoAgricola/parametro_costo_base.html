@@ -1,0 +1,509 @@
+{% load static %}
+{% include 'base/header.html' %}
+{% include 'base/sidebar.html' %}
+
+{% block css %}
+<link href="{% static 'assets/plugins/DataTables/media/css/dataTables.bootstrap.min.css' %}" rel="stylesheet"/>
+<link href="{% static 'assets/plugins/DataTables/extensions/Responsive/css/responsive.bootstrap.min.css' %}"
+      rel="stylesheet"/>
+<script src="{% static 'assets/plugins/pace/pace.min.js' %}"></script>
+{% endblock %}
+
+<div id="content" class="content">
+    <div class="panel panel-inverse">
+        <div class="panel-heading">
+            <h3 class="panel-title">Parámetros de Costo Base</h3>
+        </div>
+        <div class="panel-body"><br>
+            <button onclick="modal_create_parametro()" class="btn btn-success"><i class="fa fa-plus"></i> Agregar
+                Parámetro
+            </button>
+            <br><br>
+            <div class="table-responsive">
+                <table id="tableListParametros" class="table table-hover text-inverse">
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                       <th>Configuración<br>(Campaña / Cálculo / Trabajo)</th>
+                        <th>Costo Base</th>
+                        <th>Asignación Familiar</th>
+                        <th>Jornal</th>
+                        <th>Dominical</th>
+                        <th>Comisión Servis</th>
+
+                        <th>Rend. Reclutador</th>
+                        <th>Supervisor</th>
+                        <th>Ctrl. Rendimiento</th>
+                        <th>Ctrl. Calidad</th>
+
+                        <th>Descripción</th>
+                        <th>Acciones</th>
+                    </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalParametro"></div>
+
+{% include 'base/footer.html' %}
+{% block js %}
+<script src="{% static 'assets/plugins/DataTables/media/js/jquery.dataTables.js' %}"></script>
+<script src="{% static 'assets/plugins/DataTables/media/js/dataTables.bootstrap.min.js' %}"></script>
+<script src="{% static 'assets/plugins/bootstrap-sweetalert/sweetalert.min.js' %}"></script>
+
+<script>
+    $(document).ready(function () {
+        App.init();
+        cargarParametros();
+    });
+
+    // === CARGAR TABLA ===
+    function cargarParametros() {
+        $.get('/presupuesto-agricola/parametro_costo_base/api/parametro-costo/', function (resp) {
+            if (resp.status !== 'success') {
+                swal('Error', 'No se pudieron cargar los datos', 'error');
+                return;
+            }
+
+            const data = resp.data || [];
+            let rows = '';
+            console.log(data);
+
+            data.forEach(p => {
+                rows += `
+                <tr>
+                    <td>${p.ID_PARAMETRO}</td>
+                    <!-- Configuración: campaña - tipo cálculo - tipo trabajo -->
+                    <td>${p.NOMBRE_COSTO || '-'}</td>
+
+                    <td>${parseFloat(p.COSTO_BASE || 0).toFixed(2)}</td>
+                    <td>${p.ASIGNACION_FAMILIAR || '-'}</td>
+                    <td>${p.JORNAL || 0}</td>
+                    <td>${parseFloat(p.DOMINICAL || 0)}</td>
+                    <td>${parseFloat(p.COMISION_SERVIS || 0)}</td>
+
+                    <td>${parseFloat(p.COSTO_REND_RECLUTADOR || 0).toFixed(2)}</td>
+                    <td>${parseFloat(p.COSTO_SUPERVISOR || 0).toFixed(2)}</td>
+                    <td>${parseFloat(p.COSTO_CTRL_RENDIMIENTO || 0).toFixed(2)}</td>
+                    <td>${parseFloat(p.COSTO_CTRL_CALIDAD || 0).toFixed(2)}</td>
+
+                    <td>${p.DESCRIPCION || ''}</td>
+                    <td>
+                        <button class="btn btn-warning btn-xs" onclick="modal_update_parametro(${p.ID_PARAMETRO})"><i class="fa fa-edit"></i></button>
+                        <button class="btn btn-danger btn-xs" onclick="deleteParametro(${p.ID_PARAMETRO})"><i class="fa fa-trash"></i></button>
+                    </td>
+                </tr>`;
+            });
+
+            // 🔹 Destruir si ya existe
+            if ($.fn.DataTable.isDataTable('#tableListParametros')) {
+                $('#tableListParametros').DataTable().clear().destroy();
+            }
+
+            // 🔹 Cargar nuevo contenido
+            $('#tableListParametros tbody').html(rows);
+
+            // 🔹 Recrear DataTable con pequeño delay
+            setTimeout(() => {
+                $('#tableListParametros').DataTable({
+                    responsive: true,
+                    language: {
+                        url: "//cdn.datatables.net/plug-ins/1.10.21/i18n/Spanish.json"
+                    },
+                    order: [[0, 'desc']]
+                });
+            }, 100);
+        });
+    }
+
+
+    // === MODAL CREAR ===
+    function modal_create_parametro() {
+        $('#modalParametro').html(`
+               <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Nuevo Parámetro de Costo Base</h4>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+
+                <div class="modal-body">
+
+                    <div class="row mb-3">
+                        <!-- CONFIGURACIÓN -->
+                        <div class="col-md-12">
+                            <label><strong>Configuración</strong></label>
+                            <select id="id_config_ttrab" class="form-control" required>
+                                <option value="">Seleccionar...</option>
+                                {% for tipo in tipos_costo %}
+                                <option value="{{ tipo.ID_CONFIG_TTRAB }}"
+                                        data-tpcalculo="{{ tipo.ID_TP_CALCULO }}">
+                                    {{ tipo.descripcion_completa }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <br>
+                    </div>
+
+
+                 <div class="row mb-3">
+                        <!-- JORNAL -->
+                        <div class="col-md-4">
+                            <label>Jornal</label>
+                            <input type="number" step="1" id="jornal"
+                                   class="form-control" value="0">
+                        </div>
+ <br>
+                         <!-- DOMINICAL -->
+                        <div class="col-md-4">
+                            <label>Dominical</label>
+                            <input type="number" step="1" id="dominical"
+                                   class="form-control" value="0">
+                        </div>
+ <br>
+                            <!-- COMISIÓN SERVIS -->
+                        <div class="col-md-4">
+                            <label>Comisión Servis</label>
+                            <input type="number" step="1" id="comServis"
+                                   class="form-control" value="0">
+                        </div>
+                        <br>
+                    </div>
+
+<div class="row mb-3">
+                          <!-- COSTO BASE UNIVERSAL -->
+                        <div class="col-md-6">
+                            <label><strong>Costo Base</strong></label>
+                            <input type="number" step="0.01" id="costo_base"
+                                   class="form-control" placeholder="Ej: 120.50" required>
+                        </div>
+                        <br>
+
+                        <!-- ASIGNACION FAMILIAR -->
+                        <div class="col-md-6">
+                            <label>Asignación Familiar</label>
+                            <input type="text" id="asigFam" class="form-control"
+                                   placeholder="Ej: 306.00">
+                        </div>
+                        <br>
+</div>
+<div class="row mb-3">
+                        <!-- COSTOS DE PERSONAL -->
+                        <div class="col-md-6">
+                             <label><strong>Costo Rend. Reclutador</strong></label>
+                             <input type="number" step="0.01" id="costo_reclutador"
+                                     class="form-control" value="0">
+                        </div>
+                        <br>
+
+                        <div class="col-md-6">
+                              <label><strong>Costo Supervisor</strong></label>
+                              <input type="number" step="0.01" id="costo_supervisor"
+                                     class="form-control" value="0">
+                        </div>
+                        <br>
+</div>
+<div class="row mb-3">
+                        <div class="col-md-6">
+                                <label><strong>Costo Ctrl Rendimiento</strong></label>
+                                <input type="number" step="0.01" id="costo_ctrl_rend"
+                                       class="form-control" value="0">
+                        </div>
+                        <br>
+                        <div class="col-md-6">
+                                <label><strong>Costo Ctrl Calidad</strong></label>
+                                <input type="number" step="0.01" id="costo_ctrl_cal"
+                                       class="form-control" value="0">
+                        </div>
+</div>
+
+                    <hr>
+
+                    <!-- DESCRIPCIÓN -->
+                    <label>Descripción</label>
+                    <textarea id="descripcion" class="form-control" rows="2"></textarea>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-primary" onclick="saveParametro()">Guardar</button>
+                    <button class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    `).modal('show');
+    }
+
+    // === GUARDAR ===
+    function saveParametro() {
+        let data = {
+            id_config_ttrab: $('#id_config_ttrab').val(),
+            asignacion_familiar: $('#asigFam').val(),
+            jornal: $('#jornal').val(),
+            dominical: $('#dominical').val(),
+            comision_servis: $('#comServis').val(),
+            descripcion: $('#descripcion').val(),
+
+            // Nuevos costos agregados
+            costo_reclutador: $('#costo_reclutador').val(),
+            costo_supervisor: $('#costo_supervisor').val(),
+            costo_ctrl_rend: $('#costo_ctrl_rend').val(),
+            costo_ctrl_cal: $('#costo_ctrl_cal').val(),
+            costo_base: $('#costo_base').val(),
+        };
+        $.ajax({
+            url: '/presupuesto-agricola/parametro_costo_base/api/parametro-costo/',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(data),
+            success: function (resp) {
+                swal('¡Éxito!', 'Registro guardado correctamente', 'success');
+                $('#modalParametro').modal('hide');
+                cargarParametros();
+            },
+            error: function (xhr) {
+                swal('Error', 'No se pudo guardar el parámetro', 'error');
+            }
+        });
+    }
+
+    function modal_update_parametro(id) {
+
+    $.get(`/presupuesto-agricola/parametro_costo_base/api/parametro-costo/${id}/`, function (resp) {
+
+        let p = resp.data;
+
+        $('#modalParametro').html(`
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <div class="modal-header">
+                    <h4 class="modal-title">Editar Parámetro de Costo Base</h4>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+
+                <div class="modal-body">
+
+                    <!-- =============== CONFIGURACIÓN =============== -->
+                    <h5 class="mb-2 text-primary"><strong>Configuración</strong></h5>
+                    <div class="p-3 border rounded mb-3">
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                <label><strong>Campaña - Cálculo - Trabajo</strong></label>
+                                <select id="id_config_ttrab" class="form-control" required>
+                                    <option value="">Seleccionar...</option>
+                                    {% for tipo in tipos_costo %}
+                                    <option value="{{ tipo.ID_CONFIG_TTRAB }}"
+                                            data-tpcalculo="{{ tipo.ID_TP_CALCULO }}">
+                                        {{ tipo.descripcion_completa }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
+                    </div>
+
+
+                    <!-- =============== PARÁMETROS BASE =============== -->
+                    <h5 class="mb-2 text-primary"><strong>Parámetros Base</strong></h5>
+                    <div class="p-3 border rounded mb-3">
+
+                        <div class="row">
+
+                            <div class="col-md-6">
+                                <label><strong>Costo Base</strong></label>
+                                <input type="number" step="0.01" id="costo_base"
+                                       class="form-control"
+                                       value="${p.COSTO_BASE || 0}">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label>Asignación Familiar</label>
+                                <input type="text" id="asigFam" class="form-control"
+                                       value="${p.ASIGNACION_FAMILIAR || ''}">
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- =============== PARÁMETROS ADICIONALES =============== -->
+                    <h5 class="mb-2 text-primary"><strong>Parámetros Adicionales</strong></h5>
+                    <div class="p-3 border rounded mb-3">
+
+                        <div class="row">
+
+                            <div class="col-md-4">
+                                <label>Jornal</label>
+                                <input type="number" step="1" id="jornal" class="form-control"
+                                       value="${p.JORNAL || 0}">
+                            </div>
+
+                            <div class="col-md-4">
+                                <label>Dominical</label>
+                                <input type="number" step="1" id="dominical" class="form-control"
+                                       value="${p.DOMINICAL || 0}">
+                            </div>
+
+                            <div class="col-md-4">
+                                <label>Comisión Servis</label>
+                                <input type="number" step="1" id="comServis" class="form-control"
+                                       value="${p.COMISION_SERVIS || 0}">
+                            </div>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- =============== COSTOS DEL PERSONAL =============== -->
+                    <h5 class="mb-2 text-primary"><strong>Costos del Personal</strong></h5>
+                    <div class="p-3 border rounded mb-3">
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label><strong>Costo Rend. Reclutador</strong></label>
+                                <input type="number" step="0.01" id="costo_reclutador"
+                                       class="form-control"
+                                       value="${p.COSTO_REND_RECLUTADOR || 0}">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label><strong>Costo Supervisor</strong></label>
+                                <input type="number" step="0.01" id="costo_supervisor"
+                                       class="form-control"
+                                       value="${p.COSTO_SUPERVISOR || 0}">
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label><strong>Costo Ctrl Rendimiento</strong></label>
+                                <input type="number" step="0.01" id="costo_ctrl_rend"
+                                       class="form-control"
+                                       value="${p.COSTO_CTRL_RENDIMIENTO || 0}">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label><strong>Costo Ctrl Calidad</strong></label>
+                                <input type="number" step="0.01" id="costo_ctrl_cal"
+                                       class="form-control"
+                                       value="${p.COSTO_CTRL_CALIDAD || 0}">
+                            </div>
+                        </div>
+
+                    </div>
+
+
+                    <!-- =============== DESCRIPCIÓN =============== -->
+                    <h5 class="mb-2 text-primary"><strong>Descripción</strong></h5>
+                    <textarea id="descripcion" class="form-control" rows="2">${p.DESCRIPCION || ''}</textarea>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button class="btn btn-primary" onclick="saveUpdate(${p.ID_PARAMETRO})">Actualizar</button>
+                    <button class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                </div>
+
+            </div>
+        </div>`).modal('show');
+
+        // Preseleccionar Configuración
+        $('#id_config_ttrab').val(p.ID_CONFIG_TTRAB);
+    });
+}
+
+
+    // === MODIFICAR ===
+    function modal_update_parametro2(id) {
+        $.get(`/presupuesto-agricola/parametro_costo_base/api/parametro-costo/${id}/`, function (resp) {
+            let p = resp.data;
+            $('#modalParametro').html(`
+            <div class="modal-dialog"><div class="modal-content">
+                <div class="modal-header"><h4>Editar Parámetro</h4></div>
+                <div class="modal-body">
+                    <label>Asignación Familiar</label>
+                    <input type="text" id="asigFam" class="form-control" value="${p.ASIGNACION_FAMILIAR || ''}">
+                    <label>Jornal</label>
+                    <input type="number" id="jornal" class="form-control" value="${p.JORNAL}">
+                    <label>Dominical</label>
+                    <input type="number" id="dominical" class="form-control" value="${p.DOMINICAL}">
+                    <label>Comisión Servis</label>
+                    <input type="number" id="comServis" class="form-control" value="${p.COMISION_SERVIS}">
+                    <label>Descripción</label>
+                    <textarea id="descripcion" class="form-control">${p.DESCRIPCION || ''}</textarea>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" onclick="saveUpdate(${p.ID_PARAMETRO})">Actualizar</button>
+                    <button class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                </div>
+            </div></div>
+        `).modal('show');
+        });
+    }
+
+    function saveUpdate(id) {
+        let data = {
+            asignacion_familiar: $('#asigFam').val(),
+            jornal: $('#jornal').val(),
+            dominical: $('#dominical').val(),
+            comision_servis: $('#comServis').val(),
+            descripcion: $('#descripcion').val(),
+            // Nuevos costos agregados
+            costo_reclutador: $('#costo_reclutador').val(),
+            costo_supervisor: $('#costo_supervisor').val(),
+            costo_ctrl_rend: $('#costo_ctrl_rend').val(),
+            costo_ctrl_cal: $('#costo_ctrl_cal').val(),
+            costo_base: $('#costo_base').val(),
+        };
+        $.ajax({
+            url: `/presupuesto-agricola/parametro_costo_base/api/parametro-costo/${id}/`,
+            type: 'PUT',
+            contentType: 'application/json',
+            data: JSON.stringify(data),
+            success: function (resp) {
+                swal('¡Éxito!', 'Registro actualizado correctamente', 'success');
+                $('#modalParametro').modal('hide');
+                cargarParametros();
+            },
+            error: function () {
+                swal('Error', 'No se pudo actualizar', 'error');
+            }
+        });
+    }
+
+    // === ELIMINAR ===
+    function deleteParametro(id) {
+        swal({
+            title: '¿Eliminar registro?',
+            text: 'Esta acción no se puede deshacer.',
+            icon: 'warning',
+            buttons: ['Cancelar', 'Eliminar'],
+            dangerMode: true,
+        }).then((willDelete) => {
+            if (willDelete) {
+                $.ajax({
+                    url: `/presupuesto-agricola/parametro_costo_base/api/parametro-costo/${id}/`,
+                    type: 'DELETE',
+                    success: function () {
+                        swal('Eliminado', 'Registro eliminado correctamente', 'success');
+                        cargarParametros();
+                    },
+                    error: function () {
+                        swal('Error', 'No se pudo eliminar', 'error');
+                    }
+                });
+            }
+        });
+    }
+</script>
+{% endblock %}

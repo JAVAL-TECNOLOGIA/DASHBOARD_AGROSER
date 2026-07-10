@@ -1,0 +1,747 @@
+
+<!--#######################################################################-->
+<!-- Modal para Sweet Globe --> 
+<!--#######################################################################-->
+
+<!-- Modal para Sweet Globe -->
+
+
+<div
+  class="modal fade"
+  id="modalSweetGlobe"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="modalSweetGlobeLabel"
+  aria-hidden="true"
+  style="z-index: 1050; overflow-y: auto;"
+>
+  <div  
+    class="modal-dialog modal-xl"
+    style="max-width: 75%; width: 75%"
+    role="document"
+  >
+    <div class="modal-content">
+      <div class="modal-header bg-gradient-primary text-white">
+        <h5 class="modal-title" id="modalSweetGlobeLabel">
+          <i class="fas fa-leaf mr-2"></i> Programas Fitosanitarios - SWEET
+          GLOBE
+        </h5>
+
+        <div class="panel-heading-btn">
+          <a
+            href="javascript:;"
+            class="btn btn-xs btn-icon btn-circle btn-warning"
+            data-click="panel-expand"
+            title="Expandir"
+            ><i class="fa fa-expand"></i
+          ></a>
+          <a
+            href="javascript:;"
+            class="btn btn-xs btn-icon btn-circle btn-success"
+            data-click="panel-reload"
+            title="Recargar"
+            ><i class="fas fa-sync-alt"></i
+          ></a>
+          <a
+            href="javascript:;"
+            class="btn btn-xs btn-icon btn-circle btn-danger"
+            data-click="panel-remove-generales"
+            title="Cerrar"
+            ><i class="fa fa-times"></i
+          ></a>
+        </div>
+      </div>
+
+      <!-- Pestañas de navegación -->
+      <ul class="nav nav-tabs" id="sweetGlobeTabs" role="tablist">
+        <li class="nav-item">
+          <a
+            class="nav-link"
+            id="plantines-tab"
+            data-toggle="tab"
+            href="#plantines"
+            role="tab"
+            aria-controls="plantines"
+            aria-selected="false"
+            >PLANTINES</a
+          >
+        </li>
+        <li class="nav-item">
+          <a
+            class="nav-link active"
+            id="postcosecha-tab"
+            data-toggle="tab"
+            href="#postcosecha"
+            role="tab"
+            aria-controls="postcosecha"
+            aria-selected="true"
+            >POST COSECHA</a
+          >
+        </li>
+        <li class="nav-item">
+          <a
+            class="nav-link"
+            id="cosecha-tab"
+            data-toggle="tab"
+            href="#cosecha"
+            role="tab"
+            aria-controls="cosecha"
+            aria-selected="false"
+            >PRODUCCIÓN</a
+          >
+        </li>
+      </ul>
+
+      <div class="modal-body bg-light" style="max-height: 80vh; overflow-y: auto;">
+
+
+        <div class="tab-content" id="sweetGlobeTabContent">
+
+
+          <!--#######################################################################-->
+          <!-- Contenido de Plantines -->
+          <!--#######################################################################-->
+          <div class="tab-pane fade" id="plantines" role="tabpanel" aria-labelledby="plantines-tab">
+          
+            <!-- Aquí irá el contenido para plantines -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+              <div>
+                <h6 class="text-muted mb-1">Variedad de Uva - Plantines</h6>
+                <h4 class="font-weight-bold">SWEET GLOBE</h4>
+              </div>
+              <button class="btn btn-primary" id="btnCrearProgramaSGPlantines">
+                <i class="fas fa-plus-circle mr-1"></i> Crear Programa
+                Fitosanitario
+              </button>
+            </div>
+
+            <!-- Resumen estadístico en una sola fila -->
+            <div class="card border-0 shadow-sm mb-4">
+              <div class="card-body p-0">
+                <div class="row m-0">
+                  <div class="col-md-4 p-3 border-right">
+                    <h6 class="text-muted mb-1">Programas Registrados</h6>
+                    <h3 class="font-weight-bold mb-0 text-primary" id="resumen_programas_plantines_SG">3</h3>
+                    <small class="text-success"
+                      ><i class="fas fa-arrow-up"></i> 20% más que el periodo
+                      anterior</small
+                    >
+                  </div>
+                  <div class="col-md-4 p-3 border-right">
+                    <h6 class="text-muted mb-1">Precio Total($) / lt-kg</h6>
+                    <h3 class="font-weight-bold mb-0 text-primary" id="resumen_precio_plantines_SG">12.00</h3>
+                    <small class="text-muted"
+                      >Promedio por programa: 4.00</small
+                    >
+                  </div>
+                  <div class="col-md-4 p-3">
+                    <h6 class="text-muted mb-1">Costo Total por hectárea</h6>
+                    <h3 class="font-weight-bold mb-0 text-primary" id="resumen_costo_plantines_SG">
+                      S/ 1,200.00
+                    </h3>
+                    <small class="text-danger"
+                      ><i class="fas fa-arrow-down"></i> 5% menos eficiente que
+                      el estándar</small
+                    >
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tabla de programas -->
+            <div class="card shadow-sm border-0">
+              <div
+                class="card-header bg-white py-3 d-flex justify-content-between align-items-center"
+              >
+                <h5 class="mb-0 font-weight-bold">
+                  <i class="fas fa-list-alt mr-2 text-primary"></i> Programas
+                  Fitosanitarios Registrados
+                </h5>
+                <div class="btn-group">
+                  <button class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-filter mr-1"></i> Filtrar
+                  </button>
+                  <button class="btn btn-sm btn-outline-success">
+                    <i class="fas fa-file-excel mr-1"></i> Exportar
+                  </button>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table
+                    id="tablaPrograma_plantines_SG"
+                    class="table table-hover border-0 display nowrap"
+                    width="100%"
+                  >
+                    <thead class="bg-light">
+                      <tr>
+                        {% comment %} <th>Nº</th> {% endcomment %}
+                        <th>NOMBRE DEL PROGRAMA</th>
+                        <th>FECHA INICIO</th>
+                        <th>FECHA FIN</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+
+                      
+
+                    </tbody>
+                  </table>
+
+                </div>
+              </div>
+            </div>
+
+            
+          </div>
+
+          <!--#######################################################################-->
+          <!-- Contenido de Post Cosecha -->
+          <!--#######################################################################-->
+
+          <div class="tab-pane fade show active" id="postcosecha" role="tabpanel" aria-labelledby="postcosecha-tab">
+          
+
+
+
+            <!-- Cabecera con información y botón de acción -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+
+
+
+              <div>
+                <h6 class="text-muted mb-1">Variedad de Uva - Post Cosecha</h6>
+                <h4 class="font-weight-bold">SWEET GLOBE</h4>
+              </div>
+              <button class="btn btn-primary" id="btnCrearProgramaSGPostCosecha">
+                <i class="fas fa-plus-circle mr-1"></i> Crear Programa
+                Fitosanitario
+              </button>
+
+
+            </div>
+
+            <!-- Resumen estadístico en una sola fila -->
+            <div class="card border-0 shadow-sm mb-4">
+              <div class="card-body p-0">
+                <div class="row m-0">
+                  <div class="col-md-4 p-3 border-right">
+                    <h6 class="text-muted mb-1">Programas Registrados</h6>
+                    <h3 class="font-weight-bold mb-0 text-primary">3</h3>
+                    <small class="text-success"
+                      ><i class="fas fa-arrow-up"></i> 20% más que el periodo
+                      anterior</small
+                    >
+                  </div>
+                  <div class="col-md-4 p-3 border-right">
+                    <h6 class="text-muted mb-1">Precio Total($) / lt-kg</h6>
+                    <h3 class="font-weight-bold mb-0 text-primary">12.00</h3>
+                    <small class="text-muted"
+                      >Promedio por programa: 4.00</small
+                    >
+                  </div>
+                  <div class="col-md-4 p-3">
+                    <h6 class="text-muted mb-1">Costo Total por hectárea</h6>
+                    <h3 class="font-weight-bold mb-0 text-primary">
+                      S/ 1,200.00
+                    </h3>
+                    <small class="text-danger"
+                      ><i class="fas fa-arrow-down"></i> 5% menos eficiente que
+                      el estándar</small
+                    >
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tabla de programas POST COSECHA -->
+            <div class="card shadow-sm border-0">
+              <div
+                class="card-header bg-white py-3 d-flex justify-content-between align-items-center"
+              >
+                <h5 class="mb-0 font-weight-bold">
+                  <i class="fas fa-list-alt mr-2 text-primary"></i> Programas
+                  Fitosanitarios Registrados
+                </h5>
+                <div class="btn-group">
+                  <button class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-filter mr-1"></i> Filtrar
+                  </button>
+                  <button class="btn btn-sm btn-outline-success">
+                    <i class="fas fa-file-excel mr-1"></i> Exportar
+                  </button>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table
+                    id="tablaPrograma_post_cosecha_SG"
+                    class="table table-hover border-0 display nowrap"
+                    width="100%"
+                  >
+                    <thead class="bg-light">
+                      <tr>
+                        {% comment %} <th>Nº</th> {% endcomment %}
+                        <th>NOMBRE PROGRAMA</th>
+                        <th>FECHA INICIO</th>
+                        <th>FECHA FIN</th>
+                        {% comment %} <th>PRECIO / LT-KG ($)</th>
+                        <th>PRECIO / HECTÁREA (S/)</th> {% endcomment %}
+                      </tr>
+                    </thead>
+                    <tbody>
+
+                      {% comment %} <tr class="programa-row" data-id="1">
+                        <td><span class="badge badge-primary">1</span></td>
+                        <td>
+                          <strong>Programa Preventivo Brotamiento</strong>
+                        </td>
+                        <td><span class="text-success">S/ 45.00</span></td>
+                        <td><span class="text-success">S/ 55.00</span></td>
+                      </tr>
+
+                      <tr class="programa-row" data-id="2">
+                        <td><span class="badge badge-primary">2</span></td>
+                        <td><strong>Programa Curativo Floración</strong></td>
+                        <td><span class="text-success">S/ 40.00</span></td>
+                        <td><span class="text-success">S/ 50.00</span></td>
+                      </tr>
+
+                      <tr class="programa-row" data-id="3">
+                        <td><span class="badge badge-primary">3</span></td>
+                        <td><strong>Programa Preventivo Cuajado</strong></td>
+                        <td><span class="text-success">S/ 35.00</span></td>
+                        <td><span class="text-success">S/ 45.00</span></td>
+                      </tr> {% endcomment %}
+
+
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+
+          </div>
+
+          <!--#######################################################################-->
+          <!-- Contenido de Cosecha -->
+          <!--#######################################################################-->
+          <div class="tab-pane fade" id="cosecha" role="tabpanel" aria-labelledby="cosecha-tab">
+          
+            <div class="d-flex justify-content-between align-items-center mb-4">
+              <div>
+                <h6 class="text-muted mb-1">Variedad de Uva - Cosecha</h6>
+                <h4 class="font-weight-bold">SWEET GLOBE</h4>
+              </div>
+              <button class="btn btn-primary" id="btnCrearProgramaSGCosecha">
+                <i class="fas fa-plus-circle mr-1"></i> Crear Programa
+                Fitosanitario
+              </button>
+            </div>
+
+            <!-- Resumen estadístico en una sola fila -->
+            <div class="card border-0 shadow-sm mb-4">
+              <div class="card-body p-0">
+                <div class="row m-0">
+                  <div class="col-md-4 p-3 border-right">
+                    <h6 class="text-muted mb-1">Programas Registrados</h6>
+                    <h3 class="font-weight-bold mb-0 text-primary">3</h3>
+                    <small class="text-success"
+                      ><i class="fas fa-arrow-up"></i> 20% más que el periodo
+                      anterior</small
+                    >
+                  </div>
+                  <div class="col-md-4 p-3 border-right">
+                    <h6 class="text-muted mb-1">Precio Total($) / lt-kg</h6>
+                    <h3 class="font-weight-bold mb-0 text-primary">12.00</h3>
+                    <small class="text-muted"
+                      >Promedio por programa: 4.00</small
+                    >
+                  </div>
+                  <div class="col-md-4 p-3">
+                    <h6 class="text-muted mb-1">Costo Total por hectárea</h6>
+                    <h3 class="font-weight-bold mb-0 text-primary">
+                      S/ 1,200.00
+                    </h3>
+                    <small class="text-danger"
+                      ><i class="fas fa-arrow-down"></i> 5% menos eficiente que
+                      el estándar</small
+                    >
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tabla de programas POST COSECHA -->
+            <div class="card shadow-sm border-0">
+              <div
+                class="card-header bg-white py-3 d-flex justify-content-between align-items-center"
+              >
+                <h5 class="mb-0 font-weight-bold">
+                  <i class="fas fa-list-alt mr-2 text-primary"></i> Programas
+                  Fitosanitarios Registrados
+                </h5>
+                <div class="btn-group">
+                  <button class="btn btn-sm btn-outline-primary">
+                    <i class="fas fa-filter mr-1"></i> Filtrar
+                  </button>
+                  <button class="btn btn-sm btn-outline-success">
+                    <i class="fas fa-file-excel mr-1"></i> Exportar
+                  </button>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="table-responsive">
+                  <table
+                    id="tablaPrograma_cosecha_SG"
+                    class="table table-hover border-0 display nowrap"
+                    width="100%"
+                  >
+                    <thead class="bg-light">
+                      <tr>
+                        {% comment %} <th>Nº</th> {% endcomment %}
+                        <th>NOMBRE PROGRAMA</th>
+                        <th>FECHA INICIO</th>
+                        <th>FECHA FIN</th>
+                        {% comment %} <th>PRECIO / LT-KG ($)</th>
+                        <th>PRECIO / HECTÁREA (S/)</th> {% endcomment %}
+                      </tr>
+                    </thead>
+                    <tbody>
+
+                      {% comment %} <tr class="programa-row" data-id="1">
+                        <td><span class="badge badge-primary">1</span></td>
+                        <td>
+                          <strong>Programa Preventivo Brotamiento</strong>
+                        </td>
+                        <td><span class="text-success">S/ 45.00</span></td>
+                        <td><span class="text-success">S/ 55.00</span></td>
+                      </tr>
+
+                      <tr class="programa-row" data-id="2">
+                        <td><span class="badge badge-primary">2</span></td>
+                        <td><strong>Programa Curativo Floración</strong></td>
+                        <td><span class="text-success">S/ 40.00</span></td>
+                        <td><span class="text-success">S/ 50.00</span></td>
+                      </tr>
+
+                      <tr class="programa-row" data-id="3">
+                        <td><span class="badge badge-primary">3</span></td>
+                        <td><strong>Programa Preventivo Cuajado</strong></td>
+                        <td><span class="text-success">S/ 35.00</span></td>
+                        <td><span class="text-success">S/ 45.00</span></td>
+                      </tr> {% endcomment %}
+
+
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            
+          </div>
+
+
+		  
+        </div>
+
+
+      </div>
+
+
+
+      
+    </div>
+  </div>
+</div>
+
+
+
+
+
+<!--#######################################################################-->
+<!-- MODAL CREAR PROGRAMA POST COSECHA -->
+<!--#######################################################################-->
+
+
+
+
+ <div
+  class="modal fade"
+  id="modalCrearPrograma"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="modalCrearProgramaLabel"
+  aria-hidden="true"
+  style="z-index: 1060"
+>
+  <div
+    class="modal-dialog modal-dialog-centered modal-lg"
+    role="document"
+  >
+    <div class="modal-content">
+      <div class="modal-header bg-gradient-primary text-white">
+        <h5 class="modal-title" id="modalCrearProgramaLabel">
+          <i class="fas fa-plus-circle mr-2"></i> Crear Nuevo Programa Fitosanitario
+        </h5>
+        
+        <div class="panel-heading-btn">
+          <a href="javascript:;" class="btn btn-xs btn-icon btn-circle btn-warning" data-click="panel-expand" title="Expandir"><i class="fa fa-expand"></i></a>
+          <a href="javascript:;" class="btn btn-xs btn-icon btn-circle btn-success" data-click="panel-reload" title="Recargar"><i class="fas fa-sync-alt"></i></a>
+          <a href="javascript:;" class="btn btn-xs btn-icon btn-circle btn-danger" data-click="panel-remove-crear-programa" title="Cerrar"><i class="fa fa-times"></i></a>
+        </div>
+      </div>
+      
+      <div class="modal-body">
+        <form id="formCrearPrograma">
+          <!-- Campos ocultos para IDFASE e IDVARIEDAD -->
+          <input type="hidden" id="modalIdFase" name="idfase">
+          <input type="hidden" id="modalIdVariedad" name="idvariedad">
+
+          <!-- Información general del programa -->
+          <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-light">
+              <h6 class="mb-0 font-weight-bold">
+                Información General del Programa
+              </h6>
+            </div>
+            <div class="card-body">
+              <!-- Nombre del programa -->
+              <div class="form-group">
+                <label for="nombrePrograma">Nombre del Programa <span class="text-danger">*</span></label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="nombrePrograma"
+                  name="nombrePrograma"
+                  placeholder="Ej: Programa Preventivo Brotamiento"
+                  required
+                />
+              </div>
+              
+              <!-- Fechas -->
+              <div class="row mt-3">
+                <div class="col-12 col-md-6 mb-3">
+                  <div class="form-group mb-md-0">
+                    <label for="fechaInicio">Fecha de Inicio <span class="text-danger">*</span></label>
+                    <input
+                      type="date"
+                      class="form-control"
+                      id="fechaInicio"
+                      name="fechaInicio"
+                      required
+                    />
+                  </div>
+                </div>
+                <div class="col-12 col-md-6 mb-3">
+                  <div class="form-group mb-md-0">
+                    <label for="fechaFin">Fecha de Fin <span class="text-danger">*</span></label>
+                    <input
+                      type="date"
+                      class="form-control"
+                      id="fechaFin"
+                      name="fechaFin"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Descripción -->
+              <div class="form-group mt-3">
+                <label for="descripcion_programa">Descripción</label>
+                <textarea
+                  class="form-control"
+                  id="descripcion_programa"
+                  name="descripcion_programa"
+                  rows="3"
+                  placeholder="Descripción detallada del programa fitosanitario"
+                ></textarea>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+      
+      <div class="modal-footer d-flex flex-wrap justify-content-end">
+        <button
+          type="button"
+          class="btn btn-outline-secondary m-1"
+          data-dismiss="modal"
+        >
+          <i class="fas fa-times mr-1"></i> Cancelar
+        </button>
+        <button type="button" class="btn btn-primary m-1" id="btnGuardarPrograma">
+          <i class="fas fa-save mr-1"></i> Guardar Programa
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!--#######################################################################-->
+<!-- MODAL CREAR PROGRAMA PRODUCCIÓN -->
+<!--#######################################################################-->
+
+<div
+  class="modal fade"
+  id="modalCrearProgramaProduccion"
+  tabindex="-1"
+  role="dialog"
+  aria-labelledby="modalCrearProgramaProduccionLabel"
+  aria-hidden="true"
+  style="z-index: 1060"
+>
+  <div
+    class="modal-dialog modal-dialog-centered modal-lg"
+    role="document"
+  >
+    <div class="modal-content">
+      <div class="modal-header bg-gradient-primary text-white">
+        <h5 class="modal-title" id="modalCrearProgramaProduccionLabel">
+          <i class="fas fa-plus-circle mr-2"></i> Crear Nuevo Programa Fitosanitario - Producción
+        </h5>
+        
+        <div class="panel-heading-btn">
+          <a href="javascript:;" class="btn btn-xs btn-icon btn-circle btn-warning" data-click="panel-expand" title="Expandir"><i class="fa fa-expand"></i></a>
+          <a href="javascript:;" class="btn btn-xs btn-icon btn-circle btn-success" data-click="panel-reload" title="Recargar"><i class="fas fa-sync-alt"></i></a>
+          <a href="javascript:;" class="btn btn-xs btn-icon btn-circle btn-danger" data-click="panel-remove-crear-programa-produccion" title="Cerrar"><i class="fa fa-times"></i></a>
+        </div>
+      </div>
+      
+      <div class="modal-body">
+        <form id="formCrearProgramaProduccion">
+          <!-- Campos ocultos para IDFASE e IDVARIEDAD -->
+          <input type="hidden" id="modalIdFaseProduccion" name="idfase">
+          <input type="hidden" id="modalIdVariedadProduccion" name="idvariedad">
+
+          <!-- Información general del programa -->
+          <div class="card mb-4 shadow-sm">
+            <div class="card-header bg-light">
+              <h6 class="mb-0 font-weight-bold">
+                Información General del Programa
+              </h6>
+            </div>
+            <div class="card-body">
+              <!-- Nombre del programa -->
+              <div class="form-group">
+                <label for="nombreProgramaProduccion">Nombre del Programa <span class="text-danger">*</span></label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="nombreProgramaProduccion"
+                  name="nombreProgramaProduccion"
+                  placeholder="Ej: Programa Preventivo Brotamiento"
+                  required
+                />
+              </div>
+              
+              <!-- Tratamiento -->
+              <div class="form-group mt-3">
+                <label for="tratamientoProduccion">Tratamiento <span class="text-danger">*</span></label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="tratamientoProduccion"
+                  name="tratamientoProduccion"
+                  placeholder="Ingrese el tipo de tratamiento"
+                  required
+                />
+              </div>
+              
+              <!-- Fechas -->
+              <div class="row mt-3">
+                <div class="col-12 col-md-6 mb-3">
+                  <div class="form-group mb-md-0">
+                    <label for="fechaInicioProduccion">Fecha de Inicio</label>
+                    <input
+                      type="date"
+                      class="form-control"
+                      id="fechaInicioProduccion"
+                      name="fechaInicioProduccion"
+                    />
+                  </div>
+                </div>
+                <div class="col-12 col-md-6 mb-3">
+                  <div class="form-group mb-md-0">
+                    <label for="fechaFinProduccion">Fecha de Fin</label>
+                    <input
+                      type="date"
+                      class="form-control"
+                      id="fechaFinProduccion"
+                      name="fechaFinProduccion"
+                    />
+                  </div>
+                </div>
+              </div>
+              <!-- Descripción -->
+              <div class="form-group mt-3">
+                <label for="descripcion_programa_produccion">Descripción</label>
+                <textarea
+                  class="form-control"
+                  id="descripcion_programa_produccion"
+                  name="descripcion_programa_produccion"
+                  rows="3"
+                  placeholder="Descripción detallada del programa fitosanitario"
+                ></textarea>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+      
+      <div class="modal-footer d-flex flex-wrap justify-content-end">
+        <button
+          type="button"
+          class="btn btn-outline-secondary m-1"
+          data-dismiss="modal"
+        >
+          <i class="fas fa-times mr-1"></i> Cancelar
+        </button>
+        <button type="button" class="btn btn-primary m-1" id="btnGuardarProgramaProduccion">
+          <i class="fas fa-save mr-1"></i> Guardar Programa
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+
+
+<!--#######################################################################-->
+<!-- MENU CONTEXTUAL PARA TABLAS DE PROGRAMAS -->
+<!--#######################################################################-->
+
+<div id="menuContextualPrograma" class="dropdown-menu shadow" style="display:none; position: absolute; z-index: 1100;">
+  <div class="dropdown-header d-flex align-items-center py-2">
+    <span class="font-weight-bold">Opciones</span>
+  </div>
+  
+  <a class="dropdown-item d-flex align-items-center py-2" href="javascript:void(0)" id="btnEditarPrograma">
+    <i class="fas fa-edit text-primary mr-2"></i> Editar programa
+  </a>
+  
+  <a class="dropdown-item d-flex align-items-center py-2" href="javascript:void(0)" id="btnEliminarPrograma">
+    <i class="fas fa-trash-alt text-danger mr-2"></i> Eliminar programa
+  </a>
+  
+  <div class="dropdown-divider my-1"></div>
+  
+  <a class="dropdown-item d-flex align-items-center py-2" href="javascript:void(0)" id="btnDetallesPrograma">
+    <i class="fas fa-info-circle text-info mr-2"></i> Ver detalles
+  </a>
+</div>
+
+
+
+{% include 'APLICACIONES/components/CampoVerde/presupuesto_aplicaciones/utils/sweet_globe/modal_detalles.html' %}
+
+

@@ -1,0 +1,128 @@
+{% load static %}
+
+
+<!--  CONTENIDO DEL MODAL -->
+
+{% include "base/components/forms/forms_remuneracion.html" %}
+
+
+
+
+<style>
+
+    
+
+    /*ESTILOS PARA LOS CHECKBOX DE VACACIONES */
+    .header-row {
+        border-bottom: 2px solid #dee2e6;
+        margin-bottom: 10px;
+        padding-bottom: 5px;
+        font-size: 0.9em;
+        color: #495057;
+    }
+
+    .header-row span {
+        display: inline-block;
+    }
+
+    .switch-header, .cantidad-header, .vacaciones-header {
+        font-size: 0.85em;
+    }
+
+    .meses-container {
+        background-color: #fff;
+        border-radius: 5px;
+        padding: 10px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    /*ESTILOS ORIGINALES*/
+    .custom-switch-container {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+        padding: 5px;
+        border-radius: 5px;
+        transition: background-color 0.3s;
+    }
+    
+    .custom-switch-container:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .custom-switch-container.vacaciones {
+        background-color: #e8f4f8;
+        border: 1px dashed #17a2b8;
+    }
+    
+    .mes-nombre {
+        min-width: 100px;
+    }
+    
+    .custom-control-label i {
+        font-size: 1.1em;
+    }
+
+    .vacaciones-input {
+        background-color: #e8f4f8 !important;
+        border-color: #17a2b8 !important;
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
+    
+    .custom-switch-container.vacaciones .switch {
+        opacity: 0.6;
+        pointer-events: none;
+    }
+    /*ESTILOS ORIGINALES*/
+
+    .cantidad-masiva-container {
+        background-color: #f8f9fa;
+        border-radius: 5px;
+        margin-bottom: 15px;
+        transition: all 0.3s ease;
+    }
+
+    .cantidad-masiva-container:hover {
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    #aplicar_cantidad_masiva_sueldo {
+        white-space: nowrap;
+    }
+
+    #cantidad_masiva_sueldo::-webkit-inner-spin-button,
+    #cantidad_masiva_sueldo::-webkit-outer-spin-button {
+        opacity: 1;
+    }
+
+    .input-group .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+
+    #cantidad_masiva_salario::-webkit-inner-spin-button,
+#cantidad_masiva_salario::-webkit-outer-spin-button {
+        opacity: 1;
+    }
+
+    #aplicar_cantidad_masiva_salario {
+        white-space: nowrap;
+    }
+
+    
+
+    input[data-generic-editable="true"]:not([readonly]) {
+        background-color: #fff;
+        border-color: #80bdff;
+        box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+    }
+    
+
+
+</style>
+
+{% block js %}
+<script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+<script src="{% static 'core/js/TICS/presupuesto_sueldos.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,343 @@
+{% load static %}
+<!DOCTYPE html>
+<!--[if IE 8]> <html lang="en" class="ie8"> <![endif]-->
+<!--[if !IE]><!-->
+<html lang="en">
+<!--<![endif]-->
+<head>
+	<meta charset="utf-8" />
+	<title>Don Luis</title>
+	<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport" />
+	<meta content="" name="description" />
+	<meta content="" name="author" />
+	<link rel="icon" type="image/png" href="{% static 'assets/img/logo/logo-donluis.png' %}">	
+	<!-- ================== BEGIN BASE CSS STYLE ================== -->
+	<link href="http://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700" rel="stylesheet" />
+	<link href="{% static 'assets/plugins/jquery-ui/jquery-ui.min.css' %}" rel="stylesheet" />
+	<link href="{% static 'assets/plugins/bootstrap/4.0.0/css/bootstrap.min.css' %}" rel="stylesheet" />
+	<link href="{% static 'assets/plugins/font-awesome/5.0/css/fontawesome-all.min.css' %}" rel="stylesheet" />
+	<link href="{% static 'assets/plugins/animate/animate.min.css' %}" rel="stylesheet" />
+	<link href="{% static 'assets/css/default/style.min.css' %}" rel="stylesheet" />
+	<link href="{% static 'assets/css/default/style-responsive.min.css' %}" rel="stylesheet" />
+	<link href="{% static 'assets/css/default/theme/default.css' %}" rel="stylesheet" id="theme" />
+	<!-- ================== END BASE CSS STYLE ================== -->	
+	<!-- ================== INIT BASE AUTO CSS TYLE ================== -->
+	<link href="{% static 'core/css/css.css' %}" rel="stylesheet"/>
+	<!-- ================== BEGIN BASE CSS STYLE ================== -->
+	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+	<style>
+		.content {
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			min-height: calc(100vh - 60px);
+			padding: 0 !important;
+			margin: 0 !important;
+			position: relative;
+			left: 0;
+		}
+		.form-container {
+			width: 100%;
+			max-width: 700px;
+			margin: 0 auto;
+		}
+		.sidebar {
+			display: none !important;
+		}
+        .header-logo {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 15px 20px;
+            background: linear-gradient(135deg, #0062cc, #1ab069);
+            color: white;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+        .header-logo:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="rgba(255, 255, 255, 0.1)" d="M0,192L48,197.3C96,203,192,213,288,229.3C384,245,480,267,576,250.7C672,235,768,181,864,181.3C960,181,1056,235,1152,234.7C1248,235,1344,181,1392,154.7L1440,128L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>');
+            background-size: cover;
+            z-index: 0;
+            opacity: 0.6;
+        }
+        .logo-img {
+            width: 70px;
+            height: 70px;
+            margin-right: 15px;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 1;
+        }
+        .header-content {
+            z-index: 1;
+        }
+        .slogan {
+            font-style: italic;
+            font-weight: 300;
+            margin-top: 4px;
+        }
+		@media (max-width: 768px) {
+			.content {
+				padding: 0 !important;
+				display: block;
+			}
+			.form-container {
+				border-radius: 0 !important;
+				box-shadow: none !important;
+			}
+            .header-logo {
+                border-radius: 0;
+            }
+		}
+	</style>
+	{% block css %}
+	
+	{% endblock %}
+</head>
+
+
+
+<body>
+	<!-- begin #page-loader -->
+	<div id="page-loader" class="fade show"><span class="spinner"></span></div>
+	<!-- end #page-loader -->
+	<!-- begin #page-container -->
+	<div id="page-container" class="page-container fade page-sidebar-fixed page-header-fixed">
+		<!-- begin #header -->
+		<div id="header" class="header navbar-inverse">
+			<!-- begin navbar-header -->
+			<div class="navbar-header">
+				<a href="#" class="navbar-brand"><b> Don Luis |</b><span style="font-size: 15px;"> Portal web</span></a>
+				<button type="button" class="navbar-toggle" data-click="sidebar-toggled">
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+				</button>
+			</div>
+			<!-- end navbar-header -->
+			<!-- begin header-nav -->
+			
+			<!-- end header navigation right -->
+		
+		</div>
+
+
+    	<!-- begin #content -->
+		<div id="content" class="content">
+            <div class="form-container">
+                <div style="background-color: white; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); overflow: hidden;">
+                    <!-- Header con logo -->
+                    <div class="header-logo">
+                        <img src="{% static 'assets/img/logo/logo-donluis.png' %}" alt="Don Luis Logo" class="logo-img">
+                        <div class="header-content">
+                            <h4 class="mb-0 fw-bold">Registro para Campaña de Poda y Amarre</h4>
+                            <p class="slogan mb-0">Ven y únete a la familia Don Luis</p>
+                        </div>
+                            </div>
+                    
+                    <!-- Body del formulario con fondo blanco -->
+                    <div style="padding: 20px 25px;">
+                                <form id="formRegistroCampana" method="post" class="needs-validation">
+                                    {% csrf_token %}
+                                    
+                            <div class="row mb-3">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold text-dark mb-2" style="font-size: 14px;">APELLIDOS</label>
+                                    <input type="text" class="form-control" id="apellidos" name="apellidos" placeholder="Ingrese sus apellidos" required>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold text-dark mb-2" style="font-size: 14px;">NOMBRES</label>
+                                    <input type="text" class="form-control" id="nombres" name="nombres" placeholder="Ingrese sus nombres" required>
+                                            </div>
+                                        </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold text-dark mb-2" style="font-size: 14px;">DNI</label>
+                                    <input type="text" class="form-control" id="dni" name="dni" placeholder="Ingrese su número de DNI"  required>
+                                            </div>
+
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold text-dark mb-2" style="font-size: 14px;">NACIONALIDAD</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-success text-white">
+                                            <i class="fas fa-flag"></i>
+                                        </span>
+                                        <select class="form-select form-select-lg border-success" id="nacionalidad" name="nacionalidad" required>
+                                            <option value="" selected disabled>Seleccione una opción</option>
+                                            <option value="PERUANO">PERUANO</option>
+                                            <option value="EXTRANJERO">EXTRANJERO</option>  
+
+
+                                        </select>
+                                    </div>
+                                    <small class="text-muted">Seleccione su nacionalidad actual</small>
+                                </div>
+
+
+                                
+
+
+                                
+                                
+
+
+
+                                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold text-dark mb-2" style="font-size: 14px;">NÚMERO DE CELULAR</label>
+                                    <input type="tel" class="form-control" id="celular" name="celular" placeholder="Ingrese su número de celular" required>
+                                        </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold text-dark mb-2" style="font-size: 14px;">CORREO</label>
+                                    <input type="email" class="form-control" id="correo" name="correo" placeholder="Ingrese su correo electrónico">
+                                        </div>
+                                    </div>
+                                    
+                            <div class="mb-4">
+                                <div class="d-flex align-items-center mb-2">
+                                    <div style="display: inline-flex; justify-content: center; align-items: center; width: 18px; height: 18px; border-radius: 50%; background-color: #1ab069; margin-right: 8px;">
+                                        <i class="fas fa-briefcase text-white" style="font-size: 9px;"></i>
+                                    </div>
+                                    <label class="form-label fw-bold mb-0" style="font-size: 14px;">LABOR A LA QUE POSTULAS</label>
+                                </div>
+                                <div class="d-flex flex-wrap mt-2" style="gap: 20px;">
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="radio" name="labor" id="laborPoda" value="PODA" required>
+                                                        <label class="form-check-label" for="laborPoda">PODA</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="radio" name="labor" id="laborCalidad" value="CALIDAD">
+                                                        <label class="form-check-label" for="laborCalidad">CALIDAD</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="radio" name="labor" id="laborAmarre" value="AMARRE">
+                                                        <label class="form-check-label" for="laborAmarre">AMARRE</label>
+                                                    </div>
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="radio" name="labor" id="laborEvaluador" value="EVALUADOR">
+                                                        <label class="form-check-label" for="laborEvaluador">EVALUADOR</label>
+                                                    </div>
+
+
+
+                                    <div class="form-check">
+                                                        <input class="form-check-input" type="radio" name="labor" id="laborOtro" value="OTRO">
+                                        <label class="form-check-label" for="laborOtro">OTRO</label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                    <div class="mb-4">
+
+                                <div class="d-flex align-items-center mb-2">
+                                    <div style="display: inline-flex; justify-content: center; align-items: center; width: 18px; height: 18px; border-radius: 50%; background-color: #1ab069; margin-right: 8px;">
+                                        <i class="fas fa-map-marker-alt text-white" style="font-size: 9px;"></i>
+                                    </div>
+                                    <label class="form-label fw-bold mb-0" style="font-size: 14px;">¿DÓNDE VIVES?</label>
+                                </div>
+                                <select class="form-select" id="lugarResidencia" name="lugarResidencia" required>
+                                                    <option value="" selected disabled>Seleccione una opción</option>
+                                                    <option value="SAN JUAN BAUTISTA">SAN JUAN BAUTISTA</option>
+                                                    <option value="TINGUIÑA">TINGUIÑA</option>
+                                                    <option value="PARCONA">PARCONA</option>
+                                                    <option value="SUBTANJALLA">SUBTANJALLA</option>
+                                                    <option value="GUADALUPE">GUADALUPE</option>
+                                                    <option value="TIERRA PROMETIDA">TIERRA PROMETIDA</option>
+                                                    <option value="ALAMO">ALAMO</option>
+                                                    <option value="PUEBLO NUEVO">PUEBLO NUEVO</option>
+                                                    <option value="TATE">TATE</option>
+                                                    <option value="SANTIAGO">SANTIAGO</option>
+                                                    <option value="OCUCAJE">OCUCAJE</option>
+                                                    <option value="OCUCAJE">LUJARA</option>
+                                                    <option value="OCUCAJE">MERCADO SANTO DOMINGO</option>
+                                                    <option value="OCUCAJE">FISCALIA</option>
+                                                    <option value="OCUCAJE">OVALO PLAZA VEA</option>
+                                                    <option value="OCUCAJE">EXPANSION</option>
+                                                    <option value="OCUCAJE">FONAVI</option>
+                                                    <option value="OCUCAJE">COLLAZOS</option>
+                                                    <option value="OTRO">Otro</option>
+                                                </select>
+                                    </div>
+                                    
+                            <div class="d-flex justify-content-between mt-4">
+                                <button type="reset" class="btn px-4" style="border: 1px solid #1ab069; color: #1ab069; background-color: white;">
+                                    Limpiar
+                                </button>
+                                <button type="submit" id="btnRegistrar" class="btn text-white px-4" style="background-color: #1ab069;">
+                                    <i class="fas fa-check-circle me-2"></i> Registrar
+                                        </button>
+                                    </div>
+                                </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+		<!-- end #content -->
+
+{% include 'base/footer.html' %}
+{% block js %}
+
+
+<!-- Añadir al final del bloque JS en el archivo HTML -->
+<script src="{% static 'core/js/RRHH/DonLuis/rrhh_regcampañapoda.js' %}"></script>
+
+
+    <script>
+        $(document).ready(function(){    
+            App.init();
+            
+            // Ocultar sidebar y forzar centrado
+            $('[data-click="sidebar-toggled"]').hide();
+            $('.sidebar').addClass('d-none');
+            $('.sidebar-minified-btn').hide();
+            $('#page-container').addClass('page-sidebar-minified');
+            
+            // Estilo de los elementos del formulario
+            $('input[type="text"], input[type="tel"], input[type="email"], select').css({
+                'height': '40px',
+                'border': '1px solid #e0e0e0',
+                'border-radius': '4px',
+                'padding': '8px 12px',
+                'font-size': '14px'
+            });
+            
+            // Mostrar/ocultar campo de texto para "Otro" en labor
+            $('#laborOtro').on('change', function() {
+                if($(this).is(':checked')) {
+                    if($('#laborOtroTexto').length === 0) {
+                        $('<input type="text" class="form-control mt-2" id="laborOtroTexto" name="laborOtroTexto" placeholder="Especifique la labor" style="height: 40px; border: 1px solid #e0e0e0; border-radius: 4px; padding: 8px 12px; font-size: 14px;">').insertAfter($(this).closest('.form-check'));
+                    }
+                } else {
+                    $('#laborOtroTexto').remove();
+                }
+            });
+            
+
+            // Mostrar/ocultar campo de texto para "Otro" en lugar de residencia
+            $('#lugarResidencia').on('change', function() {
+                if($(this).val() === 'OTRO') {
+                    if($('#otroLugar').length === 0) {
+                        $('<input type="text" class="form-control mt-2" id="otroLugar" name="otroLugar" placeholder="Especifique dónde vive" style="height: 40px; border: 1px solid #e0e0e0; border-radius: 4px; padding: 8px 12px; font-size: 14px;">').insertAfter($(this));
+                    }
+                } else {
+                    $('#otroLugar').remove();
+                }
+            });
+
+
+            
+        });
+    </script>
+{% endblock %}

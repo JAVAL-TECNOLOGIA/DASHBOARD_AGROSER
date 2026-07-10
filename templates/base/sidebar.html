@@ -1,0 +1,3572 @@
+
+
+
+{% load static %}
+    <!-- begin #sidebar -->
+    <div id="sidebar" class="sidebar">
+        <!-- begin sidebar scrollbar -->
+        <div data-scrollbar="true" data-height="100%">
+            <!-- begin sidebar user -->
+            <ul class="nav">
+                <li class="nav-profile">
+                    <a href="javascript:;" data-toggle="nav-profile">
+                        <div class="cover with-shadow"></div>
+                        <div class="image" align='center' style="width:150px; height:50px; left:-15px;">
+                            <img src="{% static 'assets/img/logo/agroservice.png' %}"  alt="" />
+                        </div>
+                        {% if user.is_authenticated %}
+                        <div class="info" id="user-info">
+                            {{ user.first_name}} {{ user.last_name}}
+                            <small>
+                                {{ user.email}}
+                            </small>
+                        </div>
+                        {% endif %}
+                    </a>
+                </li>
+            </ul>
+            <!-- end sidebar user -->
+
+
+            <!-- begin sidebar nav -->
+
+
+
+            
+            <ul class="nav">
+
+                <li class="nav-header">Menú</li>
+                <li class="has-sub {% if request.path == '/'%} active {% endif %}">
+                    <a href="{% url 'home' %}">
+                        <i class="fa fa-home"></i>
+                        <span style="font-size: 16px;">Inicio</span>
+                    </a>
+                </li>
+
+                {% comment %} <li class="has-sub">
+                    <a href="{% url 'lineas_celulares' %}">
+                        <i class="fa fa-mobile"></i>
+                        <span style="font-size: 16px;">Lineas Celulares<span class="label label-theme m-l-5">NEW</span></span>
+                    </a>
+                </li>
+
+                {% if perms.RRHH.RRHH_item or perms.RRHH.RRHH_item_publico %}
+                <li class="has-sub {% if request.path == '/rrhh_consulta_utilidades/' %} active {% endif %}" >
+                    <a href="{% url 'rrhh_consulta_utilidades' %}">
+                        <i class="fa fa-chart-pie"></i>
+                        <span>Consulta de Utilidades</span>
+                    </a>
+                </li>
+                {% endif %}
+
+
+                {% if perms.RRHH.RRHH_item or perms.RRHH.RRHH_item_publico %}
+                <li class="has-sub {% if request.path == '/registro_campana_poda_amarre/' %} active {% endif %}" >
+                        <a href="{% url 'registro_campana_poda_amarre' %}">
+                            <i class="fa fa-chart-pie"></i>
+                        <span>Campaña de Poda y Amarre</span>
+                    </a>
+                </li>
+                {% endif %} {% endcomment %}
+
+
+                <!-- {% if perms.RRHH.RRHH_item or perms.RRHH.RRHH_item_publico %}
+                <li class="has-sub {% if request.path == '/encuesta_capacitacion_habilidades_blandas/' %} active {% endif %}" >
+                    <a href="{% url 'encuesta_capacitacion_habilidades_blandas' %}">
+                        <i class="fa fa-chart-pie"></i>
+                        <span>Encuesta de Capacitacion de Habilidades Blandas</span>
+                    </a>
+                </li>
+                {% endif %} -->
+
+                {% comment %} {% if perms.RRHH.RRHH_DL_INGRESO_INFORMACION or perms.RRHH.RRHH_item_publico %}
+
+                <li class="has-sub">
+                    <a href="javascript:;">
+                        <b class="caret"></b>
+                        <i class='bx  bx-pie-chart-alt-2'  ></i> 
+                        <span style="font-size: 16px;">Encuesta</span>
+                    </a>
+
+                    <ul style="font-size: 14px;" class="sub-menu">
+
+                        <!-- MODULO DE REPORTES GENERALES Donluis -->
+
+                        <li class="has-sub">
+                            <a href="{% url 'encuesta_dia_de_la_madre' %}">
+                                <b class="caret"></b>
+                                Encuesta del dia de la Madre
+                            </a>
+                            
+                        </li>
+
+                        <li class="has-sub">
+                            <a href="{% url 'encuesta_dia_del_padre' %}">
+                                <b class="caret"></b>
+                                Encuesta del dia del Padre
+                            </a>
+                            
+                        </li>
+
+                        <li class="has-sub">
+                            <a href="{% url 'encuesta_de_fiestas_patrias' %}">
+                                <b class="caret"></b>
+                                Encuesta de Fiestas Patrias
+                            </a>
+                            
+                        </li>
+
+                        <li class="has-sub">
+                            <a href="{% url 'encuesta_del_reinado' %}">
+                                <b class="caret"></b>
+                                Encuesta del Reinado
+                            </a>
+                            
+                        </li>
+
+                        <li class="has-sub">
+                            <a href="{% url 'encuesta_del_halloween' %}">
+                                <b class="caret"></b>
+                                Encuesta dia Cancion Criolla y Halloween
+                            </a>
+                            
+                        </li>
+
+                        <li class="has-sub">
+                            <a href="{% url 'encuesta_voley_mixto' %}">
+                                <b class="caret"></b>
+                                Encuesta del Voley Mixto
+                            </a>
+                            
+                        </li>
+
+                        <li class="has-sub">
+                            <a href="{% url 'encuesta_juegos_integracion' %}">
+                                <b class="caret"></b>
+                                Encuesta de Juegos de Integracion
+                            </a>
+                            
+                        </li>
+                    </ul>   
+                </li>
+                {% endif %}
+
+                
+
+                {% if perms.REPORTEALM.reporte_almacen %}
+                <li class="has-sub">
+                    <a href="javascript:;">
+                        <b class="caret"></b>
+                        <i class='bx  bx-pie-chart-alt-2'  ></i> 
+                        <span style="font-size: 16px;">Reportes</span>
+                    </a>
+
+                    <ul style="font-size: 14px;" class="sub-menu">
+
+                        <!-- MODULO DE REPORTES GENERALES Donluis -->
+                        {% if perms.REPORTEALM.reporte_almacen %}
+                        <li class="has-sub">
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Almacén
+                            </a>
+
+                            <ul class="sub-menu">
+                                
+                                {% if perms.REPORTEALM.reporte_almacen %}
+                                <li class="has-sub">
+                                    <a href="{% url 'almacen_reportes_dl' %}">
+                                        <b class="caret"></b>
+                                        Rotacion Productos
+                                    </a>
+                                </li>
+                                {% endif %}
+
+                                
+
+                            </ul>
+                        </li>
+                        {% endif %}
+
+                       
+
+                    </ul>   
+                </li>
+                {% endif %} {% endcomment %}
+
+
+
+
+                <!--=============================================================-->
+                <!--RECUSOS HUMANOS-->
+                <!--=============================================================-->
+
+                {% comment %} {% if perms.RRHH.modulo_rrhh %}
+                <li class="has-sub ">
+
+                    <a href="javascript:;">
+                        <b class="caret"></b>
+                        <i class="fa fa-child"></i>
+                        <span style="font-size: 16px;">RRHH</span>
+                    </a>
+
+                    <ul style="font-size: 14px;"class="sub-menu">
+
+                        <!-- MODULO DE RRHH DONLUIS -->
+                        {% if perms.RRHH.modulo_rrhh_dl %}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Don Luis
+                            </a>
+
+                            <ul class="sub-menu">
+                                
+                                {% if perms.RRHH.RRHH_DL_INGRESO_INFORMACION %}
+                                <li class="has-sub" >
+                                    <a href="{% url 'recursos_humanos' %}">
+                                        Ingreso de informacion
+                                    </a>
+                                </li>
+                                {% endif %}
+
+
+                                {% if perms.RRHH.RRHH_DL_EVALUACION_DESEMPENO %}
+                                <li class="has-sub" >
+                                    <a href="{% url 'rrhh_evaluacion_desempeño' %}">
+                                        Evaluacion de desempeño <i class="fa fa-paper-plane text-theme m-l-5"></i>
+                                    </a>
+                                </li>
+                                {% endif %}
+
+                                {% if perms.RRHH.RRHH_DL_REPORTE_UTILIDADES %}
+                                <li class="has-sub" >
+                                    <a href="{% url 'rrhh_reporte_utilidades' %}">
+                                        Reporte de Utilidades
+
+                                    </a>
+                                </li>
+                                {% endif %}
+
+                                {% if perms.RRHH.RRHH_costos or perms.RRHH.RRHH_presupuesto %}
+                                <li class="has-sub" >
+                                    <a href="{% url 'rrhh_presupuesto_dl' %}">
+                                        Presupuesto
+                                    </a>
+                                </li>
+                                {% endif %}
+                                
+                                {% if perms.RRHH.RRHH_item or perms.RRHH.RRHH_item_publico %}
+                                <li class="has-sub" >
+                                    <a href="{% url 'reporte_campana_poda_amarre' %}">
+                                        Reporte Poda y Amarre
+                                    </a>
+                                </li>
+                                {% endif %}
+
+
+
+                                {% if perms.RRHH.RRHH_DL_EVALUACION_DESEMPENO %}
+                                <li class="has-sub" >
+                                    <a href="{% url 'rrhh_reporte' %}">
+                                        Reporte Obreros
+                                       
+                                    </a>
+                                </li>
+                                {% endif %}
+                                
+                                
+ 
+                                
+                            </ul>
+                        </li>
+                        {% endif %}
+
+                        <!-- MODULO DE RRHH CampoVerde -->
+                        {% if perms.RRHH.modulo_rrhh_cv %}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Campo Verde
+                            </a>
+
+                            <ul class="sub-menu">
+                                
+                                
+
+                                {% if perms.RRHH.RRHH_presupuesto or perms.RRHH.RRHH_costos %}
+                                <li class="has-sub">
+                                    <a href="{% url 'rrhh_presupuesto_cv' %}">
+                                            Presupuesto
+                                    </a>
+                                </li>
+                                {% endif %}
+
+
+                                {% if perms.RRHH.RRHH_CV_REPORTE_UTILIDADES %}
+                                <li class="has-sub" >
+                                    <a href="{% url 'rrhh_reporte_utilidades_cv' %}">
+                                        Reporte de Utilidades
+
+                                      
+                                    </a>
+                                </li>
+                                {% endif %}
+
+
+                            </ul>
+                        </li>
+                        {% endif %}
+
+
+                        <!-- MODULO DE RRHH CampoAJS -->
+                        {% if perms.RRHH.modulo_rrhh_ajs %}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Inversiones AJS
+                            </a>
+
+                            <ul class="sub-menu">
+                                
+                                
+
+                                {% if perms.RRHH.RRHH_presupuesto or perms.RRHH.RRHH_costos %}
+                                <li class="has-sub">
+                                    <a href="{% url 'rrhh_presupuesto_ajs' %}">
+                                            Presupuesto
+                                    </a>
+                                </li>
+                                {% endif %}
+
+                            </ul>
+                        </li>
+                        {% endif %}
+                    </ul>  
+
+                </li>
+                {% endif %} {% endcomment %}
+
+                <!--=============================================================-->
+                <!--CONTABILIDAD-->
+                <!--=============================================================-->
+
+                {% comment %} {% if perms.contabilidad.modulo_contabilidad  %}
+                <li class="has-sub">
+
+                    <a href="javascript:;">
+                        <b class="caret"></b>
+                        <i class="bi bi-calculator"></i>
+                        <span style="font-size: 16px;">Contabilidad</span>
+                    </a>
+
+                    <ul style="font-size: 14px;" class="sub-menu">
+
+                        <!--DON LUIS-->
+                        {% if perms.contabilidad.modulo_contabilidad_dl %}
+                        <li class="has-sub {% if request.path == '/approve_orders/' %} active {% endif %}">
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Don Luis
+                            </a>
+                            <ul style="font-size: 14px;" class="sub-menu">
+                                    
+                                {% if perms.contabilidad.contabilidad_item  %}
+                                <li class="has-sub">
+                                        <a href="javascript:;">
+                                            <b class="caret"></b>
+                                            Reportes
+                                        </a>
+                                        <ul    class="sub-menu">
+                                            <li class="has-sub">
+                                                <a href="{% url 'provision_donluis' %}">
+                                                    Provisiones
+                                                </a>
+                                            </li>
+
+                                            <li class="has-sub">
+                                                <a href="{% url 'egp_funcion' %}">
+                                                    EGP Por funcion
+                                                </a>
+                                            </li>
+
+                                            <li class="has-sub">
+                                                <a href="{% url 'libro_mayor_conta' %}">
+                                                    Libro Mayor
+                                                </a>
+                                            </li>
+
+                                            <li class="has-sub">
+                                                <a href="{% url 'contabilidad_libro_af' %}">
+                                                    Libro de AF
+                                                </a>
+                                            </li>
+
+
+                                            <li class="has-sub">
+                                                <a href="{% url 'conta_ingresos_salidas_almacen' %}">
+                                                    Ingreso/Salida Almacén
+                                                </a>
+                                            </li>
+
+                                            <li class="has-sub">
+                                                <a href="{% url 'contabilidad_plan_cuentas' %}">
+                                                    Plan de cuentas
+                                                </a>
+                                            </li>
+
+
+                                        </ul>
+                                </li>
+                                {% endif %}
+
+                                {% if perms.contabilidad.contabilidad_presupuesto or perms.contabilidad.contabilidad_costos %}
+                                <li class="has-sub" >
+                                    <a href="{% url 'contabilidad_presupuesto_dl' %}">
+                                        Presupuesto
+                                    </a>
+                                </li>
+                                {% endif %}
+
+
+
+                                {% if perms.contabilidad.contabilidad_evaluacion_desempeno %}
+                                <li class="has-sub" >
+                                    <a href="{% url 'contabilidad_evaluacion_desempeño' %}">
+                                        Evaluacion de desempeño<i class="fa fa-paper-plane text-theme m-l-5"></i>
+                                    </a>
+                                </li>
+                                {% endif %}
+
+                            </ul>
+
+                        </li> 
+                        {% endif %}
+
+                        <!--CAMPO VERDE-->
+                        {% if perms.contabilidad.modulo_contabilidad_cv %}
+                        <li class="has-sub">
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Campo Verde
+                            </a>
+
+
+
+                            <ul style="font-size: 14px;" class="sub-menu">
+
+
+                                {% if perms.contabilidad.contabilidad_item %}
+                                <li class="has-sub">
+                                        <a href="javascript:;">
+                                            <b class="caret"></b>
+                                            Reportes
+                                        </a>
+                                        <ul    class="sub-menu">
+
+                                            <li class="has-sub">
+                                                <a href="{% url 'provision_campo_verde' %}">
+                                                    Provisiones
+                                                </a>
+                                            </li>
+
+                                            <li class="has-sub">
+                                                <a href="{% url 'egp_funcion_campoverde' %}">
+                                                    EGP Por funcion 
+                                                </a>
+                                            </li>
+                                            
+                                            <li class="has-sub">
+                                                <a href="{% url 'libro_mayor_conta_cv' %}">
+                                                    Libro Mayor
+                                                </a>
+                                            </li>
+                                            
+                                        </ul>
+                                </li>
+                                {% endif %}
+
+                                {% if perms.contabilidad.contabilidad_presupuesto or perms.contabilidad.contabilidad_costos %}
+                                <li class="has-sub" >
+                                    <a href="{% url 'contabilidad_presupuesto_cv' %}">
+                                        Presupuesto
+                                    </a>
+                                </li>
+                                {% endif %}
+
+
+                            </ul>
+
+                            
+                        </li>
+                        {% endif %}
+
+
+
+                        <!--InversionesAJS-->
+                        {% if perms.contabilidad.modulo_contabilidad_ajs %}
+                        <li class="has-sub">
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Inversiones AJS
+                            </a>
+                            <ul style="font-size: 14px;" class="sub-menu">
+
+                                    {% if perms.contabilidad.contabilidad_item %}
+                                    <li class="has-sub">
+                                        <a href="javascript:;">
+                                            <b class="caret"></b>
+                                            Reportes
+                                        </a>
+                                        <ul    class="sub-menu">
+                                            
+                                            <li class="has-sub">
+                                                <a href="{% url 'provision_inversionesajs' %}">
+                                                    Provisiones
+                                                </a>
+                                            </li>
+
+                                            <li class="has-sub">
+                                                <a href="{% url 'egp_funcion_inversionesajs' %}">
+                                                    EGP Por funcion                                                </a>
+                                            </li>
+
+
+                                            <li class="has-sub">
+                                                <a href="{% url 'libro_mayor_conta_ajs' %}">
+                                                    Libro Mayor                                                </a>
+                                            </li>
+
+                                            
+
+                                        </ul>
+                                    </li>
+                                    {% endif %}
+
+
+                                    {% if perms.contabilidad.contabilidad_presupuesto or perms.contabilidad.contabilidad_costos %}
+                                    <li class="has-sub" >
+                                        <a href="{% url 'contabilidad_presupuesto_ajs' %}">
+                                            Presupuesto
+                                        </a>
+                                    </li>
+                                    {% endif %}
+
+
+                            </ul>
+                        </li>
+                        {% endif %}
+                    </ul>      
+                </li>
+                {% endif %} {% endcomment %}
+
+                <!--=============================================================-->
+                <!--COSTOS-->
+                <!--=============================================================-->
+                
+                {% comment %} {% if perms.COSTOS.modulo_costos%}
+                <li class="has-sub">
+                    <a href="javascript:;">
+                        <b class="caret"></b>
+                        <i class="bi bi-currency-exchange"></i>
+                        <span style="font-size: 16px;">Control de Gestión</span>
+                    </a>
+                    <ul style="font-size: 14px;" class="sub-menu">
+
+                        <!--MODULO DE COSTOS DonLuis-->
+                        {% if perms.COSTOS.modulo_costos_dl %}
+                        <li class="has-sub ">
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Don Luis
+                            </a>
+                            <ul style="font-size: 14px;" class="sub-menu">
+                                    
+                                {% if perms.COSTOS.costos_presupuesto %}
+                                <li class="has-sub">
+                                    <a href="{% url 'presupuesto_dl' %}">
+                                        Presupuesto
+                                        </a>
+                                        
+                                </li>
+                                {% endif %}
+
+                                {% if perms.COSTOS.costos_evaluacion_desempeno %}
+                                <li class="has-sub" >
+                                    <a href="{% url 'costos_evaluacion_desempeño' %}">
+                                        Evaluacion de desempeño<i class="fa fa-paper-plane text-theme m-l-5"></i>
+                                    </a>
+                                </li>
+                                {% endif %}
+
+
+                                    {% if perms.COSTOS.costos_item %}
+                                    <li class="has-sub" >
+                                        <a href="javascript:;">
+                                            <b class="caret"></b>
+                                            Reportes
+                                        </a>
+                                        <ul    class="sub-menu">
+                                            <li class="has-sub">
+                                                <a href="{% url 'costos_rpt_horas_personal' %}">
+                                                    Horas personal por A.
+                                        </a>
+                                        </li>
+                                        </ul>
+                                    </li>
+                                    {% endif %}
+
+
+                            </ul>
+                        </li> 
+                        {% endif %}
+
+
+                        <!--MODULO DE COSTOS CampoVerde-->
+                        {% if perms.COSTOS.modulo_costos_cv %}
+                        <li class="has-sub ">
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Campo Verde
+                            </a>
+
+                            <ul style="font-size: 14px;" class="sub-menu">
+                                
+                                {% if perms.COSTOS.costos_presupuesto %}
+                                <li class="has-sub">
+                                    <a href="{% url 'costos_presupuesto_cv' %}">
+                                        Presupuesto
+                                    </a>
+                                    
+                                </li>
+                                {% endif %}
+
+                            </ul>
+                        </li>
+                        {% endif %}
+
+
+                        <!--MODULO DE COSTOS InversionesAJS-->
+                        {% if perms.COSTOS.modulo_costos_ajs %}
+                        <li class="has-sub {% if request.path == '/approve_orders/' %} active {% endif %}">
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Inversiones AJS
+                            </a>
+                            <ul style="font-size: 14px;" class="sub-menu">
+                                
+                                {% if perms.COSTOS.costos_presupuesto %}
+                                <li class="has-sub">
+                                    <a href="{% url 'costos_presupuesto_ajs' %}">
+                                        Presupuesto
+                                    </a>
+                                    
+                                </li>
+                                {% endif %}
+
+                            </ul>
+                        </li>
+                        {% endif %}
+
+
+
+                    </ul>      
+                </li>
+                {% endif %} {% endcomment %}
+
+
+                <!--=============================================================-->
+                <!-- GERENCIA-->
+                <!--=============================================================-->
+
+                {% comment %} {% if perms.GERENCIA.modulo_gerencia%}
+                <li class="has-sub">
+                    <a href="javascript:;">
+                        <b class="caret"></b>
+                        <i class="bi bi-briefcase-fill"></i>
+                        <span style="font-size: 16px;">Gerencia</span>
+                    </a>
+
+                    <ul style="font-size: 14px;" class="sub-menu">
+
+                        <!--MODULO DE COSTOS DonLuis-->
+                        {% if perms.GERENCIA.gerencia_ev_competencias %}
+                            <li class="has-sub">
+                                <a href="{% url 'gerencia_evaluacion_desempeño' %}">
+                                    Evaluacion de desempeño<i class="fa fa-paper-plane text-theme m-l-5"></i>
+                                </a>
+                                        
+                            </li>
+                        {% endif %}
+
+                    </ul>      
+                </li>
+                {% endif %}
+                 {% endcomment %}
+                <!--=============================================================-->
+                <!-- GERENCIA PRODUCCION-->
+                <!--=============================================================-->
+
+                {% comment %} {% if perms.GERENCIA_PRODUCCION.modulo_gerencia_produccion%}
+                <li class="has-sub">
+                    <a href="javascript:;">
+                        <b class="caret"></b>
+                        <i class="bi bi-briefcase-fill"></i>
+                        <span style="font-size: 16px;">Gerencia de operaciones</span>
+                    </a>
+
+                    <ul style="font-size: 14px;" class="sub-menu">
+
+                        <!--MODULO DE COSTOS DonLuis-->
+                        {% if perms.GERENCIA_PRODUCCION.gerencia_produccion_ev_competencias %}
+                            <li class="has-sub">
+                                <a href="{% url 'gerencia_produccion_evaluacion_desempeño' %}">
+                                    Evaluacion de desempeño<i class="fa fa-paper-plane text-theme m-l-5"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                    </ul>   
+
+                </li>
+                {% endif %} {% endcomment %}
+                <!--=============================================================-->
+                <!--LOGISTICA-->
+                <!--=============================================================-->
+                
+                {% comment %} {% if perms.LOGISTICA.modulo_logistica%}
+                <li class="has-sub">
+                    <a href="javascript:;">
+                        <b class="caret"></b>
+                        <i class="fa fa-truck"></i>
+                        <span style="font-size: 16px;">Logistica</span>
+                    </a>
+
+                    <ul style="font-size: 14px;"class="sub-menu">
+
+                        <!--MODULO DE LOGISTICA Donluis -->
+                        {% if perms.LOGISTICA.modulo_logistica_dl%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Don Luis
+                            </a>
+
+                            <ul style="font-size: 14px;" class="sub-menu">
+
+                                <li class="has-sub">
+                                    <a href="javascript:;">
+                                        <b class="caret"></b>
+                                        Compras 
+                                    </a>
+
+                                    <ul style="font-size: 14px;" class="sub-menu">
+                                        
+                                        {% if perms.LOGISTICA.logistica_item%}
+                                        <li class="has-sub">
+                                            <a href="{% url 'order_oc_log_donluis' %}">
+                                                    O. Compra
+                                            </a>
+                                        </li>
+                                        {% endif %}
+                                        
+                                        
+                                        {% if perms.LOGISTICA.logistica_item%}
+                                        <li class="has-sub">
+                                            <a href="{% url 'order_oc_pedido_donluis' %}">
+                                                P. Compra
+                                            </a>
+
+                                        </li>
+                                        {% endif %}
+
+                                        {% if perms.LOGISTICA.logistica_item%}
+                                        <li class="has-sub">
+                                            <a href="{% url 'logistica_precio_historico_dl' %}">
+                                                Precio Historico OC
+                                            </a>
+        
+                                        </li>
+                                        {% endif %}
+
+                                    </ul>   
+
+
+                                </li>
+
+                                <li class="has-sub">
+                                    <a href="javascript:;">
+                                        <b class="caret"></b>
+                                        Servicios
+                                    </a>
+
+                                    <ul style="font-size: 14px;" class="sub-menu">
+                                        
+                                        {% if perms.LOGISTICA.logistica_item%}
+                                        <li class="has-sub">
+                                            <a href="{% url 'order_os_log_donluis' %}">
+                                                O. Servicio
+                                            </a>
+
+                                        </li>
+                                        {% endif %}
+
+
+
+                                        {% if perms.LOGISTICA.logistica_item%}
+                                        <li class="has-sub">
+                                            <a href="{% url 'logistica_precio_historico_os_dl' %}">
+                                                Precio Historico OS
+                                            </a>
+        
+                                        </li>
+                                        {% endif %}
+
+                                    </ul>
+                                    
+                                </li>
+
+                                {% if perms.LOGISTICA.logistica_evaluacion_desempeno %}
+                                <li class="has-sub" >
+                                    <a href="{% url 'logistica_evaluacion_desempeño' %}">
+                                        Evaluacion de desempeño<i class="fa fa-paper-plane text-theme m-l-5"></i>
+                                    </a>
+                                </li>
+                                {% endif %}
+
+                                
+
+                                {% if perms.LOGISTICA.logistica_presupuesto or perms.LOGISTICA.logistica_costos %}
+                                <li class="has-sub">
+                                    <a href="{% url 'logistica_presupuesto_dl' %}">
+                                        Presupuesto
+                                    </a>
+ 
+                                </li>
+                                {% endif %}
+
+                            </ul>
+                        </li>
+                        {% endif %}
+
+                        <!-- MODULO DE LOGISTICA CampoVerde -->
+                        {% if perms.LOGISTICA.modulo_logistica_cv%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Campo Verde
+                            </a>
+
+                            <ul class="sub-menu">
+                                
+                                <li class="has-sub">
+                                    <a href="javascript:;">
+                                        <b class="caret"></b>
+                                        Compras
+                                    </a>
+
+                                    <ul style="font-size: 14px;" class="sub-menu">
+                                        
+                                        {% if perms.LOGISTICA.logistica_item %}
+                                            <li class="has-sub">
+                                                <a href="{% url 'order_oc_log_campoverde' %}">
+                                                        O. Compra
+                                                </a>
+
+                                            </li>
+                                            {% endif %}
+
+                                        {% if perms.LOGISTICA.logistica_item %}
+                                        <li class="has-sub">
+                                            <a href="{% url 'order_oc_pedido_campoverde' %}">
+                                                P. Compra
+                                            </a>
+                                        {% endif %}
+
+                                        {% if perms.LOGISTICA.logistica_item %} 
+                                        <li class="has-sub">
+                                            <a href="{% url 'logistica_precio_historico_cv' %}">
+                                                Precio Historico OC
+                                            </a>
+
+                                        </li>
+                                        {% endif %}
+
+
+
+
+
+                                    </ul>
+                                    
+                                </li>
+
+                                <li class="has-sub">
+                                    <a href="javascript:;">
+                                        <b class="caret"></b>
+                                        Servicios
+                                    </a>
+
+                                    <ul style="font-size: 14px;" class="sub-menu">
+                                        
+                                        {% if perms.LOGISTICA.logistica_item %} 
+                                        <li class="has-sub">
+                                            <a href="{% url 'order_os_log_campoverde' %}">
+                                                O. Servicio
+                                            </a>
+
+                                            
+                                        </li>
+                                        {% endif %}
+
+                                        {% if perms.LOGISTICA.logistica_item %} 
+                                        <li class="has-sub">
+                                            <a href="{% url 'logistica_precio_historico_os_cv' %}">
+                                                Precio Historico OS
+                                            </a>
+
+                                            
+                                        </li>
+                                        {% endif %}
+
+                                    </ul>
+                                    
+                                </li>
+
+
+
+
+                                {% if perms.LOGISTICA.logistica_presupuesto or perms.LOGISTICA.logistica_costos %}
+                                <li class="has-sub">
+                                    <a href="{% url 'logistica_presupuesto_cv' %}">
+                                        Presupuesto
+                                    </a>
+ 
+                                </li>
+                                {% endif %}
+
+
+                            </ul>
+                        </li>
+                        {% endif %}
+
+
+                        <!-- MODULO DE LOGISTICA CampoAJS -->
+                        {% if perms.LOGISTICA.modulo_logistica_ajs%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Inversiones AJS
+                            </a>
+
+                            <ul class="sub-menu">
+
+                                <li class="has-sub">
+                                    <a href="javascript:;">
+                                        <b class="caret"></b>
+                                        Compras
+                                    </a>
+
+                                    <ul style="font-size: 14px;" class="sub-menu">
+                                        
+                                        {% if perms.LOGISTICA.logistica_item %}
+                                        <li class="has-sub">
+                                            <a href="{% url 'order_oc_log_inversioneajs' %}">
+                                                    O. Compra
+                                            </a>
+                                        </li>
+                                        {% endif %}
+
+                                        {% if perms.LOGISTICA.logistica_item %}
+                                        <li class="has-sub">
+                                            <a href="{% url 'order_oc_pedido_inversionesajs' %}">
+                                                P. Compra
+                                            </a>
+
+                                            
+                                        </li>
+                                        {% endif %}
+
+                                        {% if perms.LOGISTICA.logistica_item %}
+                                        <li class="has-sub">
+                                            <a href="{% url 'logistica_precio_historico_ajs' %}">
+                                                Precio Historico OC
+                                            </a>
+
+                                        
+                                        </li>
+                                        {% endif %}
+
+                                    </ul>
+                                    
+                                </li>
+
+                                <li class="has-sub">
+                                    <a href="javascript:;">
+                                        <b class="caret"></b>
+                                        Servicios
+                                    </a>
+
+                                    <ul style="font-size: 14px;" class="sub-menu">
+                                        
+                                        {% if perms.LOGISTICA.logistica_item %}
+                                        <li class="has-sub">
+                                            <a href="{% url 'order_os_log_inversioneajs' %}">
+                                                O. Servicio
+                                            </a>
+
+                                        
+                                        </li>
+                                        {% endif %}
+
+
+                                        {% if perms.LOGISTICA.logistica_item %}
+                                        <li class="has-sub">
+                                            <a href="{% url 'logistica_precio_historico_os_ajs' %}">
+                                                Precio Historico OS
+                                            </a>
+
+                                        
+                                        </li>
+                                        {% endif %}
+
+                                    </ul>
+                                </li>
+
+                                
+                                
+
+                                
+
+                                
+
+
+                                
+
+
+                                
+
+                                {% if perms.LOGISTICA.logistica_presupuesto or perms.LOGISTICA.logistica_costos %}
+                                <li class="has-sub">
+                                    <a href="{% url 'logistica_presupuesto_ajs' %}">
+                                        Presupuesto
+                                    </a>
+
+                                   
+                                </li>
+                                {% endif %}
+
+
+
+                            </ul>
+                        </li>
+                        {% endif %}
+
+                    </ul>   
+                </li>
+                {% endif %} {% endcomment %}
+
+                <!--=============================================================-->
+                <!-- PRESUPUESTO AGRICOLA -->
+                <!--=============================================================-->
+                {% comment %} {% if perms.PRESUPUESTO_AGRICOLA.modulo_presupuesto_agricola %}
+                <li class="has-sub">
+                    <a href="javascript:;">
+                        <b class="caret"></b>
+                        <i class="fa fa-leaf"></i>
+                        <span style="font-size: 16px;">Presupuesto Agrícola <span class="label label-theme m-l-5">NEW</span></span>
+                    </a>
+                    <ul style="font-size: 14px;" class="sub-menu">
+                        {% if perms.PRESUPUESTO_AGRICOLA.presupuesto_fundos %}
+                        <li class="has-sub">
+                            <a href="{% url 'presupuesto_agricola_fundos' %}">
+                                Gestion de Fundos
+                            </a>
+                        </li>
+                        {% endif %}
+                        {% if perms.PRESUPUESTO_AGRICOLA.presupuesto_lotes %}
+                        <li class="has-sub">
+                            <a href="{% url 'presupuesto_agricola_lotes' %}">
+                                Gestion de Lotes
+                            </a>
+                        </li>
+                        {% endif %}
+                          {% if perms.PRESUPUESTO_AGRICOLA.presupuesto_tipo_planta %}
+                        <li class="has-sub">
+                            <a href="{% url 'presupuesto_agricola_tipo_planta' %}">
+                                Gestion de Tipos de Planta
+                            </a>
+                        </li>
+                        {% endif %}
+
+                      <!--  {% if perms.PRESUPUESTO_AGRICOLA.presupuesto_unidad_medida %}
+                        <li class="has-sub">
+                            <a href="{% url 'presupuesto_agricola_unidad_medida' %}">
+                                Gestion de Unidades de Medida
+                            </a>
+                        </li>
+                        {% endif %}-->
+                        {% if perms.PRESUPUESTO_AGRICOLA.presupuesto_asignacion_ingenieros %}
+                        <li class="has-sub">
+                            <a href="{% url 'presupuesto_agricola_asignacion_ingenieros' %}">
+                                Gestion de Asignacion de Ingenieros
+                            </a>
+                        </li>
+                        {% endif %}
+                          {% if perms.PRESUPUESTO_AGRICOLA.mapeo %}
+                        <li class="has-sub">
+                            <a href="{% url 'presupuesto_agricola_mapeo' %}">
+                                Gestion de Mapeo
+                            </a>
+                        </li>
+                        {% endif %}
+                          {% if perms.PRESUPUESTO_AGRICOLA.produccion_uva %}
+                        <li class="has-sub">
+                            <a href="{% url 'presupuesto_agricola_produccion_uva' %}">
+                                Gestion de Produccion UVA
+                            </a>
+                        </li>
+                        {% endif %}
+
+                          {% if perms.PRESUPUESTO_AGRICOLA.produccion_uva %}
+                        <li class="has-sub">
+                            <a href="{% url 'presupuesto_agricola_tipo_trabajo' %}">
+                                Tipos de Labor
+                            </a>
+                        </li>
+                        {% endif %}
+                       <!--  {% if perms.PRESUPUESTO_AGRICOLA.tipo_calculo %}
+                        <li class="has-sub">
+                            <a href="{% url 'presupuesto_agricola_tipo_calculo' %}">
+                                Tipo de Cálculo
+                            </a>
+                        </li>
+                        {% endif %}-->
+                            {% if perms.PRESUPUESTO_AGRICOLA.produccion_uva %}
+                        <li class="has-sub">
+                            <a href="{% url 'presupuesto_agricola_config_tipo_trabajo' %}">
+                                Configuración de Tipo de Labor
+                            </a>
+                        </li>
+                        {% endif %}
+                        {% if perms.PRESUPUESTO_AGRICOLA.produccion_uva %}
+                        <li class="has-sub">
+                            <a href="{% url 'presupuesto_agricola_parametro_costo_base' %}">
+                                Parámetro de Costo Base de Labores
+                            </a>
+                        </li>
+                        {% endif %}
+                        <!-- {% if perms.PRESUPUESTO_AGRICOLA.presupuesto_lotes %}
+                        <li class="has-sub">
+                            <a href="{% url 'presupuesto_agricola_tipo_costo_base' %}">
+                                Gestion de tipos de costos base
+                            </a>
+                        </li>
+                          {% endif %}-->
+                        {% if perms.PRESUPUESTO_AGRICOLA.produccion_uva %}
+                        <li class="has-sub">
+                            <a href="{% url 'presupuesto_agricola_presupuesto_in' %}">
+                                Costo de Labores
+                            </a>
+                        </li>
+                          {% endif %}
+
+                        {% if perms.PRESUPUESTO_AGRICOLA.presupuesto_lotes %}
+                        <li class="has-sub">
+                            <a href="{% url 'presupuesto_agricola_consolidados' %}">
+                                Consolidados
+                            </a>
+                        </li>
+                          {% endif %}
+
+                        {% if perms.PRESUPUESTO_AGRICOLA.presupuesto_lotes %}
+                        <li class="has-sub">
+                            <a href="{% url 'test_template_evaluacion_fertilidad' %}">
+                                Test plantillas
+                            </a>
+                        </li>
+                          {% endif %}
+
+                         {% if perms.PRESUPUESTO_AGRICOLA.presupuesto_lotes %}
+                        <li class="has-sub">
+                            <a href="{% url 'test_plantilla_offline' %}">
+                                Test Offline
+                            </a>
+                        </li>
+                          {% endif %}
+                    </ul>
+                </li>
+                {% endif %} {% endcomment %}
+
+                <!--=============================================================-->
+                <!-- CARTILLAS AGRICOLAS (menú dinámico desde BD) -->
+                <!--=============================================================-->
+                {% comment %} {% if perms.CARTILLAS.cartillas_donctec%}
+                <li class="has-sub">
+                    <a href="javascript:;">
+                        <b class="caret"></b>
+                        <i class="fa fa-paste"></i>
+                        <span style="font-size: 16px;">Cartillas Agrícolas</span>
+                    </a>
+                    <ul style="font-size: 14px;" class="sub-menu">
+                        {% for area in cartillas_areas %}
+                        <li>
+                            <a href="{% url 'cartillas_por_area' id_area=area.idArea %}">{{ area.nombreArea }}</a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </li>
+                {% endif %} {% endcomment %}
+
+                <!--=============================================================-->
+                {% if perms.MARCACIONES_RRHH.rrhh_marcaciones %}
+                <li class="has-sub">
+                    <a href="javascript:;">
+                        <b class="caret"></b>
+                        <i class="bi bi-clock-fill"></i>
+                        <span style="font-size: 16px;">Marcadores<span class="label label-theme m-l-5">NEW</span></span>
+                    </a>
+                    <ul style="font-size: 14px;" class="sub-menu">
+                        {% if perms.MARCACIONES_RRHH.rrhh_marcaciones %}
+                        <li class="has-sub">
+                            <a href="{% url 'marcadores' %}">
+                                Marcadores
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        {% if perms.MARCACIONES_RRHH.rrhh_marcaciones %}
+                        <li class="has-sub">
+                            <a href="{% url 'administracion_marcadores' %}">
+                                <i class="fa fa-cog"></i> Administración
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </li>
+                {% endif %}
+
+                <!-- FITOSANIDAD -->
+                
+                {% comment %} {% if perms.script.ver_fito%}
+                <li class="has-sub">
+                    <a href="javascript:;">
+                        <b class="caret"></b>
+                        <i class="bi bi-bug-fill"></i>
+                        <span style="font-size: 16px;">Fitosanidad</span>
+                    </a>
+
+                    <ul style="font-size: 14px;"class="sub-menu">
+
+                        <!-- MODULO DE FITOSANIDAD Donluis -->
+                        {% if perms.script.fito_dl%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Don Luis
+                            </a>
+
+                            <ul class="sub-menu">
+                                
+                                <li class="has-sub">
+                                    <a href="{% url 'fitosanidad_apl_diario' %}">
+                                            Registro de aplicaciones
+                                    </a>
+                                </li>
+                                
+ 
+                                </li>
+                            </ul>
+                        </li>
+                        {% endif %}
+
+                        <!-- MODULO DE FITOSANIDAD CampoVerde -->
+                        {% if perms.script.ver_fito_cv%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Campo Verde
+                            </a>
+
+                            <ul class="sub-menu">
+                                
+                                <li class="has-sub">
+                                    <a href="{% url 'order_oc_log_donluis' %}">
+                                            Procedimientos
+                                    </a>
+                                </li>
+
+                                <li class="has-sub">
+                                    <a href="#">
+                                            Presupuesto
+                                    </a>
+                                </li>
+
+
+
+                            </ul>
+                        </li>
+                        {% endif %}
+
+
+                        <!-- MODULO DE FITOSANIDAD CampoAJS -->
+                        {% if perms.script.fito_ajs%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Inversiones AJS
+                            </a>
+
+                            <ul class="sub-menu">
+                                
+                                <li class="has-sub">
+                                    <a href="#">
+                                            Procedimientos
+                                    </a>
+                                </li>
+
+                                <li class="has-sub">
+                                    <a href="#">
+                                            Presupuesto
+                                    </a>
+                                </li>
+
+
+                            </ul>
+                        </li>
+                        {% endif %}
+
+
+
+                    </ul>   
+                </li>
+                {% endif %}       {% endcomment %}
+
+                <!--=============================================================-->
+                <!-- TIC -->
+                <!--=============================================================-->
+                
+                {% if perms.TIC.ver_tic%}
+                <li class="has-sub">
+                    <a href="javascript:;">
+                        <b class="caret"></b>
+                        <i class="bi bi-pc-display"></i>
+                        <span style="font-size: 16px;">TIC</span>
+                    </a>
+
+                    <ul style="font-size: 14px;"class="sub-menu">
+
+                        <!-- MODULO DE TIC Donluis -->
+                        {% if perms.TIC.tic_dl%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Don Luis
+                            </a>
+
+                            <ul class="sub-menu">
+                                
+                                {% if perms.TIC.tic_item or perms.TIC.tic_costos %}
+                                <li class="has-sub">
+                                    <a href="{% url 'tic_costos_dl' %}">
+                                            Costos
+                                    </a>
+                                </li>
+                                {% endif %}
+
+                                {% if perms.TIC.tic_presupuesto or perms.TIC.tic_costos %}
+                                <li class="has-sub">
+                                    <a href="{% url 'tic_presupuesto_dl' %}">
+                                            Presupuesto
+                                    </a>    
+                                </li>
+                                {% endif %}
+                                
+                                {% if perms.TIC.tic_item %}
+                                <li class="has-sub">
+                                    <a href="{% url 'tic_mantenimiento_dl' %}">
+                                            Mantenimiento
+                                    </a>
+                                </li>
+                                {% endif %}
+
+
+                                {% if perms.TIC.tic_item %}
+                                <li class="has-sub" >
+                                    <a href="{% url 'tic_evaluacion_desempeño' %}">
+                                        Evaluacion de desempeño<i class="fa fa-paper-plane text-theme m-l-5"></i>
+                                    </a>
+                                </li>
+                                {% endif %}
+                                
+ 
+                                </li>
+                            </ul>
+                        </li>
+                        {% endif %}
+
+                        <!-- MODULO DE TIC CampoVerde -->
+                        {% if perms.TIC.tic_cv%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Campo Verde
+                            </a>
+
+                            <ul class="sub-menu">
+                                
+                                {% if perms.TIC.tic_item %}
+                                <li class="has-sub">
+                                    <a href="#">
+                                            Procedimientos
+                                    </a>
+                                </li>
+                                {% endif %}
+
+                                {% if perms.TIC.tic_presupuesto or perms.TIC.tic_costos %}
+                                <li class="has-sub">
+                                    <a href="{% url 'tic_presupuesto_cv' %}">
+                                            Presupuesto
+                                    </a>
+                                </li>
+                                {% endif %}
+
+
+                            </ul>
+                        </li>
+                        {% endif %}
+
+
+                        <!-- MODULO DE TIC CampoAJS -->
+                        {% if perms.TIC.tic_ajs%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Inversiones AJS
+                            </a>
+
+                            <ul class="sub-menu">
+                                
+
+                                {% if perms.TIC.tic_item %}
+                                <li class="has-sub">
+                                    <a href="#">
+                                            Procedimientos
+                                    </a>
+                                </li>
+                                {% endif %}
+
+                                {% if perms.TIC.tic_presupuesto or perms.TIC.tic_costos %}
+                                <li class="has-sub">
+                                    <a href="{% url 'tic_presupuesto_ajs' %}">
+                                            Presupuesto
+                                    </a>
+                                </li>
+                                {% endif %}
+
+                            </ul>
+                        </li>
+                        {% endif %}
+
+                         <!-- MODULO DE PROCESOS -->
+                        {% if perms.TIC.tic_dl%}
+                        <li class="has-sub">
+
+                            <a href="{% url 'procesos_tic' %}">
+                                <b class="caret"></b>
+                                Procesos
+                            </a>
+
+                        </li>
+                        {% endif %}
+                        {% comment %} 
+                        {% if perms.TIC.tic_item %}
+                        <li class="has-sub">
+                            <a href="{% url 'lineas_celulares' %}">
+                                Línea Celulares
+                            </a>
+                        </li>
+                        {% endif %} {% endcomment %}
+
+
+                    </ul>   
+                </li>
+                {% endif %}  
+
+                <!--=================================================-->
+                <!-- LEGAL -->
+                <!--=================================================-->
+                {% comment %} {% if perms.LEGAL.modulo_legal%}
+                <li class="has-sub">
+                    <a href="javascript:;">
+                        <b class="caret"></b>
+                        <i class="fa fa-gavel"></i>
+                        <span style="font-size: 16px;">Legal</span>
+                    </a>
+
+                    <ul style="font-size: 14px;"class="sub-menu">
+
+                        <!-- MODULO DE LEGAL Donluis -->
+                        {% if perms.LEGAL.modulo_legal_dl%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Don Luis
+                            </a>
+
+                            <ul class="sub-menu">
+                               
+                                {% if perms.LEGAL.legal_presupuesto or perms.LEGAL.legal_costos %}
+                                <li class="has-sub">
+                                    <a href="{% url 'legal_presupuesto_dl' %}">
+                                            Presupuesto
+                                    </a>    
+                                </li>
+                                {% endif %}
+
+                                
+                            </ul>
+
+
+                        </li>
+                        {% endif %}
+
+                        <!-- MODULO DE LEGAL CampoVerde -->
+                        {% if perms.LEGAL.modulo_legal_cv%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Campo Verde
+                            </a>
+
+                            <ul class="sub-menu">
+                                
+                                {% if perms.LEGAL.legal_presupuesto or perms.LEGAL.legal_costos %}
+                                <li class="has-sub">
+                                    <a href="{% url 'legal_presupuesto_cv' %}">
+                                            Presupuesto
+                                    </a>    
+                                </li>
+                                {% endif %}
+
+                                
+
+
+
+                            </ul>
+                        </li>
+                        {% endif %}
+
+
+                        <!-- MODULO DE LEGAL CampoAJS -->
+                        {% if perms.LEGAL.modulo_legal_ajs%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Inversiones AJS
+                            </a>
+
+                            <ul class="sub-menu">
+                                
+                                {% if perms.LEGAL.legal_presupuesto or perms.LEGAL.legal_costos %}
+                                <li class="has-sub">
+                                    <a href="{% url 'legal_presupuesto_ajs' %}">
+                                            Presupuesto
+                                    </a>
+                                </li>
+                                {% endif %}
+
+                            </ul>
+                        </li>
+                        {% endif %}
+
+
+
+                    </ul>   
+                </li>
+                {% endif %} {% endcomment %}
+
+
+                <!--=================================================-->
+                <!-- SEGURIDAD PATRIMONIAL -->
+                <!--=================================================-->
+                {% comment %} {% if perms.SEGURIDAD.modulo_seguridad%}
+                <li class="has-sub">
+                    <a href="javascript:;">
+                        <b class="caret"></b>
+                        <i class="bi bi-shield-lock-fill"></i>
+                        <span style="font-size: 16px;">Seguridad</span>
+                    </a>
+
+                    <ul style="font-size: 14px;"class="sub-menu">
+
+                        <!-- MODULO DE SEGURIDAD Donluis -->
+                        {% if perms.SEGURIDAD.modulo_seguridad_dl%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Don Luis
+                            </a>
+
+                            <ul class="sub-menu">
+                               
+                                {% if perms.SEGURIDAD.seguridad_presupuesto or perms.SEGURIDAD.seguridad_costos %}
+                                <li class="has-sub">
+                                    <a href="{% url 'seguridad_presupuesto_dl' %}">
+                                            Presupuesto
+                                    </a>    
+                                </li>
+                                {% endif %}
+
+                                {% if perms.SEGURIDAD.seguridad_evaluacion_desempeno %}
+                                    <li class="has-sub">
+                                        <a href="{% url 'seguridad_evaluacion_desempeño' %}">
+                                            Evaluacion de desempeño<i class="fa fa-paper-plane text-theme m-l-5"></i>
+                                        </a>
+                                                
+                                    </li>
+                                {% endif %}
+
+                                
+                            </ul>
+                        </li>
+                        {% endif %}
+
+                        <!-- MODULO DE SEGURIDAD CampoVerde -->
+                        {% if perms.SEGURIDAD.modulo_seguridad_cv%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Campo Verde
+                            </a>
+
+                            <ul class="sub-menu">
+                                
+                                {% if perms.SEGURIDAD.seguridad_presupuesto or perms.SEGURIDAD.seguridad_costos %}
+                                <li class="has-sub">
+                                    <a href="{% url 'seguridad_presupuesto_cv' %}">
+                                            Presupuesto
+                                    </a>    
+                                </li>
+                                {% endif %}
+
+                                
+                            
+
+
+                            </ul>
+                        </li>
+                        {% endif %}
+
+                        <!-- MODULO DE SEGURIDAD CampoAJS -->
+                        {% if perms.SEGURIDAD.modulo_seguridad_ajs%}
+                        <li class="has-sub">
+
+                                <a href="javascript:;">
+                                    <b class="caret"></b>
+                                    Inversiones AJS
+                                </a>
+
+                                <ul class="sub-menu">
+                                    {% if perms.SEGURIDAD.seguridad_presupuesto or perms.SEGURIDAD.seguridad_costos %}
+                                    <li class="has-sub">
+                                        <a href="{% url 'seguridad_presupuesto_ajs' %}">
+                                                Presupuesto
+                                        </a>
+                                    </li>
+                                    {% endif %}
+
+                                </ul>
+                        </li>
+                        {% endif %}
+                        
+
+
+
+                    </ul>   
+                </li>
+                {% endif %} {% endcomment %}
+
+                <!--=============================================================-->
+                <!-- CALIDAD -->
+                <!--=============================================================-->
+
+                {% comment %} {% if perms.CALIDAD.modulo_calidad%}
+                <li class="has-sub">
+                    <a href="javascript:;">
+                        <b class="caret"></b>
+                        <i class="fa fa-certificate"></i>
+                        <span style="font-size: 16px;">Calidad</span>
+                    </a>
+
+                    <ul style="font-size: 14px;"class="sub-menu">
+
+                        <!-- MODULO DE CALIDAD Donluis -->
+                        {% if perms.CALIDAD.modulo_calidad_dl%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Don Luis
+                            </a>
+
+                            <ul class="sub-menu">
+                               
+                                {% if perms.CALIDAD.calidad_presupuesto or perms.CALIDAD.calidad_costos %}
+                                <li class="has-sub">
+                                    <a href="{% url 'calidad_presupuesto_dl' %}">
+                                            Presupuesto
+                                    </a>    
+                                </li>
+                                {% endif %}
+
+
+                                {% if perms.CALIDAD.calidad_evaluacion_desempeno %}
+                                <li class="has-sub" >
+                                    <a href="{% url 'calidad_evaluacion_desempeño' %}">
+                                        Evaluacion de desempeño<i class="fa fa-paper-plane text-theme m-l-5"></i>
+                                    </a>
+                                </li>
+                                {% endif %}
+
+                                
+                            </ul>
+                        </li>
+                        {% endif %}
+
+                        <!-- MODULO DE CALIDAD CampoVerde -->
+                        {% if perms.CALIDAD.modulo_calidad_cv%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Campo Verde
+                            </a>
+
+                            <ul class="sub-menu">
+                                
+                                {% if perms.CALIDAD.calidad_presupuesto or perms.CALIDAD.calidad_costos %}
+                                <li class="has-sub">
+                                    <a href="{% url 'calidad_presupuesto_cv' %}">
+                                            Presupuesto
+                                    </a>    
+                                </li>
+                                {% endif %}
+
+                                
+
+
+
+                            </ul>
+                        </li>
+                        {% endif %}
+
+
+                        <!-- MODULO DE CALIDAD CampoAJS -->
+                        {% if perms.CALIDAD.modulo_calidad_ajs%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Inversiones AJS
+                            </a>
+
+                            <ul class="sub-menu">
+                                
+                                {% if perms.CALIDAD.calidad_presupuesto or perms.CALIDAD.calidad_costos %}
+                                <li class="has-sub">
+                                    <a href="{% url 'calidad_presupuesto_ajs' %}">
+                                            Presupuesto
+                                    </a>
+                                </li>
+                                {% endif %}
+
+                            </ul>
+                        </li>
+                        {% endif %}
+
+
+
+                    </ul>   
+                </li>
+                {% endif %} {% endcomment %}
+
+                <!--=============================================================-->
+                <!-- EVALUACIONES -->
+                <!--=============================================================-->
+
+                {% comment %} {% if perms.EVALUACIONES.modulo_evaluaciones%}
+                <li class="has-sub">
+                    <a href="javascript:;">
+                        <b class="caret"></b>
+                        <i class="bi bi-virus2"></i>
+                        <span style="font-size: 16px;">Evaluaciones</span>
+                    </a>
+
+                    <ul style="font-size: 14px;"class="sub-menu">
+
+                        <!-- MODULO DE EVALUACIONES Donluis -->
+                        {% if perms.EVALUACIONES.modulo_evaluaciones_dl%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Don Luis
+                            </a>
+
+                            <ul class="sub-menu">
+                               
+                                {% if perms.EVALUACIONES.evaluaciones_presupuesto or perms.EVALUACIONES.evaluaciones_costos %}
+                                <li class="has-sub">
+                                    <a href="{% url 'evaluaciones_presupuesto_dl' %}">
+                                            Presupuesto
+                                    </a>
+                                </li>
+                                {% endif %}
+
+
+
+                                {% if perms.EVALUACIONES.evaluaciones_evaluacion_desempeno %}
+                                <li class="has-sub" >
+                                    <a href="{% url 'evaluaciones_evaluacion_desempeño' %}">
+                                        Evaluacion de desempeño<i class="fa fa-paper-plane text-theme m-l-5"></i>
+                                    </a>
+                                </li>
+                                {% endif %}
+
+
+
+                                
+                            </ul>
+                        </li>
+                        {% endif %}
+
+                        <!-- MODULO DE EVALUACIONES CampoVerde -->
+                        {% if perms.EVALUACIONES.modulo_evaluaciones_cv%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Campo Verde
+                            </a>
+
+                            <ul class="sub-menu">
+                                
+                                {% if perms.EVALUACIONES.evaluaciones_presupuesto or perms.EVALUACIONES.evaluaciones_costos %}
+                                <li class="has-sub">
+                                    <a href="{% url 'evaluaciones_presupuesto_cv' %}">
+                                            Presupuesto
+                                    </a>    
+                                </li>
+                                {% endif %}
+
+                                
+
+
+
+                            </ul>
+                        </li>
+                        {% endif %}
+
+
+                        <!-- MODULO DE EVALUACIONES CampoAJS -->
+                        {% if perms.EVALUACIONES.modulo_evaluaciones_ajs%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Inversiones AJS
+                            </a>
+
+                            <ul class="sub-menu">
+                                
+                                {% if perms.EVALUACIONES.evaluaciones_presupuesto or perms.EVALUACIONES.evaluaciones_costos %}
+                                <li class="has-sub">
+                                    <a href="{% url 'evaluaciones_presupuesto_ajs' %}">
+                                            Presupuesto
+                                    </a>
+                                </li>
+                                {% endif %}
+
+                            </ul>
+                        </li>
+                        {% endif %}
+
+
+
+                    </ul>   
+                </li>
+                {% endif %} {% endcomment %}
+
+                <!--=============================================================-->
+                <!-- APLICACIONES -->
+                <!--=============================================================-->
+
+                {% comment %} {% if perms.APLICACIONES.modulo_aplicaciones%}
+                <li class="has-sub">
+                    <a href="javascript:;">
+                        <b class="caret"></b>
+                        <i class="fa fa-clipboard"></i>
+                        <span style="font-size: 16px;">Aplicaciones</span>
+                    </a>
+
+                    <ul style="font-size: 14px;"class="sub-menu">
+
+                        <!-- MODULO DE APLICACIONES Donluis -->
+                        {% if perms.APLICACIONES.modulo_aplicaciones_dl%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Don Luis
+                            </a>
+
+                            <ul class="sub-menu">
+                               
+                                {% if perms.APLICACIONES.aplicaciones_presupuesto or perms.APLICACIONES.aplicaciones_costos %}
+                                <li class="has-sub">
+                                    <a href="{% url 'aplicaciones_presupuesto_dl' %}">
+                                            Presupuesto
+                                    </a>    
+                                </li>
+                                {% endif %}
+
+
+
+                                {% if perms.APLICACIONES.aplicaciones_evaluacion_desempeno %}
+                                <li class="has-sub" >
+                                    <a href="{% url 'aplicaciones_evaluacion_desempeño' %}">
+                                        Evaluacion de desempeño<i class="fa fa-paper-plane text-theme m-l-5"></i>
+                                    </a>
+                                </li>
+                                {% endif %}
+
+                                
+                            </ul>
+                        </li>
+                        {% endif %}
+
+                        <!-- MODULO DE APLICACIONES CampoVerde -->
+                        {% if perms.APLICACIONES.modulo_aplicaciones_cv%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Campo Verde
+                            </a>
+
+                            <ul class="sub-menu">
+                                
+                                {% if perms.APLICACIONES.aplicaciones_presupuesto or perms.APLICACIONES.aplicaciones_costos %}
+                                <li class="has-sub">
+                                    <a href="{% url 'aplicaciones_presupuesto_cv' %}">
+                                            Presupuesto
+                                    </a>    
+                                </li>
+                                {% endif %}
+
+                                
+
+
+
+                            </ul>
+                        </li>
+                        {% endif %}
+
+
+                        <!-- MODULO DE APLICACIONES CampoAJS -->
+                        {% if perms.APLICACIONES.modulo_aplicaciones_ajs%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Inversiones AJS
+                            </a>
+
+                            <ul class="sub-menu">
+                                
+                                {% if perms.APLICACIONES.aplicaciones_presupuesto or perms.APLICACIONES.aplicaciones_costos %}
+                                <li class="has-sub">
+                                    <a href="{% url 'aplicaciones_presupuesto_ajs' %}">
+                                            Presupuesto
+                                    </a>
+                                </li>
+                                {% endif %}
+
+                            </ul>
+                        </li>
+                        {% endif %}
+
+
+
+                    </ul>   
+                </li>
+                {% endif %} {% endcomment %}
+
+                <!--=============================================================-->
+                <!-- RIEGO -->
+                <!--=============================================================-->
+
+                {% comment %} {% if perms.RIEGO.modulo_riego%}
+                <li class="has-sub">
+                    <a href="javascript:;">
+                        <b class="caret"></b>
+                        <i class="bi bi-moisture"></i>
+                        <span style="font-size: 16px;">Fertirriego Uva</span>
+                    </a>
+
+                    <ul style="font-size: 14px;"class="sub-menu">
+
+                        <!-- MODULO DE RIEGO Donluis -->
+                        {% if perms.RIEGO.modulo_riego_dl%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Don Luis
+                            </a>
+
+                            <ul class="sub-menu">
+                               
+                                {% if perms.RIEGO.riego_presupuesto or perms.RIEGO.riego_costos %}
+                                <li class="has-sub">
+                                    <a href="{% url 'riegouva_presupuesto_dl' %}">
+                                            Fertirriego Uva
+                                    </a>    
+                                </li>
+                                {% endif %}
+
+
+                            </ul>
+                        </li>
+                        {% endif %}
+
+                        <!-- MODULO DE RIEGO CampoVerde -->
+                        {% if perms.RIEGO.modulo_riego_cv%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Campo Verde
+                            </a>
+
+                            <ul class="sub-menu">
+
+                                {% if perms.RIEGO.riego_presupuesto or perms.RIEGO.riego_costos %}
+                                <li class="has-sub">
+                                    <a href="{% url 'riegouva_presupuesto_cv' %}">
+                                            Fertirriego Uva
+                                    </a>    
+                                </li>
+                                {% endif %}
+
+                            </ul>
+                        </li>
+                        {% endif %}
+
+
+                        <!-- MODULO DE RIEGO CampoAJS -->
+                        {% if perms.RIEGO.modulo_riego_ajs%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Inversiones AJS
+                            </a>
+
+                            <ul class="sub-menu">
+
+                                {% if perms.RIEGO.riego_presupuesto or perms.RIEGO.riego_costos %}
+                                <li class="has-sub">
+                                    <a href="{% url 'riegouva_presupuesto_ajs' %}">
+                                            Fertirriego Uva
+                                    </a>
+                                </li>
+                                {% endif %}
+
+                            </ul>
+                        </li>
+                        {% endif %}
+
+
+
+                    </ul>   
+                </li>
+                {% endif %} {% endcomment %}
+
+                <!--=============================================================-->
+                <!-- PRODUCCION UVA - JESSICA -->
+                <!--=============================================================-->
+
+                {% comment %} {% if perms.RIEGO.modulo_riego%}
+                <li class="has-sub">
+                    <a href="javascript:;">
+                        <b class="caret"></b>
+                        <i class="bi bi-moisture"></i>
+                        <span style="font-size: 16px;">Produccion Uva</span>
+                    </a>
+
+                    <ul style="font-size: 14px;"class="sub-menu">
+
+                        <!-- MODULO DE RIEGO Donluis -->
+                        {% if perms.RIEGO.modulo_riego_dl%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Don Luis
+                            </a>
+
+                            <ul class="sub-menu">
+                               
+                                {% if  perms.RIEGO.RIEGO_PRODUCCION_UVA or perms.RIEGO.riego_costos %}
+                                <li class="has-sub">
+                                        <a href="{% url 'riego_presupuesto_dl' %}">
+                                            Presupuesto
+                                        </a>
+                                </li>
+                                {% endif %}
+
+
+                                {% if perms.RIEGO.riego_evaluacion_desempeno %}
+                                <li class="has-sub" >
+                                    <a href="{% url 'riego_evaluacion_desempeño' %}">
+                                        Evaluacion de desempeño<i class="fa fa-paper-plane text-theme m-l-5"></i>
+                                    </a>
+                                </li>
+                                {% endif %}
+
+                                
+                            </ul>
+                        </li>
+                        {% endif %}
+
+                        <!-- MODULO DE RIEGO CampoVerde -->
+                        {% if perms.RIEGO.modulo_riego_cv%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Campo Verde
+                            </a>
+
+                            <ul class="sub-menu">
+
+
+                                {% if  perms.RIEGO.RIEGO_PRODUCCION_UVA or perms.RIEGO.riego_costos %}
+                                <li class="has-sub">
+
+                                    <a href="{% url 'riego_presupuesto_cv' %}">
+                                        Presupuesto
+                                    </a>
+
+                                </li>
+                                {% endif %}
+
+                            </ul>
+                        </li>
+                        {% endif %}
+
+
+                        <!-- MODULO DE RIEGO CampoAJS -->
+                        {% if perms.RIEGO.modulo_riego_ajs%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Inversiones AJS
+                            </a>
+
+                            <ul class="sub-menu">
+
+                                {% if  perms.RIEGO.RIEGO_PRODUCCION_UVA or perms.RIEGO.riego_costos %}
+                                <li class="has-sub">
+                                    <a href="{% url 'riego_presupuesto_ajs' %}">
+                                        Presupuesto
+                                    </a>
+                                </li>
+                                {% endif %}
+                                
+                            </ul>
+                        </li>
+                        {% endif %}
+
+                    </ul>   
+                </li>
+                {% endif %} {% endcomment %}
+
+                <!--=============================================================-->
+                <!-- PRODUCCION UVA 1 -->
+                <!--=============================================================-->
+
+
+                {% comment %} {% if perms.PRODUCCIONUVA1.modulo_produccion_uva_1%}
+                <li class="has-sub">
+                    <a href="javascript:;">
+                        <b class="caret"></b>
+                        <i class="fa fa-leaf"></i>
+                        <span style="font-size: 16px;">Producción UVA 1</span>
+                    </a>
+
+                    <ul style="font-size: 14px;"class="sub-menu">
+
+                        <!-- MODULO DE PRODUCCION UVA 1 Donluis -->
+                        {% if perms.PRODUCCIONUVA1.modulo_produccion_uva_1_dl%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Don Luis
+                            </a>
+
+                            <ul class="sub-menu">
+                               
+                                {% if perms.PRODUCCIONUVA1.produccion_uva_1_presupuesto or perms.PRODUCCIONUVA1.produccion_uva_1_costos %}
+                                <li class="has-sub">
+                                    <a href="{% url 'produccionuva1_presupuesto_dl' %}">
+                                            Presupuesto
+                                    </a>    
+                                </li>
+                                {% endif %}
+
+
+                                {% if perms.PRODUCCIONUVA1.produccion_uva_1_evaluacion_desempeno %}
+                                <li class="has-sub" >
+                                    <a href="{% url 'produccionuva1_evaluacion_desempeño' %}">
+                                        Evaluacion de desempeño<i class="fa fa-paper-plane text-theme m-l-5"></i>
+                                    </a>
+                                </li>
+                                {% endif %}
+
+                                
+                            </ul>
+                        </li>
+                        {% endif %}
+
+                        <!-- MODULO DE PRODUCCION UVA 1 CampoVerde -->
+                        {% if perms.PRODUCCIONUVA1.modulo_produccion_uva_1_cv%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Campo Verde
+                            </a>
+
+                            <ul class="sub-menu">
+                                
+                                {% if perms.PRODUCCIONUVA1.produccion_uva_1_presupuesto or perms.PRODUCCIONUVA1.produccion_uva_1_costos %}
+                                <li class="has-sub">
+                                    <a href="{% url 'produccionuva1_presupuesto_cv' %}">
+                                            Presupuesto
+                                    </a>    
+                                </li>
+                                {% endif %}
+
+                                
+
+
+
+                            </ul>
+                        </li>
+                        {% endif %}
+
+
+                        <!-- MODULO DE PRODUCCION UVA 1 CampoAJS -->
+                        {% if perms.PRODUCCIONUVA1.modulo_produccion_uva_1_ajs%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Inversiones AJS
+                            </a>
+
+                            <ul class="sub-menu">
+                                
+                                {% if perms.PRODUCCIONUVA1.produccion_uva_1_presupuesto or perms.PRODUCCIONUVA1.produccion_uva_1_costos %}
+                                <li class="has-sub">
+                                    <a href="{% url 'produccionuva1_presupuesto_ajs'%}">
+                                            Presupuesto
+                                    </a>
+                                </li>
+                                {% endif %}
+
+                            </ul>
+                        </li>
+                        {% endif %}
+
+
+
+                    </ul>   
+                </li>
+                {% endif %} {% endcomment %}
+
+
+
+
+                <!--=============================================================-->
+                <!-- PRODUCCION UVA 2 -->
+                <!--=============================================================-->
+
+                {% comment %} {% if perms.PRODUCCIONUVA2.modulo_produccion_uva_2%}
+                <li class="has-sub">
+                    <a href="javascript:;">
+                        <b class="caret"></b>
+                        <i class="fa fa-leaf"></i>
+                        <span style="font-size: 16px;">Producción UVA 2</span>
+                    </a>
+
+                    <ul style="font-size: 14px;"class="sub-menu">
+
+                        <!-- MODULO DE PRODUCCION UVA 2 Donluis -->
+                        {% if perms.PRODUCCIONUVA2.modulo_produccion_uva_2_dl%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Don Luis
+                            </a>
+
+                            <ul class="sub-menu">
+                    
+                                {% if perms.PRODUCCIONUVA2.produccion_uva_2_presupuesto or perms.PRODUCCIONUVA2.produccion_uva_2_costos %}
+                                <li class="has-sub">
+                                    <a href="{% url 'produccionuva2_presupuesto_dl' %}">
+                                            Presupuesto
+                                    </a>    
+                                </li>
+                                {% endif %}
+
+
+                                {% if perms.PRODUCCIONUVA2.produccion_uva_2_evaluacion_desempeno %}
+                                <li class="has-sub" >
+                                    <a href="{% url 'produccionuva2_evaluacion_desempeño' %}">
+                                        Evaluacion de desempeño<i class="fa fa-paper-plane text-theme m-l-5"></i>
+                                    </a>
+                                </li>
+                                {% endif %}
+
+                                
+                            </ul>
+                        </li>
+                        {% endif %}
+
+                        <!-- MODULO DE PRODUCCION UVA 2 CampoVerde -->
+                        {% if perms.PRODUCCIONUVA2.modulo_produccion_uva_2_cv%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Campo Verde
+                            </a>
+
+                            <ul class="sub-menu">
+                                
+                                {% if perms.PRODUCCIONUVA2.produccion_uva_2_presupuesto or perms.PRODUCCIONUVA2.produccion_uva_2_costos %}
+                                <li class="has-sub">
+                                    <a href="{% url 'produccionuva2_presupuesto_cv' %}">
+                                            Presupuesto
+                                    </a>    
+                                </li>
+                                {% endif %}
+
+                                
+
+
+
+                            </ul>
+                        </li>
+                        {% endif %}
+
+
+                        <!-- MODULO DE PRODUCCION UVA 2 CampoAJS -->
+                        {% if perms.PRODUCCIONUVA2.modulo_produccion_uva_2_ajs%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Inversiones AJS
+                            </a>
+
+                            <ul class="sub-menu">
+                                
+                                {% if perms.PRODUCCIONUVA2.produccion_uva_2_presupuesto or perms.PRODUCCIONUVA2.produccion_uva_2_costos %}
+                                <li class="has-sub">
+                                    <a href="{% url 'produccionuva2_presupuesto_ajs' %}">
+                                            Presupuesto
+                                    </a>
+                                </li>
+                                {% endif %}
+
+                            </ul>
+                        </li>
+                        {% endif %}
+
+
+
+                    </ul>   
+                </li>
+                {% endif %} {% endcomment %}
+
+                <!--=============================================================-->
+                <!-- PRODUCCION PALTA -->
+                <!--=============================================================-->
+                {% comment %} {% if perms.PRODUCCIONPALTA.modulo_produccion_palta%}
+                <li class="has-sub">
+                    <a href="javascript:;">
+                        <b class="caret"></b>
+                        <i class="fa fa-leaf"></i>
+                        <span style="font-size: 16px;">Producción Palta</span>
+                    </a>
+
+                    <ul style="font-size: 14px;"class="sub-menu">
+
+                        <!-- MODULO DE PRODUCCION PALTA Donluis -->
+                        {% if perms.PRODUCCIONPALTA.modulo_produccion_palta_dl%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Don Luis
+                            </a>
+
+                            <ul class="sub-menu">
+                
+                                {% if perms.PRODUCCIONPALTA.produccion_palta_presupuesto or perms.PRODUCCIONPALTA.produccion_palta_costos %}
+                                <li class="has-sub">
+                                    <a href="{% url 'produccionpalta_presupuesto_dl' %}">
+                                            Produccion Palta
+                                    </a>
+                                </li>
+                                {% endif %}
+
+                                {% if perms.RRHH.RRHH_DL_EVALUACION_DESEMPENO %}
+                                <li class="has-sub" >
+                                    <a href="{% url 'produccionpalta_evaluacion_desempeño' %}">
+                                        Evaluacion de desempeño<i class="fa fa-paper-plane text-theme m-l-5"></i>
+                                    </a>
+                                </li>
+                                {% endif %}
+
+                                
+
+                            </ul>
+                        </li>
+                        {% endif %}
+
+                        <!-- MODULO DE PRODUCCION PALTA CampoVerde -->
+                        {% if perms.PRODUCCIONPALTA.modulo_produccion_palta_cv%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Campo Verde
+                            </a>
+
+                            <ul class="sub-menu">
+                                
+                                {% if perms.PRODUCCIONPALTA.produccion_palta_presupuesto or perms.PRODUCCIONPALTA.produccion_palta_costos %}
+                                <li class="has-sub">
+                                    <a href="{% url 'produccionpalta_presupuesto_cv' %}">
+                                            Produccion Palta
+                                    </a>
+                                </li>
+                                {% endif %}
+
+                            </ul>
+                        </li>
+                        {% endif %}
+
+
+                        <!-- MODULO DE PRODUCCION PALTA CampoAJS -->
+
+
+
+                        {% if perms.PRODUCCIONPALTA.modulo_produccion_palta_ajs%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Inversiones AJS
+                            </a>
+
+                            <ul class="sub-menu">
+                                
+                                {% if perms.PRODUCCIONPALTA.produccion_palta_presupuesto or perms.PRODUCCIONPALTA.produccion_palta_costos %}
+                                <li class="has-sub">
+                                    <a href="{% url 'produccionpalta_presupuesto_ajs' %}">
+                                            Produccion Palta
+                                    </a>
+                                </li>
+                                {% endif %}
+
+                            </ul>
+                        </li>
+                        {% endif %}
+
+
+                        
+                    </ul>   
+                </li>
+                {% endif %} {% endcomment %}
+
+                <!--=============================================================-->
+                <!-- PRODUCCION FERTIRRIEGO -->
+                <!--=============================================================-->
+                {% comment %} {% if perms.PRODUCCIONPALTA.modulo_produccion_palta%}
+                <li class="has-sub">
+                    <a href="javascript:;">
+                        <b class="caret"></b>
+                        <i class="fa fa-leaf"></i>
+                        <span style="font-size: 16px;">Fertirriego Palta</span>
+                    </a>
+
+                    <ul style="font-size: 14px;"class="sub-menu">
+
+                        <!-- MODULO DE PRODUCCION PALTA Donluis -->
+                        {% if perms.PRODUCCIONPALTA.modulo_produccion_palta_dl%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Don Luis
+                            </a>
+
+                            <ul class="sub-menu">
+                
+                                {% if perms.PRODUCCIONPALTA.produccion_palta_presupuesto or perms.PRODUCCIONPALTA.produccion_palta_costos %}
+                                <li class="has-sub">
+                                    <a href="{% url 'riegopalta_presupuesto_dl' %}">
+                                            Fertirriego Palta
+                                    </a>
+                                </li>
+                                {% endif %}
+
+                            </ul>
+                        </li>
+                        {% endif %}
+
+                        <!-- MODULO DE PRODUCCION PALTA CampoVerde -->
+                        {% if perms.PRODUCCIONPALTA.modulo_produccion_palta_cv%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Campo Verde
+                            </a>
+
+                            <ul class="sub-menu">
+                                
+                                {% if perms.PRODUCCIONPALTA.produccion_palta_presupuesto or perms.PRODUCCIONPALTA.produccion_palta_costos %}
+                                <li class="has-sub">
+                                    <a href="{% url 'riegopalta_presupuesto_cv' %}">
+                                            Fertirriego Palta
+                                    </a>
+                                </li>
+                                {% endif %}
+
+
+                            </ul>
+                        </li>
+                        {% endif %}
+
+
+                        <!-- MODULO DE PRODUCCION PALTA CampoAJS -->
+
+
+
+                        {% if perms.PRODUCCIONPALTA.modulo_produccion_palta_ajs%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Inversiones AJS
+                            </a>
+
+                            <ul class="sub-menu">
+                                
+                                {% if perms.PRODUCCIONPALTA.produccion_palta_presupuesto or perms.PRODUCCIONPALTA.produccion_palta_costos %}
+                                <li class="has-sub">
+                                    <a href="{% url 'riegopalta_presupuesto_ajs' %}">
+                                            Fertirriego Palta
+                                    </a>
+                                </li>
+                                {% endif %}
+
+                            </ul>
+                        </li>
+                        {% endif %}
+
+
+                        
+                    </ul>   
+                </li>
+                {% endif %} {% endcomment %}
+
+                <!-- MODULO DE ALMACEN -->
+                    {% comment %} {% if perms.user.manualti or  perms.user.gre or perms.ALMACEN.modulo_almacen %}
+                    <li class="has-sub">
+                        <a href="javascript:;"> 
+                            <b class="caret"></b>
+                            <i class="fa fa-industry"></i>
+                            <span style="font-size: 16px;">Almacén</span>
+                        </a>
+
+                        <ul style="font-size: 14px;"class="sub-menu">
+
+                            
+                            <!--MODULO DE ALMACEN DonLuis-->
+                            {% if perms.user.manualti or perms.user.gre or perms.ALMACEN.modulo_almacen_dl%}
+                            <li class="has-sub">
+    
+                                <a href="javascript:;">
+                                    <b class="caret"></b>
+                                    Don Luis
+                                </a>
+    
+                                <ul class="sub-menu">
+                                    
+                                    
+                                    {% if perms.user.manualti or perms.ALMACEN.almacen_item %}
+                                    <li class="has-sub">
+                                        <a href="{% url 'manual' %}">
+                                            Manuales
+                                        </a>
+                                    </li>
+                                    {% endif %}
+
+                                    {% if perms.ALMACEN.almacen_item %}
+                                    <li class="has-sub">
+                                        <a href="{% url 'fitosanidad_almacen_nisira'%}">
+                                            Fitosanidad
+                                        </a>
+                                    </li>
+                                    {% endif %}
+
+                                    {% if perms.ALMACEN.reportes %}
+                                    <li class="has-sub">
+                                        <a href="javascript:;">
+                                            <b class="caret"></b>
+                                            Reportes
+                                        </a>
+                                        <ul class="sub-menu">
+                                            <li class="has-sub">
+                                                <a href="{% url 'almacen_reportes_dl' %}">
+                                                    Reporte de productos
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </li>
+                                    {% endif %}
+
+
+                                    
+
+                                    {% if perms.ALMACEN.almacen_presupuesto or perms.ALMACEN.almacen_costos %}
+                                    <li class="has-sub">
+                                        <a href="{% url 'almacen_presupuesto_dl' %}">
+                                            Presupuesto
+                                        </a>
+                                    </li> 
+                                    {% endif %}
+
+
+
+                                    {% if perms.ALMACEN.almacen_evaluacion_desempeno %}
+                                    <li class="has-sub" >
+                                        <a href="{% url 'almacen_evaluacion_desempeño' %}">
+                                            Evaluacion de desempeño<i class="fa fa-paper-plane text-theme m-l-5"></i>
+                                        </a>
+                                    </li>
+                                    {% endif %}
+
+                                    {% if perms.ALMACEN.almacen_req_internos %}
+                                    <li class="has-sub">
+                                        <a href="{% url 'almacen_prueba' %}">
+                                            REQ. Internos
+                                        </a>
+                                    </li>
+                                    {% endif %}
+
+                                    {% if perms.ALMACEN.almacen_rotacion_productos %}
+                                    <li class="has-sub">
+                                        <a href="{% url 'almacen_rotacion_productos_dl' %}">
+                                            Rotacion de productos
+                                        </a>
+                                    </li>
+                                    {% endif %}
+
+                                </ul>
+                            </li>
+                            {% endif %}
+    
+                            <!-- MODULO DE ALMACEN CampoVerde -->
+                            {% if perms.user.manualti or perms.user.gre or perms.ALMACEN.modulo_almacen_cv%}
+                            <li class="has-sub">
+    
+                                <a href="javascript:;">
+                                    <b class="caret"></b>
+                                    Campo Verde
+                                </a>
+    
+                                <ul class="sub-menu">
+                                    
+                                    {% if perms.ALMACEN.almacen_item %}
+                                    <li class="has-sub">
+                                        <a href="{% url 'campoverde_fitosanidad_almacen_nisira'%}">
+                                            Fitosanidad
+                                        </a>
+                                    </li>
+                                    {% endif %}
+
+                                    
+
+                                    {% if perms.ALMACEN.almacen_presupuesto or perms.ALMACEN.almacen_costos %}  
+                                    <li class="has-sub">
+                                    <li class="has-sub">
+                                        <a href="{% url 'almacen_presupuesto_cv' %}">
+                                            Presupuesto
+                                        </a>
+                                    </li> 
+                                    {% endif %}
+    
+                                    
+                                    {% if perms.ALMACEN.almacen_req_internos %}
+                                    <li class="has-sub">
+                                        <a href="{% url 'almacen_prueba_cv' %}">
+                                            REQ. Internos 
+                                        </a>
+                                    </li>
+                                    {% endif %}
+
+
+                                </ul>
+                            </li>
+                            {% endif %}
+
+    
+                            <!-- MODULO DE ALMACEN CampoAJS -->
+                            {% if perms.user.manualti or perms.user.gre or perms.ALMACEN.modulo_almacen_ajs%}
+                            <li class="has-sub">
+    
+                                <a href="javascript:;">
+                                    <b class="caret"></b>
+                                    Inversiones AJS
+                                </a>
+    
+                                <ul class="sub-menu">
+                                    
+                                    {% if perms.ALMACEN.almacen_item %}
+                                    <li class="has-sub">
+                                        <a href="{% url 'inversiones_fitosanidad_almacen_nisira'%}">
+                                            Fitosanidad
+                                        </a>
+                                    </li>
+                                    {% endif %}
+
+
+                                    {% if perms.ALMACEN.almacen_presupuesto or perms.ALMACEN.almacen_costos %}  
+
+                                    <li class="has-sub">
+                                        <a href="{% url 'almacen_presupuesto_ajs' %}">
+                                            Presupuesto
+                                        </a>
+                                    </li> 
+                                    {% endif %}
+
+
+                                    {% if perms.ALMACEN.almacen_req_internos %}
+                                    <li class="has-sub">
+                                        <a href="{% url 'almacen_prueba_ajs' %}">
+                                            REQ. Internos
+                                        </a>
+                                    </li>
+                                    {% endif %}
+
+
+                                </ul>
+                            </li>
+                            {% endif %}
+                        </ul>  
+    
+                    </li>
+                    {% endif %} {% endcomment %}
+
+                <!-- MODULO DE CONTROLLER PRODUCCION -->
+                {% comment %} {% if perms.CONTROLLER.controller_prod%}
+                <li class="has-sub">
+                    <a href="javascript:;">
+                        <b class="caret"></b>
+                        <i class="fa fa-eye"></i>
+                        <span style="font-size: 16px;">Controller Prod.</span>
+                    </a>
+
+                    <ul style="font-size: 14px;"class="sub-menu">
+
+                        <!-- MODULO DE CONTROLLER Donluis -->
+                        {% if perms.CONTROLLER.controller_prod%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Don Luis
+                            </a>
+
+                            <ul class="sub-menu">
+                               
+                                {% if perms.CONTROLLER.controller_prod%}
+                                <li class="has-sub">
+                                    <a href="{% url 'controller_presupuesto_dl' %}">
+                                            Presupuesto
+                                    </a>    
+                                </li>
+                                {% endif %}
+
+
+                            </ul>
+                        </li>
+                        {% endif %}
+
+                        <!-- MODULO DE CONTROLLER CampoVerde -->
+                        {% if perms.CONTROLLER.controller_prod%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Campo Verde
+                            </a>
+
+                            <ul class="sub-menu">
+                                
+                                {% if perms.CONTROLLER.controller_prod%}
+                                <li class="has-sub">
+                                    <a href="{% url 'controller_presupuesto_cv' %}">
+                                            Presupuesto
+                                    </a>    
+                                </li>
+                                {% endif %}
+
+                            </ul>
+                        </li>
+                        {% endif %}
+
+
+                        <!-- MODULO DE CONTROLLER CampoAJS -->
+                        {% if perms.CONTROLLER.controller_prod%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Inversiones AJS
+                            </a>
+
+                            <ul class="sub-menu">
+                                
+                                {% if perms.CONTROLLER.controller_prod%}
+                                <li class="has-sub">
+                                    <a href="{% url 'controller_presupuesto_ajs' %}">
+                                            Presupuesto
+                                    </a>
+                                </li>
+                                {% endif %}
+
+                            </ul>
+                        </li>
+                        {% endif %}
+
+
+
+                    </ul>   
+                </li>
+                {% endif %} {% endcomment %}
+
+                <!-- MODULO DE SST -->    
+                {% comment %} {% if perms.SST.sst%}
+                <li class="has-sub">
+                    <a href="javascript:;">
+                        <b class="caret"></b>
+                        <i class="fa fa-fire-extinguisher"></i>
+                        <span style="font-size: 16px;">SST - Salud Ocup.</span>
+                    </a>
+
+                    <ul style="font-size: 14px;"class="sub-menu">
+
+                        <!-- MODULO DE SST Donluis -->
+                        {% if perms.SST.sst%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Don Luis
+                            </a>
+
+                            <ul class="sub-menu">
+                               
+                                {% if perms.SST.sst%}
+                                <li class="has-sub">
+                                    <a href="{% url 'sst_presupuesto_dl' %}">
+                                            Presupuesto
+                                    </a>    
+                                </li>
+                                {% endif %}
+
+
+                            </ul>
+                        </li>
+                        {% endif %}
+
+                        <!-- MODULO DE SST CampoVerde -->
+                        {% if perms.SST.sst%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Campo Verde
+                            </a>
+
+                            <ul class="sub-menu">
+                                
+                                {% if perms.SST.sst%}
+                                <li class="has-sub">
+                                    <a href="{% url 'sst_presupuesto_cv' %}">
+                                            Presupuesto
+                                    </a>    
+                                </li>
+                                {% endif %}
+
+                            </ul>
+                        </li>
+                        {% endif %}
+
+
+                        <!-- MODULO DE SST CampoAJS -->
+                        {% if perms.SST.sst%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Inversiones AJS
+                            </a>
+
+                            <ul class="sub-menu">
+                                
+                                {% if perms.SST.sst%}
+                                <li class="has-sub">
+                                    <a >
+                                            Presupuesto
+                                    </a>
+                                </li>
+                                {% endif %}
+
+                            </ul>
+                        </li>
+                        {% endif %}
+
+
+
+                    </ul>   
+                </li>
+                {% endif %} {% endcomment %}
+
+                <!-- MODULO DE SALUD OCUPACIONAL -->
+                {% comment %} {% if perms.SALUD.salud_ocupacional%}
+                <li class="has-sub">
+                    <a href="javascript:;">
+                        <b class="caret"></b>
+                        <i class="fa fa-wheelchair"></i>
+                        <span style="font-size: 16px;">Salud Ocup.</span>
+                    </a>
+
+                    <ul style="font-size: 14px;"class="sub-menu">
+
+                        <!-- MODULO DE SALUD Donluis -->
+                        {% if perms.SALUD.salud_ocupacional%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Don Luis
+                            </a>
+
+                            <ul class="sub-menu">
+                               
+                                {% if perms.SALUD.salud_ocupacional%}
+                                <li class="has-sub">
+                                    <a href="{% url 'salud_presupuesto_dl' %}">
+                                            Presupuesto
+                                    </a>    
+                                </li>
+                                {% endif %}
+
+
+                            </ul>
+                        </li>
+                        {% endif %}
+
+                        <!-- MODULO DE SALUD CampoVerde -->
+                        {% if perms.SALUD.salud_ocupacional%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Campo Verde
+                            </a>
+
+                            <ul class="sub-menu">
+                                
+                                {% if perms.SALUD.salud_ocupacional%}
+                                <li class="has-sub">
+                                    <a href="{% url 'salud_presupuesto_cv' %}">
+                                            Presupuesto
+                                    </a>    
+                                </li>
+                                {% endif %}
+
+                            </ul>
+                        </li>
+                        {% endif %}
+
+
+                        <!-- MODULO DE SALUD CampoAJS -->
+                        {% if perms.SALUD.salud_ocupacional%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Inversiones AJS
+                            </a>
+
+                            <ul class="sub-menu">
+                                
+                                {% if perms.SALUD.salud_ocupacional%}
+                                <li class="has-sub">
+                                    <a >
+                                            Presupuesto
+                                    </a>
+                                </li>
+                                {% endif %}
+
+                            </ul>
+                        </li>
+                        {% endif %}
+
+
+
+                    </ul>   
+                </li>
+                {% endif %} {% endcomment %}
+
+
+                <!-- Reportes Power BI -->
+                {% comment %} {% if perms.user.aei_reports_pbi %}
+                <li class="has-sub">
+                    <a href="javascript:;">
+                        <b class="caret"></b>
+                        <i class="fa fa-chart-bar"></i> 
+                        <span style="font-size: 16px;">Informes PBI</span>
+                    </a>
+                    <ul style="font-size: 14px;" class="sub-menu">
+                        {% if perms.user.aei_reports_pbi_gerencia %}
+                        <li class="has-sub">
+                            <a href="javascript:;">
+								<b class="caret"></b>
+                                Gerencia
+                            </a>
+                            <ul    class="sub-menu">
+                                {% if perms.user.aei_reports_pbi_gerenciaL %}
+
+                                <li  class="has-sub">
+                                    <a href="{% url 'advance' %}">
+                                        Adelantos
+                                    </a>
+                                </li>
+                                {% endif %} 
+                                {% if perms.user.aei_reports_pbi_gerenciaL %}
+
+                                <li class="has-sub">
+                                    <a href="{% url 'costs' %}">
+                                        Costos
+                                    </a>
+                                </li>
+                                {% endif %}
+
+                                <li class="has-sub">
+                                    <a href="{% url 'billing' %}">
+                                        Facturación
+                                    </a>
+
+                                </li>
+                                <li class="has-sub">
+                                    <a href="{% url 'gre' %}">
+                                        Guías de Remisión
+                                    </a>
+
+                                </li>
+                            </ul>
+
+                        </li>
+                        {% endif %} 
+                        {% if perms.user.aei_reports_pbi_fundo %} 
+                        <li class="has-sub">
+                            <a href="javascript:;">
+								<b class="caret"></b>
+                                Fundo
+                            </a>
+                            <ul class="sub-menu">
+                                <li class="has-sub">
+                                    <a href="{% url 'operations' %}">
+                                        Oper. agrícolas
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        {% endif %}
+                        {% if perms.user.aei_reports_pbi_PROD %}
+                        <li class="has-sub">
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Produccion
+                            </a>
+                            <ul class="sub-menu">
+                                <li class="has-sub">
+                                    <a href="{% url 'thirds' %}">
+                                        Maquila Terceros
+                                    </a>
+                                </li>
+
+                                <li class="has-sub">
+                                    <a href="{% url 'prodplant' %}">
+                                        Prod. planta
+                                    </a>
+                                </li>
+                            </ul>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </li>
+                {% endif %} {% endcomment %}
+
+
+                <!-- Reportes Nisira -->
+                {% comment %} {% if perms.script.repo_nisira %}
+                <li class="has-sub">
+                    <a href="javascript:;">
+                        <b class="caret"></b>
+                        <i class="bi bi-clipboard2-data-fill"></i>
+                        <span style="font-size: 16px;">Reportes Nisira</span>
+                    </a>
+
+                    <ul style="font-size: 14px;"class="sub-menu">
+
+                        {% if perms.script.puede_ver_logistica %}
+                        <li class="has-sub">
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Logistica
+                            </a>
+
+                            <ul class="sub-menu">
+                                
+                                <li class="has-sub">
+                                    <a href="javascript:;">
+                                        <b class="caret"></b>
+                                            O. Compra
+                                    </a>
+
+                                    <ul class="sub-menu">
+
+                                        <li class="has-sub">
+                                            <a href="{% url 'order_oc_log_donluis' %}">
+                                                Donluis
+                                            </a>
+                                        </li>
+
+                                        <li class="has-sub">
+                                            <a href="{% url 'order_oc_log_campoverde' %}">
+                                                Campo verde
+                                            </a>
+                                        </li>
+
+                                        <li class="has-sub">
+                                            <a href="{% url 'order_oc_log_inversioneajs' %}">
+                                                Inversiones AJS
+                                                </a>
+                                        </li>
+                                
+                                    </ul> 
+                                </li>
+
+                                
+                                <li class="has-sub">
+                                    <a href="javascript:;">
+								        <b class="caret"></b>
+                                        P. Compra
+                                    </a>
+
+                                    <ul class="sub-menu">
+
+                                        <li class="has-sub">
+                                            <a href="{% url 'order_oc_pedido_donluis' %}">
+                                                Pedido Donluis
+                                            </a>
+                                        </li>
+
+                                        <li class="has-sub">
+                                            <a href="{% url 'order_oc_pedido_campoverde' %}">
+                                                Pedido Campo Verde
+                                            </a>
+                                        </li>
+
+                                        <li class="has-sub">
+                                            <a href="{% url 'order_oc_pedido_inversionesajs' %}">
+                                            Pedido Inversiones AJS
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </li>
+                        
+
+                                <li class="has-sub">
+                                    <a href="javascript:;">
+								        <b class="caret"></b>
+                                        O. Servicio
+                                    </a>
+
+                                    <ul class="sub-menu">
+                                        <li class="has-sub">
+                                            <a href="{% url 'order_os_log_donluis' %}">
+                                                Don luis
+                                            </a>
+                                        </li>
+
+                                        <li class="has-sub">
+                                            <a href="{% url 'order_os_log_campoverde' %}">
+                                                Campo Verde
+                                            </a>
+                                        </li>
+
+                                        <li class="has-sub">
+                                            <a href="{% url 'order_os_log_inversioneajs' %}">
+                                                Inversiones AJS
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </li>
+                        {% endif %}
+
+
+                        {% if perms.script.puede_ver_ti %}
+                        <li class="has-sub">
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                TI
+                            </a> 
+
+                            <ul class="sub-menu">
+                                
+                                <li class="has-sub">
+                                    <a href="javascript:;">
+                                        <b class="caret"></b>
+                                        Lineas Celulares
+                                    </a>
+                                </li>
+                                
+                                <li class="has-sub">
+                                    <a href="javascript:;">
+                                        <b class="caret"></b>
+                                        Correos
+                                    </a>
+                                </li>
+                                
+                                <li class="has-sub">
+                                    <a href="javascript:;">
+                                        <b class="caret"></b>
+                                        Asignaciones
+                                    </a>
+                                </li>
+                                
+                                <li class="has-sub">
+                                    <a href="javascript:;">
+                                        <b class="caret"></b>
+                                        Incidentes
+                                    </a>
+                                </li>
+                                
+                            </ul>
+                        </li>
+                        {% endif %}
+
+
+                        {% if perms.script.puede_ver_informes_bi %}
+                        <li class="has-sub">
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Informes BI
+                            </a>
+                            <ul class="sub-menu">
+                                <li class="has-sub">
+                                    <a href="javascript">
+                                        Pedidos de Compras
+                                    </a>
+                                </li>
+                                
+                            </ul>
+                        </li>
+                        {% endif %}
+
+                    </ul>
+  
+                </li>  
+                {% endif %} {% endcomment %}
+
+
+
+                <!--MODULO REPORTES SPACE-->
+                {% comment %} {% if perms.script.ver_reportes_space %}
+                <li class="has-sub">
+                    <a href="javascript:;">
+                        <b class="caret"></b>
+                        <i class="bi bi-clipboard2-data-fill"></i>
+                        <span style="font-size: 16px;">Reportes Space</span>
+                    </a>
+
+                    <ul style="font-size: 14px;"class="sub-menu">
+
+                        <!-- MODULO DE LOGISTICA Donluis -->
+                        {% if perms.script.ver_space_calidad%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Calidad
+                            </a>
+
+                            <ul class="sub-menu">
+                                
+                                <li class="has-sub">
+                                    <a href="{% url 'space_calidad_poda' %}">
+                                        Poda
+                                    </a>
+                                </li>
+
+                                
+                                <li class="has-sub">
+                                    <a href="{% url 'space_calidad_raleo' %}">
+                                        Raleo
+                                    </a>
+
+                                </li>
+                            </ul>
+                        </li>
+                        {% endif %}
+
+                        <!-- MODULO DE LOGISTICA CampoVerde -->
+                        {% if perms.script.ver_space_evaluacion%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Evaluaciones
+                            </a>
+
+                            <ul class="sub-menu">
+                                
+                                
+
+                                
+                                <li class="has-sub">
+                                    <a href="{% url 'space_evaluaciones_brotacion' %}">
+                                        Brotacion
+                                    </a>
+
+                                    
+                                </li>
+                        
+
+                                <li class="has-sub">
+                                    <a href="{% url 'space_evaluaciones_long_brote' %}">
+                                        Longitud de brote
+                                    </a>
+                                </li>
+
+                                <li class="has-sub">
+                                    <a href="{% url 'space_evaluaciones_long_racimo' %}">
+                                        Longitud de racimo
+                                    </a>
+                                </li>
+
+                                
+
+                                <li class="has-sub">
+                                    <a href="{% url 'space_evaluaciones_cont_racimo' %}">
+                                        Conteo de racimos
+                                    </a>
+                                </li>
+
+                                <li class="has-sub">
+                                    <a href="{% url 'space_evaluaciones_floracion_cuaja' %}">
+                                        Floracion & cuaja   
+                                    </a>
+                                </li>
+
+                                <li class="has-sub">
+                                    <a href="{% url 'space_evaluaciones_calibre_bayas' %}">
+                                        Calibre de Bayas   
+                                    </a>
+                                </li>
+
+
+                            </ul>
+                        </li>
+                        {% endif %}
+
+
+                        <!-- MODULO DE Space Riego -->
+                        {% if perms.script.ver_space_riego%}
+                        <li class="has-sub">
+
+                            <a href="javascript:;">
+                                <b class="caret"></b>
+                                Riego
+                            </a>
+
+                            <ul class="sub-menu">
+                                
+                                <li class="has-sub">
+                                    <a href="{% url 'order_oc_log_inversioneajs' %}">
+                                            O. Compra
+                                    </a>
+
+                                    
+                                </li>
+
+                                
+                                <li class="has-sub">
+                                    <a href="{% url 'order_oc_pedido_inversionesajs' %}">
+                                        P. Compra
+                                    </a>
+
+                                    
+                                </li>
+                        
+
+                                <li class="has-sub">
+                                    <a href="{% url 'order_os_log_inversioneajs' %}">
+                                        O. Servicio
+                                    </a>
+
+                                </li>
+                            </ul>
+                        </li>
+                        {% endif %}
+                    </ul>   
+                </li>
+                {% endif %}
+                 {% endcomment %}
+                <!--MODULO APROBACIONES-->
+                
+                {% comment %} {% if perms.user.aei_approve_orders  or perms.script.MODULO_APROBACIONES %}
+                <li class="has-sub {% if '/aprobaciones/' in request.path %} active {% endif %}">
+                    <a href="javascript:;">
+                        <b class="caret"></b>       
+                        <i class="bi bi-check-square-fill"></i>
+                        <span style="font-size: 16px;">Aprobaciones </span>
+                    </a>
+
+                    <ul style="font-size: 14px;" class="sub-menu">
+
+                        {% if perms.user.aei_approve_orders or perms.script.MODULO_APROBACIONES_DONLUIS %}
+                        <li class="has-sub {% if '/aprobaciones/donluis/' in request.path %} active {% endif %}">
+                            <a href="{% url 'aprobaciones_donluis' %}">
+                                <i class="fa fa-building"></i>
+                                <span style="font-size: 16px;">Don Luis</span>
+                            </a>
+                        </li>
+                        {% endif %}
+                        
+                        {% if perms.user.aei_approve_orders or perms.script.MODULO_APROBACIONES_AJS %}
+                        <li class="has-sub {% if '/aprobaciones/ajs/' in request.path %} active {% endif %}">
+                            <a href="{% url 'aprobaciones_ajs' %}">
+                                <i class="fa fa-industry"></i>
+                                <span style="font-size: 16px;">Inversiones AJS</span>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% if perms.user.aei_approve_orders or perms.script.MODULO_APROBACIONES_CV %}
+                        <li class="has-sub {% if '/aprobaciones/campoverde/' in request.path %} active {% endif %}">
+                            <a href="{% url 'aprobaciones_campoverde' %}">
+                                <i class="fa fa-seedling"></i>
+                                <span style="font-size: 16px;">Campo Verde</span>
+                            </a>
+                        </li>
+                        {% endif %}
+                
+                    </ul>
+
+                </li>
+                {% endif %}
+
+
+                {% if perms.user.aei_reports_note_invoice %}
+                <li class="has-sub {% if request.path == '/credit_note_invoice/' %} active {% endif %}">
+                    <a href="javascript:;">
+                        <b class="caret"></b>
+                        <i class="fa fa-file-alt"></i>
+                        <span style="font-size: 16px;">Cobranzas</span>
+                    </a>
+                    <ul style="font-size: 14px;" class="sub-menu">
+                        <li class="has-sub {% if request.path == '/credit_note_invoice/' %} active {% endif %}" >
+                            <a href="{% url 'credit_note_invoice' %}">
+                                Facturas / Notas de crédito
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                {% endif %} {% endcomment %}
+
+
+                <!-- Users -->              
+                {% if perms.user.aei_user %}
+                <li class="has-sub">
+                    <a href="{% url 'home_user' %}">
+                        <i class="bi bi-person-plus-fill"></i>
+                        <span style="font-size: 16px;">Usuarios</span>
+                    </a>
+                </li>
+                {% endif %}
+                <!-- begin sidebar minify button -->
+                <li><a href="javascript:;" class="sidebar-minify-btn" data-click="sidebar-minify"><i class="fa fa-angle-double-left"></i></a></li>
+                <!-- end sidebar minify button -->
+            </ul>
+            <!-- end sidebar nav -->
+        </div>
+        <!-- end sidebar scrollbar -->
+    </div>
+    <div class="sidebar-bg"></div>
+    <!-- end #sidebar -->
+
+    <style>
+        .label-theme {
+            font-size: 10px;
+            padding: 2px 6px;
+            line-height: 1.2;
+        }
+    </style>

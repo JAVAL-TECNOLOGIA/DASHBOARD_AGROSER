@@ -1,0 +1,829 @@
+{% load static %}
+
+<!-- SECCIÓN PRINCIPAL DE FASE INTERMEDIA -->
+<div class="card-body">
+    <div class="tab-pane fade show active" id="pills-intermedio" role="tabpanel" aria-labelledby="pills-intermedio-tab">
+        
+        <!-- Tarjeta principal de evaluaciones -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="fas fa-tasks text-warning mr-2"></i>Seguimiento de Avance - Fase Intermedia</h6>
+                    
+                </div>
+            </div>
+            <div class="card-body p-2">
+                <table id="tablaEvaluaciones_intermedio" class="table table-sm table-bordered table-striped table-hover responsive nowrap" style="width:100%; font-size:0.7rem;">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>ID</th>
+                            <th style="min-width: 390px; white-space: nowrap;">Evaluado</th>
+                            <th style="min-width: 390px; white-space: nowrap;">Evaluador</th>
+                            <th style="min-width: 100px; white-space: nowrap;">Período</th>
+                            <th style="min-width: 120px; white-space: nowrap;">Área</th>
+                            <th style="min-width: 100px; white-space: nowrap;">Objetivos</th>
+                            <th style="min-width: 100px; white-space: nowrap;">Competencias</th>
+                            <th style="min-width: 100px; white-space: nowrap;">Avance General</th>
+                            <th style="min-width: 100px; white-space: nowrap;">Estado</th>
+                            <th style="min-width: 50px; white-space: nowrap;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Datos ficticios para prueba -->
+                        
+
+
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL PARA SEGUIMIENTO DE AVANCE -->
+<div class="modal fade" id="Modal_Seguimiento_Avance" tabindex="-1" role="dialog" aria-labelledby="ModalSeguimientoAvanceLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl" style="max-width: 90%; width: 90%;" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-gradient-warning text-white">
+                <h5 class="modal-title" id="ModalSeguimientoAvanceLabel">
+                    <i class="fas fa-tasks mr-1"></i>Seguimiento de Avance - Fase Intermedia
+                </h5>
+                <button type="button"  class="close text-white   btn btn-danger btn-sm" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            
+            <div class="modal-body">
+                <!-- Información del Evaluado -->
+                <div class="card mb-3">
+                    <div class="card-header bg-light">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="mb-0"><i class="fas fa-user mr-2"></i>Información del Evaluado</h6>
+                            </div>
+                            <div class="col-md-6 text-right">
+                                <span class="badge badge-warning">Período: <span id="evaluado_periodo">- -</span></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="modern-avatar bg-primary mr-3" style="width: 50px; height: 50px;">
+                                        <span class="initials" style="font-size: 18px;">JG</span>
+                                    </div>
+                                    <div>
+                                        <strong style="font-weight: 600;" id="nombre"></strong>
+                                        <br><small class="text-muted" id="evaluado_cargo">Analista de RRHH</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <small class="text-muted">Área:</small>
+                                <br><strong id="evaluado_area">Recursos Humanos</strong>
+                            </div>
+                            <div class="col-md-3">
+                                <small class="text-muted">Evaluador:</small>
+                                <br><strong id="evaluador_nombre">María Pérez</strong>
+                            </div>
+                            <div class="col-md-3">
+                                <small class="text-muted">Avance General:</small>
+                                <br>
+                                <div class="progress" style="height: 25px;">
+                                    <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated" id="avance_general" style="width: 52.5%">
+                                        <strong>52.5%</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pestañas para Objetivos y Competencias -->
+                <ul class="nav nav-tabs mb-3" id="avanceTab" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active" id="objetivos-avance-tab" data-toggle="tab" href="#objetivos-avance" role="tab">
+                            <i class="fas fa-bullseye mr-1"></i>Objetivos (<span id="count_objetivos">5</span>)
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="competencias-avance-tab" data-toggle="tab" href="#competencias-avance" role="tab">
+                            <i class="fas fa-star mr-1"></i>Competencias (<span id="count_competencias">8</span>)
+                        </a>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="avanceTabContent">
+                    <!-- Pestaña de Objetivos -->
+                    <div class="tab-pane fade show active" id="objetivos-avance" role="tabpanel">
+                        <div class="card">
+                            <div class="card-header bg-info text-white">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0"><i class="fas fa-bullseye mr-2"></i>Avance de Objetivos</h6>
+                                    <button type="button" class="btn btn-light btn-sm" onclick="guardarAvanceObjetivos()">
+                                        <i class="fas fa-save mr-1"></i>Guardar Avance
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover mb-0">
+                                        <thead class="bg-light">
+                                            <tr>                                                
+                                                <th style="width: 20%;">Objetivo</th>
+                                                <th style="width: 10%;">Período</th>
+                                                <th style="width: 15%;">Indicador</th>
+                                                <th style="width: 10%;">Meta</th>
+                                                <th style="width: 15%;">Comentarios</th>
+                                                <th style="width: 10%;">Avance Actual</th>
+                                                <th style="width: 10%;">Nuevo Avance</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tabla_objetivos_avance">
+                                            <!-- Los datos se cargan dinámicamente -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            
+                            <!-- Sección de Comentarios Generales para Objetivos -->
+                            {% comment %} <div class="card-footer bg-light border-top">
+                                <div class="row">
+                                    <div class="col-12">
+                                        <label class="form-label mb-2">
+                                            <i class="fas fa-comment-alt text-info mr-1"></i>
+                                            <strong>Comentarios Generales sobre Objetivos</strong>
+                                        </label>
+                                        <textarea 
+                                            class="form-control" 
+                                            id="comentarios_objetivos_general" 
+                                            rows="3" 
+                                            placeholder="Escriba aquí observaciones generales sobre el avance de los objetivos, logros destacados, obstáculos encontrados, planes de mejora, etc..."
+                                            style="resize: vertical; border: 2px solid #e9ecef; border-radius: 8px;">
+                                        </textarea>
+                                        <small class="form-text text-muted mt-1">
+                                            <i class="fas fa-info-circle mr-1"></i>
+                                            Este comentario se aplicará como observación general para todos los objetivos de esta evaluación.
+                                        </small>
+                                    </div>
+                                </div>
+                            </div> {% endcomment %}
+                        </div>
+                    </div>
+
+                    <!-- Pestaña de Competencias -->
+                    <div class="tab-pane fade" id="competencias-avance" role="tabpanel">
+                        <div class="card">
+                            <div class="card-header bg-warning text-white">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0"><i class="fas fa-star mr-2"></i>Avance de Competencias</h6>
+                                    <button type="button" class="btn btn-light btn-sm" onclick="guardarAvanceCompetencias()">
+                                        <i class="fas fa-save mr-1"></i>Guardar Avance
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover mb-0">
+                                        <thead class="bg-light">
+                                            <tr>
+                                                <th style="width: 20%;">Competencia</th>
+                                                <th style="width: 10%;">Tipo</th>
+                                                <th style="width: 15%;">Meta</th>
+                                                <th style="width: 10%;">Comentarios</th>
+                                                <th style="width: 15%;">Comentarios Competencias</th>
+                                                <th style="width: 10%;">Avance Actual</th>
+                                                <th style="width: 10%;">Nuevo Avance</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tabla_competencias_avance">
+                                            <!-- Datos dinámicos -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            
+                            <!-- Sección de Comentarios Generales para Competencias -->
+                            {% comment %} <div class="card-footer bg-light border-top">
+                                <div class="row">
+                                    <div class="col-12">
+                                        <label class="form-label mb-2">
+                                            <i class="fas fa-comment-alt text-warning mr-1"></i>
+                                            <strong>Comentarios Generales sobre Competencias</strong>
+                                        </label>
+                                        <textarea 
+                                            class="form-control" 
+                                            id="comentarios_competencias_general" 
+                                            rows="3" 
+                                            placeholder="Escriba aquí observaciones generales sobre el desarrollo de competencias, fortalezas identificadas, áreas de mejora, planes de desarrollo profesional, etc..."
+                                            style="resize: vertical; border: 2px solid #e9ecef; border-radius: 8px;">
+                                        </textarea>
+                                        <small class="form-text text-muted mt-1">
+                                            <i class="fas fa-info-circle mr-1"></i>
+                                            Este comentario se aplicará como observación general para todas las competencias de esta evaluación.
+                                        </small>
+                                    </div>
+                                </div>
+                            </div> {% endcomment %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fas fa-times mr-1"></i>Cerrar
+                </button>
+                {% comment %} <button type="button" class="btn btn-success" onclick="guardarTodoElAvance()">
+                    <i class="fas fa-save mr-1"></i>Guardar Todo el Avance
+                </button> {% endcomment %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL PARA VER DETALLES DE AVANCE -->
+<div class="modal fade" id="Modal_Detalles_Avance" tabindex="-1" role="dialog" aria-labelledby="ModalDetallesAvanceLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="ModalDetallesAvanceLabel">
+                    <i class="fas fa-chart-line mr-2"></i>Detalles de Avance
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Resumen de avance -->
+                <div class="row mb-4">
+                    <div class="col-md-4">
+                        <div class="card bg-info text-white">
+                            <div class="card-body text-center">
+                                <h3 id="avance_objetivos_resumen">60%</h3>
+                                <p class="mb-0">Avance Objetivos</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-warning text-white">
+                            <div class="card-body text-center">
+                                <h3 id="avance_competencias_resumen">70%</h3>
+                                <p class="mb-0">Avance Competencias</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-success text-white">
+                            <div class="card-body text-center">
+                                <h3 id="avance_total_resumen">65%</h3>
+                                <p class="mb-0">Avance Total</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Gráfico de progreso (placeholder) -->
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">Progreso por Categoría</h6>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="chartAvance" width="400" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- MODAL PARA AVANCE RÁPIDO (DOBLE CLICK) -->
+<div class="modal fade" id="Modal_Avance_Rapido" tabindex="-1" role="dialog" aria-labelledby="ModalAvanceRapidoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" style="max-width: 800px;" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-gradient-primary text-white">
+                <h5 class="modal-title" id="ModalAvanceRapidoLabel">
+                    <i class="fas fa-tachometer-alt mr-2"></i>Registro Rápido de Avance
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            
+            <div class="modal-body">
+                <!-- Información del Evaluado -->
+                <div class="card mb-3">
+                    <div class="card-body p-3">
+                        <div class="row align-items-center">
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center">
+                                    <div class="modern-avatar bg-primary mr-3" style="width: 45px; height: 45px;">
+                                        <span class="initials" style="font-size: 16px;" id="avatar_rapido">JG</span>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0" id="nombre_evaluado_rapido">Juan García</h6>
+                                        <small class="text-muted" id="area_evaluado_rapido">Recursos Humanos - 2024</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 text-right">
+                                <div class="row">
+                                    <div class="col-6">
+                                        <small class="text-muted d-block">Objetivos</small>
+                                        <span class="badge badge-info" id="count_obj_rapido">5</span>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted d-block">Competencias</small>
+                                        <span class="badge badge-warning" id="count_comp_rapido">8</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botones de Selección -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <button type="button" class="btn btn-outline-info btn-block btn-lg" id="btn_objetivos_rapido" onclick="mostrarObjetivosRapido()">
+                            <i class="fas fa-bullseye mr-2"></i>
+                            <div>
+                                <strong>Objetivos</strong>
+                                <br><small>Registrar avance de objetivos</small>
+                            </div>
+                        </button>
+                    </div>
+                    <div class="col-md-6">
+                        <button type="button" class="btn btn-outline-warning btn-block btn-lg" id="btn_competencias_rapido" onclick="mostrarCompetenciasRapido()">
+                            <i class="fas fa-star mr-2"></i>
+                            <div>
+                                <strong>Competencias</strong>
+                                <br><small>Registrar avance de competencias</small>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Contenedor de Objetivos -->
+                <div id="contenedor_objetivos_rapido" style="display: none;">
+                    <div class="card">
+                        <div class="card-header bg-info text-white">
+                            <h6 class="mb-0"><i class="fas fa-bullseye mr-2"></i>Objetivos - Registro Rápido</h6>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-sm mb-0">
+                                    <thead class="bg-light">
+                                        <tr>
+                                            <th style="width: 5%;">#</th>
+                                            <th style="width: 40%;">Objetivo</th>
+                                            <th style="width: 20%;">Meta</th>
+                                            <th style="width: 15%;">Actual</th>
+                                            <th style="width: 20%;">Nuevo Avance</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tabla_objetivos_rapido">
+                                        <!-- Datos ficticios -->
+                                        <tr>
+                                            <td>1</td>
+                                            <td>
+                                                <strong>Mejorar eficiencia en procesos</strong>
+                                                <br><small class="text-muted">01/01/2024 - 31/12/2024</small>
+                                            </td>
+                                            <td><small>Reducir 30% tiempo selección</small></td>
+                                            <td>
+                                                <span class="badge badge-info">60%</span>
+                                            </td>
+                                            <td>
+                                                <div class="input-group input-group-sm">
+                                                    <input type="number" class="form-control text-center font-weight-bold avance-rapido" 
+                                                           value="60" min="0" max="100" data-objetivo-id="1" 
+                                                           style="background-color: #f8f9fa;">
+                                                    <div class="input-group-append">
+                                                        <span class="input-group-text">%</span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>2</td>
+                                            <td>
+                                                <strong>Implementar programa capacitación</strong>
+                                                <br><small class="text-muted">15/02/2024 - 30/11/2024</small>
+                                            </td>
+                                            <td><small>Capacitar 100% empleados nuevos</small></td>
+                                            <td>
+                                                <span class="badge badge-warning">45%</span>
+                                            </td>
+                                            <td>
+                                                <div class="input-group input-group-sm">
+                                                    <input type="number" class="form-control text-center font-weight-bold avance-rapido" 
+                                                           value="45" min="0" max="100" data-objetivo-id="2"
+                                                           style="background-color: #f8f9fa;">
+                                                    <div class="input-group-append">
+                                                        <span class="input-group-text">%</span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>3</td>
+                                            <td>
+                                                <strong>Automatizar procesos administrativos</strong>
+                                                <br><small class="text-muted">01/03/2024 - 31/10/2024</small>
+                                            </td>
+                                            <td><small>Automatizar 5 procesos clave</small></td>
+                                            <td>
+                                                <span class="badge badge-success">80%</span>
+                                            </td>
+                                            <td>
+                                                <div class="input-group input-group-sm">
+                                                    <input type="number" class="form-control text-center font-weight-bold avance-rapido" 
+                                                           value="80" min="0" max="100" data-objetivo-id="3"
+                                                           style="background-color: #f8f9fa;">
+                                                    <div class="input-group-append">
+                                                        <span class="input-group-text">%</span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-light text-right">
+                            <button type="button" class="btn btn-success btn-sm" onclick="guardarObjetivosRapido()">
+                                <i class="fas fa-save mr-1"></i>Guardar Objetivos
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contenedor de Competencias -->
+                <div id="contenedor_competencias_rapido" style="display: none;">
+                    <div class="card">
+                        <div class="card-header bg-warning text-white">
+                            <h6 class="mb-0"><i class="fas fa-star mr-2"></i>Competencias - Registro Rápido</h6>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-sm mb-0">
+                                    <thead class="bg-light">
+                                        <tr>
+                                            <th style="width: 5%;">#</th>
+                                            <th style="width: 30%;">Competencia</th>
+                                            <th style="width: 15%;">Tipo</th>
+                                            <th style="width: 25%;">Meta</th>
+                                            <th style="width: 10%;">Actual</th>
+                                            <th style="width: 15%;">Nuevo Avance</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tabla_competencias_rapido">
+                                        <!-- Datos ficticios -->
+                                        <tr>
+                                            <td>1</td>
+                                            <td>
+                                                <strong>Liderazgo</strong>
+                                                <br><small class="text-muted">Dirigir equipos</small>
+                                            </td>
+                                            <td><span class="badge badge-primary badge-sm">Gerencial</span></td>
+                                            <td><small>Liderar proyectos de mejora</small></td>
+                                            <td>
+                                                <span class="badge badge-warning">70%</span>
+                                            </td>
+                                            <td>
+                                                <div class="input-group input-group-sm">
+                                                    <input type="number" class="form-control text-center font-weight-bold avance-rapido" 
+                                                           value="70" min="0" max="100" data-competencia-id="1"
+                                                           style="background-color: #f8f9fa;">
+                                                    <div class="input-group-append">
+                                                        <span class="input-group-text">%</span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>2</td>
+                                            <td>
+                                                <strong>Comunicación Efectiva</strong>
+                                                <br><small class="text-muted">Comunicación clara</small>
+                                            </td>
+                                            <td><span class="badge badge-info badge-sm">Técnica</span></td>
+                                            <td><small>Mejorar comunicación interna</small></td>
+                                            <td>
+                                                <span class="badge badge-info">60%</span>
+                                            </td>
+                                            <td>
+                                                <div class="input-group input-group-sm">
+                                                    <input type="number" class="form-control text-center font-weight-bold avance-rapido" 
+                                                           value="60" min="0" max="100" data-competencia-id="2"
+                                                           style="background-color: #f8f9fa;">
+                                                    <div class="input-group-append">
+                                                        <span class="input-group-text">%</span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>3</td>
+                                            <td>
+                                                <strong>Trabajo en Equipo</strong>
+                                                <br><small class="text-muted">Colaboración efectiva</small>
+                                            </td>
+                                            <td><span class="badge badge-success badge-sm">Interpersonal</span></td>
+                                            <td><small>Fomentar colaboración</small></td>
+                                            <td>
+                                                <span class="badge badge-success">85%</span>
+                                            </td>
+                                            <td>
+                                                <div class="input-group input-group-sm">
+                                                    <input type="number" class="form-control text-center font-weight-bold avance-rapido" 
+                                                           value="85" min="0" max="100" data-competencia-id="3"
+                                                           style="background-color: #f8f9fa;">
+                                                    <div class="input-group-append">
+                                                        <span class="input-group-text">%</span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>4</td>
+                                            <td>
+                                                <strong>Resolución de Problemas</strong>
+                                                <br><small class="text-muted">Análisis y soluciones</small>
+                                            </td>
+                                            <td><span class="badge badge-secondary badge-sm">Analítica</span></td>
+                                            <td><small>Resolver problemas complejos</small></td>
+                                            <td>
+                                                <span class="badge badge-warning">55%</span>
+                                            </td>
+                                            <td>
+                                                <div class="input-group input-group-sm">
+                                                    <input type="number" class="form-control text-center font-weight-bold avance-rapido" 
+                                                           value="55" min="0" max="100" data-competencia-id="4"
+                                                           style="background-color: #f8f9fa;">
+                                                    <div class="input-group-append">
+                                                        <span class="input-group-text">%</span>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-light text-right">
+                            <button type="button" class="btn btn-success btn-sm" onclick="guardarCompetenciasRapido()">
+                                <i class="fas fa-save mr-1"></i>Guardar Competencias
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Información de ayuda -->
+                <div class="alert alert-info mt-3" id="info_ayuda">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    <strong>Instrucciones:</strong> Selecciona una opción arriba para registrar el avance de objetivos o competencias de forma rápida.
+                </div>
+            </div>
+
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fas fa-times mr-1"></i>Cerrar
+                </button>
+                <button type="button" class="btn btn-primary" onclick="guardarTodoRapido()" id="btn_guardar_todo_rapido" style="display: none;">
+                    <i class="fas fa-save mr-1"></i>Guardar Todo
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Estilos para campos de comentarios generales */
+.card-footer textarea {
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.card-footer textarea:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25), 0 4px 8px rgba(0,0,0,0.15);
+    transform: translateY(-2px);
+}
+
+.card-footer .form-label {
+    color: #495057;
+    font-weight: 600;
+}
+
+.card-footer .form-label i.text-info {
+    color: #17a2b8 !important;
+}
+
+.card-footer .form-label i.text-warning {
+    color: #ffc107 !important;
+}
+
+.card-footer .form-text {
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+.card-footer {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-top: 2px solid #dee2e6;
+}
+
+.card-footer textarea::placeholder {
+    color: #adb5bd;
+    font-style: italic;
+}
+
+/* Animación suave para el enfoque */
+@keyframes focusGlow {
+    0% { box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    100% { box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25), 0 4px 8px rgba(0,0,0,0.15); }
+}
+
+.card-footer textarea:focus {
+    animation: focusGlow 0.3s ease;
+}
+
+/* Estilos específicos para la fase intermedia */
+.progress-bar {
+    transition: width 0.3s ease;
+}
+
+.avance-input {
+    text-align: center;
+    font-weight: bold;
+}
+
+.avance-input:focus {
+    border-color: #ffc107;
+    box-shadow: 0 0 0 0.2rem rgba(255, 193, 7, 0.25);
+}
+
+.card-header.bg-gradient-warning {
+    background: linear-gradient(135deg, #ffc107 0%, #ff8f00 100%);
+}
+
+.card-header.bg-info {
+    background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+}
+
+.badge-info { background-color: #17a2b8; }
+.badge-warning { background-color: #ffc107; color: #212529; }
+.badge-success { background-color: #28a745; }
+.badge-primary { background-color: #007bff; }
+
+.modern-avatar {
+    transition: transform 0.2s ease;
+}
+
+.modern-avatar:hover {
+    transform: scale(1.1);
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.btn-xs {
+    padding: 0.15rem 0.3rem;
+    font-size: 0.75rem;
+    line-height: 1.2;
+    border-radius: 0.2rem;
+}
+
+/* Animaciones para los progress bars */
+@keyframes progressAnimation {
+    0% { width: 0%; }
+    100% { width: var(--progress-width); }
+}
+
+.progress-bar.animated {
+    animation: progressAnimation 1s ease-in-out;
+}
+
+/* Estilos para el modal de avance rápido */
+.modal-content {
+    border-radius: 15px;
+    overflow: hidden;
+}
+
+.modal-header.bg-gradient-primary {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+}
+
+.btn-outline-info:hover, .btn-outline-warning:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.btn-outline-info, .btn-outline-warning {
+    transition: all 0.3s ease;
+    border-width: 2px;
+}
+
+.btn-outline-info.active {
+    background-color: #17a2b8;
+    border-color: #17a2b8;
+    color: white;
+}
+
+.btn-outline-warning.active {
+    background-color: #ffc107;
+    border-color: #ffc107;
+    color: #212529;
+}
+
+.avance-rapido {
+    font-size: 14px;
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+}
+
+.avance-rapido:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    background-color: #fff !important;
+}
+
+.avance-rapido:valid {
+    border-color: #28a745;
+}
+
+.table-responsive {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.badge-sm {
+    font-size: 0.7rem;
+    padding: 0.2rem 0.4rem;
+}
+
+.input-group-sm .input-group-text {
+    font-size: 0.875rem;
+    padding: 0.25rem 0.5rem;
+}
+
+/* Hover effect para las filas de la tabla principal */
+tbody tr[data-evaluacion-id] {
+    transition: background-color 0.2s ease;
+}
+
+tbody tr[data-evaluacion-id]:hover {
+    background-color: #f8f9fa !important;
+}
+
+/* Indicador visual de que la fila es clickeable */
+tbody tr[data-evaluacion-id]:hover td {
+    background-color: rgba(0, 123, 255, 0.05);
+}
+
+/* Animación para mostrar/ocultar contenedores */
+#contenedor_objetivos_rapido, #contenedor_competencias_rapido {
+    animation: fadeInDown 0.3s ease-in-out;
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Tooltip personalizado para double click */
+tbody tr[data-evaluacion-id]::after {
+    content: "Doble clic para registro rápido";
+    position: absolute;
+    background: rgba(0,0,0,0.8);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    z-index: 1000;
+}
+
+tbody tr[data-evaluacion-id]:hover::after {
+    opacity: 1;
+}
+</style>
+
+

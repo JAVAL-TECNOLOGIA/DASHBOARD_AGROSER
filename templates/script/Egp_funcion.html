@@ -1,0 +1,20 @@
+{% include 'base/header.html' %}
+{% block page %} 
+    Inicio 
+{% endblock %}
+{% include 'base/sidebar.html' %}
+
+    	<!-- begin #content -->
+        <div id="content" class="content" style="max-width: 100%; height: 560px;">
+            <iframe title="ESTADO DE GANACIA Y PERDIDAS" width="100%" height="100%" src="https://app.powerbi.com/reportEmbed?reportId=3241b57a-876d-4aa3-a52f-80cd3c82d2ba&autoAuth=true&ctid=7f2241f8-304a-4250-8954-7ef59d97b7c6" frameborder="0" allowFullScreen="true"></iframe>
+        </div>
+		<!-- end #content -->
+
+{% include 'base/footer.html' %}
+{% block js %}
+    <script>
+        $(document).ready(function(){    
+            App.init();
+        });
+    </script>
+{% endblock %}

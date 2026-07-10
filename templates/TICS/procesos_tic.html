@@ -1,0 +1,274 @@
+{% include 'base/header.html' %}
+{% block page %} 
+    Inicio  
+{% endblock %}
+{% include 'base/sidebar.html' %}
+
+<!-- begin #content -->
+<div id="content" class="content">
+
+    <!-- Subir PDF Section -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-black text-white">
+            <h5 class="mb-0 text-white">
+                <i class="fas fa-file-upload mr-2"></i>
+                Subir Proceso PDF
+            </h5>
+        </div>
+
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data" class="p-3">
+                {% csrf_token %}
+                <div class="form-group">
+                    <div class="custom-file-container p-4 text-center bg-light rounded border" style="border: 2px dashed #ccc !important;">
+                        <label for="pdf_file" class="custom-file-upload btn btn-outline-primary btn-lg mb-3">
+                            <i class="fas fa-cloud-upload-alt fa-2x mb-2"></i><br>
+                            Seleccionar archivo PDF
+                        </label>
+                        <input type="file" name="file" id="pdf_file" class="form-control d-none" accept=".pdf" onchange="updateFileName(this)">
+                        <p id="fileName" class="text-primary font-weight-bold mt-2"></p>
+                        <p class="text-muted mt-2">Arrastre y suelte aquí o haga clic para seleccionar</p>
+                    </div>
+                </div>
+                <div class="text-center mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg px-5 shadow-sm hover-effect">
+                        <i class="fas fa-upload mr-2"></i>
+                        Subir archivo
+                    </button>
+                </div>
+            </form>
+
+            <script>
+                function updateFileName(input) {
+                    const fileName = input.files[0]?.name;
+                    document.getElementById('fileName').textContent = fileName || '';
+                }
+
+                // Agregar soporte para drag and drop
+                const dropZone = document.querySelector('.custom-file-container');
+                
+                dropZone.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    dropZone.style.backgroundColor = '#e9ecef';
+                });
+
+                dropZone.addEventListener('dragleave', (e) => {
+                    e.preventDefault();
+                    dropZone.style.backgroundColor = '#f8f9fa';
+                });
+
+                dropZone.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    dropZone.style.backgroundColor = '#f8f9fa';
+                    const file = e.dataTransfer.files[0];
+                    if(file.type === 'application/pdf') {
+                        document.getElementById('pdf_file').files = e.dataTransfer.files;
+                        document.getElementById('fileName').textContent = file.name;
+                    }
+                });
+            </script>
+
+            <style>
+                .hover-effect:hover {
+                    transform: translateY(-2px);
+                    transition: all 0.3s ease;
+                }
+                .custom-file-container {
+                    transition: background-color 0.3s ease;
+                }
+            </style>
+        </div>
+    </div>
+
+
+        
+
+    <!-- Mostrar mensajes -->
+    <!-- {% if messages %}
+        <div id="message-container" class="alert alert-success mt-3">
+            {% for message in messages %}
+                {{ message }}
+            {% endfor %}
+        </div>
+    {% endif %}  -->
+<!-- 
+    {% if messages %}
+        <div id="message-container" class="alert alert-success mt-4 p-4 fs-5 shadow rounded text-center w-75 mx-auto">
+            {% for message in messages %}
+            {{ message }}
+            {% endfor %}
+        </div>
+    {% endif %} -->
+
+    <head>
+            <style>
+            .alert-box {
+                padding: 24px 16px;
+                margin: 10px auto;
+                width: 90%;
+                border-radius: 6px;
+                font-size: 1.1rem;
+                font-weight: 500;
+                text-align: center;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                position: relative;
+            }
+
+            .alert-box strong {
+                margin-right: 8px;
+            }
+
+            .alert-box.success {
+                background-color: #d4edda;
+                color: #155724;
+                border-left: 6px solid #28a745;
+            }
+
+            .alert-box.warning {
+                background-color: #fff3cd;
+                color: #856404;
+                border-left: 6px solid #ffc107;
+            }
+
+            .alert-box.error {
+                background-color: #f8d7da;
+                color: #721c24;
+                border-left: 6px solid #dc3545;
+            }
+
+            .alert-box.info {
+                background-color: #d1ecf1;
+                color: #0c5460;
+                border-left: 6px solid #17a2b8;
+            }
+        </style>
+    </head>
+    <body>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div id="message-container" class="alert-box {{ message.tags }} mt-4 p-4 fs-5 shadow rounded text-center w-75 mx-auto">
+                <strong>{{ message.tags|upper }}!</strong> {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
+    </body>
+
+    <!-- Archivos PDF Subidos Section -->
+    {% if perms.RRHH.RRHH_DL_EVALUACION_DESEMPENO %}
+    <div class="card">
+        <div class="card-header" ">
+            <h5>ARCHIVOS PDF SUBIDOS</h5>
+        </div>
+        <div class="card-body">
+
+
+            <table id="pdfTable" class="table table-striped table-bordered">
+                
+                
+                <thead>
+                    <tr>
+                        <th>Nombre del archivo</th>
+                        <th style="width: 10rem;" >Acciones</th>
+                    </tr>
+                </thead>
+
+                
+                <tbody>
+                    {% for pdf in pdf_files %}
+                        <tr>
+                            <td>{{ pdf.file.name }}</td>
+                            <td class="text-nowrap">
+                                <div class="d-flex flex-column flex-md-row">
+                                    <button class="btn btn-info mb-2 mb-md-0 mr-md-2 view-pdf" data-url="{{ pdf.file.url }}" data-toggle="modal" data-target="#pdfModal">
+                                        <i class="fas fa-eye"></i> Ver
+                                    </button>
+                                    <a href="{{pdf.file.url }}" class="btn btn-secondary  mb-2 mb-md-0 mr-md-2 " download>
+                                        <i class="fas fa-file-download"></i> Descargar
+                                    </a>
+
+                                    <form method="post" action="{% url 'eliminar_pdf_tic' pdf.id %}" class="d-inline">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-danger  mb-2 mb-md-0 mr-md-2 ">
+                                            <i class="fas fa-trash-alt"></i> Eliminar
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="2">No hay archivos subidos aún.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+
+    
+</div>
+<!-- end #content -->
+
+<!-- Modal -->
+<div class="modal fade" id="pdfModal" tabindex="-1" role="dialog" aria-labelledby="pdfModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="pdfModalLabel">Visualizar PDF</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <iframe id="pdfViewer" src="" width="100%" height="500px"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% include 'base/footer.html' %}
+{% block js %}
+    <!-- Incluir DataTables CSS y JS -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.css">
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.js"></script>
+
+    <script>
+        $(document).ready(function(){    
+            App.init();
+            // Ocultar el mensaje después de 5 segundos
+            setTimeout(function() {
+                $('#message-container').fadeOut('slow');
+            }, 5000);
+
+            // Inicializar DataTables
+            $('#pdfTable').DataTable({
+                "order": [[0, "desc"]],
+                "language": {
+                    url: '//cdn.datatables.net/plug-ins/2.1.6/i18n/es-ES.json',
+                }
+            });
+
+            // Cargar el PDF en el modal
+            $('.view-pdf').on('click', function() {
+                var pdfUrl = $(this).data('url');
+                $('#pdfViewer').attr('src', pdfUrl);
+            });
+
+            // Limpiar el iframe cuando se cierra el modal
+            $('#pdfModal').on('hidden.bs.modal', function () {
+                $('#pdfViewer').attr('src', '');
+            });
+
+            // Filtrar la lista de archivos PDF
+            $('#searchInput').on('keyup', function() {
+                var value = $(this).val().toLowerCase();
+                $('#pdfList li').filter(function() {
+                    $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+                });
+            });
+        });
+    </script>
+{% endblock %}

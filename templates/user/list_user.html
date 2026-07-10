@@ -1,0 +1,221 @@
+{% load static %}
+{% include 'base/header.html' %}
+{% include 'base/sidebar.html' %}
+{% block css %}
+   <!-- ================== BEGIN PAGE LEVEL STYLE ================== -->
+    <link href="{% static 'assets/plugins/DataTables/media/css/dataTables.bootstrap.min.css' %}" rel="stylesheet" />
+    <link href="{% static 'assets/plugins/DataTables/extensions/Responsive/css/responsive.bootstrap.min.css' %}" rel="stylesheet" />
+    <link href="{% static 'assets/plugins/bootstrap-datepicker/css/bootstrap-datepicker.css' %}" rel="stylesheet" />
+    <link href="{% static 'assets/plugins/bootstrap-datepicker/css/bootstrap-datepicker3.css' %}" rel="stylesheet" />
+    <!-- ================== END PAGE LEVEL STYLE ================== -->
+    <link href="{% static 'assets/plugins/gritter/css/jquery.gritter.css' %}" rel="stylesheet" />
+    <script src="{% static 'assets/plugins/pace/pace.min.js' %}"></script>
+    <!-- ================== END BASE JS ================== -->
+{% endblock %}
+    <!-- begin #content -->
+    <div id="content" class="content">
+       <!-- begin panel -->
+        <div class="panel panel-inverse">
+            <div class="panel-heading">
+                <h3 class="panel-title">Listado de usuarios</h3>
+            </div>
+            <!-- begin panel-body -->
+            <div class="panel-body"><br>
+                <div class="row">
+                    <div class="col-md-2">
+                        <button onclick="modal_create_user('{% url 'create_user' %}')" class="btn btn-success" style="color:white;"><i class="fa fa-user-plus"></i> Agregar usuario</button>
+                    </div>
+                </div>
+                <br>
+                <div class="table-responsive">
+                    <table class="table table-hover m-b-0 text-inverse" id="tableListUser" >
+                        <thead>
+                            <tr>
+                                <th>Apellidos</th>
+                                <th>Nombres</th>
+                                <th>Correo</th>
+                                <th>Usuario</th>
+                                <th>Estado</th>
+                                <th>Opciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <!-- end panel-body -->
+        </div>
+        <!-- end panel -->
+    </div>
+    <!-- end #content -->   
+    <!-- #modal-dialog -->
+    <div class="modal fade" id="modalCreateUser">
+    </div> 
+    <div class="modal fade" id="modalUpdateUser">
+    </div>
+    <div class="modal fade" id="modalDisableUser">
+    </div> 
+{% include 'base/footer.html' %}
+{% block js %}
+	<!-- ================== END BASE JS ================== -->
+    <script src="{% static 'assets/plugins/bootstrap-datepicker/js/bootstrap-datepicker.js' %}"></script>
+    <script src="{% static 'assets/plugins/DataTables/media/js/jquery.dataTables.js' %}"></script>
+	<script src="{% static 'assets/plugins/DataTables/media/js/dataTables.bootstrap.min.js' %}"></script>
+    <script src="{% static 'assets/plugins/DataTables/extensions/Responsive/js/dataTables.responsive.min.js' %}"></script>
+	<script src="{% static 'assets/js/demo/table-manage-default.demo.js' %}"></script>
+    <script src="{% static 'assets/js/demo/form-plugins.demo.js' %}"></script>
+    <script src="{% static 'assets/plugins/masked-input/masked-input.min.js' %}"></script>
+	<script src="{% static 'assets/plugins/ionRangeSlider/js/ion-rangeSlider/ion.rangeSlider.min.js' %}"></script>
+	<!-- ================== BEGIN PAGE LEVEL JS ================== -->
+	<script src="{% static 'assets/plugins/gritter/js/jquery.gritter.js' %}"></script>
+	<script src="{% static 'assets/plugins/bootstrap-sweetalert/sweetalert.min.js' %}"></script>
+	<script src="{% static 'assets/js/demo/ui-modal-notification.demo.min.js' %}"></script>
+    
+    <script src="{% static 'core/js/script/user.js' %}"></script>
+    <script>
+        $(document).ready(function(){    
+            App.init();
+            TableManageDefault.init();
+        });
+
+        function modal_create_user(url){
+            $("#modalCreateUser").load(url, function(){
+                $(this).modal('show');
+            });
+        }
+        
+        function modal_update_user(url){
+            $("#modalUpdateUser").load(url, function(){
+                $(this).modal('show');
+            });
+        }
+        
+        function modal_disable_user(url){
+            $("#modalDisableUser").load(url, function(){
+                $(this).modal('show');
+            });
+        }
+
+        function saveCreateUser(){
+            if ($.fn.DataTable.isDataTable("#tableListUser")) {
+                $("#tableListUser").DataTable().destroy();
+            }
+            $("#tableListUser tbody").html("");
+            $.ajax({
+                data : $("#formCreateUser").serialize(),
+                url : $("#formCreateUser").attr('action'),
+                type : $("#formCreateUser").attr('method'),
+                success : function(response){
+                    console.log(response);
+                    $("#modalCreateUser").modal('hide');
+                     swal({
+                        title: 'Usuario registrado!',
+                        icon: 'success',
+                        buttons: {
+                            cancel: {
+                                text: 'Aceptar',
+                                value: null,
+                                visible: true,
+                                className: 'btn btn-success',
+                                closeModal: true,
+                            }
+                        }
+                    });
+                },
+                error : function(error){
+                    showerrorsCreate(error);
+                }
+            });
+            returnListUser();
+        }
+
+        function saveUpdateUser(){
+            if ($.fn.DataTable.isDataTable("#tableListUser")) {
+                $("#tableListUser").DataTable().destroy();
+            }
+            $("#tableListUser tbody").html("");
+            $.ajax({
+                data : $("#formUpdateUser").serialize(),
+                url : $("#formUpdateUser").attr('action'),
+                type : $("#formUpdateUser").attr('method'),
+                success : function(response){
+                    console.log($("#formUpdateUser").serialize());
+                    console.log(response);
+                    $("#modalUpdateUser").modal('hide');
+                     swal({
+                        title: 'Usuario actualizado!',
+                        icon: 'success',
+                        buttons: {
+                            cancel: {
+                                text: 'Aceptar',
+                                value: null,
+                                visible: true,
+                                className: 'btn btn-success',
+                                closeModal: true,
+                            }
+                        }
+                    });
+                },
+                error : function(error){
+                    showerrorsUpdate(error);
+                }
+            });
+            returnListUser();
+        }
+
+        function saveDisableUser(){
+            if ($.fn.DataTable.isDataTable("#tableListUser")) {
+                $("#tableListUser").DataTable().destroy();
+            }
+            $("#tableListUser tbody").html("");
+            $.ajax({
+                data : $("#formDisableUser").serialize(),
+                url : $("#formDisableUser").attr('action'),
+                type : $("#formDisableUser").attr('method'),
+                success : function(response){
+                    console.log(response);
+                    $("#modalDisableUser").modal('hide');
+                     swal({
+                        title: 'Usuario deshabilitado!',
+                        icon: 'success',
+                        buttons: {
+                            cancel: {
+                                text: 'Aceptar',
+                                value: null,
+                                visible: true,
+                                className: 'btn btn-success',
+                                closeModal: true,
+                            }
+                        }
+                    });
+                },
+                error : function(error){
+                    showerrorsUpdate(error);
+                }
+            });
+            returnListUser();
+        }
+
+        
+
+
+        function showerrorsCreate(errors){
+            $("#errorsCreate").html("");
+            let error = "";
+            for (let item in errors.responseJSON.error){
+                error += '<div class="alert alert-danger"><strong>' +errors.responseJSON.error[item]+'</strong></div>';
+            }
+            $("#errorsCreate").append(error);
+        }
+
+        function showerrorsUpdate(errors){
+            $("#errorsUpdate").html("");
+            let error = "";
+            for (let item in errors.responseJSON.error){
+                error += '<div class="alert alert-danger"><strong>' +errors.responseJSON.error[item]+'</strong></div>';
+            }
+            $("#errorsUpdate").append(error);
+        }
+    </script>
+{% endblock %}

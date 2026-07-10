@@ -1,0 +1,319 @@
+
+
+
+{% load static %}
+{% include 'base/header.html' %}
+{% block page %} 
+    Plan de Cuentas 
+{% endblock %}
+{% include 'base/sidebar.html' %}
+
+<!-- begin #content -->
+<div id="content" class="content">
+    
+    <!-- begin breadcrumb -->
+    <ol class="breadcrumb pull-right">
+        <li class="breadcrumb-item"><a href="javascript:;">Inicio</a></li>
+        <li class="breadcrumb-item"><a href="javascript:;">Contabilidad</a></li>
+        <li class="breadcrumb-item active">Plan de Cuentas</li>
+    </ol>
+    <!-- end breadcrumb -->
+    
+    <!-- begin page-header -->
+    <h1 class="page-header">Plan de Cuentas <small>Reporte detallado del plan contable</small></h1>
+    <!-- end page-header -->
+    
+    <!-- begin panel -->
+
+
+
+    {% comment %} <div class="panel panel-inverse">
+        <div class="panel-heading">
+            <div class="panel-heading-btn">
+                <a href="javascript:;" class="btn btn-xs btn-icon btn-circle btn-default" data-click="panel-expand"><i class="fa fa-expand"></i></a>
+                <a href="javascript:;" class="btn btn-xs btn-icon btn-circle btn-success" data-click="panel-reload"><i class="fa fa-redo"></i></a>
+                <a href="javascript:;" class="btn btn-xs btn-icon btn-circle btn-warning" data-click="panel-collapse"><i class="fa fa-minus"></i></a>
+            </div>
+            <h4 class="panel-title">Filtros de Búsqueda</h4>
+        </div>
+
+
+        <div class="panel-body">
+
+
+
+            <form id="filtrosForm" class="form-horizontal">
+                {% csrf_token %}
+                <div class="row">
+                    <!-- Filtros principales -->
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label class="control-label">Empresa</label>
+                            <select class="form-control" id="filtro_empresa" name="empresa">
+                                <option value="">Todas las empresas</option>
+                                <option value="001" selected>Empresa 001</option>
+                                <option value="002">Empresa 002</option>
+                                <option value="003">Empresa 003</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label class="control-label">Código de Cuenta</label>
+                            <input type="text" class="form-control" id="filtro_cuenta" name="cuenta" placeholder="Ej: 101001000001">
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label class="control-label">Descripción</label>
+                            <input type="text" class="form-control" id="filtro_descripcion" name="descripcion" placeholder="Buscar por descripción">
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-3">
+                        <div class="form-group">
+                            <label class="control-label">Tipo de Cuenta</label>
+                            <select class="form-control" id="filtro_tipo_cuenta" name="tipo_cuenta">
+                                <option value="">Todos los tipos</option>
+                                <option value="A">Activo</option>
+                                <option value="P">Pasivo</option>
+                                <option value="R">Patrimonio</option>
+                                <option value="I">Ingresos</option>
+                                <option value="G">Gastos</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                 <!-- Botones de acción -->
+                <div class="row">
+                    <div class="col-md-12">
+                        <div class="form-group text-center">
+                            <button type="button" class="btn btn-primary" id="btn_buscar">
+                                <i class="fa fa-search"></i> Buscar
+                            </button>
+                            <button type="button" class="btn btn-default" id="btn_limpiar">
+                                <i class="fa fa-eraser"></i> Limpiar Filtros
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+
+
+        </div>
+
+
+
+    </div> {% endcomment %}
+
+
+    <!-- end panel -->
+    
+    <!-- begin panel para resultados -->
+    <div class="panel panel-inverse">
+        <div class="panel-heading">
+            <div class="panel-heading-btn">
+                <a href="javascript:;" class="btn btn-xs btn-icon btn-circle btn-default" data-click="panel-expand"><i class="fa fa-expand"></i></a>
+                <a href="javascript:;" class="btn btn-xs btn-icon btn-circle btn-success" data-click="panel-reload" onclick="recargarDatos()"><i class="fa fa-redo"></i></a>
+                <a href="javascript:;" class="btn btn-xs btn-icon btn-circle btn-warning" data-click="panel-collapse"><i class="fa fa-minus"></i></a>
+            </div>
+            <h4 class="panel-title">
+                Resultados del Plan de Cuentas 
+                <span id="contador_registros" class="badge badge-primary" style="margin-left: 10px;">0 registros</span>
+                <small id="filtro_actual" class="text-muted" style="margin-left: 10px;"></small>
+            </h4>
+        </div>
+        <div class="panel-body">
+            <div id="loading_indicator" class="text-center" style="display: none; padding: 20px;">
+                <i class="fa fa-spinner fa-spin fa-2x"></i>
+                <p>Cargando datos...</p>
+            </div>
+            
+            <div id="error_message" class="alert alert-danger" style="display: none;" role="alert">
+                <i class="fa fa-exclamation-triangle"></i>
+                <span id="error_text"></span>
+            </div>
+            
+            <div class="table-responsive">
+                <table id="tabla_plan_cuentas" class="table table-striped table-bordered nowrap" width="100%">
+                    <thead>
+                        <tr>
+                            <th>Empresa</th>
+                            <th>Cuenta</th>
+                            <th>Descripción</th>
+                            <th>Estructura</th>
+                            <th>Tipo Cuenta</th>
+                            <th>Naturaleza</th>
+                            <th>Estado</th>
+                            <th>Moneda</th>
+                            <th>Es Cta. Cte.</th>
+                            <th>Es Monetaria</th>
+                            <th>Es Título</th>
+                            <th>Cta. Abono 1</th>
+                            <th>Cta. Abono 2</th>
+                            <th>Cta. Cargo 1</th>
+                            <th>Cta. Cargo 2</th>
+                            <th>Cta. Ganancia</th>
+                            <th>Cta. Pérdida</th>
+                            <th>Pide C. Costo</th>
+                            <th>Pide Código</th>
+                            <th>Ajusta por TC</th>
+                            <th>Tipo Ajuste</th>
+                            <th>Tipo Cambio</th>
+                            <th>Sincroniza</th>
+                            <th>Fecha Creación</th>
+                            <th>Es Ingreso</th>
+                            <th>Código SAP</th>
+                            <th>Inciso</th>
+                            <th>Es Costo</th>
+                            <th>Cta. Equivalente</th>
+                            <th>Desc. Equivalente</th>
+                            <th>Pide DM</th>
+                            <th>Cta. SUNAT</th>
+                            <th>Clase Gasto</th>
+                            <th>Periodo Gasto</th>
+                            <th>Clie/Prov</th>
+                            <th>Cta. Migración</th>
+                            <th>Pide Lote Ref.</th>
+                            <th>Distribuir</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- end #content -->
+
+
+
+
+{% include 'base/footer.html' %}
+
+{% block js %}
+
+<script src="https://cdn.datatables.net/2.3.2/js/dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/3.2.0/js/dataTables.buttons.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+<script src="https://cdn.datatables.net/buttons/3.2.0/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/fixedcolumns/5.1.0/js/dataTables.fixedColumns.min.js"></script>
+<script src="{% static 'core/js/CONTABILIDAD/DonLuis/contabilidad_plan_cuentas.js' %}"></script>
+
+<link rel="stylesheet" href="https://cdn.datatables.net/2.3.2/css/dataTables.dataTables.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/buttons/3.2.0/css/buttons.dataTables.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/fixedcolumns/5.1.0/css/fixedColumns.dataTables.min.css">
+
+<script>
+    App.init();
+
+
+    
+</script>
+
+
+<style>
+    .panel-body {
+        padding: 20px;
+    }
+    
+    .form-group {
+        margin-bottom: 15px;
+    }
+    
+    .table-responsive {
+        margin-top: 20px;
+        overflow-x: auto;
+    }
+    
+    .badge {
+        font-size: 11px;
+        padding: 4px 8px;
+    }
+    
+    #tabla_plan_cuentas {
+        font-size: 12px;
+        white-space: nowrap;
+    }
+    
+    #tabla_plan_cuentas th {
+        background-color: #f8f9fa;
+        font-weight: bold;
+        text-align: center;
+        vertical-align: middle;
+        border: 1px solid #dee2e6;
+        padding: 8px 6px;
+        font-size: 11px;
+    }
+    
+    #tabla_plan_cuentas td {
+        padding: 6px 4px;
+        vertical-align: middle;
+        border: 1px solid #dee2e6;
+        font-size: 11px;
+    }
+    
+    code {
+        background-color: #f5f5f5;
+        color: #333;
+        padding: 2px 4px;
+        border-radius: 3px;
+        font-family: 'Courier New', monospace;
+        font-size: 11px;
+        font-weight: bold;
+    }
+    
+    #loading_indicator {
+        color: #666;
+        font-size: 14px;
+    }
+    
+    .dt-buttons {
+        margin-bottom: 15px;
+    }
+    
+    .dt-button {
+        margin-right: 5px;
+    }
+    
+    /* Estilo para las columnas fijas */
+    .dtfc-fixed-left {
+        background-color: #ffffff;
+        border-right: 2px solid #dee2e6;
+    }
+    
+    .text-success {
+        color: #28a745 !important;
+    }
+    
+    .text-danger {
+        color: #dc3545 !important;
+    }
+    
+    .badge-success {
+        background-color: #28a745;
+    }
+    
+    .badge-danger {
+        background-color: #dc3545;
+    }
+    
+    .badge-info {
+        background-color: #17a2b8;
+    }
+    
+    .badge-primary {
+        background-color: #007bff;
+    }
+</style>
+{% endblock %}
+
+
+
+

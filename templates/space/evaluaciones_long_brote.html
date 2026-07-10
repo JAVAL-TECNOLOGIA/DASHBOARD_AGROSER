@@ -1,0 +1,21 @@
+{% include 'base/header.html' %}
+{% block page %} 
+    Inicio 
+{% endblock %}
+{% include 'base/sidebar.html' %}
+
+    	<!-- begin #content -->
+		<div id="content" class="content">
+            
+            <iframe width="100%" height="600px" src="https://app.powerbi.com/view?r=eyJrIjoiOTg4MTEyMWYtZTc1YS00NDVhLTk1YmUtYjQ3OTlhM2JjYjM3IiwidCI6ImJkYzZmNzJkLWJmMzQtNDE4Zi04ZTUyLTUyMmIzN2UzZTljMyJ9&rm=embeddedembedded" frameborder="0" allowFullScreen="true"></iframe>
+        </div>
+		<!-- end #content -->
+
+{% include 'base/footer.html' %}
+{% block js %}
+    <script>
+        $(document).ready(function(){    
+            App.init();
+        });
+    </script>
+{% endblock %}

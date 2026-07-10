@@ -1,0 +1,73 @@
+{% load static %}
+{% include 'base/header.html' %}
+{% block css %}
+    <link href="{% static 'assets/plugins/DataTables/media/css/dataTables.bootstrap.min.css' %}" rel="stylesheet" />
+    <link href="{% static 'assets/plugins/DataTables/extensions/Buttons/css/buttons.bootstrap.min.css' %}" rel="stylesheet" />
+    <link href="{% static 'core/css/oc_orden_compra_log.css' %}" rel="stylesheet"/>
+    {% endblock %}
+{% include 'base/sidebar.html' %}
+<!-- begin #content -->
+<div id="content" class="content">
+    <!-- begin panel -->
+    <div class="panel panel-inverse">
+        <div class="panel-heading">
+            <div class="panel-heading-btn">
+                <a href="javascript:;" class="btn btn-xs btn-icon btn-circle btn-default" data-click="panel-expand"><i class="fa fa-expand"></i></a>
+            </div>
+            <h4 class="panel-title">REPORTE DE FACTURAS  NOTAS DE CRÉDITO</h4>
+        </div>
+        <!-- begin panel-body -->
+        <div class="panel-body">
+            <div class="table-responsive">          
+                <table class="table m-b-0 table-striped" id="tableFacturaPrueba">
+                    <thead>
+                        <tr>
+                            <th>item</th>
+                            <th>idcobrarpagardoc</th>
+                            <th>Sucursal</th>
+                            <th>Moneda</th>
+                            <th>RAZON_SOCIAL</th>
+                            <th>producto</th>
+                            <th>idlote</th>
+                            <th>fecha_factura</th>
+                            <th>serie_fact</th>
+                            <th>numero_fact</th>
+                            <th>importe_factura</th>
+                            <th>cantidad_fact</th>
+                            <th>tcambio_factura</th>
+                            <th>fecha_nota</th>
+                            <th>iddocumento</th>
+                            <th>serie_nota</th>
+                            <th>numero_nota</th>
+                            <th>importe_nota</th>
+                            <th>tcambio_nota</th>
+                            <th>Tipo de Venta</th>
+                            <th>Motivo_Nota</th>
+
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <!-- end panel-body -->
+    </div>
+    <!-- end panel -->
+</div>
+<!-- end #content -->
+{% include 'base/footer.html' %}
+{% block js %}
+    <script
+        type="text/javascript"
+        src="https://cdn.datatables.net/v/bs4/jszip-2.5.0/dt-1.10.21/b-1.6.2/b-html5-1.6.2/datatables.min.js">
+    </script>
+    <script src="{% static 'assets/js/buttons.html5.styles.min.js' %}"></script>
+    <script src="{% static 'assets/js/buttons.html5.styles.templates.min.js' %}"></script>
+    <script src="{% static 'core/js/script/script_reporte_factura_prueba.js.js' %}"></script>
+    <script>
+        $(document).ready(function(){    
+            App.init();            
+        });
+    </script>
+{% endblock %}

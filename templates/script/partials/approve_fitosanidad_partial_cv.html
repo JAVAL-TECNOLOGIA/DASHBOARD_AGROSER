@@ -1,0 +1,307 @@
+{% if perms.script.MODULO_APROBACIONES_CV_FITOSANIDAD %}
+<div class="fitosanidad_cv-embed">
+    <!-- begin #content -->
+    <div id="content_fitosanidad_cv">
+        <!-- Botón de volver al dashboard -->
+       <!-- <div class="mb-3">
+            <a href="{% url 'aprobaciones_donluis' %}" class="btn btn-warning btn-sm">
+                <i class="fa fa-arrow-left"></i> Volver al Dashboard de Aprobaciones
+            </a>
+        </div>-->
+
+     	<!-- begin #content -->
+		<div id="content" class="container-fluid px-0">
+
+        	<!-- begin panel -->
+			<div class="panel panel-inverse">
+				<!-- begin panel-heading -->
+				<div class="panel-heading">
+					<div class="panel-heading-btn">
+						<a href="javascript:;" class="btn btn-xs btn-icon btn-circle btn-default" data-click="panel-expand"><i class="fa fa-expand"></i></a>
+					</div>
+					<h4 class="panel-title">Aprobación de Fitosanidad Campo Verde</h4>
+				</div>
+				<!-- begin panel-body -->
+				<div class="panel-body">
+						<!-- begin table-responsive -->
+					<div class="row">
+						<div class="col-md-6">
+							<label class="">Seleccionar área</label>
+							<div class="form-group m-b-10">
+								<select class="form-control" id="CVselectApproveArea">
+								</select>
+							</div>
+						</div>
+						<div class="col-md-2">
+							<label class="invisible">.</label>
+							<input type="button" id="CVbtnApproveShow" class="btn btn-success form-control"  value="Mostrar" />
+						</div>
+						<div class="col-md-2">
+							<label class="invisible">.</label>
+							<button type="button" id="CVbtnAprobacionMasiva" class="btn btn-primary form-control" disabled>
+								Aprobar Masivo
+							</button>
+						</div>
+					</div>
+					
+					<!-- Panel de información de selección -->
+					<div class="row mb-3" id="panelSeleccion" style="display: none;">
+						<div class="col-md-12">
+							<div class="alert alert-info mb-0 d-flex flex-wrap align-items-center justify-content-between">
+								<div>
+									<i class="fa fa-info-circle mr-2"></i>
+									<strong id="CVcontadorSeleccion">0 registros seleccionados</strong>
+									<span id="CVestadoSeleccionInfo" class="ml-2"></span>
+								</div>
+								<div class="d-flex flex-column flex-md-row">
+									<button type="button" id="CVbtnSeleccionarTodos" class="btn btn-sm btn-outline-info mr-md-2 mb-2 mb-md-0">
+										<i class="fa fa-check-square-o mr-1"></i> Seleccionar Todos
+									</button>
+									<button type="button" id="CVbtnDeseleccionarTodos" class="btn btn-sm btn-outline-secondary">
+										<i class="fa fa-square-o mr-1"></i> Deseleccionar Todos
+									</button>
+								</div>
+							</div>
+						</div>
+					</div>
+					
+					<br>
+					<div class="table-responsive">
+						<table class="table table-bordered text-left" id="CVtableApproveOrders">
+							<thead>
+								<tr>
+									<th>Item</th>
+									<th>Fecha</th>
+									<th>Fecha Apl.</th>
+									<th>Material</th>
+									<th>Glosa</th>
+									<th>Centro Costo</th>
+									<th>Área</th>
+									<th width="50px" class="text-center">
+										<div class="form-check">
+											<input type="checkbox" class="form-check-input" id="CVcheckboxSelectAll">
+											<label class="form-check-label" for="CVcheckboxSelectAll"></label>
+										</div>
+									</th>
+								</tr>
+							</thead>
+							<tbody>
+							</tbody>
+						</table>
+					</div>
+				</div>
+				<!-- end panel-body -->
+			</div>
+			<!-- end panel -->
+		</div>
+		<!-- end #content -->
+	<!-- #modal-dialog -->
+		<div class="modal fade" id="CVmodalApproveOrders">
+			<div class="modal-dialog modal-dialog-centered modal-lg">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h4 class="modal-title">Detalle Aprobacion Fitosanidad Campo Verde</h4>
+						<button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+					</div>
+					<div class="modal-body">
+						<div class="row">
+							<div class="col-8">
+							<div class="float-left">
+                                <!-- Área y Responsable en la misma línea -->
+									<div class="d-flex mb-4">
+										<div class="mr-4">
+											<div class="d-flex align-items-center">
+												<div class="bg-light rounded-circle p-2 mr-2">
+													<i class="fa fa-building text-primary"></i>
+												</div>
+												<div>
+													<small class="text-muted d-block" style="font-size: .8rem; font-weight: bold;">Área</small>
+													<b id="CVlblArea" class="h6 mb-0">-</b>
+												</div>
+											</div>
+										</div>
+										
+										<div>
+											<div class="d-flex align-items-center">
+												<div class="bg-light rounded-circle p-2 mr-2">
+													<i class="fa fa-user text-primary"></i>
+												</div>
+												<div>
+													<small class="text-muted d-block" style="font-size: .8rem; font-weight: bold;">Pedido por</small>
+													<b id="CVlblResponsable" class="h6 mb-0">-</b>
+												</div>
+											</div>
+										</div>
+									</div>
+								
+								
+							<!--<p>Proveedor : <b id="lblProveedor"></b> &nbsp; &nbsp; RUC : <b id="lblRuc"></b><br><br>Condición:  <b id="lblCondicion"></b><br><br>Responsable :  <b id="CVlblResponsable"></b></p>-->
+                            </div>
+							</div>
+							<div class="col-4">
+								<div class="float-right">
+									<button id='CVbtn-aprobar' class="btn btn-sm btn-success " ><i class="fa fa-check-circle"></i> &nbsp; APROBAR</button>
+								<!--	<button  id='CVbtn-vb' class="btn btn-sm btn-info "><i class="fa fa-info-circle"></i> &nbsp; VB</button>-->
+									<!--<button   id='btn-anular'class="btn btn-sm btn-danger "><i class="fa fa-times-circle"></i> &nbsp; AN</button>-->
+								</div>
+							</div>
+						</div>
+						<!-- begin table-responsive -->
+						<div class="table-responsive">
+							<table class="table table-bordered text-left" id="CVtableApproveOrdersLogDetail">
+								<thead>
+									<tr>
+										<th>FECHA</th>
+										<th>LOTE</th>
+										<th>ID PRODUCTO</th>
+										<th>DESCRIPCIÓN PRODUCTO</th>
+										<th>MEDIDA</th>
+										<th>CANTIDAD</th>
+									</tr>
+								</thead>
+								<tbody id="CVtableBodyApproveOrdersLogDetail">
+								</tbody>
+								<tfoot>
+									<tr>
+										<th></th>
+										<th></th>
+										<th></th>
+										<th></th>
+										<th></th>
+										<th>Total Items:</th>
+									</tr>
+								</tfoot>
+							</table>
+						</div>
+                    <!-- end table-responsive -->
+					</div>
+					<div class="modal-footer">
+						<a href="javascript:;" class="btn btn-white" data-dismiss="modal">Cerrar</a>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Estilos para aprobación masiva -->
+		<style>
+			/* Estilos para checkboxes */
+			.form-check {
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				margin: 0;
+			}
+
+			.form-check-input {
+				width: 18px;
+				height: 18px;
+				cursor: pointer;
+				margin: 0;
+			}
+
+			.form-check-label {
+				margin: 0;
+				cursor: pointer;
+			}
+
+			/* Estilos para el botón de aprobación masiva */
+			#CVbtnAprobacionMasiva:disabled {
+				opacity: 0.6;
+				cursor: not-allowed;
+			}
+
+			#CVbtnAprobacionMasiva:not(:disabled) {
+				animation: pulse 2s infinite;
+			}
+
+			@keyframes pulse {
+				0% {
+					transform: scale(1);
+				}
+				50% {
+					transform: scale(1.05);
+				}
+				100% {
+					transform: scale(1);
+				}
+			}
+
+			/* Estilos para el panel de selección */
+			#panelSeleccion .alert {
+				border-left: 4px solid #17a2b8;
+			}
+
+			/* Estilos para filas seleccionadas */
+			.row-selected {
+				background-color: #e3f2fd !important;
+				border-left: 4px solid #2196f3;
+			}
+
+			/* Hover effect para checkboxes */
+			.form-check-input:hover {
+				transform: scale(1.1);
+				transition: transform 0.2s ease;
+			}
+
+			/* Estilos para botones del panel de selección */
+			.btn-outline-info:hover {
+				background-color: #17a2b8;
+				border-color: #17a2b8;
+				color: white;
+			}
+
+			.btn-outline-secondary:hover {
+				background-color: #6c757d;
+				border-color: #6c757d;
+				color: white;
+			}
+
+			/* Estilos para badges de estado */
+			.badge-warning {
+				background-color: #ffc107;
+				color: #fff;
+			}
+
+			.badge-success {
+				background-color: #28a745;
+				color: white;
+			}
+
+			.badge-danger {
+				background-color: #dc3545;
+				color: white;
+			}
+
+			.badge-secondary {
+				background-color: #6c757d;
+				color: white;
+			}
+
+			/* Responsive adjustments */
+			@media (max-width: 768px) {
+				#panelSeleccion .alert {
+					flex-direction: column !important;
+					align-items: flex-start !important;
+				}
+				
+				#panelSeleccion .alert > div:first-child {
+					margin-bottom: 0.5rem;
+				}
+				
+				#panelSeleccion .btn {
+					width: 100%;
+				}
+				
+				#panelSeleccion .btn + .btn {
+					margin-left: 0 !important;
+					margin-top: 0.5rem;
+				}
+				
+				#panelSeleccion .d-flex.flex-column {
+					width: 100%;
+				}
+			}
+		</style>
+
+</div>
+{% endif %}

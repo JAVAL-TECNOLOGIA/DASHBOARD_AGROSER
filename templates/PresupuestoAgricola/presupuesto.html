@@ -1,0 +1,1223 @@
+{% load static %}
+{% include 'base/header.html' %}
+{% include 'base/sidebar.html' %}
+
+{% block css %}
+<link href="{% static 'assets/plugins/DataTables/media/css/dataTables.bootstrap.min.css' %}" rel="stylesheet"/>
+<link href="{% static 'assets/plugins/DataTables/extensions/Responsive/css/responsive.bootstrap.min.css' %}"
+      rel="stylesheet"/>
+<link href="{% static 'assets/plugins/bootstrap-datepicker/css/bootstrap-datepicker.css' %}" rel="stylesheet"/>
+<script src="{% static 'assets/plugins/pace/pace.min.js' %}"></script>
+<style>
+    #tablaPresupuestoDetalle td input[type="number"] {
+        text-align: right;
+        min-width: 120px !important;
+        width: 100% !important;
+        padding: 4px 6px;
+        font-size: 12px;
+        box-sizing: border-box;
+    }
+
+    #tablaPresupuestoDetalle th,
+    #tablaPresupuestoDetalle td {
+        white-space: nowrap !important;
+    }
+
+    #tablaPresupuestoDetalle {
+        table-layout: auto !important;
+    }
+
+    .table-responsive {
+        overflow-x: auto;
+    }
+
+    #tablaPresupuestoDetalle th {
+        font-size: 12px;
+        vertical-align: middle;
+        border: 1px solid #00c8ff;
+    }
+
+    #tablaPresupuestoDetalle tr:nth-child(1) th {
+        background-color: #f5cba7; /* tono naranja claro */
+    }
+
+    #tablaPresupuestoDetalle tr:nth-child(2) th {
+        background-color: #fbeee6; /* subcabecera más clara */
+    }
+
+    #tablaPresupuestoDetalle th[rowspan="2"] {
+        background-color: #fdf2e9;
+        font-weight: bold;
+    }
+
+</style>
+{% endblock %}
+
+
+<div id="content" class="content">
+    <div class="panel panel-inverse">
+        <div class="panel-heading">
+            <h3 class="panel-title">Gestión de Presupuestos Agrícolas</h3>
+        </div>
+        <div class="panel-body">
+
+            <div class="form-inline">
+
+                <button onclick="openPresupuestoModal()" class="btn btn-success">
+                    <i class="fa fa-plus"></i> Nuevo Calculo de Costo de Labor
+                </button>
+
+                {% if user.is_superuser %}
+                    <div class="form-group" style="margin-left:15px;">
+                        <label for="cmbIngeniero">Ingeniero:</label>
+                        <select id="cmbIngeniero" class="form-control">
+                            <option value="">-- Usuario Actual --</option>
+                        </select>
+                    </div>
+                {% endif %}
+
+            </div>
+
+            <br><br>
+            <div class="table-responsive">
+                <table class="table table-hover m-b-0 text-inverse" id="tableListPresupuesto">
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Campaña</th>
+                        <th>Tipo Trabajo</th>
+                        <th>Tipo Cálculo</th>
+
+                        <th>Reclutador</th>
+                        <th>Supervisor</th>
+                        <th>Ctrl. Rend.</th>
+                        <th>Ctrl. Calidad</th>
+
+                        <th>Fecha</th>
+                        <th>Estado</th>
+                        <th>Opciones</th>
+                    </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalCreatePresupuesto"></div>
+
+{% include 'base/footer.html' %}
+
+<script src="{% static 'assets/plugins/DataTables/media/js/jquery.dataTables.js' %}"></script>
+<script src="{% static 'assets/plugins/DataTables/media/js/dataTables.bootstrap.min.js' %}"></script>
+<script src="{% static 'assets/plugins/DataTables/extensions/Responsive/js/dataTables.responsive.min.js' %}"></script>
+<!--<script src="{% static 'assets/plugins/bootstrap-sweetalert/sweetalert.min.js' %}"></script>-->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+
+{% block js %}
+<script>
+    let paramCostoBase = null;
+    const IS_SUPERUSER = {{ request.user.is_superuser|yesno:"true,false" }};
+
+    $(document).ready(function () {
+        App.init();
+        cargarIngenieros();
+        cargarPresupuestos();
+    });
+
+    $("#cmbIngeniero").change(function() {
+        cargarPresupuestos($(this).val());
+    });
+
+    function cargarPresupuestos(idIng = "") {
+         $.get('/presupuesto-agricola/presupuesto/api/', { idIng: idIng }, function (response)  {
+            if ($.fn.DataTable.isDataTable('#tableListPresupuesto')) {
+                $('#tableListPresupuesto').DataTable().clear().destroy();
+            }
+            let tbody = '';
+            response.data.forEach(function (p) {
+                                tbody += `<tr>
+                    <td>${p.ID_PRESUPUESTO}</td>
+                    <td>${p.CAMPANIA}</td>
+                    <td>${p.TIPO_TRABAJO}</td>
+                    <td>${p.TIPO_CALCULO}</td>
+
+                    <td>
+                        ${p.TIENE_RECLUTADOR ? '<span class="badge badge-success">Sí</span>' : '<span class="badge badge-secondary">No</span>'}
+                    </td>
+                    <td>
+                        ${p.TIENE_SUPERVISOR ? '<span class="badge badge-success">Sí</span>' : '<span class="badge badge-secondary">No</span>'}
+                    </td>
+                    <td>
+                        ${p.TIENE_CTRL_RENDIMIENTO ? '<span class="badge badge-success">Sí</span>' : '<span class="badge badge-secondary">No</span>'}
+                    </td>
+                    <td>
+                        ${p.TIENE_CTRL_CALIDAD ? '<span class="badge badge-success">Sí</span>' : '<span class="badge badge-secondary">No</span>'}
+                    </td>
+
+                    <td>${formatDate(p.FECHA_CREACION)}</td>
+
+                    <td><span class="badge badge-info">${p.ESTADO}</span></td>
+
+                    <td>
+                        <button class="btn btn-primary btn-xs" onclick="openPresupuestoModal(${p.ID_PRESUPUESTO})">
+                            <i class="fa fa-edit"></i>
+                        </button>
+                        <button class="btn btn-danger btn-xs" onclick="deletePresupuesto(${p.ID_PRESUPUESTO})">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>`;
+            });
+            $('#tableListPresupuesto tbody').html(tbody);
+            $('#tableListPresupuesto').DataTable({
+                responsive: true,
+                language: {url: '//cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json'}
+            });
+        });
+    }
+
+    function openPresupuestoModal(id = null) {
+        console.log(id);
+        if (id) {
+            // Editar
+            $.get(`/presupuesto-agricola/presupuesto/detalle/api/${id}/`, function (res) {
+                if (res.status === 'success') {
+                    $('#modalCreatePresupuesto').data('id', id);
+                    renderPresupuestoModal(res, true);
+                } else Swal.fire('Error', res.message, 'error');
+            });
+        } else {
+            // Nuevo
+            $('#modalCreatePresupuesto').data('id', null);
+            renderPresupuestoModal(null, false);
+        }
+    }
+
+    function renderPresupuestoModal(data = null, isEdit = false) {
+
+        console.log(data);
+        // Cabecera y detalles
+        const cab = isEdit && data && data.cabecera ? data.cabecera : {};
+        const det = isEdit && data && data.detalles ? data.detalles : [];
+
+        const modalTitle = isEdit
+            ? `Editar Presupuesto #${cab.ID_PRESUPUESTO || ''}`
+            : 'Nuevo Presupuesto Agrícola';
+
+        /*if (isEdit) {
+            console.log("🔧 Modo edición");
+
+            // 1. Seleccionar campaña
+            $('#idCampania').val(cab.ID_CAMPANIA || '');
+
+            // 2. Filtrar configuraciones por campaña
+            filtrarConfiguraciones();
+
+            // 3. Seleccionar configuración del presupuesto
+            $('#id_config_ttrab').val(cab.ID_CONFIG_TTRAB || '');
+
+            // 4. Cargar parámetros base de esa configuración
+            onConfigSelected();
+
+            // 5. Cargar detalles (lotes del presupuesto)
+            // loadDetallesPresupuesto(cab.ID_PRESUPUESTO);
+
+            // 6. Deshabilitar cambio de campaña en edición
+            $('#idCampania').prop("disabled", true);
+            $('#id_config_ttrab').prop("disabled", true);
+        }*/
+
+        // --- Construcción del HTML ---
+        let html = `
+    <form id="formPresupuesto" data-id="${isEdit ? (cab.ID_PRESUPUESTO || '') : ''}">
+    <div class="modal-dialog modal-xl" style="max-width: 90%; width: 90%;">
+        <div class="modal-content">
+
+            <div class="modal-header bg-teal text-white">
+                <h4 class="modal-title">${modalTitle}</h4>
+                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+            </div>
+
+            <div class="modal-body">
+
+                <!-- CAMPAÑA -->
+                <div class="row">
+                    <div class="col-md-4 mt-2">
+                        <label><strong>Campaña</strong></label>
+                        <select id="idCampania" class="form-control" onchange="filtrarConfiguraciones()" required>
+                            <option value="">Seleccionar...</option>
+                            {% for c in campanias %}
+                            <option value="{{ c.ID_CAMPANIA }}">{{ c.DESCRIPCION }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- CONFIGURACIÓN -->
+                    <div class="col-md-8 mt-2">
+                        <label><strong>Configuración de Costo Base</strong></label>
+                        <select id="id_config_ttrab" class="form-control" onchange="onConfigSelected()" required>
+                            <option value="">Seleccione una campaña primero</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- PARÁMETROS BASE -->
+                <div id="boxConfigPresupuesto"
+                     class="row p-3 border rounded mt-3"
+                     style="background:#f8f9fa; display:none;">
+
+                    <div class="col-md-3">
+                        <label><b>Campaña</b></label>
+                        <input type="text" id="cfgCampania" class="form-control" readonly>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label><b>Tipo de Labor</b></label>
+                        <input type="text" id="cfgTipoTrabajo" class="form-control" readonly>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label><b>Tipo de Cálculo</b></label>
+                        <input type="text" id="cfgTipoCalculo" class="form-control" readonly>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label><b>Costo Base</b></label>
+                        <input type="number" id="cfgCostoBase" class="form-control" readonly>
+                    </div>
+
+                     <div class="col-md-2 mt-3">
+        <label>Asig. Familiar</label>
+        <input type="number" id="cfgAsigFam" class="form-control" readonly>
+    </div>
+
+    <div class="col-md-2 mt-3">
+        <label>Valor Diario</label>
+        <input type="number" id="cfgValDiario" class="form-control" readonly>
+    </div>
+
+    <div class="col-md-2 mt-3">
+        <label>Valor Semanal</label>
+        <input type="number" id="cfgValSemanal" class="form-control" readonly>
+    </div>
+
+    <div class="col-md-2 mt-3">
+        <label>Día Efectivo</label>
+        <input type="number" id="cfgDiaEfectivo" class="form-control" readonly>
+    </div>
+
+   <!-- <div class="col-md-1 mt-3">
+        <label>Jornal</label>
+        <input type="number" id="cfgJornal" class="form-control" readonly>
+    </div>-->
+
+    <div class="col-md-2 mt-3">
+        <label>Dom.</label>
+        <input type="number" id="cfgDominical" class="form-control" readonly>
+    </div>
+
+    <div class="col-md-2 mt-3">
+        <label>Servis</label>
+        <input type="number" id="cfgComServis" class="form-control" readonly>
+    </div>
+
+                    <div class="col-md-3 mt-3">
+                        <label><b>Reclutador</b></label>
+                        <input type="number" id="cfgCostoRecl" class="form-control" readonly>
+                    </div>
+
+                    <div class="col-md-3 mt-3">
+                        <label><b>Supervisor</b></label>
+                        <input type="number" id="cfgCostoSup" class="form-control" readonly>
+                    </div>
+
+                    <div class="col-md-3 mt-3">
+                        <label><b>Ctrl Rend</b></label>
+                        <input type="number" id="cfgCostoRend" class="form-control" readonly>
+                    </div>
+
+                    <div class="col-md-3 mt-3">
+                        <label><b>Ctrl Calidad</b></label>
+                        <input type="number" id="cfgCostoCal" class="form-control" readonly>
+                    </div>
+                </div>
+
+                <!-- CHECKBOXES -->
+                <div class="row mt-3">
+                    <div class="col-md-3">
+                        <label>
+                            <input type="checkbox" id="chkReclutador"
+                                ${cab.TIENE_RECLUTADOR ? 'checked' : ''}
+                                onchange="toggleFields('Reclutador')">
+                            Cantidad Reclutador
+                        </label>
+
+                        <div id="fieldsReclutador" style="display:${cab.TIENE_RECLUTADOR ? 'block' : 'none'};">
+                            <input type="number" id="cantReclutador"
+                                class="form-control mt-1" step="1"
+                                value="${cab.CANT_RECLUTADOR || 1}" readonly>
+                        </div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label>
+                           <input type="checkbox" id="chkSupervisor"
+                            ${isEdit && Number(cab.TIENE_SUPERVISOR) === 1 ? 'checked' : ''}
+                            onchange="toggleFields('Supervisor')">
+                            Cantidad Supervisor
+                        </label>
+
+                        <div id="fieldsSupervisor" style="display:${isEdit && cab.TIENE_SUPERVISOR ? 'block' : 'none'};">
+                            <input type="number"
+                                   id="cantSupervisor"
+                                   class="form-control mt-1"
+                                   step="1"
+                                   value="${isEdit ? (cab.CANT_SUPERVISOR || 0) : 0}">
+                        </div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label><input type="checkbox" id="chkCtrlRend"
+                            ${cab.TIENE_CTRL_RENDIMIENTO ? 'checked' : ''}
+                            onchange="toggleFields('CtrlRend')"> Cantidad Control Rendimiento</label>
+
+                        <div id="fieldsCtrlRend" style="display:${cab.TIENE_CTRL_RENDIMIENTO ? 'block' : 'none'};">
+                            <input type="number" id="cantCtrlRend"
+                                class="form-control mt-1" step="1"
+                                value="${cab.CANT_CTRL_RENDIMIENTO || 0}">
+                        </div>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label><input type="checkbox" id="chkCtrlCal"
+                            ${cab.TIENE_CTRL_CALIDAD ? 'checked' : ''}
+                            onchange="toggleFields('CtrlCal')"> Cantidad Control Calidad</label>
+
+                        <div id="fieldsCtrlCal" style="display:${cab.TIENE_CTRL_CALIDAD ? 'block' : 'none'};">
+                            <input type="number" id="cantCtrlCal"
+                                class="form-control mt-1" step="1"
+                                value="${cab.CANT_CTRL_CALIDAD || 0}">
+                        </div>
+                    </div>
+                </div>
+
+                <hr>
+
+                <h5><strong>Lotes Asignados</strong></h5>
+                <div class="table-responsive">
+                    <table class="table table-striped" id="tablaPresupuestoDetalle">
+                        <thead>
+                          <tr style="background:#f5cba7; text-align:center; font-weight:bold;">
+                            <th colspan="2">Lote</th>
+                            <th colspan="2">Mapeo</th>
+                            <th colspan="4">Información Base</th>
+                            <th colspan="5">COSTO MANO DE OBRA POR LOTE</th>
+                            <th colspan="6">RECLUTADOR</th>
+                            <th colspan="6">SUPERVISOR</th>
+                            <th colspan="6">CONTROL DE RENDIMIENTO</th>
+                            <th colspan="6">CONTROL DE CALIDAD</th>
+                            <th colspan="3"></th>
+                          </tr>
+                          <tr style="background:#fbeee6; text-align:center;">
+                            <th>Lote</th>
+                            <th>Ha</th>
+                            <th>Plantas x Lote</th>
+                            <th>Plantas x Ha</th>
+                            <th style="width:60px;">Rdto</th>
+                            <th style="width:60px;">Pago</th>
+                            <th>Jornales x Lote</th>
+                            <th>Jornales x Ha</th>
+                            <th>Jornal Básico</th>
+                            <th>Asign. Familiar</th>
+                            <th>Dominical</th>
+                            <th>Essalud/Vac</th>
+                            <th>Total MO</th>
+                            <th>Comisión</th>
+                            <th>Jornal Básico</th>
+                            <th>Asign. Familiar</th>
+                            <th>Dominical</th>
+                            <th>Essalud/Vac</th>
+                            <th>Total Reclutador</th>
+                            <th># Sup</th>
+                            <th>Jornal Básico</th>
+                            <th>Asign. Familiar</th>
+                            <th>Dominical</th>
+                            <th>Essalud/Vac</th>
+                            <th>Total Sup</th>
+                            <th># Sup Rend</th>
+                            <th>Jornal Básico</th>
+                            <th>Asign. Familiar</th>
+                            <th>Dominical</th>
+                            <th>Essalud/Vac</th>
+                            <th>Total Rend</th>
+                            <th># Sup Cal</th>
+                            <th>Jornal Básico</th>
+                            <th>Asign. Familiar</th>
+                            <th>Dominical</th>
+                            <th>Essalud/Vac</th>
+                            <th>Total Cal</th>
+                            <th>Movilidad</th>
+                            <th>Total Labor</th>
+                            <th>Costo/Ha</th>
+                          </tr>
+                        </thead>
+                        <tbody id="tbodyPresupuestoDetalle"></tbody>
+                    </table>
+                </div>
+
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-info" onclick="calcularPresupuestoModal()">
+                    <i class="fa fa-calculator"></i> Calcular
+                </button>
+                <button id="btnGuardar" type="button" class="btn btn-primary" onclick="savePresupuesto()">
+                    <i class="fa fa-save"></i> ${isEdit ? 'Actualizar' : 'Guardar'}
+                </button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fa fa-times"></i> Cancelar
+                </button>
+            </div>
+
+        </div>
+    </div>
+    </form>`;
+
+        // Mostrar modal
+        $('#modalCreatePresupuesto').html(html).modal('show');
+
+        // SI ES EDICIÓN
+        if (isEdit) {
+            /*$('#idCampania').val(cab.ID_CAMPANIA);
+            filtrarConfiguraciones(() => {
+                console.log('ahora id config trabajo');
+                $('#id_config_ttrab').val(cab.ID_CONFIG_TTRAB);
+                onConfigSelected(() => {
+                    loadLotesAsignadosPresupuesto(det);
+                });
+            });*/
+            $('#idCampania').val(cab.ID_CAMPANIA);
+            filtrarConfiguraciones(() => {
+                $('#id_config_ttrab').val(cab.ID_CONFIG_TTRAB);
+
+                onConfigSelected(() => {
+
+                    // ⚠ SOLO CARGAR DETALLES (NO lotes de la campaña)
+                    loadDetallesPresupuesto(det);
+
+                    aplicarModoCalculo();
+                }, true);
+            });
+        }
+    }
+
+    // ================== TOGGLE DE CAMPOS ==================
+    function toggleFields(tipo) {
+        const target = document.getElementById(`fields${tipo}`);
+        target.style.display = target.style.display === 'none' ? 'block' : 'none';
+    }
+
+    // ================== CARGA DE LOTES ==================
+    function loadLotesAsignadosPresupuesto() {
+        const campania = $('#idCampania').val();
+        if (!campania) return;
+
+        $.get(`/presupuesto-agricola/presupuesto/lotes-asignados/api/?campania=${campania}`, function (res) {
+            const lotes = res.data || [];
+            let rows = '';
+
+            if (lotes.length === 0) {
+                $('#tbodyPresupuestoDetalle').html(
+                    `<tr><td colspan="35" class="text-center text-muted">No hay lotes asignados para esta campaña</td></tr>`
+                );
+                return;
+            }
+
+            lotes.forEach(l => {
+                rows += `
+      <tr data-id="${l.ID_LOTE}" data-id_mapeo="${l.ID_MAPEO}">
+        <td>${l.DESCRIPCION || '-'}</td>
+        <td class="colHa">${Number(l.HECTAREAS)?.toFixed(2) || '-'}</td>
+        <td class="colPlantasLote">${l.PLANTAS_POR_LOTE || '-'}</td>
+        <td class="colPlantasHa">${Number(l.DENSIDAD)?.toFixed(2) || '-'}</td>
+
+        <!-- Inputs -->
+<!--        <input style="width:130px;" type="number" class="form-control input-sm inputRdto" data-field="rdto">-->
+<!--        <input style="width:130px;" type="number" class="form-control input-sm inputPago" data-field="pago">-->
+        <td style="width:130px;">
+          <input type="number" step="0.01" class="form-control input-sm inputRdto text-right" placeholder="Rdto esperado" data-field="rdto">
+        </td>
+        <td style="width:130px;">
+          <input type="number" step="0.01" class="form-control input-sm inputPago text-right" placeholder="Pago x planta" data-field="pago">
+        </td>
+        <!-- Jornales -->
+        <td class="colJornalLote">-</td>
+        <td class="colJornalHa">-</td>
+
+        <!-- Mano de Obra -->
+        <td class="colJornalBasico">-</td>
+        <td class="colAsigFam">-</td>
+        <td class="colDominical">-</td>
+        <td class="colEssalud">-</td>
+        <td class="colTotalMO">-</td>
+
+        <!-- Reclutador -->
+        <td class="colComision">-</td>
+        <td class="colJornalRec">-</td>
+        <td class="colAsigFamRec">-</td>
+        <td class="colDominicalRec">-</td>
+        <td class="colEssaludRec">-</td>
+        <td class="colTotalRec">-</td>
+
+        <!-- Supervisor -->
+        <td class="colNSup">-</td>
+        <td class="colJornalSup">-</td>
+        <td class="colAsigFamSup">-</td>
+        <td class="colDominicalSup">-</td>
+        <td class="colEssaludSup">-</td>
+        <td class="colTotalSup">-</td>
+
+        <!-- Control de Rendimiento -->
+        <td class="colNCtrlRend">-</td>
+        <td class="colJornalCtrl">-</td>
+        <td class="colAsigFamCtrl">-</td>
+        <td class="colDominicalCtrl">-</td>
+        <td class="colEssaludCtrl">-</td>
+        <td class="colTotalCtrl">-</td>
+
+        <!-- Control de Calidad -->
+        <td class="colNCtrlCal">-</td>
+        <td class="colJornalCal">-</td>
+        <td class="colAsigFamCal">-</td>
+        <td class="colDominicalCal">-</td>
+        <td class="colEssaludCal">-</td>
+        <td class="colTotalCal">-</td>
+
+        <!-- Totales -->
+        <td class="colMovilidad">-</td>
+        <td class="colTotalLabor">-</td>
+        <td class="colCostoHa">-</td>
+      </tr>`;
+            });
+
+            $('#tbodyPresupuestoDetalle').html(rows);
+
+             aplicarModoCalculo();
+        });
+    }
+
+    // ================== CÁLCULO ==================
+    function calcularPresupuestoModal() {
+
+        console.log('calcularPresupuestoModal paramCostoBase:');
+        console.log(paramCostoBase);
+        if (!paramCostoBase) {
+            Swal.fire('Aviso', 'Debe seleccionar un costo base válido antes de calcular.', 'warning');
+            return;
+        }
+
+        const tipoCalculo = $("#cfgTipoCalculo").val();
+        const valorDiaEfectivo = parseFloat(paramCostoBase.VALOR_DIA_EFECTIVO || 0);
+        const essaludPct = 0.1017;
+        const valorServis = parseFloat(paramCostoBase.COMISION_SERVIS || 1);
+
+
+        const costoReclutador = parseFloat($('#cfgCostoRecl').val() || 1);
+        const costoSupervisor = parseFloat($('#cfgCostoSup').val() || 0);
+        const cantSupervisor = parseFloat($('#cantSupervisor').val() || 0);
+        const costoCtrlRend = parseFloat($('#cfgCostoRend').val() || 0);
+        const cantCtrlRend = parseFloat($('#cantCtrlRend').val() || 0);
+        const costoCtrlCal = parseFloat($('#cfgCostoCal').val() || 0);
+        const cantCtrlCal = parseFloat($('#cantCtrlCal').val() || 0);
+
+
+        $('#tbodyPresupuestoDetalle tr').each(function () {
+
+            const row = $(this);
+            const ha           = parseFloat(row.find('.colHa').text().trim()) || 0;
+            const plantasLote  = parseFloat(row.find('.colPlantasLote').text().trim()) || 0;
+            const rdto         = parseFloat(row.find('.inputRdto').val().trim()) || 0;
+            const pagoPlanta   = parseFloat(row.find('.inputPago').val().trim()) || 0;
+
+            // Jornales x Lote y x Ha
+            const jornalesLote = Math.round(plantasLote / rdto);
+            const jornalesHa = jornalesLote / ha;
+
+            // MANO DE OBRA
+            const jornalBasico = pagoPlanta * plantasLote;
+            const asigFam = jornalesLote * valorDiaEfectivo;
+            const dominical = jornalBasico / 6;
+            const essalud = (jornalBasico + asigFam + dominical) * essaludPct;
+            const totalMO = jornalBasico + asigFam + dominical + essalud;
+
+            // RECLUTADOR
+            // const comision = jornalesLote * costoServis;
+            // const jornalBasicoRec = (jornalesLote / 35) * costoServis;
+            // const asigFamRec = (jornalesLote / 35) * valorDiaEfectivo;
+            // const dominicalRec = (comision + jornalBasicoRec) / 6;
+            // const essaludRec = (comision + jornalBasicoRec + asigFamRec + dominicalRec) * essaludPct;
+            // const totalRec = comision + jornalBasicoRec + asigFamRec + dominicalRec + essaludRec;
+
+            // === RECLUTADOR ===
+            let comision = 0, jornalBasicoRec = 0, asigFamRec = 0, dominicalRec = 0, essaludRec = 0, totalRec = 0;
+
+             if ($('#chkReclutador').is(':checked')) {
+                 comision = jornalesLote * valorServis;
+                  if (tipoCalculo === "Jornal")  jornalBasicoRec = (jornalesLote / 35) * 33.17;
+                  if (tipoCalculo === "Destajo")  jornalBasicoRec = (jornalesLote / 35) * costoReclutador;
+                 asigFamRec = (jornalesLote / 35) * valorDiaEfectivo;
+                 dominicalRec = (comision + jornalBasicoRec) / 6;
+                 essaludRec = (comision + jornalBasicoRec + asigFamRec + dominicalRec) * essaludPct;
+
+                 totalRec = comision + jornalBasicoRec + asigFamRec + dominicalRec + essaludRec;
+             }
+
+            // === SUPERVISOR ===
+            let nSup = 0, jornalBasicoSup = 0, asigFamSup = 0, dominicalSup = 0, essaludSup = 0, totalSup = 0;
+            if ($('#chkSupervisor').is(':checked')) {
+                nSup = Number((jornalesLote / cantSupervisor).toFixed(2));
+                jornalBasicoSup = nSup * costoSupervisor;
+                asigFamSup = nSup * valorDiaEfectivo;
+                dominicalSup = jornalBasicoSup / 6;
+                essaludSup = (jornalBasicoSup + asigFamSup + dominicalSup) * essaludPct;
+                totalSup = jornalBasicoSup + asigFamSup + dominicalSup + essaludSup;
+
+            }
+
+            // === CONTROL RENDIMIENTO ===
+            let nCtrlRend = 0, jornalBasicoCtrl = 0, asigFamCtrl = 0, dominicalCtrl = 0, essaludCtrl = 0, totalCtrl = 0;
+            if ($('#chkCtrlRend').is(':checked')) {
+                nCtrlRend = Number((jornalesLote / cantCtrlRend).toFixed(2));
+                jornalBasicoCtrl = nCtrlRend * costoCtrlRend;
+                asigFamCtrl = nCtrlRend * valorDiaEfectivo;
+                dominicalCtrl = jornalBasicoCtrl / 6;
+                essaludCtrl = (jornalBasicoCtrl + asigFamCtrl + dominicalCtrl) * essaludPct;
+                totalCtrl = jornalBasicoCtrl + asigFamCtrl + dominicalCtrl + essaludCtrl;
+            }
+
+            // === CONTROL CALIDAD ===
+            let nCtrlCal = 0, jornalBasicoCal = 0, asigFamCal = 0, dominicalCal = 0, essaludCal = 0, totalCal = 0;
+            if ($('#chkCtrlCal').is(':checked')) {
+                nCtrlCal = Number((jornalesLote / cantCtrlCal).toFixed(2))  ;
+                jornalBasicoCal = nCtrlCal * costoCtrlCal;
+                asigFamCal = nCtrlCal * valorDiaEfectivo;
+                dominicalCal = jornalBasicoCal / 6;
+                essaludCal = (jornalBasicoCal + asigFamCal + dominicalCal) * essaludPct;
+                totalCal = jornalBasicoCal + asigFamCal + dominicalCal + essaludCal;
+            }
+
+            // === OTROS ===
+            console.log('movilidad:');
+            console.log('jornalesLote:' + jornalesLote);
+            console.log('nSup:' + nSup);
+            console.log('nCtrlRend:' + nCtrlRend);
+            console.log('nCtrlCal:' + nCtrlCal);
+            console.log('movilidad:' + ((jornalesLote + nSup + nCtrlRend + nCtrlCal) * 6));
+
+            const movilidad = (jornalesLote + nSup + nCtrlRend + nCtrlCal) * 6;
+            const totalLabor = totalMO + totalRec + totalSup + totalCtrl + totalCal + movilidad;
+            const costoHa = totalLabor / ha;
+
+            // Actualizar celdas en tabla
+            // Actualizar celdas en tabla
+            row.find('.colJornalLote').text(jornalesLote.toFixed(0));
+            row.find('.colJornalHa').text(jornalesHa.toFixed(0));
+
+            // === COSTO MANO DE OBRA ===
+            row.find('.colJornalBasico').text(jornalBasico.toFixed(2));
+            row.find('.colAsigFam').text(asigFam.toFixed(2));
+            row.find('.colDominical').text(dominical.toFixed(2));
+            row.find('.colEssalud').text(essalud.toFixed(2));
+            row.find('.colTotalMO').text(totalMO.toFixed(2));
+
+            // === RECLUTADOR ===
+            row.find('.colComision').text(comision.toFixed(2));
+            row.find('.colJornalRec').text(jornalBasicoRec.toFixed(2));
+            row.find('.colAsigFamRec').text(asigFamRec.toFixed(2));
+            row.find('.colDominicalRec').text(dominicalRec.toFixed(2));
+            row.find('.colEssaludRec').text(essaludRec.toFixed(2));
+            row.find('.colTotalRec').text(totalRec.toFixed(2));
+
+            // === SUPERVISOR ===
+            row.find('.colNSup').text(nSup);
+            row.find('.colJornalSup').text(jornalBasicoSup.toFixed(2));
+            row.find('.colAsigFamSup').text(asigFamSup.toFixed(2));
+            row.find('.colDominicalSup').text(dominicalSup.toFixed(2));
+            row.find('.colEssaludSup').text(essaludSup.toFixed(2));
+            row.find('.colTotalSup').text(totalSup.toFixed(2));
+
+            // === CONTROL DE RENDIMIENTO ===
+            row.find('.colNCtrlRend').text(nCtrlRend);
+            row.find('.colJornalCtrl').text(jornalBasicoCtrl.toFixed(2));
+            row.find('.colAsigFamCtrl').text(asigFamCtrl.toFixed(2));
+            row.find('.colDominicalCtrl').text(dominicalCtrl.toFixed(2));
+            row.find('.colEssaludCtrl').text(essaludCtrl.toFixed(2));
+            row.find('.colTotalCtrl').text(totalCtrl.toFixed(2));
+
+            // === CONTROL DE CALIDAD ===
+            row.find('.colNCtrlCal').text(nCtrlCal);
+            row.find('.colJornalCal').text(jornalBasicoCal.toFixed(2));
+            row.find('.colAsigFamCal').text(asigFamCal.toFixed(2));
+            row.find('.colDominicalCal').text(dominicalCal.toFixed(2));
+            row.find('.colEssaludCal').text(essaludCal.toFixed(2));
+            row.find('.colTotalCal').text(totalCal.toFixed(2));
+
+            // === OTROS ===
+            row.find('.colMovilidad').text(movilidad.toFixed(2));
+            row.find('.colTotalLabor').text(totalLabor.toFixed(2));
+            row.find('.colCostoHa').text(costoHa.toFixed(2));
+        });
+
+        Swal.fire("Cálculo completo", "Los valores se han actualizado correctamente", "success");
+    }
+
+    function loadDetallesPresupuesto(det) {
+
+        const detalles = det || [];
+        let rows = '';
+        detalles.forEach(d => {
+            rows += `
+          <tr data-id="${d.ID_LOTE}">
+            <td>${d.ID_LOTE}</td>
+            <td class="colHa">${Number(d.HECTAREAS).toFixed(2)}</td>
+            <td class="colPlantasLote">${Number(d.PLANTAS_POR_LOTE).toFixed(0)}</td>
+            <td class="colPlantasHa">${Number(d.PLANTAS_POR_HA || 0).toFixed(2)}</td>
+
+            <td><input type="number" class="form-control input-sm inputRdto" value="${d.RENDIMIENTO_ESPERADO || 0}"></td>
+            <td><input type="number" class="form-control input-sm inputPago" value="${d.PAGO_POR_PLANTA || 0}"></td>
+
+            <!-- Cálculos base -->
+            <td class="colJornalLote">${d.JORNALES_X_LOTE || '-'}</td>
+            <td class="colJornalHa">${d.JORNALES_X_HA || '-'}</td>
+
+            <!-- Mano de Obra -->
+            <td class="colJornalBasico">${Number(d.JORNAL_BASICO || 0).toFixed(2)}</td>
+            <td class="colAsigFam">${Number(d.ASIG_FAM || 0).toFixed(2)}</td>
+            <td class="colDominical">${Number(d.DOMINICAL || 0).toFixed(2)}</td>
+            <td class="colEssaludVac">${Number(d.ESSALUD_VAC || 0).toFixed(2)}</td>
+            <td class="colTotalMO">${Number(d.TOTAL_MANO_OBRA || 0).toFixed(2)}</td>
+
+            <!-- Reclutador -->
+            <td class="colComision">${Number(d.COMISION || 0).toFixed(2)}</td>
+            <td class="colJornalRec">${Number(d.JORNAL_BASICO_REC || 0).toFixed(2)}</td>
+            <td class="colAsigFamRec">${Number(d.ASIG_FAM_REC || 0).toFixed(2)}</td>
+            <td class="colDominicalRec">${Number(d.DOMINICAL_REC || 0).toFixed(2)}</td>
+            <td class="colEssaludRec">${Number(d.ESSALUD_VAC_REC || 0).toFixed(2)}</td>
+            <td class="colTotalRec">${Number(d.TOTAL_RECLUTADOR || 0).toFixed(2)}</td>
+
+            <!-- Supervisor -->
+            <td class="colNSup">${d.N_SUPERVISOR || '-'}</td>
+            <td class="colJornalSup">${Number(d.JORNAL_BASICO_SUP || 0).toFixed(2)}</td>
+            <td class="colAsigFamSup">${Number(d.ASIG_FAM_SUP || 0).toFixed(2)}</td>
+            <td class="colDominicalSup">${Number(d.DOMINICAL_SUP || 0).toFixed(2)}</td>
+            <td class="colEssaludSup">${Number(d.ESSALUD_VAC_SUP || 0).toFixed(2)}</td>
+            <td class="colTotalSup">${Number(d.TOTAL_SUP || 0).toFixed(2)}</td>
+
+            <!-- Control de Rendimiento -->
+            <td class="colNCtrlRend">${d.N_CTRL_REND || '-'}</td>
+            <td class="colJornalCtrl">${Number(d.JORNAL_BASICO_CTRL || 0).toFixed(2)}</td>
+            <td class="colAsigFamCtrl">${Number(d.ASIG_FAM_CTRL || 0).toFixed(2)}</td>
+            <td class="colDominicalCtrl">${Number(d.DOMINICAL_CTRL || 0).toFixed(2)}</td>
+            <td class="colEssaludCtrl">${Number(d.ESSALUD_VAC_CTRL || 0).toFixed(2)}</td>
+            <td class="colTotalCtrl">${Number(d.TOTAL_CTRL || 0).toFixed(2)}</td>
+
+            <!-- Control de Calidad -->
+            <td class="colNCtrlCal">${d.N_CTRL_CAL || '-'}</td>
+            <td class="colJornalCal">${Number(d.JORNAL_BASICO_CAL || 0).toFixed(2)}</td>
+            <td class="colAsigFamCal">${Number(d.ASIG_FAM_CAL || 0).toFixed(2)}</td>
+            <td class="colDominicalCal">${Number(d.DOMINICAL_CAL || 0).toFixed(2)}</td>
+            <td class="colEssaludCal">${Number(d.ESSALUD_VAC_CAL || 0).toFixed(2)}</td>
+            <td class="colTotalCal">${Number(d.TOTAL_CAL || 0).toFixed(2)}</td>
+
+            <!-- Otros -->
+            <td class="colMovilidad">${Number(d.MOVILIDAD || 0).toFixed(2)}</td>
+            <td class="colTotalLabor">${Number(d.TOTAL || 0).toFixed(2)}</td>
+            <td class="colCostoHa">${Number(d.COSTO_HA || 0).toFixed(2)}</td>
+          </tr>`;
+        });
+
+        $('#tbodyPresupuestoDetalle').html(rows);
+
+    }
+
+    function deletePresupuesto(id) {
+        Swal.fire({
+            title: "¿Eliminar presupuesto?",
+            text: "Esta acción no se puede deshacer",
+            icon: "warning",
+            buttons: ["Cancelar", "Eliminar"],
+            dangerMode: true,
+        }).then((willDelete) => {
+            if (willDelete) {
+                $.ajax({
+                    url: `/presupuesto-agricola/presupuesto/api/${id}/`,
+                    type: 'DELETE',
+                    success: function () {
+                        Swal.fire('Eliminado', 'Presupuesto eliminado correctamente', 'success');
+                        setTimeout(cargarPresupuestos, 400);
+                    }
+                });
+            }
+        });
+    }
+
+    function savePresupuesto() {
+        const idPresupuesto = $('#modalCreatePresupuesto').data('id') || null; // si es edición
+        const isEdit = !!idPresupuesto;
+
+        const url = isEdit
+            ? `/presupuesto-agricola/presupuesto/api/${idPresupuesto}/` // PUT
+            : `/presupuesto-agricola/presupuesto/api/`; // POST
+
+        const method = isEdit ? 'PUT' : 'POST';
+
+        /*let snapshot = {
+            anio_campania: $("#cfgCampania").val()?.trim().slice(-4), // Extrae año
+            campania_descripcion: $("#cfgCampania").val(),
+            tipo_trabajo_desc: $("#cfgTipoTrabajo").val(),
+            tipo_calculo_desc: $("#cfgTipoCalculo").val(),
+        };*/
+
+        // ====== CABECERA ======
+
+        const dataCab = {
+            id_ingeniero: $('#cmbIngeniero').val(),
+            id_campania: $('#idCampania').val(),
+            id_tipo_trabajo: $('#tipoTrabajo').val(),
+            id_tipo_costo: $('#tipoCosto').val(),
+            tiene_reclutador: $('#chkReclutador').is(':checked'),
+            cant_reclutador: parseFloat($('#cantReclutador').val() || 0),
+            costo_reclutador: parseFloat($('#cfgCostoRecl').val() || 0),
+            tiene_supervisor: $('#chkSupervisor').is(':checked'),
+            costo_supervisor: parseFloat($('#cfgCostoSup').val() || 0),
+            cant_supervisor: parseFloat($('#cantSupervisor').val() || 0),
+            tiene_ctrl_rendimiento: $('#chkCtrlRend').is(':checked'),
+            costo_ctrl_rendimiento: parseFloat($('#cfgCostoRend').val() || 0),
+            cant_ctrl_rendimiento: parseFloat($('#cantCtrlRend').val() || 0),
+            tiene_ctrl_calidad: $('#chkCtrlCal').is(':checked'),
+            costo_ctrl_calidad: parseFloat($('#cfgCostoCal').val() || 0),
+            cant_ctrl_calidad: parseFloat($('#cantCtrlCal').val() || 0),
+            tipo_trabajo_desc: $("#cfgTipoTrabajo").val(),
+            tipo_calculo_desc: $("#cfgTipoCalculo").val(),
+            id_config_ttrab: $("#id_config_ttrab").val(),
+            campania_desc: $("#cfgCampania").val(),
+             // $("#cfgCostoBase").val(cfg.COSTO_BASE || 0);
+
+        };
+
+        // ====== DETALLE ======
+        const detalles = [];
+        $('#tbodyPresupuestoDetalle tr').each(function () {
+            const row = $(this);
+            const idLote = row.data('id');
+            const idMapeo = row.data('id_mapeo');
+            const hectareas = parseFloat(row.find('.colHa').text() || 0);
+            const plantasLote = parseFloat(row.find('.colPlantasLote').text() || 0);
+            const plantasHa = parseFloat(row.find('.colPlantasHa').text() || 0);
+            const rdto = parseFloat(row.find('.inputRdto').val() || 0);
+            const pagoPlanta = parseFloat(row.find('.inputPago').val() || 0);
+
+            // Traer todos los valores calculados desde la tabla
+            const d = {
+                id_lote: idLote,
+                id_mapeo: idMapeo,
+                hectareas,
+                plantas_lote: plantasLote,
+                plantas_ha: plantasHa,
+                rdto,
+                pago_planta: pagoPlanta,
+                jorl: parseFloat(row.find('.colJornalLote').text() || 0),
+                jorha: parseFloat(row.find('.colJornalHa').text() || 0),
+                jornal_basico: parseFloat(row.find('.colJornalBasico').text() || 0),
+                asig_fam: parseFloat(row.find('.colAsigFam').text() || 0),
+                dominical: parseFloat(row.find('.colDominical').text() || 0),
+                essalud_vac: parseFloat(row.find('.colEssaludVac').text() || 0),
+                total_mo: parseFloat(row.find('.colTotalMO').text() || 0),
+
+                comision: parseFloat(row.find('.colComision').text() || 0),
+                jornal_rec: parseFloat(row.find('.colJornalRec').text() || 0),
+                asig_fam_rec: parseFloat(row.find('.colAsigFamRec').text() || 0),
+                dominical_rec: parseFloat(row.find('.colDominicalRec').text() || 0),
+                essalud_rec: parseFloat(row.find('.colEssaludRec').text() || 0),
+                total_rec: parseFloat(row.find('.colTotalRec').text() || 0),
+
+                n_sup: parseFloat(row.find('.colNSup').text() || 0),
+                jornal_sup: parseFloat(row.find('.colJornalSup').text() || 0),
+                asig_fam_sup: parseFloat(row.find('.colAsigFamSup').text() || 0),
+                dominical_sup: parseFloat(row.find('.colDominicalSup').text() || 0),
+                essalud_sup: parseFloat(row.find('.colEssaludSup').text() || 0),
+                total_sup: parseFloat(row.find('.colTotalSup').text() || 0),
+
+                n_ctrl_rend: parseFloat(row.find('.colNCtrlRend').text() || 0),
+                jornal_ctrl: parseFloat(row.find('.colJornalCtrl').text() || 0),
+                asig_fam_ctrl: parseFloat(row.find('.colAsigFamCtrl').text() || 0),
+                dominical_ctrl: parseFloat(row.find('.colDominicalCtrl').text() || 0),
+                essalud_ctrl: parseFloat(row.find('.colEssaludCtrl').text() || 0),
+                total_ctrl: parseFloat(row.find('.colTotalCtrl').text() || 0),
+
+                n_ctrl_cal: parseFloat(row.find('.colNCtrlCal').text() || 0),
+                jornal_cal: parseFloat(row.find('.colJornalCal').text() || 0),
+                asig_fam_cal: parseFloat(row.find('.colAsigFamCal').text() || 0),
+                dominical_cal: parseFloat(row.find('.colDominicalCal').text() || 0),
+                essalud_cal: parseFloat(row.find('.colEssaludCal').text() || 0),
+                total_cal: parseFloat(row.find('.colTotalCal').text() || 0),
+
+                movilidad: parseFloat(row.find('.colMovilidad').text() || 0),
+                total: parseFloat(row.find('.colTotalLabor').text() || 0),
+                costo_ha: parseFloat(row.find('.colCostoHa').text() || 0)
+            };
+            detalles.push(d);
+        });
+
+        const payload = {
+            cabecera: dataCab,
+            detalles: detalles
+        };
+
+        const btn = $("#btnGuardar");
+
+        // Guardar texto original
+        const originalHtml = btn.html();
+
+        // Deshabilitar botón + poner spinner
+        btn.prop("disabled", true);
+        btn.html(`
+            <span class="spinner-border spinner-border-sm" role="status"></span>
+            Guardando...
+        `);
+
+        $.ajax({
+            url,
+            type: method,
+            contentType: 'application/json',
+            data: JSON.stringify(payload),
+            success: function (res) {
+                Swal.fire('Éxito', res.message || 'Presupuesto guardado correctamente', 'success');
+                $('#modalCreatePresupuesto').modal('hide');
+
+                if(IS_SUPERUSER)
+                    cargarPresupuestos($('#cmbIngeniero').val());
+                else
+                    cargarPresupuestos();
+            },
+            error: function (xhr) {
+                console.error('Error:', xhr.responseText);
+                Swal.fire('Error', 'No se pudo guardar el presupuesto', 'error');
+            },
+            complete: function () {
+                // Restaurar el botón a su estado original
+                btn.prop("disabled", false);
+                btn.html(originalHtml);
+            }
+        });
+    }
+
+    function onConfigSelected(callback, skipLoadLotes = false) {
+        const idConfig = $("#id_config_ttrab").val();
+
+        // Ocultar y limpiar si no se selecciona nada
+        if (!idConfig) {
+            $("#boxConfigPresupuesto").hide();
+            limpiarConfig();
+            if (callback) callback();
+            return;
+        }
+
+        // Llamar al API de Django
+        $.get(`/presupuesto-agricola/presupuesto/config-ttrab/api/${idConfig}/`, function (res) {
+
+            // ❌ Si no existe parámetro base para la configuración
+            if (res.status === "error" || !res.data) {
+                Swal.fire({
+                    icon: "warning",
+                    title: "Sin parámetros de costo base",
+                    text: "No se encontró parametrización para esta configuración.",
+                });
+
+                limpiarConfig();
+                $("#boxConfigPresupuesto").hide();
+                return;
+            }
+
+            const cfg = res.data;
+            paramCostoBase = cfg;
+            console.log('paramCostoBase:');
+            console.log(paramCostoBase);
+
+            // Mostrar el bloque de configuración
+            $("#boxConfigPresupuesto").show();
+
+            // CAMPOS SNAPSHOT
+            $("#cfgCampania").val(cfg.CAMPANIA || "");
+            $("#cfgTipoTrabajo").val(cfg.TIPO_TRABAJO || "");
+            $("#cfgTipoCalculo").val(cfg.TIPO_CALCULO || "");
+
+            // Guardarlo en inputs ocultos (debes agregarlos en el formulario)
+            // $("#snap_anio").val(cfg.CAMPANIA || "");
+            // $("#cfgTipoCalculo").val(cfg.TIPO_TRABAJO || "");
+            // $("#cfgTipoTrabajo").val(cfg.TIPO_CALCULO || "");
+
+            // COSTOS BASE DESDE PARAMETRO_COSTO
+            $("#cfgCostoBase").val(cfg.COSTO_BASE || 0);
+            $("#cfgCostoRecl").val(cfg.COSTO_REND_RECLUTADOR || 0);
+            $("#cfgCostoSup").val(cfg.COSTO_SUPERVISOR || 0);
+            $("#cfgCostoRend").val(cfg.COSTO_CTRL_RENDIMIENTO || 0);
+            $("#cfgCostoCal").val(cfg.COSTO_CTRL_CALIDAD || 0);
+
+            $("#cfgAsigFam").val(cfg.ASIGNACION_FAMILIAR || 0);
+            $("#cfgValDiario").val(cfg.VALOR_DIARIO || 0);
+            $("#cfgValSemanal").val(cfg.VALOR_SEMANAL || 0);
+            $("#cfgDiaEfectivo").val(cfg.VALOR_DIA_EFECTIVO || 0);
+            // $("#cfgJornal").val(cfg.JORNAL || 1);
+            $("#cfgDominical").val(cfg.DOMINICAL || 1);
+            $("#cfgComServis").val(cfg.COMISION_SERVIS || 1);
+
+             if (!skipLoadLotes) {
+        // SOLO CARGA LOTES SI NO ESTÁS EDITANDO
+                loadLotesAsignadosPresupuesto(() => {
+                    if (callback) callback();
+                });
+            } else {
+                if (callback) callback();
+            }
+
+            // loadLotesAsignadosPresupuesto();
+
+        });
+    }
+
+    function limpiarConfig() {
+        $('#boxConfigPresupuesto').hide();
+
+        $('#cfgCampania').val('');
+        $('#cfgTipoTrabajo').val('');
+        $('#cfgTipoCalculo').val('');
+
+        $('#cfgCostoBase').val('');
+        $('#cfgCostoRecl').val('');
+        $('#cfgCostoSup').val('');
+        $('#cfgCostoRend').val('');
+        $('#cfgCostoCal').val('');
+
+        $('#tbodyPresupuestoDetalle').html('');
+    }
+
+    function filtrarConfiguraciones(callback) {
+        console.log('filtrarConfiguraciones')
+        const idCamp = $('#idCampania').val();
+        const select = $('#id_config_ttrab');
+
+        select.html('<option value="">Cargando...</option>');
+
+        if (!idCamp) {
+            select.html('<option value="">Seleccione una campaña primero</option>');
+            return;
+        }
+
+        // configs viene desde Django → convertimos a JS
+        // const configs = JSON.parse('{{ configs|safe|escapejs }}');
+        const configs = JSON.parse('{{ configs_json|safe }}');
+
+        const filtradas = configs.filter(c => c.ID_CAMPANIA == idCamp);
+
+        if (filtradas.length === 0) {
+            select.html('<option value="">No hay configuraciones</option>');
+            return;
+        }
+
+        let html = '<option value="">Seleccionar...</option>';
+
+        filtradas.forEach(c => {
+            html += `
+                <option value="${c.ID_PARAMETRO}">
+                   ${c.DESCRIPCION} - ${c.TIPO_TRABAJO} - ${c.TIPO_CALCULO}
+                </option>`;
+        });
+
+        select.html(html);
+         console.log('FIN filtrarConfiguraciones');
+         if (callback) callback(); // ← AQUÍ SE EJECUTA
+    }
+
+    function aplicarModoCalculo() {
+        const tipo = $("#cfgTipoCalculo").val(); // "Jornal" o "Destajo"
+
+        $('#tbodyPresupuestoDetalle tr').each(function () {
+            const row = $(this);
+            const rdtoInput = row.find('.inputRdto');
+            const pagoInput = row.find('.inputPago');
+
+            if (tipo === "Jornal") {
+                // Usuario llena RDTo → Pago se calcula
+                rdtoInput.prop("readonly", false).css("background", "white");
+                pagoInput.prop("readonly", true).css("background", "#e9ecef");
+                // pagoInput.replaceWith(`<!--<span class="inputPagoText">${pagoInput.val() || ''}</span>-->`);
+
+            } else if (tipo === "Destajo") {
+                // Usuario llena Pago → Rdto se calcula
+                rdtoInput.prop("readonly", true).css("background", "#e9ecef");
+                pagoInput.prop("readonly", false).css("background", "white");
+                // rdtoInput.replaceWith(`<span class="inputRdtoText">${rdtoInput.val() || ''}</span>`);
+            }
+        });
+    }
+
+    $(document).on("input", ".inputRdto, .inputPago", function () {
+        const row = $(this).closest("tr");
+        const tipo = $("#cfgTipoCalculo").val();
+        const costoBase = parseFloat($("#cfgCostoBase").val()) || 0;
+
+        const rdtoInput = row.find(".inputRdto");
+        const pagoInput = row.find(".inputPago");
+
+        let rdto  = parseFloat(rdtoInput.val()) || 0;
+        let pago  = parseFloat(pagoInput.val()) || 0;
+
+        if (tipo === "Jornal") {
+            // pago por planta = costo base / rdto
+            if (rdto > 0) {
+                pago = costoBase / rdto;
+                pagoInput.val(pago.toFixed(4));
+            }
+        }
+
+        if (tipo === "Destajo") {
+            // rdto = costo base / pago
+            if (pago > 0) {
+                rdto = costoBase / pago;
+                rdtoInput.val(rdto.toFixed(0));
+            }
+        }
+    });
+
+    function formatDate(fecha) {
+        if (!fecha) return '';
+        const d = new Date(fecha);
+        return d.toLocaleDateString('es-PE', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    }
+
+    function cargarIngenieros() {
+        console.log('cargarIngenieros');
+        $.get('/presupuesto-agricola/presupuesto/ingenieros/', function(res) {
+            console.log(res);
+            if (res.status === "ok") {
+                res.data.forEach(i => {
+                    $('#cmbIngeniero').append(`
+                        <option value="${i.id}">${i.nombre} (${i.username})</option>
+                    `);
+                });
+            }
+        });
+    }
+
+
+</script>
+{% endblock %}
+

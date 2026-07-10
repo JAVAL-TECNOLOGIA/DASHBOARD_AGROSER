@@ -1,0 +1,150 @@
+{% load static %}
+{% include 'base/header.html' %}
+{% include 'base/sidebar.html' %}
+{% block css %}
+   <!-- ================== BEGIN PAGE LEVEL STYLE ================== -->
+    <link href="{% static 'assets/plugins/DataTables/media/css/dataTables.bootstrap.min.css' %}" rel="stylesheet" />
+    <link href="{% static 'assets/plugins/DataTables/extensions/Responsive/css/responsive.bootstrap.min.css' %}" rel="stylesheet" />
+    <link href="{% static 'assets/plugins/bootstrap-datepicker/css/bootstrap-datepicker.css' %}" rel="stylesheet" />
+    <link href="{% static 'assets/plugins/bootstrap-datepicker/css/bootstrap-datepicker3.css' %}" rel="stylesheet" />
+    <!-- ================== END PAGE LEVEL STYLE ================== -->
+    <link href="{% static 'assets/plugins/gritter/css/jquery.gritter.css' %}" rel="stylesheet" />
+    <script src="{% static 'assets/plugins/pace/pace.min.js' %}"></script>
+    <!-- ================== END BASE JS ================== -->
+{% endblock %}
+
+    	<!-- begin #content -->
+		<div id="content" class="content">
+        	<!-- begin panel -->
+			<div class="panel panel-inverse">
+				<!-- begin panel-heading -->
+				<div class="panel-heading">
+					<div class="panel-heading-btn">
+						<a href="javascript:;" class="btn btn-xs btn-icon btn-circle btn-default" data-click="panel-expand"><i class="fa fa-expand"></i></a>
+					</div>
+					<h4 class="panel-title">Aprobación de órdenes de compra y servicio.</h4>
+				</div>
+				<!-- begin panel-body -->
+				<div class="panel-body">
+						<!-- begin table-responsive -->
+					<div class="row">
+				
+						<div class="col-md-6">
+							<label class="">Seleccionar área</label> 
+							<div class="form-group m-b-10">
+								<select class="form-control" id="selectApproveArea">
+								</select>
+							</div>
+						</div>
+						
+						<div class="col-md-2">
+							<label class="invisible">.</label>
+							<input type="button" id="btnApproveShow" class="btn btn-success form-control"  value="Mostrar" />
+						</div>
+					</div><br>
+					<div class="table-responsive">					
+						<table class="table table-hover m-b-0 text-inverse" id="tableApproveOrders">
+							<thead>
+								<tr>
+									<th>Item</th>
+									<th>Fecha</th>
+									<th>Orden</th>
+									<th>Doc/Serie/Número</th>
+									<th>Mon.</th>
+									<th>Importe</th>
+									<th>Razón Social</th>
+									<th>Est</th>
+									<th>Área</th>
+									<th>Área</th>
+								</tr>
+							</thead>
+							<tbody>
+							</tbody>
+						</table>
+					</div>
+				</div>
+				<!-- end panel-body -->
+			</div>
+			<!-- end panel -->
+		</div>
+		<!-- end #content -->
+	<!-- #modal-dialog -->
+		<div class="modal fade" id="modalApproveOrders">
+			<div class="modal-dialog modal-dialog-centered modal-lg">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h4 class="modal-title">Detalle de órdenes de compra/servicio</h4>
+						<button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+					</div>
+					<div class="modal-body">
+						<div class="row">
+							<div class="col-8">
+							<div class="float-left">
+                                <p>Proveedor : <b id="lblProveedor"></b> &nbsp; &nbsp; RUC : <b id="lblRuc"></b><br><br>Condición:  <b id="lblCondicion"></b><br><br>Responsable :  <b id="lblResponsable"></b></p>
+                            </div>
+							</div>
+							<div class="col-4">
+								<div class="float-right">
+									<button id='btn-aprobar' class="btn btn-sm btn-success"><i class="fa fa-check-circle"></i> &nbsp; OK</button>
+									<button  id='btnvb' class="btn btn-sm btn-info "><i class="fa fa-info-circle"></i> &nbsp; VB</button>
+									<button   id='btnanular'class="btn btn-sm btn-danger disabled"><i class="fa fa-times-circle"></i> &nbsp; AN</button>
+								</div>
+							</div>
+						</div>
+						<!-- begin table-responsive -->
+						<div class="table-responsive">
+							<table class="table m-b-0" id="tableApproveOrdersLogDetail">
+								<thead>
+									<tr>
+										<th>#</th>
+										<th>producto</th>
+										<th>medida</th>
+										<th>cantidad</th>
+										<th>precio uni</th>
+										<th>impuesto</th>
+										<th>total</th>
+									</tr>
+								</thead>
+								<tbody id="tableBodyApproveOrdersLogDetail">
+								</tbody>
+								<tfoot>
+									<tr>
+										<th></th>
+										<th></th>
+										<th></th>
+										<th></th>
+										<th></th>
+										<th>Total:</th>
+										<th><b id="lblTotal"></b></th>
+									</tr>
+								</tfoot>
+							</table>
+						</div>
+                    <!-- end table-responsive -->
+					</div>
+					<div class="modal-footer">
+						<a href="javascript:;" class="btn btn-white" data-dismiss="modal">Cerrar</a>
+					</div>
+				</div>
+			</div>       
+		</div>
+{% include 'base/footer.html' %}
+{% block js %}
+	<!-- ================== END BASE JS ================== -->
+    <script src="{% static 'assets/plugins/bootstrap-datepicker/js/bootstrap-datepicker.js' %}"></script>
+    <script src="{% static 'assets/plugins/DataTables/media/js/jquery.dataTables.js' %}"></script>
+	<script src="{% static 'assets/plugins/DataTables/media/js/dataTables.bootstrap.min.js' %}"></script>
+    <script src="{% static 'assets/js/demo/form-plugins.demo.js' %}"></script>
+    <script src="{% static 'assets/plugins/masked-input/masked-input.min.js' %}"></script>
+	<script src="{% static 'assets/plugins/ionRangeSlider/js/ion-rangeSlider/ion.rangeSlider.min.js' %}"></script>
+	<!-- ================== BEGIN PAGE LEVEL JS ================== -->
+	<script src="{% static 'assets/plugins/gritter/js/jquery.gritter.js' %}"></script>
+	<script src="{% static 'assets/plugins/bootstrap-sweetalert/sweetalert.min.js' %}"></script>
+	<script src="{% static 'assets/js/demo/ui-modal-notification.demo.min.js' %}"></script>
+    <script src="{% static 'core/js/script/script_approve_orders.js' %}"></script>
+    <script>
+        $(document).ready(function(){    
+            App.init();
+        });
+    </script>
+{% endblock %}

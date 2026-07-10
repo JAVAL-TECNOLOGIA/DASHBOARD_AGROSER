@@ -1,0 +1,312 @@
+{% load static %}
+
+<!-- SECCIÓN PRINCIPAL DE FASE FINAL -->
+<div class="card-body">
+    <div class="tab-pane fade show active" id="pills-final" role="tabpanel" aria-labelledby="pills-final-tab">
+        
+        <!-- Tarjeta principal de evaluaciones -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0"><i class="fas fa-flag-checkered text-success mr-2"></i>Seguimiento de Avance - Fase Final</h6>
+                    
+                </div>
+            </div>
+            <div class="card-body p-2">
+                <table id="tablaEvaluaciones_final" class="table table-sm table-bordered table-striped table-hover responsive nowrap" style="width:100%; font-size:0.7rem;">
+                    <thead class="bg-light">
+                        <tr>
+                            <th>ID</th>
+                            <th style="min-width: 390px; white-space: nowrap;">Evaluado</th>
+                            <th style="min-width: 390px; white-space: nowrap;">Evaluador</th>
+                            <th style="min-width: 100px; white-space: nowrap;">Período</th>
+                            <th style="min-width: 120px; white-space: nowrap;">Área</th>
+                            <th style="min-width: 100px; white-space: nowrap;">Objetivos</th>
+                            <th style="min-width: 100px; white-space: nowrap;">Competencias</th>
+                            <th style="min-width: 100px; white-space: nowrap;">Avance Intermedio</th>
+                            <th style="min-width: 100px; white-space: nowrap;">Avance Final</th>
+                            <th style="min-width: 100px; white-space: nowrap;">Estado</th>
+                            <th style="min-width: 50px; white-space: nowrap;">Acciones</th>
+                            
+                        </tr>
+                    </thead>
+                    <tbody>
+                        
+
+
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL PARA SEGUIMIENTO DE AVANCE FINAL -->
+<div class="modal fade" id="Modal_Seguimiento_Avance_Final" tabindex="-1" role="dialog" aria-labelledby="ModalSeguimientoAvanceFinalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl" style="max-width: 90%; width: 90%;" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-gradient-success text-white">
+                <h5 class="modal-title" id="ModalSeguimientoAvanceFinalLabel">
+                    <i class="fas fa-flag-checkered mr-1"></i>Seguimiento de Avance - Fase Final
+                </h5>
+                <button type="button"  class="close text-white   btn btn-danger btn-sm" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            
+            <div class="modal-body">
+                <!-- Información del Evaluado -->
+                <div class="card mb-3">
+                    <div class="card-header bg-light">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="mb-0"><i class="fas fa-user mr-2"></i>Información del Evaluado</h6>
+                            </div>
+                            <div class="col-md-6 text-right">
+                                <span class="badge badge-success">Período: <span id="evaluado_periodo_final">- -</span></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-2">
+                                <div class="d-flex align-items-center">
+                                    <div class="modern-avatar bg-success mr-3" style="width: 50px; height: 50px;">
+                                        <span class="initials" style="font-size: 18px;">JG</span>
+                                    </div>
+                                    <div>
+                                        <strong style="font-weight: 600;" id="nombre_final"></strong>
+                                        <br><small class="text-muted" id="evaluado_cargo_final">Analista de RRHH</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <small class="text-muted">Área:</small>
+                                <br><strong id="evaluado_area_final">Recursos Humanos</strong>
+                            </div>
+                            <div class="col-md-2">
+                                <small class="text-muted">Evaluador:</small>
+                                <br><strong id="evaluador_nombre_final">María Pérez</strong>
+                            </div>
+                            <div class="col-md-3">
+                                <small class="text-muted">Avance Final:</small>
+                                <br>
+                                <div class="progress" style="height: 25px;">
+                                    <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated" id="avance_general_final" style="width: 52.5%">
+                                        <strong>52.5%</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pestañas para Objetivos y Competencias -->
+                <ul class="nav nav-tabs mb-3" id="avanceFinalTab" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active" id="objetivos-avance-final-tab" data-toggle="tab" href="#objetivos-avance-final" role="tab">
+                            <i class="fas fa-bullseye mr-1"></i>Objetivos (<span id="count_objetivos_final">5</span>)
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="competencias-avance-final-tab" data-toggle="tab" href="#competencias-avance-final" role="tab">
+                            <i class="fas fa-star mr-1"></i>Competencias (<span id="count_competencias_final">8</span>)
+                        </a>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="avanceFinalTabContent">
+                    <div class="tab-pane fade show active" id="objetivos-avance-final" role="tabpanel">
+                        <div class="card">
+                            <div class="card-header bg-success text-white">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0"><i class="fas fa-bullseye mr-2"></i>Avance Final de Objetivos</h6>
+                                    <button type="button" class="btn btn-light btn-sm" onclick="guardarAvanceObjetivosFinal()">
+                                        <i class="fas fa-save mr-1"></i>Guardar Avance Final
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover mb-0">
+                                        <thead class="bg-light">
+                                            <tr>
+                                                <th style="width: 20%;">Objetivo</th>
+                                                <th style="width: 10%;">Período</th>
+                                                <th style="width: 10%;">Indicador</th>
+                                                <th style="width: 10%;">Meta</th>
+                                                <th style="width: 15%;">Comentarios Finales</th>
+                                                <th style="width: 10%;">Avance Intermedio</th>
+                                                <th style="width: 15%;">Nuevo Avance Final</th>
+                                                <th style="width: 10%;">Avance Actual</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tabla_objetivos_avance_final">
+                                            <!-- Los datos se cargan dinámicamente -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pestaña de Competencias Final -->
+                    <div class="tab-pane fade" id="competencias-avance-final" role="tabpanel">
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0"><i class="fas fa-star mr-2"></i>Avance Final de Competencias</h6>
+                                    <button type="button" class="btn btn-light btn-sm" onclick="guardarAvanceCompetenciasFinal()">
+                                        <i class="fas fa-save mr-1"></i>Guardar Avance Final
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-hover mb-0">
+                                        <thead class="bg-light">
+                                            <tr>
+                                                <th style="width: 15%;">Competencia</th>
+                                                <th style="width: 10%;">Tipo</th>
+                                                <th style="width: 10%;">Meta</th>
+                                                <th style="width: 15%;">Comentarios Finales</th>
+                                                <th style="width: 10%;">Avance Intermedio</th>
+                                                <th style="width: 15%;">Nuevo Avance Final</th>
+                                                <th style="width: 10%;">Avance Actual</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tabla_competencias_avance_final">
+                                            <!-- Datos dinámicos -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fas fa-times mr-1"></i>Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Estilos específicos para la fase final */
+.progress-bar {
+    transition: width 0.3s ease;
+}
+
+.avance-input-final {
+    text-align: center;
+    font-weight: bold;
+}
+
+.avance-input-final:focus {
+    border-color: #28a745;
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+}
+
+.card-header.bg-gradient-success {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+}
+
+.card-header.bg-success {
+    background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+}
+
+.badge-success { background-color: #28a745; }
+.badge-primary { background-color: #007bff; }
+.badge-info { background-color: #17a2b8; }
+.badge-warning { background-color: #ffc107; color: #212529; }
+
+.modern-avatar {
+    transition: transform 0.2s ease;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+}
+
+.modern-avatar:hover {
+    transform: scale(1.1);
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+/* Hover effect para las filas de la tabla principal */
+tbody tr[data-evaluacion-id] {
+    transition: background-color 0.2s ease;
+}
+
+tbody tr[data-evaluacion-id]:hover {
+    background-color: #f8f9fa !important;
+}
+
+/* Indicador visual de que la fila es clickeable */
+tbody tr[data-evaluacion-id]:hover td {
+    background-color: rgba(40, 167, 69, 0.05);
+}
+
+/* Animaciones para los progress bars */
+@keyframes progressAnimation {
+    0% { width: 0%; }
+    100% { width: var(--progress-width); }
+}
+
+.progress-bar.animated {
+    animation: progressAnimation 1s ease-in-out;
+}
+
+/* Estilos para campos de comentarios finales */
+.card-footer textarea {
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.card-footer textarea:focus {
+    border-color: #28a745;
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25), 0 4px 8px rgba(0,0,0,0.15);
+    transform: translateY(-2px);
+}
+
+.card-footer .form-label {
+    color: #495057;
+    font-weight: 600;
+}
+
+.card-footer .form-label i.text-success {
+    color: #28a745 !important;
+}
+
+.card-footer .form-label i.text-primary {
+    color: #007bff !important;
+}
+
+.card-footer .form-text {
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+.card-footer {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-top: 2px solid #dee2e6;
+}
+
+.card-footer textarea::placeholder {
+    color: #adb5bd;
+    font-style: italic;
+}
+</style>
+
+<script src="{% static 'core/js/ALMACEN/DonLuis/rrhh_fase_final.js' %}"></script>

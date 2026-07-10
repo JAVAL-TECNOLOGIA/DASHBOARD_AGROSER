@@ -1,0 +1,224 @@
+{% load static %}
+{% include 'base/header.html' %}
+{% include 'base/sidebar.html' %}
+
+<style>
+    .aprobaciones-header {
+        background: linear-gradient(90deg, #f39c12 0%, #e67e22 100%);
+        color: white;
+        padding: 15px 20px;
+        margin-bottom: 0;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+    
+    .aprobaciones-header h4 {
+        margin: 0;
+        font-weight: 600;
+        font-size: 16px;
+    }
+    
+    .tabs-nav {
+        display: flex;
+        background: #f5f5f5;
+        border-bottom: 2px solid #ddd;
+        overflow-x: auto;
+    }
+    
+    .tab-item {
+        padding: 12px 20px;
+        cursor: pointer;
+        background: #e0e0e0;
+        border: none;
+        font-size: 13px;
+        font-weight: 500;
+        color: #333;
+        white-space: nowrap;
+        border-right: 1px solid #ccc;
+    }
+    
+    .tab-item:hover {
+        background: #d0d0d0;
+    }
+    
+    .tab-item.active {
+        background: white;
+        color: #000;
+    }
+    
+    .tab-content-container {
+        padding: 30px;
+        background: white;
+        text-align: center;
+    }
+    
+    .tab-pane {
+        display: none;
+    }
+    
+    .tab-pane.active {
+        display: block;
+    }
+</style>
+
+<div id="content" class="content">
+    <div style="background: white; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px;">
+        <div class="aprobaciones-header">
+            <i class="fa fa-list-alt fa-lg"></i>
+            <h4>APROBACIONES - {{ empresa|upper }}</h4>
+        </div>
+
+        <div class="tabs-nav">
+            {% for modulo in modulos %}
+            <button class="tab-item {% if forloop.first %}active{% endif %}" 
+                    onclick="showTab('{{ modulo.nombre|slugify }}', this)">
+                {{ modulo.nombre|upper }}
+            </button>
+            {% endfor %}
+        </div>
+
+        <div class="tab-content-container">
+            <!-- FITOSANIDAD -->
+            <div id="tab-fitosanidad-cv" class="tab-pane active">
+              <div class="tab-loader" style="display:none;">
+                <i class="fa fa-spinner fa-spin"></i> Cargando...
+              </div>
+
+              <div class="tab-body" data-url="{% url 'fitosanidad_cv_partial' %}"></div>
+            </div>
+
+            <!-- REQ INTERNO -->
+            <div id="tab-requerimientos-cv" class="tab-pane">
+              <div class="tab-loader" style="display:none;">
+                <i class="fa fa-spinner fa-spin"></i> Cargando...
+              </div>
+
+              <div class="tab-body" data-url="{% url 'req_internos_cv_partial' %}"></div>
+            </div>
+
+            <!-- PEDIDO COMPRA -->
+            <div id="tab-pedidos-de-compras-cv" class="tab-pane">
+              <div class="tab-loader" style="display:none;">
+                <i class="fa fa-spinner fa-spin"></i> Cargando...
+              </div>
+
+              <div class="tab-body" data-url="{% url 'ped_compras_cv_partial' %}"></div>
+            </div>
+
+            <!-- PEDIDO SERVICIOS -->
+            <div id="tab-pedidos-de-servicios-cv" class="tab-pane">
+              <div class="tab-loader" style="display:none;">
+                <i class="fa fa-spinner fa-spin"></i> Cargando...
+              </div>
+
+              <div class="tab-body" data-url="{% url 'ped_servicios_cv_partial' %}"></div>
+            </div> 
+
+            <!-- ORDENES COMPRAS -->
+            <div id="tab-ordenes-de-compras-cv" class="tab-pane">
+              <div class="tab-loader" style="display:none;">
+                <i class="fa fa-spinner fa-spin"></i> Cargando...
+              </div>
+
+              <div class="tab-body" data-url="{% url 'ordenes_compras_cv_partial' %}"></div>
+            </div>
+            
+              <!-- ORDENES SERVICIOS -->
+            <div id="tab-ordenes-de-servicios-cv" class="tab-pane">
+              <div class="tab-loader" style="display:none;">
+                <i class="fa fa-spinner fa-spin"></i> Cargando...
+              </div>
+
+              <div class="tab-body" data-url="{% url 'ordenes_servicios_cv_partial' %}"></div>
+            </div>
+
+
+        </div>
+    </div>
+</div>
+
+{% include 'base/footer.html' %}
+
+{% block js %}
+	<!-- ================== END BASE JS ================== -->
+  <script src="{% static 'assets/plugins/bootstrap-datepicker/js/bootstrap-datepicker.js' %}"></script>
+  <script src="{% static 'assets/plugins/DataTables/media/js/jquery.dataTables.js' %}"></script>
+	<script src="{% static 'assets/plugins/DataTables/media/js/dataTables.bootstrap.min.js' %}"></script>
+  <script src="{% static 'assets/js/demo/form-plugins.demo.js' %}"></script>
+  <script src="{% static 'assets/plugins/masked-input/masked-input.min.js' %}"></script>
+	<script src="{% static 'assets/plugins/ionRangeSlider/js/ion-rangeSlider/ion.rangeSlider.min.js' %}"></script>
+	<!-- ================== BEGIN PAGE LEVEL JS ================== -->
+	<script src="{% static 'assets/plugins/gritter/js/jquery.gritter.js' %}"></script>
+	<script src="{% static 'assets/plugins/bootstrap-sweetalert/sweetalert.min.js' %}"></script>
+	<script src="{% static 'assets/js/demo/ui-modal-notification.demo.min.js' %}"></script>
+    
+    <script src="{% static 'core/js/script/script_fitosanidad_cv.js' %}"></script>
+    <script src="{% static 'core/js/script/script_req_interno_cv.js' %}"></script>
+    <script src="{% static 'core/js/script/script_approve_almacen_cv.js' %}"></script>
+    <script src="{% static 'core/js/script/script_approve_pservicios_cv.js' %}"></script>
+    <script src="{% static 'core/js/script/script_approve_compras_cv.js' %}"></script>
+    <script src="{% static 'core/js/script/script_approve_servicios_cv.js' %}"></script>
+
+	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+{% endblock %}
+
+<script>
+    App.init();
+
+     const loadedTabs = new Set();
+
+  async function loadTab(tabId) {
+    const tab = document.getElementById(`tab-${tabId}`);
+    const body = tab.querySelector('.tab-body');
+    const loader = tab.querySelector('.tab-loader');
+    const url = body.dataset.url;
+
+    if (loadedTabs.has(url)) return;
+
+    loader.style.display = 'block';
+    const res = await fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' }});
+    body.innerHTML = await res.text();
+    loader.style.display = 'none';
+
+    loadedTabs.add(url);
+
+    // inicializar JS del módulo
+    if (tabId === 'fitosanidad-cv' && window.initFitosanidadCVModule) {
+      window.initFitosanidadCVModule(tab);
+    }
+    if (tabId === 'requerimientos-cv' && window.initRequerimientoCVModule) {
+      window.initRequerimientoCVModule(tab);
+    }
+    if (tabId === 'pedidos-de-compras-cv' && window.initPComprasCVModule) {
+      window.initPComprasCVModule(tab);
+    }
+    if (tabId === 'pedidos-de-servicios-cv' && window.initPServiciosCVModule) {
+      window.initPServiciosCVModule(tab);
+    }
+    if (tabId === 'ordenes-de-compras-cv' && window.initOComprasCVModule) {
+      window.initOComprasCVModule(tab);
+    }
+    if (tabId === 'ordenes-de-servicios-cv' && window.initOServiciosCVModule) {
+      window.initOServiciosCVModule(tab);
+    }
+  }
+
+  function showTab(tabId, button) {
+    document.querySelectorAll('.tab-item').forEach(x => x.classList.remove('active'));
+    button.classList.add('active');
+
+    document.querySelectorAll('.tab-pane').forEach(x => x.classList.remove('active'));
+    document.getElementById(`tab-${tabId}`).classList.add('active');
+
+    loadTab(tabId);
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    loadTab('fitosanidad-cv'); // carga primer tab
+  });
+
+    
+ 
+</script>

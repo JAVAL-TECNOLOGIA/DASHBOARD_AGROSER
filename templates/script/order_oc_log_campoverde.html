@@ -1,0 +1,72 @@
+{% load static %}
+{% include 'base/header.html' %}
+{% block css %}
+    <link href="{% static 'assets/plugins/DataTables/media/css/dataTables.bootstrap.min.css' %}" rel="stylesheet" />
+    <link href="{% static 'assets/plugins/DataTables/extensions/Buttons/css/buttons.bootstrap.min.css' %}" rel="stylesheet" />
+    <link href="{% static 'core/css/oc_orden_compra_log.css' %}" rel="stylesheet"/>
+    
+    {% endblock %}
+{% include 'base/sidebar.html' %}
+<!-- begin #content -->
+<div id="content" class="content">
+    <!-- begin panel -->
+    <div class="panel panel-inverse">
+        <div class="panel-heading">
+            <div class="panel-heading-btn">
+                <a href="javascript:;" class="btn btn-xs btn-icon btn-circle btn-default" data-click="panel-expand"><i class="fa fa-expand"></i></a>
+            </div>
+            <h4 class="panel-title">Reporte de Orden de Compra - Campo Verde.</h4>
+        </div>
+        <!-- begin panel-body -->
+        <div class="panel-body">
+            <div class="table-responsive">			
+                <table class="table m-b-0 table-striped" id="tableOCcampoverde">
+                    <thead>
+                        <tr>
+                            <th>Estado</th>
+                            <th>Documento</th>
+                            <th>Razón Social</th>
+                            <th>Idproducto</th>
+                            <th>Producto</th>
+                            <th>Unidad</th>
+                            <th>Cantidad</th>
+                            <th>Precio U.</th>
+                            <th>Subtotal</th>
+                            <th>Impuesto</th>
+                            <th>Total</th>
+                            <th>Moneda</th>
+                            <th>Idconsumidor</th>
+                            <th>Consumidor</th>
+                            <th>Sucursal</th>
+                            <th>Almacén</th>
+                            <th>Fecha</th>
+                            <th>Periodo</th>
+                            <th>Cant Rec.</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <!-- end panel-body -->
+    </div>
+    <!-- end panel -->
+</div>
+<!-- end #content -->
+{% include 'base/footer.html' %}
+{% block js %}
+    <script
+        type="text/javascript"
+        src="https://cdn.datatables.net/v/bs4/jszip-2.5.0/dt-1.10.21/b-1.6.2/b-html5-1.6.2/datatables.min.js">
+    </script>
+    <script src="{% static 'assets/js/buttons.html5.styles.min.js' %}"></script>
+    <script src="{% static 'assets/js/buttons.html5.styles.templates.min.js' %}"></script>
+    <script src="{% static 'core/js/script/script_oc_orden_compra_log_campoverde.js' %}"></script>
+  
+    <script>
+        $(document).ready(function(){   
+            App.init();                        
+        });
+    </script>
+{% endblock %}

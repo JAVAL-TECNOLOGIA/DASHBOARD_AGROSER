@@ -1,0 +1,8 @@
+node_modules/
+__pycache__/
+*.pycgit 
+*.pyc
+**/migrations/*.py
+
+# JetBrains / PyCharm
+.idea/

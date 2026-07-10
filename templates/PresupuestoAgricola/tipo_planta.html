@@ -1,0 +1,342 @@
+{% load static %}
+{% include 'base/header.html' %}
+{% include 'base/sidebar.html' %}
+
+{% block css %}
+<link href="{% static 'assets/plugins/DataTables/media/css/dataTables.bootstrap.min.css' %}" rel="stylesheet" />
+<link href="{% static 'assets/plugins/DataTables/extensions/Responsive/css/responsive.bootstrap.min.css' %}" rel="stylesheet" />
+<link href="{% static 'assets/plugins/bootstrap-datepicker/css/bootstrap-datepicker.css' %}" rel="stylesheet" />
+<link href="{% static 'assets/plugins/bootstrap-datepicker/css/bootstrap-datepicker3.css' %}" rel="stylesheet" />
+<link href="{% static 'assets/plugins/gritter/css/jquery.gritter.css' %}" rel="stylesheet" />
+<script src="{% static 'assets/plugins/pace/pace.min.js' %}"></script>
+{% endblock %}
+
+<div id="content" class="content">
+    <div class="panel panel-inverse">
+        <div class="panel-heading">
+            <h3 class="panel-title">Gestión de Tipos de Planta</h3>
+        </div>
+        <div class="panel-body"><br>
+            <div class="row">
+                <div class="col-md-2">
+                    <button onclick="modal_create_tipo_planta()" class="btn btn-success" style="color:white;">
+                        <i class="fa fa-plus"></i> Agregar Tipo de Planta
+                    </button>
+                </div>
+            </div>
+            <br>
+            <div class="table-responsive">
+                <table class="table table-bordered" id="tableListTipoPlanta">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre Corto</th>
+                            <th>Descripción</th>
+                            <th>Opciones</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalCreateTipoPlanta"></div>
+<div class="modal fade" id="modalUpdateTipoPlanta"></div>
+<div class="modal fade" id="modalDeleteTipoPlanta"></div>
+
+{% include 'base/footer.html' %}
+
+{% block js %}
+<script src="{% static 'assets/plugins/bootstrap-datepicker/js/bootstrap-datepicker.js' %}"></script>
+<script src="{% static 'assets/plugins/DataTables/media/js/jquery.dataTables.js' %}"></script>
+<script src="{% static 'assets/plugins/DataTables/media/js/dataTables.bootstrap.min.js' %}"></script>
+<script src="{% static 'assets/plugins/DataTables/extensions/Responsive/js/dataTables.responsive.min.js' %}"></script>
+<script src="{% static 'assets/js/demo/table-manage-default.demo.js' %}"></script>
+<script src="{% static 'assets/js/demo/form-plugins.demo.js' %}"></script>
+<script src="{% static 'assets/plugins/masked-input/masked-input.min.js' %}"></script>
+<script src="{% static 'assets/plugins/ionRangeSlider/js/ion-rangeSlider/ion.rangeSlider.min.js' %}"></script>
+<script src="{% static 'assets/plugins/gritter/js/jquery.gritter.js' %}"></script>
+<script src="{% static 'assets/plugins/bootstrap-sweetalert/sweetalert.min.js' %}"></script>
+<script src="{% static 'assets/js/demo/ui-modal-notification.demo.min.js' %}"></script>
+
+<script>
+    $(document).ready(function(){
+        App.init();
+        cargarTiposPlantas();
+    });
+
+    function cargarTiposPlantas(){
+        $.get('/presupuesto-agricola/tipo-planta/api/tipo-planta/', function(response){
+            // Destruir DataTable si ya existe ANTES de cambiar el HTML
+            if ($.fn.DataTable.isDataTable('#tableListTipoPlanta')) {
+                $('#tableListTipoPlanta').DataTable().clear().destroy();
+            }
+
+            let tbody = '';
+            response.data.forEach(function(tipoPlanta){
+                tbody += `<tr>
+                    <td>${tipoPlanta.ID_TPPLANTA}</td>
+                    <td><span class="badge badge-primary">${tipoPlanta.NOM_CORTO}</span></td>
+                    <td>${tipoPlanta.DESCRIPCION}</td>
+                    <td>
+                        <button class="btn btn-warning btn-xs" onclick="modal_update_tipo_planta(${tipoPlanta.ID_TPPLANTA})" title="Editar">
+                            <i class="fa fa-edit"></i>
+                        </button>
+                        <button class="btn btn-danger btn-xs" onclick="modal_delete_tipo_planta(${tipoPlanta.ID_TPPLANTA})" title="Eliminar">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>`;
+            });
+            
+            // Cambiar el HTML
+            $('#tableListTipoPlanta tbody').html(tbody);
+            
+            // Recrear DataTable con pequeño delay para asegurar que el DOM esté listo
+            setTimeout(function() {
+                $('#tableListTipoPlanta').DataTable({
+                    responsive: true,
+                    destroy: true, // Permite recrear la tabla
+                    language: {
+                        url: '//cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json'
+                    },
+                    order: [[0, 'asc']] // Ordenar por ID ascendente por defecto
+                });
+            }, 100);
+            
+        }).fail(function(xhr, status, error) {
+            console.error('Error al cargar tipos de plantas:', error);
+            swal('Error', 'No se pudieron cargar los tipos de plantas', 'error');
+        });
+    }
+
+    function modal_create_tipo_planta(){
+        let html = `<form id="formCreateTipoPlanta">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title">Agregar Tipo de Planta</h4>
+                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group">
+                            <label>Nombre Corto <span class="text-danger">*</span></label>
+                            <input type="text" name="nom_corto" class="form-control" placeholder="Ej: P, F, A, etc." maxlength="10" required>
+                            <small class="form-text text-muted">Máximo 10 caracteres</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Descripción <span class="text-danger">*</span></label>
+                            <input type="text" name="descripcion" class="form-control" placeholder="Descripción del tipo de planta" maxlength="100" required>
+                            <small class="form-text text-muted">Máximo 100 caracteres</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" onclick="saveCreateTipoPlanta()">
+                            <i class="fa fa-save"></i> Guardar
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                            <i class="fa fa-times"></i> Cancelar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>`;
+
+        $('#modalCreateTipoPlanta').html(html).modal('show');
+        
+        // Enfocar el primer campo
+        setTimeout(function() {
+            $('#formCreateTipoPlanta [name="nom_corto"]').focus();
+        }, 500);
+    }
+
+    function saveCreateTipoPlanta(){
+        let form = $('#formCreateTipoPlanta');
+        let nomCorto = form.find('[name="nom_corto"]').val().trim();
+        let descripcion = form.find('[name="descripcion"]').val().trim();
+
+        if (!nomCorto) {
+            swal('Error', 'El nombre corto es obligatorio', 'error');
+            return;
+        }
+        if (!descripcion) {
+            swal('Error', 'La descripción es obligatoria', 'error');
+            return;
+        }
+
+        let data = {
+            nom_corto: nomCorto.toUpperCase(),
+            descripcion: descripcion
+        };
+
+        $.ajax({
+            url: '/presupuesto-agricola/tipo-planta/api/tipo-planta/',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify(data),
+            success: function(response){
+                $('#modalCreateTipoPlanta').modal('hide');
+                swal('¡Éxito!', 'Tipo de planta registrado correctamente', 'success');
+                // Esperar un poco para que el modal se cierre completamente
+                setTimeout(function() {
+                    cargarTiposPlantas();
+                }, 300);
+            },
+            error: function(xhr, status, error){
+                let errorMessage = 'Error al crear tipo de planta';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                }
+                console.error('Error:', xhr.responseText);
+                swal('Error', errorMessage, 'error');
+            }
+        });
+    }
+
+    function modal_update_tipo_planta(id){
+        $.get(`/presupuesto-agricola/tipo-planta/api/tipo-planta/${id}/`, function(response){
+            let tipoPlanta = response.data;
+
+            let html = `<form id="formUpdateTipoPlanta">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h4 class="modal-title">Editar Tipo de Planta</h4>
+                            <button type="button" class="close" data-dismiss="modal">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="form-group">
+                                <label>ID Tipo Planta</label>
+                                <input type="number" name="id_tipo_planta" class="form-control" value="${tipoPlanta.ID_TPPLANTA}" readonly/>
+                            </div>
+                            <div class="form-group">
+                                <label>Nombre Corto <span class="text-danger">*</span></label>
+                                <input type="text" name="nom_corto" class="form-control" value="${tipoPlanta.NOM_CORTO}" maxlength="10" required>
+                                <small class="form-text text-muted">Máximo 10 caracteres</small>
+                            </div>
+                            <div class="form-group">
+                                <label>Descripción <span class="text-danger">*</span></label>
+                                <input type="text" name="descripcion" class="form-control" value="${tipoPlanta.DESCRIPCION}" maxlength="100" required>
+                                <small class="form-text text-muted">Máximo 100 caracteres</small>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" onclick="saveUpdateTipoPlanta(${id})">
+                                <i class="fa fa-save"></i> Actualizar
+                            </button>
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                                <i class="fa fa-times"></i> Cancelar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>`;
+            
+            $('#modalUpdateTipoPlanta').html(html).modal('show');
+            
+            // Enfocar el primer campo editable
+            setTimeout(function() {
+                $('#formUpdateTipoPlanta [name="nom_corto"]').focus().select();
+            }, 500);
+        }).fail(function(xhr, status, error) {
+            swal('Error', 'No se pudo cargar la información del tipo de planta', 'error');
+        });
+    }
+
+    function saveUpdateTipoPlanta(id){
+        let form = $('#formUpdateTipoPlanta');
+        let nomCorto = form.find('[name="nom_corto"]').val().trim();
+        let descripcion = form.find('[name="descripcion"]').val().trim();
+
+        if (!nomCorto) {
+            swal('Error', 'El nombre corto es obligatorio', 'error');
+            return;
+        }
+        if (!descripcion) {
+            swal('Error', 'La descripción es obligatoria', 'error');
+            return;
+        }
+
+        let data = {
+            nom_corto: nomCorto.toUpperCase(),
+            descripcion: descripcion
+        };
+
+        $.ajax({
+            url: `/presupuesto-agricola/tipo-planta/api/tipo-planta/${id}/`,
+            type: 'PUT',
+            contentType: 'application/json',
+            data: JSON.stringify(data),
+            success: function(response){
+                $('#modalUpdateTipoPlanta').modal('hide');
+                swal('¡Éxito!', 'Tipo de planta actualizado correctamente', 'success');
+                // Esperar un poco para que el modal se cierre completamente
+                setTimeout(function() {
+                    cargarTiposPlantas();
+                }, 300);
+            },
+            error: function(xhr, status, error){
+                let errorMessage = 'Error al actualizar tipo de planta';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                }
+                console.error('Error:', xhr.responseText);
+                swal('Error', errorMessage, 'error');
+            }
+        });
+    }
+
+    function modal_delete_tipo_planta(id){
+        let html = `<div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">Eliminar Tipo de Planta</h4>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center">
+                        <i class="fa fa-warning fa-4x text-warning"></i>
+                        <h4 class="m-t-10">¿Estás seguro?</h4>
+                        <p>Esta acción eliminará permanentemente este tipo de planta.<br>
+                        <strong>Esta acción no se puede deshacer.</strong></p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" onclick="deleteTipoPlanta(${id})">
+                        <i class="fa fa-trash"></i> Sí, Eliminar
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fa fa-times"></i> Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>`;
+        $('#modalDeleteTipoPlanta').html(html).modal('show');
+    }
+
+    function deleteTipoPlanta(id){
+        $.ajax({
+            url: `/presupuesto-agricola/tipo-planta/api/tipo-planta/${id}/`,
+            type: 'DELETE',
+            success: function(response){
+                $('#modalDeleteTipoPlanta').modal('hide');
+                swal('¡Eliminado!', 'Tipo de planta eliminado correctamente', 'success');
+                // Esperar un poco para que el modal se cierre completamente
+                setTimeout(function() {
+                    cargarTiposPlantas();
+                }, 300);
+            },
+            error: function(xhr, status, error){
+                let errorMessage = 'Error al eliminar tipo de planta';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                }
+                console.error('Error:', xhr.responseText);
+                swal('Error', errorMessage, 'error');
+            }
+        });
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,88 @@
+/* styles.css */
+
+/* Estilo para el encabezado */
+h2 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+/* Estilo para la tabla */
+table {
+    width: 80%; /* Ajusta el ancho de la tabla según tus necesidades */
+    margin: 0 auto;
+    border-collapse: collapse;
+}
+
+/* Estilo para las filas impares */
+table tr:nth-child(odd) {
+    background-color: #f2f2f2;
+}
+
+/* Estilo para las celdas de la tabla */
+table td, table th {
+    padding: 8px;
+    text-align: left;
+}
+
+/* Estilo para los botones */
+.btn {
+    margin-right: 5px;
+}
+
+/* Contenedor para los botones */
+.actions {
+    text-align: right;
+    margin-top: 10px;
+}
+
+/* Estilo para el contenedor principal */
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+}
+/* styles.css */
+
+/* Estilo para el encabezado */
+h2 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+/* Estilo para la tabla */
+table {
+    width: 80%; /* Ajusta el ancho de la tabla según tus necesidades */
+    margin: 0 auto;
+    border-collapse: collapse;
+}
+
+/* Estilo para las filas impares */
+table tr:nth-child(odd) {
+    background-color: #f2f2f2;
+}
+
+/* Estilo para las celdas de la tabla */
+table td, table th {
+    padding: 8px;
+    text-align: left;
+}
+
+/* Estilo para los botones Editar y Eliminar */
+.btn-editar,
+.btn-eliminar {
+    margin-right: 5px;
+    padding: 5px 10px;
+}
+
+/* Estilo para el contenedor de botones */
+.actions {
+    text-align: right;
+    margin-top: 10px;
+}
+
+/* Estilo para el contenedor principal */
+.container {
+    max-width: 80%; /* Ajusta el ancho del contenedor principal según tus necesidades */
+    margin: 0 auto;
+    padding: 20px;
+}
