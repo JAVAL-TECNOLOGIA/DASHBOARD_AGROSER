@@ -178,6 +178,53 @@
             color: #a94442;
             border: 1px solid #f5c6cb;
         }
+
+        .message-warning {
+            background: #fff8e1;
+            color: #8a6d1d;
+            border: 1px solid #ffe082;
+        }
+
+        .connection-status {
+            align-items: center;
+            border-radius: 20px;
+            display: inline-flex;
+            font-size: 0.9em;
+            font-weight: 700;
+            gap: 7px;
+            justify-content: center;
+            margin-bottom: 14px;
+            padding: 6px 12px;
+        }
+
+        .connection-status::before {
+            background: currentColor;
+            border-radius: 50%;
+            content: '';
+            height: 8px;
+            width: 8px;
+        }
+
+        .status-checking {
+            background: #eef2f7;
+            color: #5f6b7a;
+        }
+
+        .status-connected {
+            background: #e6f4ea;
+            color: #1a6b3c;
+        }
+
+        .status-reconnecting {
+            background: #fff8e1;
+            color: #8a6d1d;
+        }
+
+        .status-offline,
+        .status-unavailable {
+            background: #fbeaea;
+            color: #a94442;
+        }
         
         .attendance-link {
             margin-top: 12px;
@@ -234,6 +281,9 @@
                     <i class="fas fa-barcode"></i>
                 </div>
                 <h3 style="color: #00d4ff; margin-bottom: 20px;">Escanee su código de barras</h3>
+                <div id="connectionStatus" class="connection-status status-checking">
+                    <span>Verificando</span>
+                </div>
                 <form id="scannerForm">
                     {% csrf_token %}
                     <input 
@@ -266,6 +316,68 @@
 
 <script>
 $(document).ready(function() {
+    const scannerInput = $('#scannerInput');
+    const heartbeatInterval = 30000;
+    const heartbeatFailureLimit = 3;
+    let heartbeatFailures = 0;
+    let heartbeatInProgress = false;
+    let lastHeartbeatAt = 0;
+
+    const connectionStates = {
+        checking: 'Verificando',
+        connected: 'Conectado',
+        reconnecting: 'Reconectando',
+        offline: 'Sin conexión',
+        unavailable: 'Sin servicio'
+    };
+
+    function setConnectionStatus(state) {
+        const status = $('#connectionStatus');
+        status
+            .removeClass('status-checking status-connected status-reconnecting status-offline status-unavailable')
+            .addClass(`status-${state}`)
+            .find('span')
+            .text(connectionStates[state]);
+    }
+
+    function focusScanner() {
+        if (document.visibilityState === 'visible' && !scannerInput.prop('disabled')) {
+            scannerInput.focus();
+        }
+    }
+
+    function checkScannerHealth() {
+        if (heartbeatInProgress) {
+            return;
+        }
+
+        heartbeatInProgress = true;
+        lastHeartbeatAt = Date.now();
+
+        $.ajax({
+            url: '{% url "marcadores_health" %}',
+            method: 'GET',
+            cache: false,
+            timeout: 10000
+        }).done(function(response) {
+            if (response.status === 'success') {
+                heartbeatFailures = 0;
+                setConnectionStatus('connected');
+            }
+        }).fail(function(xhr) {
+            heartbeatFailures += 1;
+
+            if (heartbeatFailures < heartbeatFailureLimit) {
+                setConnectionStatus('reconnecting');
+            } else if (!navigator.onLine || xhr.status === 0) {
+                setConnectionStatus('offline');
+            } else {
+                setConnectionStatus('unavailable');
+            }
+        }).always(function() {
+            heartbeatInProgress = false;
+        });
+    }
     
     function updateDigitalClock() {
         const now = new Date();
@@ -311,7 +423,7 @@ $(document).ready(function() {
             return;
         }
         $.ajax({
-            url: '/marcadores/api/procesar-marcacion/',
+            url: '{% url "procesar_marcacion" %}',
             method: 'POST',
             contentType: 'application/json',
             data: JSON.stringify({ 
@@ -319,20 +431,33 @@ $(document).ready(function() {
                 id_sede: {{ id_sede }}
             }),
             success: function(response) {
+                heartbeatFailures = 0;
+                setConnectionStatus('connected');
                 if(response.status === 'success' || response.status === 'warning' || response.status === 'primary') {
                     showMessage(response.message, response.tipo || 'success');
                 } else {
                     showMessage(response.message, 'error');
                 }
-                $('#scannerInput').val('').focus();
+                scannerInput.val('');
+                focusScanner();
             },
             error: function(xhr) {
                 let message = 'Error al procesar la marcación';
+                let messageType = 'error';
                 if(xhr.responseJSON && xhr.responseJSON.message) {
                     message = xhr.responseJSON.message;
+                    if(xhr.responseJSON.status === 'warning' || xhr.responseJSON.tipo === 'warning') {
+                        messageType = 'warning';
+                    }
                 }
-                showMessage(message, 'error');
-                $('#scannerInput').val('').focus();
+                if (!navigator.onLine || xhr.status === 0) {
+                    setConnectionStatus('offline');
+                } else if (xhr.status === 503) {
+                    setConnectionStatus('unavailable');
+                }
+                showMessage(message, messageType);
+                scannerInput.val('');
+                focusScanner();
             }
         });
     });
@@ -340,10 +465,12 @@ $(document).ready(function() {
     
     function showMessage(message, type) {
         const messageBox = $('#messageBox');
-        messageBox.removeClass('message-success message-error');
+        messageBox.removeClass('message-success message-error message-warning');
         
         if(type === 'success' || type === 'entrada' || type === 'salida') {
             messageBox.addClass('message-success');
+        } else if(type === 'warning') {
+            messageBox.addClass('message-warning');
         } else {
             messageBox.addClass('message-error');
         }
@@ -355,8 +482,37 @@ $(document).ready(function() {
         }, 5000);
     }
     
+    setInterval(focusScanner, 2000);
+    setInterval(checkScannerHealth, heartbeatInterval);
+    checkScannerHealth();
+    focusScanner();
+
     $(document).on('click', function() {
-        $('#scannerInput').focus();
+        setTimeout(focusScanner, 0);
+    });
+
+    $(window).on('focus pageshow', function() {
+        focusScanner();
+        if (Date.now() - lastHeartbeatAt >= heartbeatInterval) {
+            checkScannerHealth();
+        }
+    });
+
+    $(document).on('visibilitychange', function() {
+        if (document.visibilityState === 'visible') {
+            focusScanner();
+            checkScannerHealth();
+        }
+    });
+
+    $(window).on('offline', function() {
+        heartbeatFailures = heartbeatFailureLimit;
+        setConnectionStatus('offline');
+    });
+
+    $(window).on('online', function() {
+        setConnectionStatus('reconnecting');
+        checkScannerHealth();
     });
 });
 </script>

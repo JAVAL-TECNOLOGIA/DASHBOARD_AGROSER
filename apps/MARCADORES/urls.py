@@ -15,6 +15,7 @@ urlpatterns = [
     path('administracion/', administracion_marcadores.as_view(), name='administracion_marcadores'),
     
     # APIs para procesar asistencias
+    path('api/health/', marcadores_health, name='marcadores_health'),
     path('api/procesar-marcacion/', procesar_marcacion, name='procesar_marcacion'),
     path('api/asistencias/', obtener_asistencias, name='obtener_asistencias'),
     path('api/exportar-txt/', exportar_txt_nisira, name='exportar_txt_nisira'),

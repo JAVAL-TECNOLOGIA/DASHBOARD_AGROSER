@@ -1,5 +1,7 @@
 # views.py
 import json
+import threading
+import pyodbc
 from datetime import datetime, date, timedelta
 from django.db import transaction
 from django.utils.decorators import method_decorator
@@ -8,10 +10,120 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import TemplateView
 from django.http import HttpResponse
 
-from apps.connection.connect_portalaei import connection_portalaei
+import apps.connection.connect_portalaei as portalaei_db
 from apps.utils.permissions import es_admin
 from django.http import JsonResponse
 import traceback 
+
+
+connection_portalaei = getattr(portalaei_db, 'connection_portalaei', None)
+_portalaei_reconnect_lock = threading.Lock()
+
+
+def _close_portalaei_connection(connection):
+    if connection is None:
+        return
+
+    try:
+        connection.close()
+    except Exception:
+        pass
+
+
+def _connection_is_alive(connection):
+    if connection is None:
+        return False
+
+    cursor = None
+    try:
+        cursor = connection.cursor()
+        cursor.execute('SELECT 1')
+        cursor.fetchone()
+        return True
+    except pyodbc.Error:
+        return False
+    finally:
+        if cursor is not None:
+            try:
+                cursor.close()
+            except Exception:
+                pass
+
+
+def _reconnect_portalaei(stale_connection=None):
+    """Recrea la conexión compartida a PORTAL_AEI de forma segura."""
+    global connection_portalaei
+
+    with _portalaei_reconnect_lock:
+        # Otro request pudo haber recuperado la conexión mientras esperaba el lock.
+        if stale_connection is None and _connection_is_alive(connection_portalaei):
+            return connection_portalaei
+
+        if (
+            stale_connection is not None
+            and connection_portalaei is not stale_connection
+            and _connection_is_alive(connection_portalaei)
+        ):
+            return connection_portalaei
+
+        previous_connection = connection_portalaei
+        _close_portalaei_connection(previous_connection)
+        connection_portalaei = None
+        portalaei_db.connection_portalaei = None
+
+        new_connection = pyodbc.connect(
+            portalaei_db.build_pyodbc_connection_string(
+                portalaei_db.host,
+                portalaei_db.name,
+                portalaei_db.user,
+                portalaei_db.password,
+                mars=True
+            )
+        )
+
+        # Mantener actualizada la referencia del módulo de conexión para los
+        # consumidores que accedan a ella después de la reconexión.
+        connection_portalaei = new_connection
+        portalaei_db.connection_portalaei = connection_portalaei
+        return connection_portalaei
+
+
+def _get_portalaei_cursor(ensure_alive=True):
+    """Obtiene un cursor y recupera la conexión si dejó de responder."""
+    connection = connection_portalaei
+
+    if connection is None:
+        connection = _reconnect_portalaei()
+    elif ensure_alive and not _connection_is_alive(connection):
+        connection = _reconnect_portalaei(stale_connection=connection)
+
+    return connection.cursor()
+
+
+def _is_portalaei_connection_error(error):
+    """Distingue errores de transporte/conexión de errores SQL funcionales."""
+    if not isinstance(error, pyodbc.Error):
+        return False
+
+    sqlstate = str(error.args[0]).upper() if error.args else ''
+    if sqlstate.startswith('08') or sqlstate in ('HYT00', 'HYT01'):
+        return True
+
+    message = str(error).lower()
+    connection_messages = (
+        'communication link failure',
+        'connection is closed',
+        'connection was closed',
+        'closed connection',
+        'server is not found',
+        'server does not exist',
+        'login timeout expired',
+        'network-related',
+        'transport-level error',
+        'tcp provider',
+    )
+    return any(fragment in message for fragment in connection_messages)
+
 # ===============================
 # Vista del escáner con sede
 # ===============================
@@ -20,7 +132,7 @@ from django.shortcuts import render
 def marcador_escaner(request, id_sede):
     """Vista del escáner para una sede específica"""
     try:
-        cursor = connection_portalaei.cursor()
+        cursor = _get_portalaei_cursor(ensure_alive=True)
         cursor.execute("""
             SELECT ID_SEDE, NOMBRE_SEDE, IDEMPRESA
             FROM SEDES_MARCACIONES
@@ -50,6 +162,8 @@ def marcador_escaner(request, id_sede):
 @csrf_exempt
 def procesar_marcacion(request):
     if request.method == 'POST':
+        cursor = None
+        active_connection = None
         try:
             data = json.loads(request.body)
             codigo_personal = data.get('codigo_personal', '').strip()
@@ -65,7 +179,8 @@ def procesar_marcacion(request):
             fecha_actual = datetime.now().date()
             hora_actual = datetime.now().strftime('%H:%M:%S')
             
-            cursor = connection_portalaei.cursor()
+            cursor = _get_portalaei_cursor(ensure_alive=True)
+            active_connection = connection_portalaei
             
             cursor.execute("""
                 SELECT ID_PERSONAL, CODIGO_PERSONAL, NOMBRES, APELLIDOS, IDEMPRESA
@@ -232,13 +347,65 @@ def procesar_marcacion(request):
                 
         except Exception as e:
             traceback.print_exc()
+
+            if _is_portalaei_connection_error(e):
+                try:
+                    _reconnect_portalaei(stale_connection=active_connection)
+                    return JsonResponse({
+                        'status': 'warning',
+                        'message': 'Se restableció la conexión. Vuelva a escanear el código.',
+                        'tipo': 'warning'
+                    })
+                except Exception:
+                    traceback.print_exc()
+                    return JsonResponse({
+                        'status': 'error',
+                        'message': 'No se pudo restablecer la conexión con SQL Server.',
+                        'tipo': 'danger'
+                    }, status=503)
+
             return JsonResponse({
                 'status': 'error',
                 'message': f'Error: {str(e)}',
                 'tipo': 'danger'
             }, status=500)
+        finally:
+            if cursor is not None:
+                try:
+                    cursor.close()
+                except Exception:
+                    pass
     
     return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)
+
+
+def marcadores_health(request):
+    """Comprueba que Django y SQL Server estén disponibles."""
+    if request.method != 'GET':
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Método no permitido'
+        }, status=405)
+
+    cursor = None
+    try:
+        cursor = _get_portalaei_cursor(ensure_alive=True)
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Servidor y SQL Server disponibles.'
+        })
+    except Exception:
+        traceback.print_exc()
+        return JsonResponse({
+            'status': 'error',
+            'message': 'SQL Server no está disponible.'
+        }, status=503)
+    finally:
+        if cursor is not None:
+            try:
+                cursor.close()
+            except Exception:
+                pass
 
 
 
