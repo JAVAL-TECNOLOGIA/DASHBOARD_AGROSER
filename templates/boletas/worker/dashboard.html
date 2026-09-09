@@ -1,0 +1,70 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Mis boletas</title>
+    <link href="{% static 'assets/plugins/bootstrap/4.0.0/css/bootstrap.min.css' %}" rel="stylesheet">
+    <link href="{% static 'assets/plugins/font-awesome/5.0/css/fontawesome-all.min.css' %}" rel="stylesheet">
+    <style>
+        body{background:#eef3f7}.navbar{background:#17324d}.payslip-card{border:0;border-radius:12px}.amount{font-size:1.45rem;font-weight:700;color:#17324d}.document-tabs{gap:10px}.document-tabs .nav-link{border:0;border-radius:10px;background:#fff;color:#40566d;box-shadow:0 2px 8px rgba(23,50,77,.08);padding:14px 16px;height:100%}.document-tabs .nav-link.active{background:#17324d;color:#fff}.document-tabs .count{display:block;font-size:1.35rem;font-weight:700;margin-top:4px}
+        @media(max-width:575px){.payslip-actions .btn{display:block;width:100%;margin:6px 0!important}}
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-dark">
+    <div class="container"><span class="navbar-brand"><i class="fa fa-file-invoice-dollar mr-2"></i>Mis boletas</span><a class="btn btn-sm btn-outline-light" href="{% url 'logout' %}">Salir</a></div>
+</nav>
+<main class="container py-4">
+    {% for message in messages %}<div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>{% endfor %}
+    <div class="d-flex flex-column flex-md-row justify-content-between mb-4">
+        <div><h2 class="mb-1">{{ request.user.first_name }} {{ request.user.last_name }}</h2><div class="text-muted">DNI {{ identity.document }}</div></div>
+        <span class="badge badge-primary align-self-start p-2 mt-2">{{ period.label }}</span>
+    </div>
+    <div class="nav nav-pills nav-fill document-tabs d-grid mb-4">
+        {% for tab in document_tabs %}<a class="nav-link {% if document_type == tab.code %}active{% endif %}" href="?type={{ tab.code }}&mode={{ mode }}&month={{ month_value }}&week={{ week_value }}&start={{ start_value }}&end={{ end_value }}"><span>{{ tab.label }}</span><strong class="count">{{ tab.count }}</strong></a>{% endfor %}
+    </div>
+    <div class="card shadow-sm mb-4"><div class="card-body">
+        <form method="get" class="form-row align-items-end">
+            <input type="hidden" name="type" value="{{ document_type }}">
+            <div class="form-group col-md-3"><label>Periodo</label><select class="form-control" id="mode" name="mode"><option value="month" {% if mode == "month" %}selected{% endif %}>Mes</option>{% if not monthly_only %}<option value="week" {% if mode == "week" %}selected{% endif %}>Semana</option><option value="custom" {% if mode == "custom" %}selected{% endif %}>Rango</option>{% endif %}</select></div>
+            <div class="form-group col-md-3 filter-field" data-mode="month"><label>Mes</label><input class="form-control" type="month" min="2026-08" name="month" value="{{ month_value }}"></div>
+            <div class="form-group col-md-3 filter-field" data-mode="week"><label>Semana</label><input class="form-control" type="week" min="2026-W31" name="week" value="{{ week_value }}"></div>
+            <div class="form-group col-md-3 filter-field" data-mode="custom"><label>Desde</label><input class="form-control" type="date" min="2026-08-01" name="start" value="{{ start_value }}"></div>
+            <div class="form-group col-md-3 filter-field" data-mode="custom"><label>Hasta</label><input class="form-control" type="date" min="2026-08-01" name="end" value="{{ end_value }}"></div>
+            <div class="form-group col-auto"><button class="btn btn-primary" type="submit"><i class="fa fa-search mr-1"></i> Consultar</button></div>
+        </form>
+    </div></div>
+    {% for slip in slips %}
+        <div class="card payslip-card shadow-sm mb-4"><div class="card-body p-4">
+            <div class="row">
+                <div class="col-md-7">
+                    <span class="badge badge-info mb-2">{{ slip.document_type_label }}</span><h4>{{ slip.payroll_type_label }}</h4>
+                    <div class="text-muted mb-3">{{ slip.cargo_personal }} · {{ slip.dias_trabajados }} días trabajados</div>
+                    <div class="row">
+                        <div class="col-6 col-md-3 mb-2"><small class="text-muted d-block">Básico</small><strong>S/ {{ slip.basico|floatformat:2 }}</strong></div>
+                        <div class="col-6 col-md-3 mb-2"><small class="text-muted d-block">Ingresos</small><strong>S/ {{ slip.income_total|floatformat:2 }}</strong></div>
+                        <div class="col-6 col-md-3 mb-2"><small class="text-muted d-block">Descuentos</small><strong>S/ {{ slip.deduction_total|floatformat:2 }}</strong></div>
+                        <div class="col-6 col-md-3 mb-2"><small class="text-muted d-block">Neto</small><span class="amount">S/ {{ slip.net_total|floatformat:2 }}</span></div>
+                    </div>
+                </div>
+                <div class="col-md-5 text-md-right payslip-actions mt-3 mt-md-0">
+                    {% if slip.acknowledgement %}
+                        <a class="btn btn-outline-danger" target="_blank" href="{% url 'boletas:worker_pdf' %}?mode={{ mode }}&month={{ month_value }}&week={{ week_value }}&start={{ start_value }}&end={{ end_value }}&hash={{ slip.fingerprint }}"><i class="fa fa-file-pdf mr-1"></i> Visualizar y descargar PDF</a>
+                        <div class="alert alert-success mt-3 text-left"><i class="fa fa-check-circle mr-1"></i><strong>Confirmada</strong><br><small>{{ slip.acknowledgement.confirmed_at|date:"d/m/Y H:i" }} · Ref. {{ slip.fingerprint|slice:":12" }}</small></div>
+                    {% else %}
+                        <a class="btn btn-success" href="{% url 'boletas:worker_confirm' %}?mode={{ mode }}&month={{ month_value }}&week={{ week_value }}&start={{ start_value }}&end={{ end_value }}&hash={{ slip.fingerprint }}"><i class="fa fa-signature mr-1"></i> Confirmar para visualizar</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div></div>
+    {% empty %}
+        <div class="alert alert-info text-center py-5"><i class="fa fa-inbox fa-2x d-block mb-3"></i>No tienes documentos de esta categoría para el periodo seleccionado.</div>
+    {% endfor %}
+</main>
+<script src="{% static 'assets/plugins/jquery/jquery-3.2.1.min.js' %}"></script>
+<script>
+$(function(){const mode=$('#mode');function refresh(){ $('.filter-field').hide().find('input').prop('disabled',true);$('.filter-field[data-mode="'+mode.val()+'"]').show().find('input').prop('disabled',false);}mode.on('change',refresh);refresh();});
+</script>
+</body>
+</html>

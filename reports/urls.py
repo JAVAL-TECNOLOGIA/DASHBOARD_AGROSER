@@ -56,6 +56,8 @@ urlpatterns = [
     path('controller_prod/', include('apps.CONTROLLER_PROD.urls')),
     path('salud/', include('apps.SALUD.urls')),
     path('sst/', include('apps.SST.urls')),
+    path('boletas/', include('apps.boletas.urls')),
+    path('contratos/', include('apps.contratos.urls')),
 
 ]
 

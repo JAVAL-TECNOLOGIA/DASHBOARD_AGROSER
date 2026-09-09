@@ -1,4 +1,5 @@
 import pyodbc
+from apps.connection.local_connection import open_connection
 import threading
 from apps.connection.odbc_config import build_pyodbc_connection_string
 
@@ -31,7 +32,7 @@ class ThreadLocalConnection_cv(threading.local):
     def get_connection(self):
         if self.connection is None:
             try:
-                self.connection = pyodbc.connect(connection_string)
+                self.connection = open_connection(connection_string)
             except Exception as e:
                 print("---> Error al crear conexión:", str(e))
                 raise
@@ -50,8 +51,8 @@ thread_local_connection_cv = ThreadLocalConnection_cv()
 
 # Establecer conexión inicial (para compatibilidad con el código existente)
 try:
-    connection_campoverde = pyodbc.connect(connection_string)
-    print("---> OK! Conexión Exitosa Campoverde.")
+    connection_campoverde = open_connection(connection_string)
+    print("---> Conector inicializado Campoverde.")
 except Exception as e:
     print("---> Conexion Fallida...", str(e))
 

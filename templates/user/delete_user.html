@@ -1,0 +1,24 @@
+{% include 'base/header.html' %}
+{% include 'base/sidebar.html' %}
+
+<div id="content" class="content">
+    <div class="card border-danger shadow-sm" style="max-width: 680px;">
+        <div class="card-header bg-danger text-white"><h4 class="mb-0">Eliminar usuario</h4></div>
+        <div class="card-body">
+            <p>Vas a eliminar permanentemente la cuenta:</p>
+            <div class="alert alert-light border">
+                <strong>{{ managed_user.first_name }} {{ managed_user.last_name }}</strong><br>
+                <span class="text-muted">@{{ managed_user.username }} · {{ managed_user.email }}</span>
+            </div>
+            <p class="text-danger mb-4">Esta acción elimina también sus asignaciones de permisos y no se puede deshacer.</p>
+            <form method="post">
+                {% csrf_token %}
+                <a class="btn btn-light" href="{% url 'home_user' %}">Cancelar</a>
+                <button class="btn btn-danger" type="submit"><i class="fa fa-trash mr-1"></i> Confirmar eliminación</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% include 'base/footer.html' %}
+<script>$(document).ready(function () { App.init(); });</script>

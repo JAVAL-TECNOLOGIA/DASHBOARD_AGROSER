@@ -33,10 +33,10 @@ def get_django_db_options():
 
 
 def build_pyodbc_connection_string(host, database, user, password, mars=False, port=DEFAULT_SQLSERVER_PORT):
+    server = f"tcp:{host},{port}" if is_windows() else host
     parts = [
         f"DRIVER={get_sqlserver_driver()}",
-        f"SERVER={host}",
-        f"PORT={port}",
+        f"SERVER={server}",
         f"DATABASE={database}",
         f"UID={user}",
         f"PWD={password}",
@@ -44,6 +44,7 @@ def build_pyodbc_connection_string(host, database, user, password, mars=False, p
 
     if not is_windows():
         parts.extend([
+            f"PORT={port}",
             "TDS_Version=7.4",
             "ClientCharset=UTF-8",
         ])

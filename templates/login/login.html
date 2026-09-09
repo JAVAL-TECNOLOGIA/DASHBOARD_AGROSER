@@ -10,7 +10,7 @@
 	<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport" />
 	<meta content="" name="description" />
 	<meta content="" name="author" />
-    <link rel="icon" type="image/png" href="{% static 'assets/img/logo/agroservice.png' %}">		
+    <link rel="icon" type="image/png" href="{% static 'assets/img/logo/agroservice-corporativo.png' %}">
 	<!-- ================== BEGIN BASE CSS STYLE ================== -->
 	<link href="http://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700" rel="stylesheet" />
 	<link href="{% static 'assets/plugins/jquery-ui/jquery-ui.min.css' %}" rel="stylesheet" />
@@ -52,7 +52,7 @@
                 <!-- begin login-header -->
                 <div class="login-header">
                     <div class="brand">
-                        <img src="{% static 'assets/img/logo/agroservice.png' %}" width="100" alt="" style="padding-bottom:1px;">
+						<img src="{% static 'assets/img/logo/agroservice-corporativo.png' %}" width="250" alt="Agroservice" style="max-width:100%; height:auto; padding-bottom:8px;">
                         <b style="font-size: 27px;">|</b><span style="font-size: 20px;"> Plataforma Web</span>
                     </div>
                     <div class="icon">
@@ -89,6 +89,11 @@
                         {% endif %}
                         <div class="login-buttons">
                             <button type="submit"class="btn btn-success btn-block btn-lg">Iniciar sesión</button>
+                        </div>
+                        <div class="m-t-15">
+                            <a href="{% url 'boletas:worker_login' %}" class="btn btn-primary btn-block btn-lg">
+                                <i class="fa fa-file-invoice-dollar"></i> Portal de boletas para trabajadores
+                            </a>
                         </div>
                         <hr />
                         <div class="m-t-20 m-b-40 p-b-40 text-inverse">

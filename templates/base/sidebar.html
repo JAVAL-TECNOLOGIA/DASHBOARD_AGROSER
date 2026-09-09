@@ -11,8 +11,8 @@
                 <li class="nav-profile">
                     <a href="javascript:;" data-toggle="nav-profile">
                         <div class="cover with-shadow"></div>
-                        <div class="image" align='center' style="width:150px; height:50px; left:-15px;">
-                            <img src="{% static 'assets/img/logo/agroservice.png' %}"  alt="" />
+                        <div class="image" align='center' style="width:180px; height:60px; left:-15px; padding:8px; border-radius:10px; background:#fff;">
+                            <img src="{% static 'assets/img/logo/agroservice-corporativo.png' %}" alt="Agroservice" style="width:100%; height:100%; object-fit:contain; border-radius:0;" />
                         </div>
                         {% if user.is_authenticated %}
                         <div class="info" id="user-info">
@@ -200,6 +200,23 @@
                 <!--=============================================================-->
                 <!--RECUSOS HUMANOS-->
                 <!--=============================================================-->
+
+                {% if perms.boletas.visualizar_boletas or user.admin %}
+                <li class="{% if request.path|slice:':9' == '/boletas/' %}active{% endif %}">
+                    <a href="{% url 'boletas:index' %}">
+                        <i class="fa fa-file-invoice-dollar"></i>
+                        <span style="font-size: 16px;">Visualización de boletas</span>
+                    </a>
+                </li>
+                {% endif %}
+                {% if perms.contratos.gestionar_contratos or user.admin %}
+                <li class="{% if request.path|slice:':11' == '/contratos/' %}active{% endif %}">
+                    <a href="{% url 'contratos:index' %}">
+                        <i class="fa fa-file-signature"></i>
+                        <span style="font-size: 16px;">Generación de contratos</span>
+                    </a>
+                </li>
+                {% endif %}
 
                 {% comment %} {% if perms.RRHH.modulo_rrhh %}
                 <li class="has-sub ">
@@ -3544,7 +3561,7 @@
 
 
                 <!-- Users -->              
-                {% if perms.user.aei_user %}
+                {% if perms.user.aei_user or user.admin %}
                 <li class="has-sub">
                     <a href="{% url 'home_user' %}">
                         <i class="bi bi-person-plus-fill"></i>

@@ -1,4 +1,5 @@
 import pyodbc
+from apps.connection.local_connection import open_connection
 from apps.connection.odbc_config import build_pyodbc_connection_string
 
 
@@ -17,10 +18,10 @@ password = '@eisac2020'
 
 
 try:
-    connection_inversioneajs = pyodbc.connect(
+    connection_inversioneajs = open_connection(
         build_pyodbc_connection_string(host, name, user, password)
     )
-    print("---> OK! Conexión Exitosa.")
+    print("---> Conector inicializado.")
 except Exception as e:
     print("---> Conexion Fallida...", str(e))
 

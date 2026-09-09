@@ -1,0 +1,230 @@
+{% include 'base/header.html' %}
+{% block page %}Visualización de boletas{% endblock %}
+{% include 'base/sidebar.html' %}
+
+<div id="content" class="content">
+    <ul class="nav nav-tabs mb-4">
+        <li class="nav-item">
+            <a class="nav-link active" href="{% url 'boletas:index' %}"><i class="fa fa-file-invoice mr-1"></i> Boletas</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" href="{% url 'boletas:consolidated' %}"><i class="fa fa-chart-bar mr-1"></i> Consolidado</a>
+        </li>
+    </ul>
+    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4">
+        <div>
+            <h1 class="page-header mb-1">Visualización de boletas</h1>
+            <p class="text-muted mb-0">Consulta las boletas por mes, semana o rango de fechas.</p>
+        </div>
+        <div class="mt-3 mt-md-0">
+            {% if registered_count %}
+                <a class="btn btn-success mr-2" href="{{ badge_sheet_url }}" target="_blank" rel="noopener">
+                    <i class="fa fa-id-card mr-1"></i> Generar fotochecks ({{ registered_count }})
+                </a>
+            {% else %}
+                <button class="btn btn-secondary mr-2" type="button" disabled title="No hay trabajadores con foto y firma registradas">
+                    <i class="fa fa-id-card mr-1"></i> Generar fotochecks (0)
+                </button>
+            {% endif %}
+            <span class="badge badge-primary p-2">{{ period.label }}</span>
+            <span class="badge badge-light p-2">{{ total_slips }} boleta{{ total_slips|pluralize }}</span>
+        </div>
+    </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header bg-white">
+            <h5 class="mb-0"><i class="fa fa-filter mr-2 text-primary"></i>Filtros</h5>
+        </div>
+        <div class="card-body">
+            <form method="get" id="payslip-filter">
+                <div class="form-row align-items-end">
+                    <div class="form-group col-lg-2 col-md-4">
+                        <label for="mode">Tipo de periodo</label>
+                        <select class="form-control" id="mode" name="mode">
+                            <option value="month" {% if mode == 'month' %}selected{% endif %}>Mes</option>
+                            <option value="week" {% if mode == 'week' %}selected{% endif %}>Semana</option>
+                            <option value="custom" {% if mode == 'custom' %}selected{% endif %}>Rango personalizado</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-lg-2 col-md-4 filter-field" data-mode="month">
+                        <label for="month">Mes</label>
+                        <input class="form-control" id="month" name="month" type="month" min="2026-08" value="{{ month_value }}">
+                    </div>
+                    <div class="form-group col-lg-2 col-md-4 filter-field" data-mode="week">
+                        <label for="week">Semana</label>
+                        <input class="form-control" id="week" name="week" type="week" min="2026-W31" value="{{ week_value }}">
+                    </div>
+                    <div class="form-group col-lg-2 col-md-4 filter-field" data-mode="custom">
+                        <label for="start">Desde</label>
+                        <input class="form-control" id="start" name="start" type="date" min="2026-08-01" value="{{ start_value }}">
+                    </div>
+                    <div class="form-group col-lg-2 col-md-4 filter-field" data-mode="custom">
+                        <label for="end">Hasta</label>
+                        <input class="form-control" id="end" name="end" type="date" min="2026-08-01" value="{{ end_value }}">
+                    </div>
+                    <div class="form-group col-lg-3 col-md-6">
+                        <label for="payroll_type">Planilla</label>
+                        <select class="form-control" id="payroll_type" name="payroll_type">
+                            <option value="">Todas las planillas</option>
+                            {% for code, label in payroll_types %}
+                                <option value="{{ code }}" {% if payroll_type == code %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group col-lg-3 col-md-6">
+                        <label for="q">Trabajador, documento o cargo</label>
+                        <input class="form-control" id="q" name="q" value="{{ query }}" placeholder="Buscar...">
+                    </div>
+                    <div class="form-group col-auto">
+                        <button class="btn btn-primary" type="submit">
+                            <i class="fa fa-search mr-1"></i> Consultar
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fa fa-file-invoice-dollar mr-2 text-primary"></i>Boletas encontradas</h5>
+            <small class="text-muted">25 registros por página</small>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Trabajador</th>
+                            <th>Documento</th>
+                            <th class="text-center">Foto</th>
+                            <th>Planilla</th>
+                            <th>Periodo</th>
+                            <th>Cargo</th>
+                            <th class="text-right">Días</th>
+                            <th class="text-right">Básico</th>
+                            <th>Firma</th>
+                            <th>Detalle</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for slip in page %}
+                            <tr>
+                                <td>
+                                    <strong>{{ slip.apenom|default:"SIN NOMBRE" }}</strong>
+                                    <div class="small text-muted">{{ slip.idcodigogeneral }}</div>
+                                </td>
+                                <td>{{ slip.nrodocumento|default:"—" }}</td>
+                                <td class="text-center align-middle">
+                                    {% if slip.has_photo %}<span class="badge badge-success">SUBIDO</span>{% else %}<span class="badge badge-warning">PENDIENTE</span>{% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge badge-light">{{ slip.payroll_type|default:"—" }}</span>
+                                    <div class="small text-muted">{{ slip.payroll_type_label }}</div>
+                                </td>
+                                <td>{{ slip.mes_pago|default:period.label }} {{ slip.anio_pago|default:"" }}</td>
+                                <td>{{ slip.cargo_personal|default:"—" }}</td>
+                                <td class="text-right">{{ slip.dias_trabajados|default:"0" }}</td>
+                                <td class="text-right font-weight-bold">S/ {{ slip.basico|default:"0.00"|floatformat:2 }}</td>
+                                <td>
+                                    {% if slip.has_signature %}<span class="badge badge-success">SUBIDO</span>{% else %}<span class="badge badge-warning">PENDIENTE</span>{% endif %}
+                                </td>
+                                <td>
+                                    <a class="btn btn-sm btn-danger mb-1" href="{{ slip.pdf_url }}" target="_blank" rel="noopener">
+                                        <i class="fa fa-file-pdf mr-1"></i> PDF
+                                    </a>
+                                    {% if slip.detail_url %}
+                                        <button class="btn btn-sm btn-outline-primary worker-detail-button" type="button" data-detail-url="{{ slip.detail_url }}">VER DETALLE</button>
+                                    {% else %}<span class="text-muted small">Sin documento</span>{% endif %}
+                                    {% if slip.worker_document %}
+                                        <form class="d-inline" method="post" action="{% url 'boletas:worker_reset_password' slip.worker_document %}?{{ pagination_query }}&page={{ page.number }}" onsubmit="return confirm('¿Restablecer la clave de {{ slip.apenom|escapejs }}? La clave temporal será su DNI.');">
+                                            {% csrf_token %}
+                                            <button class="btn btn-sm btn-outline-warning mb-1" type="submit" aria-label="Restablecer clave" title="Restablecer clave">
+                                                <i class="fa fa-key" aria-hidden="true"></i>
+                                            </button>
+                                        </form>
+                                        <form class="d-inline" method="post" action="{% url 'boletas:worker_reset_identity' slip.worker_document %}?{{ pagination_query }}&page={{ page.number }}" onsubmit="return confirm('¿Eliminar definitivamente la foto y firma de {{ slip.apenom|escapejs }}? Deberá registrarlas nuevamente.');">
+                                            {% csrf_token %}
+                                            <button class="btn btn-sm btn-outline-danger mb-1" type="submit" aria-label="Eliminar foto y firma" title="{% if not slip.has_photo and not slip.has_signature %}No tiene foto ni firma registradas{% else %}Eliminar foto y firma{% endif %}" {% if not slip.has_photo and not slip.has_signature %}disabled{% endif %}>
+                                                <i class="fa fa-user-times" aria-hidden="true"></i>
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                </td>
+                            </tr>
+
+                        {% empty %}
+                            <tr><td colspan="10" class="text-center text-muted py-5"><i class="fa fa-inbox fa-2x d-block mb-3"></i>No se encontraron boletas para los filtros seleccionados.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% if page.paginator.num_pages > 1 %}
+            <div class="card-footer bg-white">
+                <nav>
+                    <ul class="pagination pagination-sm justify-content-center mb-0">
+                        {% if page.has_previous %}
+                            <li class="page-item"><a class="page-link" href="?{{ pagination_query }}&page={{ page.previous_page_number }}">Anterior</a></li>
+                        {% endif %}
+                        <li class="page-item disabled"><span class="page-link">Página {{ page.number }} de {{ page.paginator.num_pages }}</span></li>
+                        {% if page.has_next %}
+                            <li class="page-item"><a class="page-link" href="?{{ pagination_query }}&page={{ page.next_page_number }}">Siguiente</a></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="modal fade" id="worker-detail-modal" tabindex="-1" role="dialog" aria-labelledby="worker-detail-title" aria-modal="true">
+    <div class="modal-dialog modal-xl" role="document" style="max-width:1100px"><div class="modal-content">
+        <div class="modal-header"><h2 class="modal-title h5" id="worker-detail-title">Detalle del trabajador</h2><button type="button" class="close" data-dismiss="modal" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button></div>
+        <div class="modal-body" id="worker-detail-content" aria-live="polite"></div>
+        <div class="modal-footer"><button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button></div>
+    </div></div>
+</div>
+
+{% include 'base/footer.html' %}
+{% block js %}
+<script>
+$(document).ready(function () {
+    App.init();
+    let detailRequest;
+    $('#worker-detail-modal').appendTo('body');
+    $('.worker-detail-button').on('click', function () {
+        if (detailRequest) detailRequest.abort();
+        $('#worker-detail-content').text('Cargando datos del trabajador…');
+        $('#worker-detail-modal').modal('show');
+        detailRequest = $.ajax({url: $(this).attr('data-detail-url'), dataType: 'html'})
+            .done(function (html) { $('#worker-detail-content').html(html); })
+            .fail(function (xhr, status) {
+                if (status === 'abort') return;
+                $('#worker-detail-content').text(xhr.status === 403 ? 'Tu sesión no tiene permiso para ver este detalle.' : 'No se pudo cargar el detalle. Cierra la ventana y vuelve a intentarlo.');
+            });
+    });
+    $('#worker-detail-modal').on('hidden.bs.modal', function () {
+        if (detailRequest) detailRequest.abort();
+        $('#worker-detail-content').empty();
+    });
+    const mode = $('#mode');
+    const refreshFields = function () {
+        const monthlyOnly = $('#payroll_type').val() === 'ERG';
+        mode.find('option[value="week"], option[value="custom"]').prop('disabled', monthlyOnly).prop('hidden', monthlyOnly);
+        if (monthlyOnly) mode.val('month');
+        $('.filter-field').hide().find('input').prop('disabled', true);
+        $('.filter-field[data-mode="' + mode.val() + '"]').show().find('input').prop('disabled', false);
+    };
+    mode.on('change', refreshFields);
+    $('#payroll_type').on('change', refreshFields);
+    refreshFields();
+});
+</script>
+{% endblock %}
