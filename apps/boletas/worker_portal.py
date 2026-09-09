@@ -393,6 +393,7 @@ class WorkerDashboardView(WorkerPortalMixin, View):
                     payroll_type=str(slip.get("payroll_type") or "").strip().upper(),
                     period_start=period.start,
                     period_end=period.end,
+                    released_at__isnull=False,
                 ).exists()
             ]
         except DatabaseError:
@@ -472,6 +473,13 @@ class WorkerPayslipPdfView(WorkerPortalMixin, View):
         )
         if slip is None:
             raise Http404("La boleta solicitada no existe.")
+        if not PayrollRelease.objects.filter(
+            payroll_type=str(slip.get("payroll_type") or "").strip().upper(),
+            period_start=period.start,
+            period_end=period.end,
+            released_at__isnull=False,
+        ).exists():
+            raise Http404("La boleta todavía no fue autorizada.")
         acknowledgement = PayslipAcknowledgement.objects.filter(
             user=request.user, payslip_hash=requested_hash
         ).first()
@@ -515,6 +523,13 @@ class WorkerPayslipConfirmView(WorkerPortalMixin, View):
         )
         if not slip:
             raise Http404("La boleta solicitada no existe.")
+        if not PayrollRelease.objects.filter(
+            payroll_type=str(slip.get("payroll_type") or "").strip().upper(),
+            period_start=period.start,
+            period_end=period.end,
+            released_at__isnull=False,
+        ).exists():
+            raise Http404("La boleta todavía no fue autorizada.")
         return period, slip, requested_hash
 
     def get(self, request):

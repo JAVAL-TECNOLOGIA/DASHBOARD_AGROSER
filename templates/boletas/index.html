@@ -91,6 +91,57 @@
         </div>
     </div>
 
+    {% if request.user.admin %}
+    <div class="card mb-4 shadow-sm border-primary">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fa fa-user-shield mr-2 text-primary"></i>Validación y autorización para trabajadores</h5>
+            {% if not payroll_type %}
+                <span class="badge badge-secondary">Selecciona una planilla</span>
+            {% elif release.released_at %}
+                <span class="badge badge-success">AUTORIZADA</span>
+            {% elif release.validated_at %}
+                <span class="badge badge-info">VALIDADA</span>
+            {% else %}
+                <span class="badge badge-warning">PENDIENTE</span>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            {% if payroll_type %}
+                <p class="mb-3">Planilla <strong>{{ payroll_type }}</strong> · {{ period.label }} · {{ total_slips }} boleta{{ total_slips|pluralize }}.</p>
+                <form method="post" action="{% url 'boletas:release_workflow' %}?{{ pagination_query }}" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="validate">
+                    <input type="hidden" name="payroll_type" value="{{ payroll_type }}">
+                    <input type="hidden" name="mode" value="{{ mode }}">
+                    <input type="hidden" name="month" value="{{ month_value }}">
+                    <input type="hidden" name="week" value="{{ week_value }}">
+                    <input type="hidden" name="start" value="{{ start_value }}">
+                    <input type="hidden" name="end" value="{{ end_value }}">
+                    <button class="btn btn-info" type="submit" {% if release.validated_at or not total_slips %}disabled{% endif %}>
+                        <i class="fa fa-check mr-1"></i> Validar boletas
+                    </button>
+                </form>
+                <form method="post" action="{% url 'boletas:release_workflow' %}?{{ pagination_query }}" class="d-inline ml-2" onsubmit="return confirm('¿Autorizar estas boletas para que los trabajadores puedan visualizarlas?');">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="authorize">
+                    <input type="hidden" name="payroll_type" value="{{ payroll_type }}">
+                    <input type="hidden" name="mode" value="{{ mode }}">
+                    <input type="hidden" name="month" value="{{ month_value }}">
+                    <input type="hidden" name="week" value="{{ week_value }}">
+                    <input type="hidden" name="start" value="{{ start_value }}">
+                    <input type="hidden" name="end" value="{{ end_value }}">
+                    <button class="btn btn-success" type="submit" {% if not release.validated_at or release.released_at %}disabled{% endif %}>
+                        <i class="fa fa-unlock-alt mr-1"></i> Autorizar visualización
+                    </button>
+                </form>
+                {% if release.validated_at %}<div class="small text-muted mt-3">Validada por {{ release.validated_by }} el {{ release.validated_at|date:"d/m/Y H:i" }}.{% if release.released_at %} Autorizada por {{ release.released_by }} el {{ release.released_at|date:"d/m/Y H:i" }}.{% endif %}</div>{% endif %}
+            {% else %}
+                <p class="mb-0 text-muted">Elige una planilla en los filtros y consulta el periodo para iniciar la validación.</p>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
     <div class="card shadow-sm">
         <div class="card-header bg-white d-flex justify-content-between align-items-center">
             <h5 class="mb-0"><i class="fa fa-file-invoice-dollar mr-2 text-primary"></i>Boletas encontradas</h5>
