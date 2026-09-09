@@ -90,7 +90,9 @@ INSTALLED_APPS = [
     'apps.cartillas_agricolas',
     'apps.CONTROLLER_PROD',
     'apps.SALUD',
-    'apps.SST'
+    'apps.SST',
+    'apps.boletas',
+    'apps.contratos',
 
 ]
 
@@ -145,6 +147,25 @@ DATABASES = {
         'OPTIONS': get_django_db_options(),
     },
 }
+
+DATABASES['payroll'] = {
+    **DATABASES['default'],
+    'NAME': os.getenv('PAYSLIP_DB_NAME', 'CMPA2022'),
+    'CONN_MAX_AGE': int(os.getenv('PAYSLIP_CONN_MAX_AGE', '300')),
+}
+
+# Cache local de lecturas repetidas de boletas (puede sustituirse por Redis en
+# varios servidores sin cambiar el código de la aplicación).
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'agroservice-boletas-cache',
+        'TIMEOUT': 300,
+    }
+}
+
+PAYSLIP_COMPANY_ID = os.getenv('PAYSLIP_COMPANY_ID', '001')
+PAYSLIP_CURRENCY = os.getenv('PAYSLIP_CURRENCY', 'N')
 
 
 

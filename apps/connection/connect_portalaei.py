@@ -1,4 +1,5 @@
 import pyodbc
+from apps.connection.local_connection import open_connection
 from apps.connection.odbc_config import build_pyodbc_connection_string
 
 #funcion de conexion a la base de datos del nisira
@@ -17,9 +18,9 @@ user = 'sa'
 password = '@eisac2020'
 
 try:
-    connection_portalaei = pyodbc.connect(
+    connection_portalaei = open_connection(
         build_pyodbc_connection_string(host, name, user, password, mars=True)
     )
-    print("---> OK! Conexión Exitosa PORTAL AEI.")
+    print("---> Conector inicializado PORTAL AEI.")
 except Exception as e:
     print("---> Conexion Fallida...", str(e))

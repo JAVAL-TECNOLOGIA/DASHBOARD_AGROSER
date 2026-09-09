@@ -1,0 +1,112 @@
+{% include 'base/header.html' %}
+{% include 'base/sidebar.html' %}
+
+<div id="content" class="content">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
+        <div>
+            <h1 class="page-header mb-1">Generación de contratos</h1>
+            <p class="text-muted mb-0">Control de contratos del personal ingresado y seguimiento de firma física.</p>
+        </div>
+    </div>
+
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show">
+            {{ message }}<button class="close" data-dismiss="alert">&times;</button>
+        </div>
+    {% endfor %}
+
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3 mb-md-0"><div class="card border-warning shadow-sm"><div class="card-body">
+            <div class="text-muted small text-uppercase">Pendientes de generar</div><div class="h3 mb-0">{{ counts.pending }}</div>
+        </div></div></div>
+        <div class="col-md-4 mb-3 mb-md-0"><div class="card border-info shadow-sm"><div class="card-body">
+            <div class="text-muted small text-uppercase">Pendientes de firma</div><div class="h3 mb-0">{{ counts.signature }}</div>
+        </div></div></div>
+        <div class="col-md-4"><div class="card border-success shadow-sm"><div class="card-body">
+            <div class="text-muted small text-uppercase">Firmados</div><div class="h3 mb-0">{{ counts.signed }}</div>
+        </div></div></div>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white"><strong><i class="fa fa-filter mr-2 text-primary"></i>Filtros</strong></div>
+        <div class="card-body">
+            <form method="get" class="form-row align-items-end">
+                <div class="form-group col-lg-3 col-md-6">
+                    <label for="start">Ingresos desde</label>
+                    <input class="form-control" id="start" name="start" type="date" value="{{ start_value }}">
+                </div>
+                <div class="form-group col-lg-3 col-md-6">
+                    <label for="end">Ingresos hasta</label>
+                    <input class="form-control" id="end" name="end" type="date" value="{{ end_value }}">
+                </div>
+                <div class="form-group col-lg-2 col-md-5">
+                    <label for="status">Estado</label>
+                    <select class="form-control" id="status" name="status">
+                        <option value="">Todos</option>
+                        <option value="pending" {% if status == "pending" %}selected{% endif %}>Pendiente de generar</option>
+                        <option value="signature" {% if status == "signature" %}selected{% endif %}>Pendiente de firma</option>
+                        <option value="signed" {% if status == "signed" %}selected{% endif %}>Firmado</option>
+                    </select>
+                </div>
+                <div class="form-group col-lg-3 col-md-5">
+                    <label for="q">Trabajador, DNI, cargo o planilla</label>
+                    <input class="form-control" id="q" name="q" value="{{ query }}" placeholder="Buscar...">
+                </div>
+                <div class="form-group col-auto"><button class="btn btn-primary" type="submit"><i class="fa fa-search mr-1"></i> Consultar</button></div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header bg-white"><strong>Personal ingresado</strong></div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="thead-light">
+                        <tr><th>Trabajador</th><th>Ingreso</th><th>Planilla</th><th>Cargo</th><th>Contrato</th><th>Estado</th><th class="text-right">Acciones</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for person in personnel %}
+                            <tr>
+                                <td><strong>{{ person.full_name }}</strong><div class="small text-muted">{{ person.document }}</div></td>
+                                <td>{{ person.fecha_ingreso|date:"d/m/Y" }}</td>
+                                <td>{{ person.payroll|default:person.payroll_id }}</td>
+                                <td>{{ person.position }}</td>
+                                <td>
+                                    {% if person.contract_id %}
+                                        <strong>N.º {{ person.contract_id }}</strong>
+                                        <div class="small text-muted">{{ person.contract_type }}</div>
+                                        <div class="small">{{ person.inicio_contrato|date:"d/m/Y" }} al {{ person.final_contrato|date:"d/m/Y" }}</div>
+                                    {% else %}—{% endif %}
+                                </td>
+                                <td>
+                                    {% if person.contract_status == "pending" %}<span class="badge badge-warning">{{ person.contract_status_label }}</span>
+                                    {% elif person.contract_status == "signature" %}<span class="badge badge-info">{{ person.contract_status_label }}</span>
+                                    {% else %}<span class="badge badge-success">{{ person.contract_status_label }}</span>{% endif %}
+                                </td>
+                                <td class="text-right text-nowrap">
+                                    {% if person.contract_status == "pending" %}
+                                        <a class="btn btn-sm btn-primary" href="{% url 'contratos:generate' person.idcodigogeneral %}"><i class="fa fa-file-signature mr-1"></i> Generar</a>
+                                    {% else %}
+                                        <a class="btn btn-sm btn-outline-primary" href="{% url 'contratos:template' person.contract_type_id %}"><i class="fa fa-download mr-1"></i> Plantilla</a>
+                                        {% if person.contract_status == "signature" %}
+                                            <form class="d-inline" method="post" action="{% url 'contratos:sign' person.idcodigogeneral person.contract_id %}" onsubmit="return confirm('¿Confirmas que el contrato fue firmado físicamente?');">
+                                                {% csrf_token %}
+                                                <button class="btn btn-sm btn-success" type="submit"><i class="fa fa-check mr-1"></i> Registrar firma</button>
+                                            </form>
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr><td colspan="7" class="text-center text-muted py-5">No se encontró personal para los filtros seleccionados.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% include 'base/footer.html' %}
+<script>$(document).ready(function () { App.init(); });</script>

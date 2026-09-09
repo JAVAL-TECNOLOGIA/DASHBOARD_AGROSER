@@ -59,5 +59,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     def is_staff(self):
         return self.admin
 
+    @property
+    def is_active(self):
+        """Django authentication must honor the existing active flag."""
+        return self.active
+
 
 

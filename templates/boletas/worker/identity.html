@@ -1,0 +1,54 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Registra tu identidad · Mis boletas</title>
+    <link href="{% static 'assets/plugins/bootstrap/4.0.0/css/bootstrap.min.css' %}" rel="stylesheet">
+    <style>
+        body{background:#eef3f7;color:#243746}.identity-card{max-width:620px;margin:auto;border:0;border-radius:16px}
+        .brand{width:280px;max-width:100%;height:auto}.step{color:#087c78;font-weight:600;font-size:14px}
+        #signature-pad{width:100%;height:180px;border:2px dashed #8fa5af;border-radius:10px;touch-action:none;background:white;display:block}
+        #photo-preview{max-width:100%;max-height:280px;border-radius:12px;object-fit:contain;margin:16px auto;display:block}
+        #photo-preview[hidden]{display:none}.btn-primary{background:#008e89;border-color:#008e89}
+        .form-check-input{margin-top:6px}label{font-weight:500}
+        #id_photo:focus + label{outline:3px solid #69c8c4;outline-offset:3px}
+    </style>
+</head>
+<body>
+<main class="container py-4">
+    <div class="card identity-card shadow"><div class="card-body p-4 p-md-5">
+        <img class="brand mb-4" src="{% static 'assets/img/logo/agroservice-corporativo.png' %}" alt="Agroservice">
+        <p class="step">PRIMER ACCESO</p>
+        <h1 class="h3">Registra tu firma y tu foto</h1>
+        <p class="text-muted">Completa este paso para acceder a tus boletas. Solo se solicita mientras tu registro esté pendiente.</p>
+        {% if form.errors %}<div class="alert alert-danger" role="alert"><strong>Revisa tu registro.</strong>{{ form.non_field_errors }}{% for field in form %}{% for error in field.errors %}<div>{{ field.label }}: {{ error }}</div>{% endfor %}{% endfor %}<div>Por favor, vuelve a seleccionar tu foto antes de enviar.</div></div>{% endif %}
+        <form id="identity-form" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <section class="mb-4" aria-labelledby="photo-title">
+                <h2 class="h5" id="photo-title">1. Toma una foto de tu rostro</h2>
+                <p class="small text-muted">Usa la cámara frontal del celular, con buena luz y el rostro completo dentro de la imagen.</p>
+                {{ form.photo }}
+                <label for="id_photo" class="btn btn-outline-primary btn-block">Abrir cámara y tomar foto</label>
+                <img id="photo-preview" alt="Vista previa de tu fotografía" hidden>
+                <p class="small text-muted mt-2">Puedes volver a tomar la foto antes de guardar. Máximo 5 MB.</p>
+            </section>
+            <section class="mb-4" aria-labelledby="signature-title">
+                <h2 class="h5" id="signature-title">2. Dibuja tu firma</h2>
+                <p class="small text-muted" id="signature-help">Firma con el dedo dentro del recuadro; en computadora puedes usar el mouse.</p>
+                {{ form.signature }}
+                <canvas id="signature-pad" width="1000" height="360" aria-label="Recuadro para dibujar tu firma" aria-describedby="signature-help"></canvas>
+                <button type="button" id="clear-signature" class="btn btn-outline-secondary btn-sm mt-2">Borrar y volver a firmar</button>
+            </section>
+            <div class="form-check mb-4">
+                <input type="checkbox" class="form-check-input" id="id_consent" name="consent" required {% if form.consent.value %}checked{% endif %}>
+                <label class="form-check-label small" for="id_consent">{{ form.consent.label }}</label>
+            </div>
+            <p id="identity-error" class="text-danger" role="alert" aria-live="polite"></p>
+            <button class="btn btn-primary btn-block btn-lg" type="submit" id="save-identity">Guardar y entrar al portal</button>
+        </form>
+    </div></div>
+</main>
+<script src="{% static 'core/js/boletas/worker-identity.js' %}"></script>
+</body>
+</html>

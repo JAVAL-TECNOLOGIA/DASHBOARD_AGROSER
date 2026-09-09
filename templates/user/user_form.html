@@ -1,0 +1,112 @@
+{% include 'base/header.html' %}
+{% include 'base/sidebar.html' %}
+
+<div id="content" class="content">
+    <div class="mb-4">
+        <a href="{% url 'home_user' %}" class="text-muted"><i class="fa fa-arrow-left mr-1"></i> Volver a usuarios</a>
+        <h1 class="page-header mt-2 mb-1">{{ title }}</h1>
+        <p class="text-muted">Completa los datos y selecciona los accesos autorizados por módulo.</p>
+    </div>
+
+    <form method="post" novalidate>
+        {% csrf_token %}
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white"><strong>Datos de la cuenta</strong></div>
+            <div class="card-body">
+                {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+                <div class="form-row">
+                    {% for field in form %}
+                        <div class="form-group col-md-6">
+                            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                            {{ field }}
+                            {% for error in field.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+                <div>
+                    <strong>Accesos por módulo</strong>
+                    <div class="small text-muted">Marca únicamente las funciones que podrá utilizar.</div>
+                </div>
+                <div class="mt-2 mt-md-0">
+                    <button class="btn btn-sm btn-outline-primary" type="button" id="expand-all">Expandir módulos</button>
+                    <button class="btn btn-sm btn-outline-secondary" type="button" id="clear-all">Quitar todos</button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <input class="form-control" id="permission-search" placeholder="Buscar módulo o acceso...">
+                </div>
+                <div id="permission-groups">
+                    {% for app_label, permissions in permission_groups %}
+                        <div class="card mb-2 permission-group" data-search="{{ app_label|lower }}">
+                            <div class="card-header py-2 d-flex justify-content-between align-items-center">
+                                <button class="btn btn-link p-0 text-uppercase font-weight-bold" type="button" data-toggle="collapse" data-target="#permissions-{{ forloop.counter }}">
+                                    <i class="fa fa-folder-open mr-2"></i>{{ app_label }}
+                                </button>
+                                <button class="btn btn-sm btn-light select-module" type="button">Seleccionar módulo</button>
+                            </div>
+                            <div class="collapse" id="permissions-{{ forloop.counter }}">
+                                <div class="card-body py-2">
+                                    <div class="row">
+                                        {% for permission in permissions %}
+                                            <div class="col-lg-4 col-md-6 permission-item" data-search="{{ permission.name|lower }} {{ permission.codename|lower }}">
+                                                <div class="custom-control custom-checkbox mb-2">
+                                                    <input class="custom-control-input permission-checkbox" type="checkbox" name="permissions" value="{{ permission.pk }}" id="permission-{{ permission.pk }}" {% if permission.pk in selected_permissions %}checked{% endif %}>
+                                                    <label class="custom-control-label" for="permission-{{ permission.pk }}">
+                                                        {{ permission.name }}
+                                                        <span class="d-block small text-muted">{{ permission.codename }}</span>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <div class="alert alert-warning">No hay permisos configurados.</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-end mb-5">
+            <a class="btn btn-light mr-2" href="{% url 'home_user' %}">Cancelar</a>
+            <button class="btn btn-primary" type="submit"><i class="fa fa-save mr-1"></i> {{ submit_label }}</button>
+        </div>
+    </form>
+</div>
+
+{% include 'base/footer.html' %}
+<script>
+$(document).ready(function () {
+    App.init();
+    $('#expand-all').on('click', function () { $('#permission-groups .collapse').collapse('show'); });
+    $('#clear-all').on('click', function () { $('.permission-checkbox').prop('checked', false); });
+    $('.select-module').on('click', function () {
+        const group = $(this).closest('.permission-group');
+        group.find('.permission-checkbox').prop('checked', true);
+        group.find('.collapse').collapse('show');
+    });
+    $('#permission-search').on('input', function () {
+        const term = $(this).val().toLowerCase().trim();
+        $('.permission-group').each(function () {
+            const group = $(this);
+            const moduleMatches = group.data('search').indexOf(term) !== -1;
+            let visible = moduleMatches || term === '';
+            group.find('.permission-item').each(function () {
+                const itemMatches = $(this).data('search').indexOf(term) !== -1;
+                $(this).toggle(moduleMatches || itemMatches || term === '');
+                visible = visible || itemMatches;
+            });
+            group.toggle(visible);
+            if (term && visible) group.find('.collapse').collapse('show');
+        });
+    });
+});
+</script>

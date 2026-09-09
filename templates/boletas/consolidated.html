@@ -1,0 +1,304 @@
+{% load static %}
+{% include 'base/header.html' %}
+{% include 'base/sidebar.html' %}
+
+{% block css %}
+<style>
+    .summary-card { border: 0; border-left: 4px solid #348fe2; }
+    .summary-value { font-size: 1.55rem; font-weight: 700; color: #244767; }
+    .chart-box { height: 340px; width: 100%; }
+    .chart-box-tall { height: 430px; width: 100%; }
+    .legendLabel { padding-left: 6px; padding-right: 12px; }
+    @media (max-width: 767px) {
+        .chart-box, .chart-box-tall { height: 300px; }
+        .summary-value { font-size: 1.25rem; }
+    }
+</style>
+{% endblock %}
+
+<div id="content" class="content">
+    <ul class="nav nav-tabs mb-4">
+        <li class="nav-item">
+            <a class="nav-link" href="{% url 'boletas:index' %}"><i class="fa fa-file-invoice mr-1"></i> Boletas</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link active" href="{% url 'boletas:consolidated' %}"><i class="fa fa-chart-bar mr-1"></i> Consolidado</a>
+        </li>
+    </ul>
+
+    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4">
+        <div>
+            <h1 class="page-header mb-1">Consolidado de planillas</h1>
+            <p class="text-muted mb-0">Vista general de pagos por planilla, cargo y trabajador.</p>
+        </div>
+        <span class="badge badge-primary p-2 mt-3 mt-md-0">{{ period.label }}</span>
+    </div>
+
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>
+    {% endfor %}
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white"><strong><i class="fa fa-filter mr-2 text-primary"></i>Periodo de análisis</strong></div>
+        <div class="card-body">
+            <form method="get" id="consolidated-filter">
+                <div class="form-row align-items-end">
+                    <div class="form-group col-lg-3 col-md-4">
+                        <label for="mode">Tipo de periodo</label>
+                        <select class="form-control" id="mode" name="mode">
+                            <option value="month" {% if mode == "month" %}selected{% endif %}>Mes</option>
+                            <option value="week" {% if mode == "week" %}selected{% endif %}>Semana</option>
+                            <option value="custom" {% if mode == "custom" %}selected{% endif %}>Rango personalizado</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-lg-3 col-md-4 filter-field" data-mode="month">
+                        <label for="month">Mes</label>
+                        <input class="form-control" id="month" name="month" type="month" min="2026-08" value="{{ month_value }}">
+                    </div>
+                    <div class="form-group col-lg-3 col-md-4 filter-field" data-mode="week">
+                        <label for="week">Semana</label>
+                        <input class="form-control" id="week" name="week" type="week" min="2026-W31" value="{{ week_value }}">
+                    </div>
+                    <div class="form-group col-lg-3 col-md-4 filter-field" data-mode="custom">
+                        <label for="start">Desde</label>
+                        <input class="form-control" id="start" name="start" type="date" min="2026-08-01" value="{{ start_value }}">
+                    </div>
+                    <div class="form-group col-lg-3 col-md-4 filter-field" data-mode="custom">
+                        <label for="end">Hasta</label>
+                        <input class="form-control" id="end" name="end" type="date" min="2026-08-01" value="{{ end_value }}">
+                    </div>
+                    <div class="form-group col-lg-3 col-md-4">
+                        <label for="payroll_type">Planilla</label>
+                        <select class="form-control" id="payroll_type" name="payroll_type">
+                            <option value="">Todas las planillas</option>
+                            {% for code, label in payroll_types %}
+                                <option value="{{ code }}" {% if payroll_type == code %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group col-lg-3 col-md-4">
+                        <label for="position">Cargo</label>
+                        <select class="form-control" id="position" name="position">
+                            <option value="">Todos los cargos</option>
+                            {% for item in available_positions %}
+                                <option value="{{ item }}" {% if position == item %}selected{% endif %}>{{ item }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group col-auto">
+                        <button class="btn btn-primary" type="submit"><i class="fa fa-chart-line mr-1"></i> Actualizar</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-3 mb-xl-0">
+            <div class="card summary-card shadow-sm h-100"><div class="card-body">
+                <div class="text-muted text-uppercase small">Total neto pagado</div>
+                <div class="summary-value">S/ {{ total_net|floatformat:2 }}</div>
+            </div></div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3 mb-xl-0">
+            <div class="card summary-card shadow-sm h-100"><div class="card-body">
+                <div class="text-muted text-uppercase small">Total ingresos</div>
+                <div class="summary-value">S/ {{ total_income|floatformat:2 }}</div>
+            </div></div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3 mb-md-0">
+            <div class="card summary-card shadow-sm h-100"><div class="card-body">
+                <div class="text-muted text-uppercase small">Total descuentos</div>
+                <div class="summary-value">S/ {{ total_deductions|floatformat:2 }}</div>
+            </div></div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card summary-card shadow-sm h-100"><div class="card-body">
+                <div class="text-muted text-uppercase small">Trabajadores pagados</div>
+                <div class="summary-value">{{ total_workers }}</div>
+            </div></div>
+        </div>
+    </div>
+
+    {% if total_workers %}
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white">
+                <strong>Comparativa mensual del total neto</strong>
+                <span class="badge badge-light float-right">Año {{ comparison_year }}</span>
+            </div>
+            <div class="card-body">
+                <div id="monthly-chart" class="chart-box"></div>
+                <div class="table-responsive mt-3">
+                    <table class="table table-sm table-bordered text-center mb-0">
+                        <thead class="thead-light">
+                            <tr>{% for item in monthly_rows %}<th>{{ item.name }}</th>{% endfor %}</tr>
+                        </thead>
+                        <tbody>
+                            <tr>{% for item in monthly_rows %}<td class="text-nowrap">S/ {{ item.net|floatformat:2 }}</td>{% endfor %}</tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-xl-5 mb-4 mb-xl-0">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-white"><strong>Neto pagado por planilla</strong></div>
+                    <div class="card-body"><div id="payroll-chart" class="chart-box"></div></div>
+                </div>
+            </div>
+            <div class="col-xl-7">
+                <div class="card shadow-sm h-100">
+                    <div class="card-header bg-white"><strong>Neto pagado por cargo</strong><span class="text-muted small float-right">12 principales</span></div>
+                    <div class="card-body"><div id="position-chart" class="chart-box"></div></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white"><strong>Trabajadores con mayor neto pagado</strong><span class="text-muted small float-right">15 principales</span></div>
+            <div class="card-body"><div id="worker-chart" class="chart-box-tall"></div></div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white"><strong>Resumen por planilla</strong></div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="thead-light"><tr><th>Planilla</th><th class="text-right">Trabajadores</th><th class="text-right">Ingresos</th><th class="text-right">Neto pagado</th></tr></thead>
+                        <tbody>
+                            {% for row in payrolls %}
+                                <tr><td>{{ row.name }}</td><td class="text-right">{{ row.workers }}</td><td class="text-right">S/ {{ row.income|floatformat:2 }}</td><td class="text-right font-weight-bold">S/ {{ row.net|floatformat:2 }}</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-header bg-white"><strong>Detalle general por trabajador</strong></div>
+            <div class="card-body p-0">
+                <div class="table-responsive" style="max-height: 600px;">
+                    <table class="table table-hover mb-0">
+                        <thead class="thead-light sticky-top"><tr><th>Trabajador</th><th>Documento</th><th>Planilla</th><th>Cargo</th><th class="text-right">Básico</th><th class="text-right">Ingresos</th><th class="text-right">Descuentos</th><th class="text-right">Neto</th></tr></thead>
+                        <tbody>
+                            {% for worker in workers %}
+                                <tr>
+                                    <td>{{ worker.name }}</td><td>{{ worker.document }}</td><td>{{ worker.payroll }}</td><td>{{ worker.position }}</td>
+                                    <td class="text-right">S/ {{ worker.basic|floatformat:2 }}</td><td class="text-right">S/ {{ worker.income|floatformat:2 }}</td>
+                                    <td class="text-right">S/ {{ worker.deductions|floatformat:2 }}</td><td class="text-right font-weight-bold">S/ {{ worker.net|floatformat:2 }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="alert alert-info text-center py-5"><i class="fa fa-chart-bar fa-2x d-block mb-3"></i>No hay pagos para el periodo seleccionado.</div>
+    {% endif %}
+</div>
+
+{{ payroll_chart|json_script:"payroll-chart-data" }}
+{{ position_chart|json_script:"position-chart-data" }}
+{{ worker_chart|json_script:"worker-chart-data" }}
+{{ monthly_chart|json_script:"monthly-chart-data" }}
+{{ positions_by_payroll|json_script:"positions-by-payroll-data" }}
+
+{% include 'base/footer.html' %}
+<script src="{% static 'assets/plugins/flot/jquery.flot.min.js' %}"></script>
+<script src="{% static 'assets/plugins/flot/jquery.flot.resize.min.js' %}"></script>
+<script src="{% static 'assets/plugins/flot/jquery.flot.pie.min.js' %}"></script>
+<script src="{% static 'assets/plugins/flot/jquery.flot.categories.min.js' %}"></script>
+<script>
+$(document).ready(function () {
+    App.init();
+    const mode = $('#mode');
+    function refreshFields() {
+        const monthlyOnly = $('#payroll_type').val() === 'ERG';
+        mode.find('option[value="week"], option[value="custom"]').prop('disabled', monthlyOnly).prop('hidden', monthlyOnly);
+        if (monthlyOnly) mode.val('month');
+        $('.filter-field').hide().find('input').prop('disabled', true);
+        $('.filter-field[data-mode="' + mode.val() + '"]').show().find('input').prop('disabled', false);
+    }
+    mode.on('change', refreshFields);
+    $('#payroll_type').on('change', refreshFields);
+    refreshFields();
+
+    const payrollFilter = $('#payroll_type');
+    const positionFilter = $('#position');
+    const positionsByPayroll = JSON.parse(document.getElementById('positions-by-payroll-data').textContent);
+    const allPositions = [];
+    Object.keys(positionsByPayroll).forEach(function (code) {
+        positionsByPayroll[code].forEach(function (position) {
+            if (allPositions.indexOf(position) === -1) allPositions.push(position);
+        });
+    });
+    allPositions.sort();
+    payrollFilter.on('change', function () {
+        const selectedPosition = positionFilter.val();
+        const available = payrollFilter.val()
+            ? (positionsByPayroll[payrollFilter.val()] || [])
+            : allPositions;
+        positionFilter.empty().append($('<option>', {value: '', text: 'Todos los cargos'}));
+        available.forEach(function (position) {
+            positionFilter.append($('<option>', {value: position, text: position}));
+        });
+        if (available.indexOf(selectedPosition) !== -1) {
+            positionFilter.val(selectedPosition);
+        }
+    });
+
+    const payroll = JSON.parse(document.getElementById('payroll-chart-data').textContent);
+    const positions = JSON.parse(document.getElementById('position-chart-data').textContent);
+    const workers = JSON.parse(document.getElementById('worker-chart-data').textContent);
+    const monthly = JSON.parse(document.getElementById('monthly-chart-data').textContent);
+    const money = function (value) {
+        return 'S/ ' + Number(value).toLocaleString('es-PE', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    };
+    const tooltip = $('<div class="flot-tooltip"></div>').css({
+        position: 'absolute', display: 'none', padding: '6px 9px',
+        background: '#222', color: '#fff', borderRadius: '4px', zIndex: 9999
+    }).appendTo('body');
+
+    if (payroll.length) {
+        $.plot('#payroll-chart', payroll, {
+            series: { pie: { show: true, radius: 0.9, innerRadius: 0.42, label: { show: true, formatter: function(label, series) { return '<div style="font-size:10px;text-align:center;color:white;">' + Math.round(series.percent) + '%</div>'; } } } },
+            legend: { show: true, position: 'se' },
+            grid: { hoverable: true }
+        });
+    }
+    if (monthly.length) {
+        $.plot('#monthly-chart', [{data: monthly, color: '#00acac', label: 'Total neto'}], {
+            series: {
+                bars: { show: true, barWidth: 0.62, align: 'center', fill: 0.85 }
+            },
+            xaxis: { mode: 'categories', tickLength: 0 },
+            yaxis: { tickFormatter: function(v) { return 'S/ ' + Math.round(v).toLocaleString('es-PE'); } },
+            legend: { show: true, position: 'nw' },
+            grid: { hoverable: true, borderColor: '#ddd', borderWidth: 1 }
+        });
+    }
+    function drawCategoryChart(selector, data) {
+        $.plot(selector, [{data: data, color: '#348fe2'}], {
+            series: { bars: { show: true, barWidth: 0.65, align: 'center', fill: 0.85 } },
+            xaxis: { mode: 'categories', tickLength: 0, rotateTicks: 25 },
+            yaxis: { tickFormatter: function(v) { return 'S/ ' + Math.round(v).toLocaleString('es-PE'); } },
+            grid: { hoverable: true, borderColor: '#ddd', borderWidth: 1 }
+        });
+    }
+    if (positions.length) drawCategoryChart('#position-chart', positions);
+    if (workers.length) drawCategoryChart('#worker-chart', workers);
+    $('.chart-box, .chart-box-tall').bind('plothover', function (event, pos, item) {
+        if (item) {
+            const value = item.series.pie ? item.series.data[0][1] : item.datapoint[1];
+            tooltip.html((item.series.label ? item.series.label + '<br>' : '') + money(value))
+                .css({top: item.pageY + 10, left: item.pageX + 10}).show();
+        } else {
+            tooltip.hide();
+        }
+    });
+});
+</script>
