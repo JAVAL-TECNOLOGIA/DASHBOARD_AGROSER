@@ -39,8 +39,30 @@ class PayrollRelease(models.Model):
     payroll_type = models.CharField(max_length=10)
     period_start = models.DateField()
     period_end = models.DateField()
-    released_at = models.DateTimeField(auto_now_add=True)
-    released_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    validated_at = models.DateTimeField(null=True, blank=True)
+    validated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="validated_payroll_releases",
+    )
+    released_at = models.DateTimeField(null=True, blank=True)
+    released_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="released_payroll_releases",
+    )
+
+    @property
+    def status(self):
+        if self.released_at:
+            return "authorized"
+        if self.validated_at:
+            return "validated"
+        return "pending"
 
     class Meta:
         constraints = [

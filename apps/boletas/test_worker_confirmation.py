@@ -2,9 +2,10 @@ from unittest.mock import patch
 
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.user.models import User
-from .models import PayslipAcknowledgement, WorkerIdentityProfile
+from .models import PayrollRelease, PayslipAcknowledgement, WorkerIdentityProfile
 from .periods import custom_range
 from .worker_portal import payslip_fingerprint
 
@@ -24,6 +25,15 @@ class WorkerConfirmationTests(TestCase):
         )
         self.client.force_login(self.user)
         self.period = custom_range('2026-08-01', '2026-08-31')
+        PayrollRelease.objects.create(
+            payroll_type='ERG',
+            period_start=self.period.start,
+            period_end=self.period.end,
+            validated_at=timezone.now(),
+            validated_by=self.user,
+            released_at=timezone.now(),
+            released_by=self.user,
+        )
         self.slip = {
             'nrodocumento': '01234567',
             'idcodigogeneral': '1',
@@ -77,6 +87,11 @@ class WorkerConfirmationTests(TestCase):
         response = self.client.post(reverse('boletas:worker_confirm'), params)
         self.assertEqual(response.status_code, 404)
         self.assertFalse(PayslipAcknowledgement.objects.exists())
+
+    def test_worker_cannot_open_unreleased_slip_by_direct_url(self):
+        PayrollRelease.objects.all().delete()
+        response = self.client.get(reverse('boletas:worker_confirm'), self.params)
+        self.assertEqual(response.status_code, 404)
 
     def test_anonymous_user_cannot_confirm(self):
         self.client.logout()

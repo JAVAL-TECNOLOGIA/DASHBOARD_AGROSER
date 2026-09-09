@@ -1,7 +1,7 @@
 from django.urls import path
 from .views import WorkerBadgeView
 
-from .views import PaySlipConsolidatedView, PaySlipListView, PaySlipPdfView, WorkerPhotoView, WorkerSignatureView, WorkerDetailView, WorkerMonthPdfView, WorkerBadgeSheetView, WorkerPasswordResetView, WorkerIdentityResetView
+from .views import PaySlipConsolidatedView, PaySlipListView, PaySlipPdfView, PayrollReleaseWorkflowView, WorkerPhotoView, WorkerSignatureView, WorkerDetailView, WorkerMonthPdfView, WorkerBadgeSheetView, WorkerPasswordResetView, WorkerIdentityResetView
 from .api import admin_attendance_api, admin_release_api, admin_reset_password_api, admin_worker_access_api, admin_worker_badge_api, admin_worker_detail_api, admin_worker_pdf_api, admin_workers_api, change_password_api, confirm_payslip_api, login_api, portal_content_api, register_identity_api, worker_payslips_api, worker_pdf_api
 from .worker_portal import (
     WorkerIdentityView,
@@ -20,6 +20,7 @@ urlpatterns = [
     path('trabajadores/fotochecks/', WorkerBadgeSheetView.as_view(), name='worker_badge_sheet'),
     path('trabajador/<str:document>/restablecer-clave/', WorkerPasswordResetView.as_view(), name='worker_reset_password'),
     path('trabajador/<str:document>/eliminar-identidad/', WorkerIdentityResetView.as_view(), name='worker_reset_identity'),
+    path('publicacion/', PayrollReleaseWorkflowView.as_view(), name='release_workflow'),
     path('trabajador/firma/<int:pk>/', WorkerSignatureView.as_view(), name='worker_signature'),
     path('trabajador/detalle/<str:document>/', WorkerDetailView.as_view(), name='worker_detail'),
     path('trabajador/boleta/<str:document>/', WorkerMonthPdfView.as_view(), name='worker_month_pdf'),

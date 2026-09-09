@@ -10,6 +10,7 @@ from django.db import DatabaseError, transaction
 from django.http import FileResponse, Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.cache import never_cache
@@ -18,7 +19,7 @@ from apps.user.models import User
 
 from .periods import resolve_date_range, week_value_for_date
 from .analytics import build_payroll_summary
-from .models import PayslipAcknowledgement, WorkerIdentityProfile
+from .models import PayrollRelease, PayslipAcknowledgement, WorkerIdentityProfile
 from .services import PAYROLL_TYPES, PaySlipService
 
 
@@ -104,6 +105,54 @@ class WorkerIdentityResetView(PaySlipPermissionMixin, View):
             transaction.on_commit(delete_identity_files)
 
         messages.success(request, 'La foto y firma de {} fueron eliminadas. Deberá registrarlas nuevamente.'.format(document))
+        return _return_to_payslips(request)
+
+
+class PayrollReleaseWorkflowView(PaySlipPermissionMixin, View):
+    """Valida y luego autoriza un periodo antes de mostrarlo a trabajadores."""
+
+    def post(self, request):
+        if not getattr(request.user, "admin", False):
+            return HttpResponse("Solo un administrador puede autorizar boletas.", status=403)
+        action = request.POST.get("action", "")
+        payroll_type = request.POST.get("payroll_type", "").strip().upper()
+        if action not in ("validate", "authorize") or payroll_type not in dict(PAYROLL_TYPES):
+            messages.error(request, "La acción o planilla seleccionada no es válida.")
+            return _return_to_payslips(request)
+        mode = "month" if payroll_type == "ERG" else request.POST.get("mode", "month")
+        try:
+            period = resolve_date_range(
+                mode,
+                month_value=request.POST.get("month", ""),
+                week_value=request.POST.get("week", ""),
+                start_value=request.POST.get("start", ""),
+                end_value=request.POST.get("end", ""),
+            )
+        except (TypeError, ValueError):
+            messages.error(request, "El periodo seleccionado no es válido.")
+            return _return_to_payslips(request)
+
+        with transaction.atomic():
+            release, unused_created = PayrollRelease.objects.select_for_update().get_or_create(
+                payroll_type=payroll_type,
+                period_start=period.start,
+                period_end=period.end,
+            )
+            if action == "validate":
+                if not release.validated_at:
+                    release.validated_at = timezone.now()
+                    release.validated_by = request.user
+                    release.save(update_fields=("validated_at", "validated_by"))
+                messages.success(request, "Las boletas del periodo fueron validadas.")
+            elif not release.validated_at:
+                messages.error(request, "Primero debes validar las boletas del periodo.")
+            elif not release.released_at:
+                release.released_at = timezone.now()
+                release.released_by = request.user
+                release.save(update_fields=("released_at", "released_by"))
+                messages.success(request, "Boletas autorizadas. Los trabajadores ya pueden visualizarlas.")
+            else:
+                messages.info(request, "Las boletas de este periodo ya estaban autorizadas.")
         return _return_to_payslips(request)
 
 
@@ -376,6 +425,11 @@ class PaySlipListView(PaySlipPermissionMixin, View):
             "query": query,
             "payroll_type": payroll_type,
             "payroll_types": PAYROLL_TYPES,
+            "release": PayrollRelease.objects.filter(
+                payroll_type=payroll_type,
+                period_start=date_range.start,
+                period_end=date_range.end,
+            ).first() if payroll_type else None,
             "registered_count": len(registered_documents),
             "badge_sheet_url": "{}?{}".format(
                 reverse("boletas:worker_badge_sheet"),

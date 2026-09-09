@@ -133,6 +133,7 @@ def _is_released(payroll_type, period):
         payroll_type=str(payroll_type or "").strip().upper(),
         period_start=period.start,
         period_end=period.end,
+        released_at__isnull=False,
     ).exists()
 
 
@@ -245,6 +246,8 @@ def _requested_worker_slip(document, month_value, requested_hash, week_value="")
         ),
         None,
     )
+    if slip and not _is_released(slip.get("payroll_type"), period):
+        slip = None
     return period, slip
 
 
@@ -498,13 +501,26 @@ def admin_release_api(request):
         )
     except (DatabaseError, TypeError, ValueError):
         return _json({"error": "El periodo o semana no es vÃ¡lido."}, 400)
+    action = str(data.get("action") or "validate").strip().lower()
+    if action not in ("validate", "authorize"):
+        return _json({"error": "La acción no es válida."}, 400)
     release, created = PayrollRelease.objects.get_or_create(
         payroll_type=payroll_type,
         period_start=period.start,
         period_end=period.end,
-        defaults={"released_by": user},
     )
-    return _json({"ok": True, "created": created, "period": period.label, "week": selected_week})
+    if action == "validate" and not release.validated_at:
+        release.validated_at = timezone.now()
+        release.validated_by = user
+        release.save(update_fields=("validated_at", "validated_by"))
+    elif action == "authorize":
+        if not release.validated_at:
+            return _json({"error": "Primero debes validar las boletas del periodo."}, 409)
+        if not release.released_at:
+            release.released_at = timezone.now()
+            release.released_by = user
+            release.save(update_fields=("released_at", "released_by"))
+    return _json({"ok": True, "created": created, "status": release.status, "period": period.label, "week": selected_week})
 
 
 @csrf_exempt
