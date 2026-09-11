@@ -2,6 +2,8 @@
 from .settings import *
 
 LOCAL_DEVELOPMENT = True
+# Las pruebas locales conservan su fuente aislada de SQL Server y de la red.
+ERG_TXT_ROOT = os.getenv('ERG_TXT_ROOT', str(BASE_DIR / 'runtime_logs' / 'erg-source'))
 DEBUG = True
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]']
 SECRET_KEY = 'agroservice-local-development-only'

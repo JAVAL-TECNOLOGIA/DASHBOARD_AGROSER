@@ -6,6 +6,13 @@ from apps.connection.odbc_config import get_django_db_options
 # Define la ruta base del proyecto
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Fuente de boletas ERG para el arranque habitual de producción y WSGI.
+# La cuenta del servicio debe tener acceso de lectura a esta carpeta.
+ERG_TXT_ROOT = os.getenv(
+    'ERG_TXT_ROOT',
+    r'\\192.168.100.3\NISIRA\NISIRA_GCH\AGROSERVICE\EMPLEADOS REMIGEN GENERAL',
+)
+
 
 # Ruta para archivos estáticos
 STATIC_URL = '/static/'
