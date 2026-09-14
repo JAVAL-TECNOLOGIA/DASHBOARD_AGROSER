@@ -168,6 +168,23 @@ class PayslipPhotoTests(TestCase):
             build_worker_badge('01234567', 'Prueba', 'Operario', BytesIO(image_bytes()))
         self.assertEqual(qr.call_args.kwargs['value'], '01234567')
 
+    def test_employer_signature_is_default_for_other_payslip_formats(self):
+        from .periods import month_range
+        from .views import PaySlipPdfView
+
+        period = month_range('2026-08')
+        slip = {
+            'nrodocumento': '01234567', 'apenom': 'TRABAJADOR PRUEBA',
+            'basico': 100, 'income_total': 100, 'deduction_total': 10,
+            'net_total': 90, 'concepts': [],
+        }
+        for payroll_type in ('OBP', 'OTRO'):
+            content = PaySlipPdfView._build_pdf(
+                dict(slip, payroll_type=payroll_type), period,
+            )
+            self.assertTrue(content.startswith(b'%PDF'))
+            self.assertIn(b'/Subtype /Image', content)
+
     def test_badge_sheet_places_six_workers_per_a4_page(self):
         from io import BytesIO
         import re

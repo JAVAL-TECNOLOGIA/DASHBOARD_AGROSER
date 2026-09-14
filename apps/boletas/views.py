@@ -1,6 +1,7 @@
 import logging
 from decimal import Decimal
 from io import BytesIO
+from pathlib import Path
 from urllib.parse import urlencode
 
 from django.contrib import messages
@@ -643,10 +644,10 @@ class PaySlipPdfView(PaySlipPermissionMixin, View):
         return response
 
     @staticmethod
-    def _build_obp_pdf(slip, period, signature_path=None, signer_name="", signed_at=None):
+    def _build_obp_pdf(slip, period, signature_path=None, signer_name="", signed_at=None, employer_signature_path=None):
         """Render the legacy two-copy plant-worker payslip."""
         from reportlab.lib import colors
-        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.pagesizes import A4, landscape
         from reportlab.lib.units import mm
         from reportlab.pdfgen import canvas
 
@@ -822,21 +823,26 @@ class PaySlipPdfView(PaySlipPermissionMixin, View):
 
             signature_left = left + detail_width + 5 * mm
             signature_right = right - 3 * mm
+            signature_middle = (signature_left + signature_right) / 2
             signature_line_y = 28 * mm
+            if employer_signature_path:
+                pdf.drawImage(employer_signature_path, signature_left + 4 * mm, signature_line_y + 1 * mm, 35 * mm, 13 * mm, preserveAspectRatio=True, anchor="c", mask="auto")
             if signature_path:
                 try:
-                    pdf.drawImage(signature_path, signature_left + 7 * mm, signature_line_y + 1 * mm, 35 * mm, 13 * mm, preserveAspectRatio=True, mask="auto")
+                    pdf.drawImage(signature_path, signature_middle + 4 * mm, signature_line_y + 1 * mm, 35 * mm, 13 * mm, preserveAspectRatio=True, anchor="c", mask="auto")
                 except Exception:
                     logger.exception("No se pudo insertar la firma del trabajador en la boleta OBP.")
-            pdf.line(signature_left, signature_line_y, signature_right, signature_line_y)
+            pdf.line(signature_left, signature_line_y, signature_middle - 2 * mm, signature_line_y)
+            pdf.line(signature_middle + 2 * mm, signature_line_y, signature_right, signature_line_y)
             pdf.setFont("Helvetica", 5.3)
-            pdf.drawCentredString((signature_left + signature_right) / 2, signature_line_y - 3 * mm, clean(signer_name or slip.get("apenom")))
-            pdf.drawCentredString((signature_left + signature_right) / 2, signature_line_y - 6 * mm, "DNI: {}".format(clean(slip.get("nrodocumento"))))
+            pdf.drawCentredString((signature_left + signature_middle) / 2, signature_line_y - 3 * mm, "FIRMA DEL EMPLEADOR")
+            pdf.drawCentredString((signature_middle + signature_right) / 2, signature_line_y - 3 * mm, clean(signer_name or slip.get("apenom")))
+            pdf.drawCentredString((signature_middle + signature_right) / 2, signature_line_y - 6 * mm, "DNI: {}".format(clean(slip.get("nrodocumento"))))
             pdf.setFont("Helvetica-Bold", 5.2)
-            pdf.drawCentredString((signature_left + signature_right) / 2, 15 * mm, "FIRMA DEL TRABAJADOR")
+            pdf.drawCentredString((signature_middle + signature_right) / 2, 15 * mm, "FIRMA DEL TRABAJADOR")
             if signed_at:
                 pdf.setFont("Helvetica", 4.5)
-                pdf.drawCentredString((signature_left + signature_right) / 2, 12 * mm, "Conformidad: {}".format(signed_at.strftime("%d/%m/%Y %H:%M")))
+                pdf.drawCentredString((signature_middle + signature_right) / 2, 12 * mm, "Conformidad: {}".format(signed_at.strftime("%d/%m/%Y %H:%M")))
 
         draw_copy(12 * mm)
         pdf.showPage()
@@ -845,11 +851,14 @@ class PaySlipPdfView(PaySlipPermissionMixin, View):
 
     @staticmethod
     def _build_pdf(slip, period, signature_path=None, signer_name="", signed_at=None):
+        employer_signature = Path(__file__).resolve().parent / "assets" / "firma_empleador.bmp"
+        employer_signature_path = str(employer_signature) if employer_signature.is_file() else None
         if str(slip.get("payroll_type") or "").strip().upper() == "ERG":
             return PaySlipPdfView._build_erg_pdf(
                 slip,
                 period,
                 signature_path=signature_path,
+                employer_signature_path=employer_signature_path,
             )
         if str(slip.get("payroll_type") or "").strip().upper() == "OBP":
             return PaySlipPdfView._build_obp_pdf(
@@ -858,6 +867,7 @@ class PaySlipPdfView(PaySlipPermissionMixin, View):
                 signature_path=signature_path,
                 signer_name=signer_name,
                 signed_at=signed_at,
+                employer_signature_path=employer_signature_path,
             )
         from reportlab.lib import colors
         from reportlab.lib.enums import TA_CENTER, TA_RIGHT
@@ -1079,35 +1089,37 @@ class PaySlipPdfView(PaySlipPermissionMixin, View):
             )
         )
         story.append(totals)
-        if signature_path:
-            signature = Image(signature_path, width=45 * mm, height=18 * mm, kind="proportional")
+        if employer_signature_path or signature_path:
+            employer_signature = Image(employer_signature_path, width=45 * mm, height=18 * mm, kind="proportional") if employer_signature_path else ""
+            signature = Image(signature_path, width=45 * mm, height=18 * mm, kind="proportional") if signature_path else ""
             signature_table = Table(
                 [
-                    [signature],
-                    [Paragraph("Firma digital del trabajador", styles["BodyText"])],
-                    [Paragraph(text(signer_name), styles["BodyText"])],
-                    [Paragraph(
+                    [employer_signature, signature],
+                    [Paragraph("Firma del empleador", styles["BodyText"]), Paragraph("Firma digital del trabajador", styles["BodyText"]) if signature_path else ""],
+                    ["", Paragraph(text(signer_name), styles["BodyText"]) if signature_path else ""],
+                    ["", Paragraph(
                         "Conformidad registrada: {}".format(
                             signed_at.strftime("%d/%m/%Y %H:%M") if signed_at else "-"
                         ),
                         styles["BodyText"],
-                    )],
+                    ) if signature_path else ""],
                 ],
-                colWidths=[75 * mm],
+                colWidths=[75 * mm, 75 * mm],
                 hAlign="LEFT",
             )
             signature_table.setStyle(TableStyle([
                 ("ALIGN", (0, 0), (-1, -1), "CENTER"),
                 ("TOPPADDING", (0, 0), (-1, -1), 3),
                 ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
-                ("LINEABOVE", (0, 1), (-1, 1), 0.6, colors.HexColor("#244767")),
+                ("LINEABOVE", (0, 1), (0, 1), 0.6, colors.HexColor("#244767")),
+                ("LINEABOVE", (1, 1), (1, 1), 0.6, colors.HexColor("#244767")) if signature_path else ("LINEABOVE", (1, 1), (1, 1), 0, colors.white),
             ]))
             story.extend([Spacer(1, 8 * mm), signature_table])
         document.build(story)
         return buffer.getvalue()
 
     @staticmethod
-    def _build_erg_pdf(slip, period, signature_path=None):
+    def _build_erg_pdf(slip, period, signature_path=None, employer_signature_path=None):
         from django.conf import settings
         from .erg_txt import locate_payroll, read_payroll, PayrollTextError
         from .erg_pdf import build_pdf
@@ -1124,6 +1136,7 @@ class PaySlipPdfView(PaySlipPermissionMixin, View):
             return build_pdf(
                 read_payroll(source, month, document),
                 signature_path=signature_path,
+                employer_signature_path=employer_signature_path,
             )
         except (OSError, PayrollTextError) as exc:
             logger.warning('No se pudo generar ERG desde TXT: %s', exc)

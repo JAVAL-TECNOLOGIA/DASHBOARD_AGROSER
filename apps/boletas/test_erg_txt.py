@@ -67,3 +67,11 @@ class ErgTxtTests(SimpleTestCase):
                 signature_path=str(signature),
             )
         self.assertIn(b'/Subtype /Image', result)
+
+    def test_erg_pdf_always_embeds_employer_signature(self):
+        with override_settings(ERG_TXT_ROOT=str(self.root)):
+            result = PaySlipPdfView._build_pdf(
+                {'nrodocumento': '01234567', 'payroll_type': 'ERG'},
+                month_range('2026-08'),
+            )
+        self.assertIn(b'/Subtype /Image', result)
