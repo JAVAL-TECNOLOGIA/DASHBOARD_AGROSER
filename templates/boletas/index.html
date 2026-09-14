@@ -161,6 +161,7 @@
                             <th class="text-right">Días</th>
                             <th class="text-right">Básico</th>
                             <th>Firma</th>
+                            {% if request.user.admin %}<th class="text-center">Confirmación</th>{% endif %}
                             <th>Detalle</th>
                         </tr>
                     </thead>
@@ -186,6 +187,16 @@
                                 <td>
                                     {% if slip.has_signature %}<span class="badge badge-success">SUBIDO</span>{% else %}<span class="badge badge-warning">PENDIENTE</span>{% endif %}
                                 </td>
+                                {% if request.user.admin %}
+                                <td class="text-center align-middle">
+                                    {% if slip.acknowledgement %}
+                                        <span class="badge badge-success">CONFIRMADA</span>
+                                        <div class="small text-muted mt-1">{{ slip.acknowledgement.confirmed_at|date:"d/m/Y H:i" }}</div>
+                                    {% else %}
+                                        <span class="badge badge-warning">PENDIENTE</span>
+                                    {% endif %}
+                                </td>
+                                {% endif %}
                                 <td>
                                     <a class="btn btn-sm btn-danger mb-1" href="{{ slip.pdf_url }}" target="_blank" rel="noopener">
                                         <i class="fa fa-file-pdf mr-1"></i> PDF
@@ -211,7 +222,7 @@
                             </tr>
 
                         {% empty %}
-                            <tr><td colspan="10" class="text-center text-muted py-5"><i class="fa fa-inbox fa-2x d-block mb-3"></i>No se encontraron boletas para los filtros seleccionados.</td></tr>
+                            <tr><td colspan="{% if request.user.admin %}11{% else %}10{% endif %}" class="text-center text-muted py-5"><i class="fa fa-inbox fa-2x d-block mb-3"></i>No se encontraron boletas para los filtros seleccionados.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>

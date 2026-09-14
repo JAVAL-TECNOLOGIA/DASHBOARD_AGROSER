@@ -4,9 +4,10 @@ from unittest.mock import patch
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.user.models import User
-from .models import WorkerIdentityProfile
+from .models import PayslipAcknowledgement, WorkerIdentityProfile
 from .test_identity import image_bytes
 
 
@@ -66,6 +67,37 @@ class PayslipPhotoTests(TestCase):
         self.assertContains(response, 'PENDIENTE')
         self.assertContains(response, 'VER DETALLE')
         self.assertNotContains(response, 'Ver conceptos')
+
+    @patch('apps.boletas.views.PaySlipService.list')
+    def test_admin_confirmation_column_shows_status_and_date(self, slips):
+        slips.return_value = [{
+            'nrodocumento': '01234567', 'apenom': 'TRABAJADOR',
+            'idcodigogeneral': '1', 'codigoplanilla': 'ERG',
+        }]
+        self.client.force_login(self.admin)
+        url = reverse('boletas:index')
+        params = {'mode': 'month', 'month': '2026-08'}
+
+        pending = self.client.get(url, params)
+        self.assertContains(pending, '>Confirmación</th>')
+        self.assertNotContains(pending, 'CONFIRMADA')
+
+        slip = list(pending.context['page'])[0]
+        acknowledgement = PayslipAcknowledgement.objects.create(
+            user=self.worker,
+            worker_document='01234567',
+            period_start=pending.context['period'].start,
+            period_end=pending.context['period'].end,
+            payroll_code='ERG',
+            payslip_hash=slip['fingerprint'],
+            signer_name='Trabajador Prueba',
+        )
+        confirmed = self.client.get(url, params)
+        self.assertContains(confirmed, 'CONFIRMADA')
+        self.assertContains(
+            confirmed,
+            timezone.localtime(acknowledgement.confirmed_at).strftime('%d/%m/%Y %H:%M'),
+        )
 
     @patch('apps.boletas.worker_portal.WorkerIdentityService.get_active_worker', return_value={'email': 'worker@example.test'})
     @patch('apps.boletas.worker_portal.worker_slips')
