@@ -23,7 +23,7 @@ from apps.user.models import User
 from .models import PayslipAcknowledgement, PayrollRelease, WorkerIdentityProfile
 from .periods import resolve_date_range, week_value_for_date
 from .services import PaySlipService
-from .views import PaySlipPdfView
+from .views import PaySlipPdfView, _confirmed_signature
 from .worker_forms import (
     PayslipConfirmationForm,
     WorkerLoginForm,
@@ -486,13 +486,10 @@ class WorkerPayslipPdfView(WorkerPortalMixin, View):
         if not acknowledgement:
             messages.error(request, "Debes dar tu conformidad antes de visualizar la boleta.")
             return redirect("boletas:worker_dashboard")
-        profile = WorkerIdentityProfile.objects.filter(user=request.user).first()
         data = PaySlipPdfView._build_pdf(
             slip,
             period,
-            signature_path=profile.signature.path if profile and profile.signature else None,
-            signer_name=acknowledgement.signer_name,
-            signed_at=acknowledgement.confirmed_at,
+            **_confirmed_signature(slip, period),
         )
         response = HttpResponse(data, content_type="application/pdf")
         response["Content-Disposition"] = 'inline; filename="mi_boleta_{}_{}.pdf"'.format(

@@ -82,6 +82,21 @@ class WorkerConfirmationTests(TestCase):
         )
         self.assertEqual(acknowledgement.worker_document, '01234567')
 
+    @patch('apps.boletas.worker_portal.PaySlipPdfView._build_pdf', return_value=b'%PDF-test')
+    def test_missing_local_signature_file_does_not_break_confirmed_pdf(self, build_pdf):
+        PayslipAcknowledgement.objects.create(
+            user=self.user,
+            worker_document='01234567',
+            period_start=self.period.start,
+            period_end=self.period.end,
+            payroll_code='ERG',
+            payslip_hash=self.fingerprint,
+            signer_name='Trabajador Prueba',
+        )
+        response = self.client.get(reverse('boletas:worker_pdf'), self.params)
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn('signature_path', build_pdf.call_args.kwargs)
+
     def test_invalid_hash_is_never_confirmed(self):
         params = dict(self.params, hash='invalid')
         response = self.client.post(reverse('boletas:worker_confirm'), params)
