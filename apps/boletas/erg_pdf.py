@@ -12,7 +12,7 @@ from reportlab.platypus import Paragraph, Table, TableStyle
 from .erg_txt import amount, PayrollTextError
 
 
-def build_pdf(data):
+def build_pdf(data, signature_path=None):
     regular, bold = 'Times-Roman', 'Times-Bold'
     fonts = Path('C:/Windows/Fonts')
     if (fonts / 'gara.ttf').exists() and (fonts / 'garabd.ttf').exists():
@@ -78,6 +78,20 @@ def build_pdf(data):
             pdf.setFont(bold if label.startswith('NETO') else regular,9)
             pdf.drawString(x,y,label);pdf.drawRightString(x+w,y,money(value));y-=5*mm
         pdf.line(x+5*mm,18*mm,x+57*mm,18*mm);pdf.line(x+w-57*mm,18*mm,x+w-5*mm,18*mm)
+        if signature_path:
+            try:
+                pdf.drawImage(
+                    signature_path,
+                    x+w-52*mm,
+                    19*mm,
+                    42*mm,
+                    14*mm,
+                    preserveAspectRatio=True,
+                    anchor='c',
+                    mask='auto',
+                )
+            except Exception as exc:
+                raise PayrollTextError('No se pudo insertar la firma registrada en la boleta.') from exc
         pdf.setFont(regular,8);pdf.drawCentredString(x+31*mm,14*mm,'EMPLEADOR');pdf.drawCentredString(x+w-31*mm,14*mm,'TRABAJADOR')
         pdf.setFont(regular,7);pdf.drawCentredString(x+w/2,7*mm,'COPIA DEL TRABAJADOR' if copy == 0 else 'CARGO - EMPLEADOR')
     pdf.save()

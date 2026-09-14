@@ -54,3 +54,16 @@ class ErgTxtTests(SimpleTestCase):
             result=PaySlipPdfView._build_erg_pdf({'nrodocumento':'01234567'},month_range('2026-08'))
             self.assertTrue(result.startswith(b'%PDF'))
             with self.assertRaises(Http404):PaySlipPdfView._build_erg_pdf({'nrodocumento':'01234567','document_type':'cts'},month_range('2026-08'))
+
+    def test_confirmed_erg_pdf_embeds_worker_signature(self):
+        from .test_identity import image_bytes
+
+        signature = self.root / 'signature.png'
+        signature.write_bytes(image_bytes())
+        with override_settings(ERG_TXT_ROOT=str(self.root)):
+            result = PaySlipPdfView._build_erg_pdf(
+                {'nrodocumento': '01234567'},
+                month_range('2026-08'),
+                signature_path=str(signature),
+            )
+        self.assertIn(b'/Subtype /Image', result)

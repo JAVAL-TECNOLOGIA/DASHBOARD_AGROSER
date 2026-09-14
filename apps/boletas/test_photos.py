@@ -129,11 +129,24 @@ class PayslipPhotoTests(TestCase):
         first = {'nrodocumento': '01234567', 'net_total': 100}
         second = {'nrodocumento': '01234567', 'net_total': 200}
         slips.return_value = [first, second]
+        period = month_range('2026-08')
+        self.profile.signature = SimpleUploadedFile('signature.png', image_bytes(), content_type='image/png')
+        self.profile.save(update_fields=['signature'])
+        acknowledgement = PayslipAcknowledgement.objects.create(
+            user=self.worker,
+            worker_document='01234567',
+            period_start=period.start,
+            period_end=period.end,
+            payslip_hash=payslip_fingerprint(second, period),
+            signer_name='Trabajador Prueba',
+        )
         self.client.force_login(self.admin)
         url = reverse('boletas:worker_month_pdf', args=['01234567'])
-        response = self.client.get(url, {'month': '2026-08', 'slip': payslip_fingerprint(second, month_range('2026-08'))})
+        response = self.client.get(url, {'month': '2026-08', 'slip': payslip_fingerprint(second, period)})
         self.assertEqual(response.status_code, 200)
         self.assertEqual(build_pdf.call_args.args[0], second)
+        self.assertEqual(build_pdf.call_args.kwargs['signature_path'], self.profile.signature.path)
+        self.assertEqual(build_pdf.call_args.kwargs['signed_at'], acknowledgement.confirmed_at)
         self.assertEqual(self.client.get(url, {'month': '2026-08', 'slip': 'invalid'}).status_code, 404)
 
     @patch('apps.boletas.worker_portal.worker_slips', return_value=[{'apenom': 'TRABAJADOR PRUEBA', 'cargo_personal': 'Operario'}])

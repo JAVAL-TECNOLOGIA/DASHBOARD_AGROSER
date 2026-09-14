@@ -37,6 +37,30 @@ class PaySlipPermissionMixin(LoginRequiredMixin, PermissionRequiredMixin):
         )
 
 
+def _confirmed_signature(slip, period):
+    """Return signature metadata only after this exact payslip was confirmed."""
+    from .worker_portal import payslip_fingerprint
+
+    fingerprint = payslip_fingerprint(slip, period)
+    acknowledgement = PayslipAcknowledgement.objects.filter(
+        payslip_hash=fingerprint,
+    ).first()
+    if not acknowledgement:
+        return {}
+    profile = WorkerIdentityProfile.objects.filter(
+        worker_document=acknowledgement.worker_document,
+    ).first()
+    if not profile or not profile.signature:
+        return {}
+    if not profile.signature.storage.exists(profile.signature.name):
+        return {}
+    return {
+        "signature_path": profile.signature.path,
+        "signer_name": acknowledgement.signer_name,
+        "signed_at": acknowledgement.confirmed_at,
+    }
+
+
 @method_decorator(never_cache, name="dispatch")
 class WorkerPhotoView(PaySlipPermissionMixin, View):
     media_field = 'photo'
@@ -305,7 +329,10 @@ class WorkerMonthPdfView(PaySlipPermissionMixin, View):
         slip = next((item for item in slips if payslip_fingerprint(item, period) == request.GET.get('slip')), None)
         if slip is None:
             raise Http404('La boleta no existe para este trabajador y mes.')
-        response = HttpResponse(PaySlipPdfView._build_pdf(slip, period), content_type='application/pdf')
+        response = HttpResponse(
+            PaySlipPdfView._build_pdf(slip, period, **_confirmed_signature(slip, period)),
+            content_type='application/pdf',
+        )
         response['Content-Disposition'] = 'inline; filename="boleta_{}_{}.pdf"'.format(document, period.start.strftime('%Y%m'))
         return response
 
@@ -605,7 +632,7 @@ class PaySlipPdfView(PaySlipPermissionMixin, View):
             raise Http404("La boleta solicitada no existe para este periodo.")
 
         response = HttpResponse(
-            self._build_pdf(slip, period),
+            self._build_pdf(slip, period, **_confirmed_signature(slip, period)),
             content_type="application/pdf",
         )
         filename = "boleta_{}_{}.pdf".format(
@@ -819,7 +846,11 @@ class PaySlipPdfView(PaySlipPermissionMixin, View):
     @staticmethod
     def _build_pdf(slip, period, signature_path=None, signer_name="", signed_at=None):
         if str(slip.get("payroll_type") or "").strip().upper() == "ERG":
-            return PaySlipPdfView._build_erg_pdf(slip, period)
+            return PaySlipPdfView._build_erg_pdf(
+                slip,
+                period,
+                signature_path=signature_path,
+            )
         if str(slip.get("payroll_type") or "").strip().upper() == "OBP":
             return PaySlipPdfView._build_obp_pdf(
                 slip,
@@ -1076,7 +1107,7 @@ class PaySlipPdfView(PaySlipPermissionMixin, View):
         return buffer.getvalue()
 
     @staticmethod
-    def _build_erg_pdf(slip, period):
+    def _build_erg_pdf(slip, period, signature_path=None):
         from django.conf import settings
         from .erg_txt import locate_payroll, read_payroll, PayrollTextError
         from .erg_pdf import build_pdf
@@ -1090,7 +1121,10 @@ class PaySlipPdfView(PaySlipPermissionMixin, View):
         root = getattr(settings, 'ERG_TXT_ROOT', str(Path(settings.BASE_DIR) / 'runtime_logs' / 'erg-source'))
         try:
             source = locate_payroll(root, month, document)
-            return build_pdf(read_payroll(source, month, document))
+            return build_pdf(
+                read_payroll(source, month, document),
+                signature_path=signature_path,
+            )
         except (OSError, PayrollTextError) as exc:
             logger.warning('No se pudo generar ERG desde TXT: %s', exc)
             raise Http404('No se pudo generar la boleta desde el TXT validado: {}'.format(exc))
