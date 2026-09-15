@@ -278,7 +278,7 @@ $(document).ready(function () {
     });
     const mode = $('#mode');
     const refreshFields = function () {
-        const monthlyOnly = ['ERG', 'ERA'].indexOf($('#payroll_type').val()) !== -1;
+        const monthlyOnly = ['ERG', 'ERA', 'OBP'].indexOf($('#payroll_type').val()) !== -1;
         mode.find('option[value="week"], option[value="custom"]').prop('disabled', monthlyOnly).prop('hidden', monthlyOnly);
         if (monthlyOnly) mode.val('month');
         $('.filter-field').hide().find('input').prop('disabled', true);

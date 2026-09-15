@@ -40,6 +40,13 @@ class PeriodPolicyTests(SimpleTestCase):
         self.assertEqual(period, month_range('2026-08'))
 
     @patch('apps.boletas.worker_portal.worker_slips', return_value=[{'payroll_type':'OBP'}])
+    def test_obp_worker_forces_complete_month(self, slips):
+        mode, period, only = resolve_worker_period('01234567','week',week_value='2026-W33')
+        self.assertEqual(mode,'month')
+        self.assertTrue(only)
+        self.assertEqual(period, month_range('2026-08'))
+
+    @patch('apps.boletas.worker_portal.worker_slips', return_value=[{'payroll_type':'OBR'}])
     def test_other_payroll_keeps_week(self, slips):
         mode, period, only = resolve_worker_period('01234567','week',week_value='2026-W33')
         self.assertEqual(mode,'week')

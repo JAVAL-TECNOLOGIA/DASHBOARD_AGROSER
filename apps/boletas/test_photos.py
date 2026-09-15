@@ -178,7 +178,7 @@ class PayslipPhotoTests(TestCase):
             'basico': 100, 'income_total': 100, 'deduction_total': 10,
             'net_total': 90, 'concepts': [],
         }
-        for payroll_type in ('OBP', 'OTRO'):
+        for payroll_type in ('OBR', 'OTRO'):
             content = PaySlipPdfView._build_pdf(
                 dict(slip, payroll_type=payroll_type), period,
             )

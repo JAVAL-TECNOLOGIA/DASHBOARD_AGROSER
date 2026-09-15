@@ -88,3 +88,21 @@ class ErgTxtTests(SimpleTestCase):
             )
         self.assertTrue(result.startswith(b'%PDF'))
         self.assertIn(b'/Subtype /Image', result)
+
+    def test_obp_uses_plant_worker_source_with_the_same_validation_and_pdf(self):
+        self.path.unlink()
+        self.path = self.path.with_name('012345678.txt')
+        self.header['codigo'] = '012345678'
+        self.header['documento'] = '012345678'
+        self.header['descripcion_planilla'] = 'OBREROS PLANTA'
+        self.detail['codigo'] = '012345678'
+        self.write()
+        with self.assertRaises(PayrollTextError):
+            read_payroll(self.path, '202608', '012345678', payroll_type='ERA')
+        with override_settings(OBP_TXT_ROOT=str(self.root)):
+            result = PaySlipPdfView._build_pdf(
+                {'nrodocumento': '012345678', 'payroll_type': 'OBP'},
+                month_range('2026-08'),
+            )
+        self.assertTrue(result.startswith(b'%PDF'))
+        self.assertIn(b'/Subtype /Image', result)

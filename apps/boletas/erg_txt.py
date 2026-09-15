@@ -44,18 +44,21 @@ def read_payroll(path, period, document=None, payroll_type='ERG'):
     required = {'codigo', 'documento', 'periodo', 'descripcion_planilla', 'desde1', 'hasta1', 'tot_ingresos', 'tot_descuentos', 'tot_aportes', 'apenom'}
     if not required.issubset(header):
         raise PayrollTextError('Faltan campos obligatorios de cabecera.')
+    payroll_type = str(payroll_type or 'ERG').strip().upper()
+    document_pattern = r'\d{8,12}' if payroll_type == 'OBP' else r'\d{8}'
     dni = header['documento']
-    if not re.fullmatch(r'\d{8}', dni) or (document and dni != document) or path.stem.split('_')[0] != dni:
+    if not re.fullmatch(document_pattern, dni) or (document and dni != document) or path.stem.split('_')[0] != dni:
         raise PayrollTextError('El DNI del archivo no coincide con su contenido.')
     if header.get('periodo') != period:
         raise PayrollTextError('El TXT corresponde a otro período.')
-    payroll_type = str(payroll_type or 'ERG').strip().upper()
     description = header.get('descripcion_planilla', '').upper()
     if payroll_type == 'ERG' and ('GENERAL' not in description or 'AGRARIO' in description):
         raise PayrollTextError('El TXT no corresponde a régimen general.')
     if payroll_type == 'ERA' and 'AGRARIO' not in description:
         raise PayrollTextError('El TXT no corresponde a régimen agrario.')
-    if payroll_type not in ('ERG', 'ERA'):
+    if payroll_type == 'OBP' and 'OBREROS PLANTA' not in description:
+        raise PayrollTextError('El TXT no corresponde a obreros planta.')
+    if payroll_type not in ('ERG', 'ERA', 'OBP'):
         raise PayrollTextError('Tipo de planilla TXT no válido.')
     for key in ('desde1', 'hasta1'):
         try:
@@ -101,7 +104,7 @@ def read_payroll(path, period, document=None, payroll_type='ERG'):
 
 
 def locate_payroll(root, period, document):
-    if not re.fullmatch(r'\d{6}', period) or not re.fullmatch(r'\d{8}', document):
+    if not re.fullmatch(r'\d{6}', period) or not re.fullmatch(r'\d{8,12}', document):
         raise PayrollTextError('DNI o período no válido.')
     root = Path(root)
     if not root.is_dir():

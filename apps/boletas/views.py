@@ -144,7 +144,7 @@ class PayrollReleaseWorkflowView(PaySlipPermissionMixin, View):
         if action not in ("validate", "authorize") or payroll_type not in dict(PAYROLL_TYPES):
             messages.error(request, "La acción o planilla seleccionada no es válida.")
             return _return_to_payslips(request)
-        mode = "month" if payroll_type in ("ERG", "ERA") else request.POST.get("mode", "month")
+        mode = "month" if payroll_type in ("ERG", "ERA", "OBP") else request.POST.get("mode", "month")
         try:
             period = resolve_date_range(
                 mode,
@@ -217,7 +217,7 @@ class WorkerBadgeSheetView(PaySlipPermissionMixin, View):
     def get(self, request):
         from .badge import build_worker_badge_sheet
 
-        mode = 'month' if request.GET.get('payroll_type', '').strip().upper() in ('ERG', 'ERA') else request.GET.get('mode', 'month')
+        mode = 'month' if request.GET.get('payroll_type', '').strip().upper() in ('ERG', 'ERA', 'OBP') else request.GET.get('mode', 'month')
         try:
             period = resolve_date_range(
                 mode,
@@ -343,7 +343,7 @@ class PaySlipListView(PaySlipPermissionMixin, View):
     template_name = "boletas/index.html"
 
     def get(self, request):
-        mode = "month" if request.GET.get("payroll_type", "").strip().upper() in ("ERG", "ERA") else request.GET.get("mode", "month")
+        mode = "month" if request.GET.get("payroll_type", "").strip().upper() in ("ERG", "ERA", "OBP") else request.GET.get("mode", "month")
         month_value = request.GET.get("month", "")
         week_value = request.GET.get("week", "")
         start_value = request.GET.get("start", "")
@@ -478,7 +478,7 @@ class PaySlipConsolidatedView(PaySlipPermissionMixin, View):
     template_name = "boletas/consolidated.html"
 
     def get(self, request):
-        mode = "month" if request.GET.get("payroll_type", "").strip().upper() in ("ERG", "ERA") else request.GET.get("mode", "month")
+        mode = "month" if request.GET.get("payroll_type", "").strip().upper() in ("ERG", "ERA", "OBP") else request.GET.get("mode", "month")
         month_value = request.GET.get("month", "")
         week_value = request.GET.get("week", "")
         start_value = request.GET.get("start", "")
@@ -853,7 +853,7 @@ class PaySlipPdfView(PaySlipPermissionMixin, View):
     def _build_pdf(slip, period, signature_path=None, signer_name="", signed_at=None):
         employer_signature = Path(__file__).resolve().parent / "assets" / "firma_empleador.bmp"
         employer_signature_path = str(employer_signature) if employer_signature.is_file() else None
-        if str(slip.get("payroll_type") or "").strip().upper() in ("ERG", "ERA"):
+        if str(slip.get("payroll_type") or "").strip().upper() in ("ERG", "ERA", "OBP"):
             return PaySlipPdfView._build_erg_pdf(
                 slip,
                 period,

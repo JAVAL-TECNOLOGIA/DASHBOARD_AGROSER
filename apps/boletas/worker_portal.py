@@ -205,7 +205,7 @@ def resolve_worker_period(document, mode, **values):
         if periods:
             latest = periods[0]
             monthly = worker_slips(document, month_range(latest[:4] + '-' + latest[4:6]))
-    monthly_only = any(str(item.get('payroll_type', '')).upper() in ('ERG', 'ERA') for item in monthly)
+    monthly_only = any(str(item.get('payroll_type', '')).upper() in ('ERG', 'ERA', 'OBP') for item in monthly)
     return ('month', month, True) if monthly_only else (mode, period, False)
 
 
