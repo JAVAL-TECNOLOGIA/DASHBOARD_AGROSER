@@ -60,6 +60,14 @@
                         <label for="week">Semana</label>
                         <input class="form-control" id="week" name="week" type="week" min="2026-W31" value="{{ week_value }}">
                     </div>
+                    <div class="form-group col-lg-3 col-md-4" id="official-week-field" style="display:none">
+                        <label for="payroll_week">Número de semana</label>
+                        <select class="form-control" id="payroll_week" name="payroll_week">
+                            {% for item in payroll_weeks %}
+                                <option value="{{ item.number }}" {% if payroll_week == item.number %}selected{% endif %}>Semana {{ item.number }} · {{ item.start|date:"d/m/Y" }} al {{ item.end|date:"d/m/Y" }}</option>
+                            {% empty %}<option value="">Sin semanas registradas</option>{% endfor %}
+                        </select>
+                    </div>
                     <div class="form-group col-lg-2 col-md-4 filter-field" data-mode="custom">
                         <label for="start">Desde</label>
                         <input class="form-control" id="start" name="start" type="date" min="2026-08-01" value="{{ start_value }}">
@@ -115,6 +123,7 @@
                     <input type="hidden" name="mode" value="{{ mode }}">
                     <input type="hidden" name="month" value="{{ month_value }}">
                     <input type="hidden" name="week" value="{{ week_value }}">
+                    <input type="hidden" name="payroll_week" value="{{ payroll_week }}">
                     <input type="hidden" name="start" value="{{ start_value }}">
                     <input type="hidden" name="end" value="{{ end_value }}">
                     <button class="btn btn-info" type="submit" {% if release.validated_at or not total_slips %}disabled{% endif %}>
@@ -128,6 +137,7 @@
                     <input type="hidden" name="mode" value="{{ mode }}">
                     <input type="hidden" name="month" value="{{ month_value }}">
                     <input type="hidden" name="week" value="{{ week_value }}">
+                    <input type="hidden" name="payroll_week" value="{{ payroll_week }}">
                     <input type="hidden" name="start" value="{{ start_value }}">
                     <input type="hidden" name="end" value="{{ end_value }}">
                     <button class="btn btn-success" type="submit" {% if not release.validated_at or release.released_at %}disabled{% endif %}>
@@ -278,14 +288,25 @@ $(document).ready(function () {
     });
     const mode = $('#mode');
     const refreshFields = function () {
-        const monthlyOnly = ['ERG', 'ERA', 'OBP'].indexOf($('#payroll_type').val()) !== -1;
+        const payroll = $('#payroll_type').val();
+        const weeklyPayroll = ['OBP', 'OBR'].indexOf(payroll) !== -1;
+        const monthlyOnly = ['ERG', 'ERA'].indexOf(payroll) !== -1;
+        mode.find('option').prop('disabled', false).prop('hidden', false);
         mode.find('option[value="week"], option[value="custom"]').prop('disabled', monthlyOnly).prop('hidden', monthlyOnly);
+        mode.find('option[value="month"], option[value="custom"]').prop('disabled', weeklyPayroll).prop('hidden', weeklyPayroll);
         if (monthlyOnly) mode.val('month');
         $('.filter-field').hide().find('input').prop('disabled', true);
-        $('.filter-field[data-mode="' + mode.val() + '"]').show().find('input').prop('disabled', false);
+        if (weeklyPayroll) {
+            mode.val('week');
+            $('.filter-field[data-mode="month"]').show().find('input').prop('disabled', false);
+        } else {
+            $('.filter-field[data-mode="' + mode.val() + '"]').show().find('input').prop('disabled', false);
+        }
+        $('#official-week-field').toggle(weeklyPayroll).find('select').prop('disabled', !weeklyPayroll);
     };
     mode.on('change', refreshFields);
-    $('#payroll_type').on('change', refreshFields);
+    $('#payroll_type').on('change', function(){ refreshFields(); if (['OBP','OBR'].indexOf(this.value) !== -1) $('#payslip-filter').submit(); });
+    $('#month').on('change', function(){ if (['OBP','OBR'].indexOf($('#payroll_type').val()) !== -1) $('#payslip-filter').submit(); });
     refreshFields();
 });
 </script>

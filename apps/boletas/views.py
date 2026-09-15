@@ -18,13 +18,30 @@ from django.views.decorators.cache import never_cache
 
 from apps.user.models import User
 
-from .periods import resolve_date_range, week_value_for_date
+from .periods import DateRange, month_range, resolve_date_range, week_value_for_date
 from .analytics import build_payroll_summary
 from .models import PayrollRelease, PayslipAcknowledgement, WorkerIdentityProfile
 from .services import PAYROLL_TYPES, PaySlipService
 
 
 logger = logging.getLogger(__name__)
+WEEKLY_PAYROLL_TYPES = ("OBP", "OBR")
+
+
+def _official_payroll_period(service, payroll_type, month_value, week_number=""):
+    month = month_range(month_value)
+    if payroll_type not in WEEKLY_PAYROLL_TYPES:
+        return month, [], ""
+    weeks = service.payroll_weeks(month_value, payroll_type)
+    selected = str(week_number or "").strip()
+    if weeks and selected not in {item["number"] for item in weeks}:
+        selected = weeks[-1]["number"]
+    row = next((item for item in weeks if item["number"] == selected), None)
+    if not row:
+        return month, weeks, ""
+    return DateRange(row["start"], row["end"], "Semana {} · {} al {}".format(
+        row["number"], row["start"].strftime("%d/%m/%Y"), row["end"].strftime("%d/%m/%Y")
+    )), weeks, selected
 
 
 class PaySlipPermissionMixin(LoginRequiredMixin, PermissionRequiredMixin):
@@ -144,15 +161,12 @@ class PayrollReleaseWorkflowView(PaySlipPermissionMixin, View):
         if action not in ("validate", "authorize") or payroll_type not in dict(PAYROLL_TYPES):
             messages.error(request, "La acción o planilla seleccionada no es válida.")
             return _return_to_payslips(request)
-        mode = "month" if payroll_type in ("ERG", "ERA", "OBP") else request.POST.get("mode", "month")
+        mode = "week" if payroll_type in WEEKLY_PAYROLL_TYPES else "month" if payroll_type in ("ERG", "ERA") else request.POST.get("mode", "month")
         try:
-            period = resolve_date_range(
-                mode,
-                month_value=request.POST.get("month", ""),
-                week_value=request.POST.get("week", ""),
-                start_value=request.POST.get("start", ""),
-                end_value=request.POST.get("end", ""),
-            )
+            if payroll_type in WEEKLY_PAYROLL_TYPES:
+                period, unused_weeks, unused_selected = _official_payroll_period(PaySlipService(), payroll_type, request.POST.get("month", ""), request.POST.get("payroll_week", ""))
+            else:
+                period = resolve_date_range(mode, month_value=request.POST.get("month", ""), week_value=request.POST.get("week", ""), start_value=request.POST.get("start", ""), end_value=request.POST.get("end", ""))
         except (TypeError, ValueError):
             messages.error(request, "El periodo seleccionado no es válido.")
             return _return_to_payslips(request)
@@ -343,29 +357,30 @@ class PaySlipListView(PaySlipPermissionMixin, View):
     template_name = "boletas/index.html"
 
     def get(self, request):
-        mode = "month" if request.GET.get("payroll_type", "").strip().upper() in ("ERG", "ERA", "OBP") else request.GET.get("mode", "month")
+        payroll_type = request.GET.get("payroll_type", "").strip().upper()
+        mode = "week" if payroll_type in WEEKLY_PAYROLL_TYPES else "month" if payroll_type in ("ERG", "ERA") else request.GET.get("mode", "month")
         month_value = request.GET.get("month", "")
         week_value = request.GET.get("week", "")
         start_value = request.GET.get("start", "")
         end_value = request.GET.get("end", "")
         query = request.GET.get("q", "").strip()
-        payroll_type = request.GET.get("payroll_type", "").strip().upper()
+        payroll_week = request.GET.get("payroll_week", "").strip()
+        service = PaySlipService()
 
         try:
-            date_range = resolve_date_range(
-                mode,
-                month_value=month_value,
-                week_value=week_value,
-                start_value=start_value,
-                end_value=end_value,
-            )
-        except (TypeError, ValueError):
+            if payroll_type in WEEKLY_PAYROLL_TYPES:
+                date_range, payroll_weeks, payroll_week = _official_payroll_period(service, payroll_type, month_value or timezone.localdate().strftime("%Y-%m"), payroll_week)
+            else:
+                payroll_weeks = []
+                date_range = resolve_date_range(mode, month_value=month_value, week_value=week_value, start_value=start_value, end_value=end_value)
+        except (TypeError, ValueError, DatabaseError):
             messages.error(request, "El periodo seleccionado no es válido.")
             mode = "month"
             date_range = resolve_date_range(mode)
+            payroll_weeks, payroll_week = [], ""
 
         try:
-            slips = PaySlipService().list(date_range)
+            slips = service.list(date_range)
         except DatabaseError:
             logger.exception("No se pudieron consultar las boletas.")
             messages.error(request, "No fue posible consultar las boletas en este momento.")
@@ -406,6 +421,7 @@ class PaySlipListView(PaySlipPermissionMixin, View):
             "start": start_value,
             "end": end_value,
             "payroll_type": payroll_type,
+            "payroll_week": payroll_week,
         }
         for slip in slips:
             pdf_params = dict(base_params)
@@ -452,7 +468,9 @@ class PaySlipListView(PaySlipPermissionMixin, View):
             "end_value": end_value or date_range.end.isoformat(),
             "query": query,
             "payroll_type": payroll_type,
+            "payroll_week": payroll_week,
             "payroll_types": PAYROLL_TYPES,
+            "payroll_weeks": payroll_weeks,
             "release": PayrollRelease.objects.filter(
                 payroll_type=payroll_type,
                 period_start=date_range.start,
@@ -609,14 +627,13 @@ class PaySlipPdfView(PaySlipPermissionMixin, View):
             raise Http404("No se indicó el trabajador.")
 
         try:
-            period = resolve_date_range(
-                request.GET.get("mode", "month"),
-                month_value=request.GET.get("month", ""),
-                week_value=request.GET.get("week", ""),
-                start_value=request.GET.get("start", ""),
-                end_value=request.GET.get("end", ""),
-            )
-            slips = PaySlipService().list(period)
+            service = PaySlipService()
+            payroll_type = request.GET.get("payroll_type", "").strip().upper()
+            if payroll_type in WEEKLY_PAYROLL_TYPES:
+                period, unused_weeks, unused_selected = _official_payroll_period(service, payroll_type, request.GET.get("month", ""), request.GET.get("payroll_week", ""))
+            else:
+                period = resolve_date_range(request.GET.get("mode", "month"), month_value=request.GET.get("month", ""), week_value=request.GET.get("week", ""), start_value=request.GET.get("start", ""), end_value=request.GET.get("end", ""))
+            slips = service.list(period)
         except (TypeError, ValueError, DatabaseError):
             logger.exception("No se pudo generar la boleta en PDF.")
             raise Http404("No fue posible consultar la boleta.")
