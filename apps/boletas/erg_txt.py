@@ -103,7 +103,7 @@ def read_payroll(path, period, document=None, payroll_type='ERG'):
     return {'header': header, 'details': details, 'totals': totals, 'source': str(path)}
 
 
-def locate_payroll(root, period, document):
+def locate_payroll(root, period, document, week_number=''):
     if not re.fullmatch(r'\d{6}', period) or not re.fullmatch(r'\d{8,12}', document):
         raise PayrollTextError('DNI o período no válido.')
     root = Path(root)
@@ -111,7 +111,14 @@ def locate_payroll(root, period, document):
         raise PayrollTextError('La carpeta de boletas TXT no está disponible. Verifica la VPN.')
     candidates = set()
     for folder in root.iterdir():
-        if folder.is_dir() and folder.name.startswith(period):
+        folder_match = re.fullmatch(r'(\d{6})(\d+)-(\d{6})(\d+)', folder.name)
+        matches_period = folder.name.startswith(period)
+        if week_number:
+            matches_period = bool(folder_match and (
+                (folder_match.group(1) == period and folder_match.group(2) == str(week_number))
+                or (folder_match.group(3) == period and folder_match.group(4) == str(week_number))
+            ))
+        if folder.is_dir() and matches_period:
             for location in (folder, folder / 'normal'):
                 for name in (document + '_N.txt', document + '_NS.txt', document + '.txt'):
                     candidate = location / name

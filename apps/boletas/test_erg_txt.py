@@ -51,6 +51,13 @@ class ErgTxtTests(SimpleTestCase):
         self.path.rename(target)
         self.assertEqual(locate_payroll(self.root, '202608', '01234567'), target)
 
+    def test_week_number_selects_the_matching_folder_when_worker_has_multiple_weeks(self):
+        second = self.root / '20260842-20260842' / 'normal'
+        second.mkdir(parents=True)
+        target = second / self.path.name
+        target.write_bytes(self.path.read_bytes())
+        self.assertEqual(locate_payroll(self.root, '202608', '01234567', week_number='42'), target)
+
     def test_source_missing_never_falls_back_to_estimates(self):
         with override_settings(ERG_TXT_ROOT=str(self.root)):
             with self.assertRaises(Http404):PaySlipPdfView._build_erg_pdf({'nrodocumento':'99999999'},month_range('2026-08'))
@@ -125,5 +132,5 @@ class ErgTxtTests(SimpleTestCase):
         self.write()
         period = DateRange(date(2026,8,31), date(2026,9,6), 'Semana 42 + 43')
         with override_settings(OBP_TXT_ROOT=str(self.root)):
-            result = PaySlipPdfView._build_pdf({'nrodocumento':'01234567','payroll_type':'OBP'}, period)
+            result = PaySlipPdfView._build_pdf({'nrodocumento':'01234567','payroll_type':'OBP','_payroll_week':'42+43'}, period)
         self.assertTrue(result.startswith(b'%PDF'))

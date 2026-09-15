@@ -672,6 +672,7 @@ class PaySlipPdfView(PaySlipPermissionMixin, View):
         )
         if slip is None:
             raise Http404("La boleta solicitada no existe para este periodo.")
+        slip["_payroll_week"] = request.GET.get("payroll_week", "").strip()
 
         response = HttpResponse(
             self._build_pdf(slip, period, **_confirmed_signature(slip, period)),
@@ -1173,15 +1174,17 @@ class PaySlipPdfView(PaySlipPermissionMixin, View):
         months = [period.start.strftime('%Y%m')]
         if period.end.strftime('%Y%m') not in months:
             months.append(period.end.strftime('%Y%m'))
+        week_numbers = [value for value in str(slip.get('_payroll_week') or '').split('+') if value]
         document = str(slip.get('nrodocumento') or '').strip()
         setting_name = '{}_TXT_ROOT'.format(payroll_type)
         fallback_folder = '{}-source'.format(payroll_type.lower())
         root = getattr(settings, setting_name, str(Path(settings.BASE_DIR) / 'runtime_logs' / fallback_folder))
         try:
             payrolls = []
-            for month in months:
+            for index, month in enumerate(months):
                 try:
-                    source = locate_payroll(root, month, document)
+                    week_number = week_numbers[index] if index < len(week_numbers) else ''
+                    source = locate_payroll(root, month, document, week_number=week_number)
                 except PayrollTextError:
                     continue
                 payrolls.append(read_payroll(source, month, document, payroll_type=payroll_type))
