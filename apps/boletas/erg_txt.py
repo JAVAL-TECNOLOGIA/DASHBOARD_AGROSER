@@ -20,7 +20,7 @@ def amount(value):
         raise PayrollTextError('Importe no válido en el TXT.')
 
 
-def read_payroll(path, period, document=None):
+def read_payroll(path, period, document=None, payroll_type='ERG'):
     path = Path(path)
     if not re.fullmatch(r'\d{6}', period):
         raise PayrollTextError('Período no válido; usa AAAAMM.')
@@ -49,8 +49,14 @@ def read_payroll(path, period, document=None):
         raise PayrollTextError('El DNI del archivo no coincide con su contenido.')
     if header.get('periodo') != period:
         raise PayrollTextError('El TXT corresponde a otro período.')
-    if 'GENERAL' not in header.get('descripcion_planilla', '').upper():
+    payroll_type = str(payroll_type or 'ERG').strip().upper()
+    description = header.get('descripcion_planilla', '').upper()
+    if payroll_type == 'ERG' and ('GENERAL' not in description or 'AGRARIO' in description):
         raise PayrollTextError('El TXT no corresponde a régimen general.')
+    if payroll_type == 'ERA' and 'AGRARIO' not in description:
+        raise PayrollTextError('El TXT no corresponde a régimen agrario.')
+    if payroll_type not in ('ERG', 'ERA'):
+        raise PayrollTextError('Tipo de planilla TXT no válido.')
     for key in ('desde1', 'hasta1'):
         try:
             date = datetime.strptime(header[key], '%Y%m%d')

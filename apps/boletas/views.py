@@ -144,7 +144,7 @@ class PayrollReleaseWorkflowView(PaySlipPermissionMixin, View):
         if action not in ("validate", "authorize") or payroll_type not in dict(PAYROLL_TYPES):
             messages.error(request, "La acción o planilla seleccionada no es válida.")
             return _return_to_payslips(request)
-        mode = "month" if payroll_type == "ERG" else request.POST.get("mode", "month")
+        mode = "month" if payroll_type in ("ERG", "ERA") else request.POST.get("mode", "month")
         try:
             period = resolve_date_range(
                 mode,
@@ -217,7 +217,7 @@ class WorkerBadgeSheetView(PaySlipPermissionMixin, View):
     def get(self, request):
         from .badge import build_worker_badge_sheet
 
-        mode = 'month' if request.GET.get('payroll_type', '').strip().upper() == 'ERG' else request.GET.get('mode', 'month')
+        mode = 'month' if request.GET.get('payroll_type', '').strip().upper() in ('ERG', 'ERA') else request.GET.get('mode', 'month')
         try:
             period = resolve_date_range(
                 mode,
@@ -343,7 +343,7 @@ class PaySlipListView(PaySlipPermissionMixin, View):
     template_name = "boletas/index.html"
 
     def get(self, request):
-        mode = "month" if request.GET.get("payroll_type", "").strip().upper() == "ERG" else request.GET.get("mode", "month")
+        mode = "month" if request.GET.get("payroll_type", "").strip().upper() in ("ERG", "ERA") else request.GET.get("mode", "month")
         month_value = request.GET.get("month", "")
         week_value = request.GET.get("week", "")
         start_value = request.GET.get("start", "")
@@ -478,7 +478,7 @@ class PaySlipConsolidatedView(PaySlipPermissionMixin, View):
     template_name = "boletas/consolidated.html"
 
     def get(self, request):
-        mode = "month" if request.GET.get("payroll_type", "").strip().upper() == "ERG" else request.GET.get("mode", "month")
+        mode = "month" if request.GET.get("payroll_type", "").strip().upper() in ("ERG", "ERA") else request.GET.get("mode", "month")
         month_value = request.GET.get("month", "")
         week_value = request.GET.get("week", "")
         start_value = request.GET.get("start", "")
@@ -853,7 +853,7 @@ class PaySlipPdfView(PaySlipPermissionMixin, View):
     def _build_pdf(slip, period, signature_path=None, signer_name="", signed_at=None):
         employer_signature = Path(__file__).resolve().parent / "assets" / "firma_empleador.bmp"
         employer_signature_path = str(employer_signature) if employer_signature.is_file() else None
-        if str(slip.get("payroll_type") or "").strip().upper() == "ERG":
+        if str(slip.get("payroll_type") or "").strip().upper() in ("ERG", "ERA"):
             return PaySlipPdfView._build_erg_pdf(
                 slip,
                 period,
@@ -1129,12 +1129,15 @@ class PaySlipPdfView(PaySlipPermissionMixin, View):
         if period.start.strftime('%Y%m') != period.end.strftime('%Y%m'):
             raise Http404('Selecciona un solo mes para generar la boleta ERG desde TXT.')
         month = period.end.strftime('%Y%m')
+        payroll_type = str(slip.get('payroll_type') or 'ERG').strip().upper()
         document = str(slip.get('nrodocumento') or '').strip()
-        root = getattr(settings, 'ERG_TXT_ROOT', str(Path(settings.BASE_DIR) / 'runtime_logs' / 'erg-source'))
+        setting_name = '{}_TXT_ROOT'.format(payroll_type)
+        fallback_folder = '{}-source'.format(payroll_type.lower())
+        root = getattr(settings, setting_name, str(Path(settings.BASE_DIR) / 'runtime_logs' / fallback_folder))
         try:
             source = locate_payroll(root, month, document)
             return build_pdf(
-                read_payroll(source, month, document),
+                read_payroll(source, month, document, payroll_type=payroll_type),
                 signature_path=signature_path,
                 employer_signature_path=employer_signature_path,
             )

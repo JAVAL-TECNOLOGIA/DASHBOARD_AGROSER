@@ -75,3 +75,16 @@ class ErgTxtTests(SimpleTestCase):
                 month_range('2026-08'),
             )
         self.assertIn(b'/Subtype /Image', result)
+
+    def test_era_uses_agrarian_source_with_the_same_validation_and_pdf(self):
+        self.header['descripcion_planilla'] = 'EMPLEADOS REGIMEN AGRARIO'
+        self.write()
+        with self.assertRaises(PayrollTextError):
+            read_payroll(self.path, '202608', '01234567', payroll_type='ERG')
+        with override_settings(ERA_TXT_ROOT=str(self.root)):
+            result = PaySlipPdfView._build_pdf(
+                {'nrodocumento': '01234567', 'payroll_type': 'ERA'},
+                month_range('2026-08'),
+            )
+        self.assertTrue(result.startswith(b'%PDF'))
+        self.assertIn(b'/Subtype /Image', result)
