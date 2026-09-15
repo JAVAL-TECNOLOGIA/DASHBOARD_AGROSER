@@ -113,7 +113,7 @@ def locate_payroll(root, period, document):
     for folder in root.iterdir():
         if folder.is_dir() and folder.name.startswith(period):
             for location in (folder, folder / 'normal'):
-                for name in (document + '_N.txt', document + '.txt'):
+                for name in (document + '_N.txt', document + '_NS.txt', document + '.txt'):
                     candidate = location / name
                     if candidate.is_file():
                         candidates.add(candidate)

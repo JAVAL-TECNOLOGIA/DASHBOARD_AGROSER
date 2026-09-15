@@ -45,6 +45,11 @@ class ErgTxtTests(SimpleTestCase):
         (duplicate/self.path.name).write_bytes(self.path.read_bytes())
         with self.assertRaises(PayrollTextError):locate_payroll(self.root,'202608','01234567')
 
+    def test_locates_official_ns_suffix(self):
+        target = self.path.with_name('01234567_NS.txt')
+        self.path.rename(target)
+        self.assertEqual(locate_payroll(self.root, '202608', '01234567'), target)
+
     def test_source_missing_never_falls_back_to_estimates(self):
         with override_settings(ERG_TXT_ROOT=str(self.root)):
             with self.assertRaises(Http404):PaySlipPdfView._build_erg_pdf({'nrodocumento':'99999999'},month_range('2026-08'))
