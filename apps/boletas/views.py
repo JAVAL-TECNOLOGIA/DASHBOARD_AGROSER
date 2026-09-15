@@ -171,14 +171,15 @@ class WorkerIdentityResetView(PaySlipPermissionMixin, View):
         files_to_delete = []
         with transaction.atomic():
             profile = WorkerIdentityProfile.objects.select_for_update().filter(worker_document=document).first()
-            if not profile:
-                messages.info(request, 'El trabajador no tiene foto ni firma registradas.')
-                return _return_to_payslips(request)
-            for field_name in ('photo', 'signature'):
-                field = getattr(profile, field_name)
-                if field and field.name:
-                    files_to_delete.append((field.storage, field.name))
-            profile.delete()
+            confirmations, unused_details = PayslipAcknowledgement.objects.filter(
+                worker_document=document,
+            ).delete()
+            if profile:
+                for field_name in ('photo', 'signature'):
+                    field = getattr(profile, field_name)
+                    if field and field.name:
+                        files_to_delete.append((field.storage, field.name))
+                profile.delete()
 
             def delete_identity_files():
                 for storage, name in files_to_delete:
@@ -189,7 +190,7 @@ class WorkerIdentityResetView(PaySlipPermissionMixin, View):
 
             transaction.on_commit(delete_identity_files)
 
-        messages.success(request, 'La foto y firma de {} fueron eliminadas. Deberá registrarlas nuevamente.'.format(document))
+        messages.success(request, 'La foto, firma y {} confirmación(es) de {} fueron eliminadas. Deberá registrar su identidad y confirmar nuevamente sus boletas.'.format(confirmations, document))
         return _return_to_payslips(request)
 
 

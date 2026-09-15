@@ -233,6 +233,18 @@ class PayslipPhotoTests(TestCase):
         self.assertTrue(self.worker.check_password('01234567'))
 
     def test_admin_can_delete_identity_and_files(self):
+        from .periods import month_range
+
+        period = month_range('2026-08')
+        PayslipAcknowledgement.objects.create(
+            user=self.worker,
+            worker_document='01234567',
+            period_start=period.start,
+            period_end=period.end,
+            payroll_code='ERG',
+            payslip_hash='a' * 64,
+            signer_name='Trabajador Prueba',
+        )
         self.profile.signature = SimpleUploadedFile('signature.png', image_bytes(), content_type='image/png')
         self.profile.save(update_fields=['signature'])
         photo_storage, photo_name = self.profile.photo.storage, self.profile.photo.name
@@ -242,5 +254,6 @@ class PayslipPhotoTests(TestCase):
             response = self.client.post(reverse('boletas:worker_reset_identity', args=['01234567']))
         self.assertRedirects(response, reverse('boletas:index'), fetch_redirect_response=False)
         self.assertFalse(WorkerIdentityProfile.objects.filter(worker_document='01234567').exists())
+        self.assertFalse(PayslipAcknowledgement.objects.filter(worker_document='01234567').exists())
         self.assertFalse(photo_storage.exists(photo_name))
         self.assertFalse(signature_storage.exists(signature_name))

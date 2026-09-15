@@ -221,7 +221,7 @@
                                                 <i class="fa fa-key" aria-hidden="true"></i>
                                             </button>
                                         </form>
-                                        <form class="d-inline" method="post" action="{% url 'boletas:worker_reset_identity' slip.worker_document %}?{{ pagination_query }}&page={{ page.number }}" onsubmit="return confirm('¿Eliminar definitivamente la foto y firma de {{ slip.apenom|escapejs }}? Deberá registrarlas nuevamente.');">
+                                        <form class="d-inline" method="post" action="{% url 'boletas:worker_reset_identity' slip.worker_document %}?{{ pagination_query }}&page={{ page.number }}" onsubmit="return confirm('¿Eliminar la foto, firma y confirmaciones de {{ slip.apenom|escapejs }}? Deberá registrar su identidad y confirmar nuevamente sus boletas.');">
                                             {% csrf_token %}
                                             <button class="btn btn-sm btn-outline-danger mb-1" type="submit" aria-label="Eliminar foto y firma" title="{% if not slip.has_photo and not slip.has_signature %}No tiene foto ni firma registradas{% else %}Eliminar foto y firma{% endif %}" {% if not slip.has_photo and not slip.has_signature %}disabled{% endif %}>
                                                 <i class="fa fa-user-times" aria-hidden="true"></i>
