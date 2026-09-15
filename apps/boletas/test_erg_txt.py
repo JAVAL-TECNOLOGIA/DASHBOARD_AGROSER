@@ -1,11 +1,12 @@
 import csv
 import tempfile
+from datetime import date
 from pathlib import Path
 from django.test import SimpleTestCase, override_settings
 from django.http import Http404
 from .erg_txt import read_payroll, locate_payroll, PayrollTextError
 from .views import PaySlipPdfView
-from .periods import month_range
+from .periods import DateRange, month_range
 
 
 class ErgTxtTests(SimpleTestCase):
@@ -111,3 +112,18 @@ class ErgTxtTests(SimpleTestCase):
             )
         self.assertTrue(result.startswith(b'%PDF'))
         self.assertIn(b'/Subtype /Image', result)
+
+    def test_obp_pdf_joins_txt_files_when_week_crosses_month(self):
+        self.header['descripcion_planilla'] = 'OBREROS PLANTA'
+        self.header['desde1'] = self.header['hasta1'] = '20260831'
+        self.write()
+        september = self.root / '20260943-20260943' / 'normal'
+        september.mkdir(parents=True)
+        self.path = september / '01234567_NS.txt'
+        self.header['periodo'] = '202609'
+        self.header['desde1'], self.header['hasta1'] = '20260901', '20260906'
+        self.write()
+        period = DateRange(date(2026,8,31), date(2026,9,6), 'Semana 42 + 43')
+        with override_settings(OBP_TXT_ROOT=str(self.root)):
+            result = PaySlipPdfView._build_pdf({'nrodocumento':'01234567','payroll_type':'OBP'}, period)
+        self.assertTrue(result.startswith(b'%PDF'))

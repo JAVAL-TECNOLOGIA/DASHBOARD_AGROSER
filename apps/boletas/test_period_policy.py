@@ -19,6 +19,19 @@ class PeriodPolicyTests(SimpleTestCase):
         self.assertEqual((period.start, period.end), (date(2026,8,24), date(2026,8,30)))
         self.assertEqual(len(weeks), 2)
 
+    def test_partial_weeks_across_months_are_joined_into_seven_days(self):
+        service = PaySlipService()
+        calendars = {
+            '2026-07': [],
+            '2026-08': [{'number':'42','start':date(2026,8,31),'end':date(2026,8,31),'equivalent':'42'}],
+            '2026-09': [{'number':'43','start':date(2026,9,1),'end':date(2026,9,6),'equivalent':'43'}],
+        }
+        service.payroll_weeks = lambda month, payroll: calendars[month]
+        period, weeks, selected = _official_payroll_period(service, 'OBP', '2026-08', '42+43')
+        self.assertEqual(selected, '42+43')
+        self.assertEqual(weeks[0]['number'], '42+43')
+        self.assertEqual((period.start, period.end), (date(2026,8,31), date(2026,9,6)))
+
     def test_admin_template_has_official_week_selector(self):
         from django.template.loader import render_to_string
         html = render_to_string('boletas/index.html', {

@@ -1,5 +1,6 @@
 import logging
 from decimal import Decimal
+from datetime import timedelta
 from io import BytesIO
 from pathlib import Path
 from urllib.parse import urlencode
@@ -33,6 +34,29 @@ def _official_payroll_period(service, payroll_type, month_value, week_number="")
     if payroll_type not in WEEKLY_PAYROLL_TYPES:
         return month, [], ""
     weeks = service.payroll_weeks(month_value, payroll_type)
+    previous_day = month.start - timedelta(days=1)
+    next_day = month.end + timedelta(days=1)
+    adjacent = (
+        service.payroll_weeks(previous_day.strftime("%Y-%m"), payroll_type)
+        + service.payroll_weeks(next_day.strftime("%Y-%m"), payroll_type)
+    )
+    combined = []
+    for row in weeks:
+        days = (row["end"] - row["start"]).days + 1
+        if days < 7:
+            partner = next((item for item in adjacent if (
+                item["end"] + timedelta(days=1) == row["start"]
+                or row["end"] + timedelta(days=1) == item["start"]
+            ) and (item["end"] - item["start"]).days + 1 + days == 7), None)
+            if partner:
+                ordered = sorted((row, partner), key=lambda item: item["start"])
+                row = {
+                    "number": "+".join(item["number"] for item in ordered),
+                    "start": ordered[0]["start"], "end": ordered[1]["end"],
+                    "equivalent": "+".join(item["equivalent"] for item in ordered),
+                }
+        combined.append(row)
+    weeks = combined
     selected = str(week_number or "").strip()
     if weeks and selected not in {item["number"] for item in weeks}:
         selected = weeks[-1]["number"]
@@ -1143,18 +1167,36 @@ class PaySlipPdfView(PaySlipPermissionMixin, View):
         from pathlib import Path
         if slip.get('document_type') not in (None, '', 'payment'):
             raise Http404('Esta fuente TXT corresponde a boletas regulares; falta la exportación del documento especial solicitado.')
-        if period.start.strftime('%Y%m') != period.end.strftime('%Y%m'):
-            raise Http404('Selecciona un solo mes para generar la boleta ERG desde TXT.')
-        month = period.end.strftime('%Y%m')
         payroll_type = str(slip.get('payroll_type') or 'ERG').strip().upper()
+        if period.start.strftime('%Y%m') != period.end.strftime('%Y%m') and payroll_type != 'OBP':
+            raise Http404('Selecciona un solo mes para generar la boleta desde TXT.')
+        months = [period.start.strftime('%Y%m')]
+        if period.end.strftime('%Y%m') not in months:
+            months.append(period.end.strftime('%Y%m'))
         document = str(slip.get('nrodocumento') or '').strip()
         setting_name = '{}_TXT_ROOT'.format(payroll_type)
         fallback_folder = '{}-source'.format(payroll_type.lower())
         root = getattr(settings, setting_name, str(Path(settings.BASE_DIR) / 'runtime_logs' / fallback_folder))
         try:
-            source = locate_payroll(root, month, document)
+            payrolls = []
+            for month in months:
+                try:
+                    source = locate_payroll(root, month, document)
+                except PayrollTextError:
+                    continue
+                payrolls.append(read_payroll(source, month, document, payroll_type=payroll_type))
+            if not payrolls:
+                raise PayrollTextError('No se encontró un TXT del trabajador para la semana seleccionada.')
+            data = payrolls[0]
+            if len(payrolls) > 1:
+                data = {
+                    'header': dict(data['header'], desde1=period.start.strftime('%Y%m%d'), hasta1=period.end.strftime('%Y%m%d')),
+                    'details': [row for payroll in payrolls for row in payroll['details']],
+                    'totals': {key: sum((payroll['totals'][key] for payroll in payrolls), Decimal('0')) for key in ('ingr', 'desc', 'apor', 'net')},
+                    'source': ', '.join(payroll['source'] for payroll in payrolls),
+                }
             return build_pdf(
-                read_payroll(source, month, document, payroll_type=payroll_type),
+                data,
                 signature_path=signature_path,
                 employer_signature_path=employer_signature_path,
             )
