@@ -1,4 +1,5 @@
 import logging
+import re
 from decimal import Decimal
 from datetime import timedelta
 from io import BytesIO
@@ -57,6 +58,24 @@ def _official_payroll_period(service, payroll_type, month_value, week_number="")
                 }
         combined.append(row)
     weeks = combined
+    from django.conf import settings
+    root_value = getattr(settings, '{}_TXT_ROOT'.format(payroll_type), '')
+    root = Path(root_value) if root_value else None
+    if root and root.is_dir():
+        available = set()
+        for folder in root.iterdir():
+            match = re.fullmatch(r'(\d{6})(\d+)-(\d{6})(\d+)', folder.name)
+            if folder.is_dir() and match:
+                available.update(((match.group(1), match.group(2)), (match.group(3), match.group(4))))
+        filtered = []
+        for row in weeks:
+            numbers = row['number'].split('+')
+            required = {(row['start'].strftime('%Y%m'), numbers[0])}
+            if len(numbers) > 1:
+                required.add((row['end'].strftime('%Y%m'), numbers[-1]))
+            if required.issubset(available):
+                filtered.append(row)
+        weeks = filtered
     selected = str(week_number or "").strip()
     if weeks and selected not in {item["number"] for item in weeks}:
         selected = weeks[-1]["number"]
@@ -1192,9 +1211,30 @@ class PaySlipPdfView(PaySlipPermissionMixin, View):
                 raise PayrollTextError('No se encontró un TXT del trabajador para la semana seleccionada.')
             data = payrolls[0]
             if len(payrolls) > 1:
+                concepts = {prefix: {} for prefix in ('ingr', 'desc', 'apor', 'tiem')}
+                order = {prefix: [] for prefix in concepts}
+                for payroll in payrolls:
+                    for row in payroll['details']:
+                        for prefix in concepts:
+                            description = row.get(prefix + '_descri', '')
+                            if not description:
+                                continue
+                            if description not in concepts[prefix]:
+                                concepts[prefix][description] = Decimal('0')
+                                order[prefix].append(description)
+                            concepts[prefix][description] += Decimal(str(row.get(prefix + '_valor') or 0))
+                detail_count = max(len(items) for items in order.values())
+                details = []
+                for index in range(detail_count):
+                    row = {'codigo': data['header']['codigo'], 'copia': '1', 'item': str(index + 1)}
+                    for prefix in concepts:
+                        description = order[prefix][index] if index < len(order[prefix]) else ''
+                        row[prefix + '_descri'] = description
+                        row[prefix + '_valor'] = concepts[prefix].get(description, Decimal('0'))
+                    details.append(row)
                 data = {
                     'header': dict(data['header'], desde1=period.start.strftime('%Y%m%d'), hasta1=period.end.strftime('%Y%m%d')),
-                    'details': [row for payroll in payrolls for row in payroll['details']],
+                    'details': details,
                     'totals': {key: sum((payroll['totals'][key] for payroll in payrolls), Decimal('0')) for key in ('ingr', 'desc', 'apor', 'net')},
                     'source': ', '.join(payroll['source'] for payroll in payrolls),
                 }

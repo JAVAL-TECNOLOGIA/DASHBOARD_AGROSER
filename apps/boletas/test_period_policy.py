@@ -1,6 +1,8 @@
 from datetime import date
+import tempfile
+from pathlib import Path
 from unittest.mock import patch
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, override_settings
 from .periods import month_range, custom_range, visible_period, portal_month_range
 from .services import PaySlipService
 from .views import _official_payroll_period
@@ -31,6 +33,25 @@ class PeriodPolicyTests(SimpleTestCase):
         self.assertEqual(selected, '42+43')
         self.assertEqual(weeks[0]['number'], '42+43')
         self.assertEqual((period.start, period.end), (date(2026,8,31), date(2026,9,6)))
+
+    def test_week_filter_only_includes_existing_txt_folders(self):
+        service = PaySlipService()
+        calendars = {
+            '2026-07': [],
+            '2026-08': [
+                {'number':'41','start':date(2026,8,24),'end':date(2026,8,30),'equivalent':'41'},
+                {'number':'42','start':date(2026,8,31),'end':date(2026,8,31),'equivalent':'42'},
+            ],
+            '2026-09': [{'number':'43','start':date(2026,9,1),'end':date(2026,9,6),'equivalent':'43'}],
+        }
+        service.payroll_weeks = lambda month, payroll: calendars[month]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / '20260842-20260842').mkdir()
+            (root / '20260943-20260943').mkdir()
+            with override_settings(OBP_TXT_ROOT=directory):
+                unused_period, weeks, unused_selected = _official_payroll_period(service, 'OBP', '2026-08')
+        self.assertEqual([item['number'] for item in weeks], ['42+43'])
 
     def test_admin_template_has_official_week_selector(self):
         from django.template.loader import render_to_string

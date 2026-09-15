@@ -56,21 +56,23 @@ def build_pdf(data, signature_path=None, employer_signature_path=None):
         ]
         table = Table(info, colWidths=[w]); table.setStyle(TableStyle([('LEFTPADDING',(0,0),(-1,-1),0),('TOPPADDING',(0,0),(-1,-1),2),('BOTTOMPADDING',(0,0),(-1,-1),2)]))
         _, ih = table.wrap(w, height); top = height - 34 * mm; table.drawOn(pdf,x,top-ih)
-        cells = [[para(label,7,True) for label in ('REMUNERACIONES','RETENCIONES AL TRABAJADOR','CONTRIBUCIONES DEL EMPLEADOR','TIEMPOS')]]
+        concept_font = 6 if len(details) > 11 else 7
+        concept_padding = 1 if len(details) > 11 else 3
+        cells = [[para(label,concept_font,True) for label in ('REMUNERACIONES','RETENCIONES AL TRABAJADOR','CONTRIBUCIONES DEL EMPLEADOR','TIEMPOS')]]
         for row in details:
             cols=[]
             for prefix in ('ingr','desc','apor','tiem'):
                 label=row.get(prefix+'_descri','')
                 if label:
-                    nested=Table([[para(label,7),para(money(row[prefix+'_valor']),7)]],colWidths=[w/4-14*mm,12*mm])
+                    nested=Table([[para(label,concept_font),para(money(row[prefix+'_valor']),concept_font)]],colWidths=[w/4-14*mm,12*mm])
                     nested.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'TOP'),('LEFTPADDING',(0,0),(-1,-1),0),('RIGHTPADDING',(0,0),(-1,-1),0),('TOPPADDING',(0,0),(-1,-1),1),('BOTTOMPADDING',(0,0),(-1,-1),1)]))
                     cols.append(nested)
                 else: cols.append('')
             cells.append(cols)
         concepts=Table(cells,colWidths=[w/4]*4)
-        concepts.setStyle(TableStyle([('BOX',(0,0),(-1,-1),.5,'black'),('INNERGRID',(0,0),(-1,0),.5,'black'),('LINEBEFORE',(1,0),(-1,-1),.4,'black'),('VALIGN',(0,0),(-1,-1),'TOP'),('LEFTPADDING',(0,0),(-1,-1),2),('RIGHTPADDING',(0,0),(-1,-1),2),('TOPPADDING',(0,0),(-1,-1),3),('BOTTOMPADDING',(0,0),(-1,-1),3)]))
+        concepts.setStyle(TableStyle([('BOX',(0,0),(-1,-1),.5,'black'),('INNERGRID',(0,0),(-1,0),.5,'black'),('LINEBEFORE',(1,0),(-1,-1),.4,'black'),('VALIGN',(0,0),(-1,-1),'TOP'),('LEFTPADDING',(0,0),(-1,-1),2),('RIGHTPADDING',(0,0),(-1,-1),2),('TOPPADDING',(0,0),(-1,-1),concept_padding),('BOTTOMPADDING',(0,0),(-1,-1),concept_padding)]))
         _, ch=concepts.wrap(w,height); cy=top-ih-4*mm-ch
-        if cy < 53*mm:
+        if cy < 40*mm:
             raise PayrollTextError('Los conceptos exceden el espacio del formato; se requiere una página adicional.')
         concepts.drawOn(pdf,x,cy)
         y=cy-6*mm

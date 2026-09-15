@@ -6,6 +6,7 @@ LOCAL_DEVELOPMENT = True
 ERG_TXT_ROOT = os.getenv('ERG_TXT_ROOT', str(BASE_DIR / 'runtime_logs' / 'erg-source'))
 ERA_TXT_ROOT = os.getenv('ERA_TXT_ROOT', str(BASE_DIR / 'runtime_logs' / 'era-source'))
 OBP_TXT_ROOT = os.getenv('OBP_TXT_ROOT', str(BASE_DIR / 'runtime_logs' / 'obp-source'))
+OBR_TXT_ROOT = os.getenv('OBR_TXT_ROOT', str(BASE_DIR / 'runtime_logs' / 'obr-source'))
 DEBUG = True
 ALLOWED_HOSTS = ['localhost', '127.0.0.1', '[::1]']
 SECRET_KEY = 'agroservice-local-development-only'
