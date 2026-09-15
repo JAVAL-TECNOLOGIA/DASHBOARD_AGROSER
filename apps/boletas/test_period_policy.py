@@ -69,6 +69,16 @@ class PeriodPolicyTests(SimpleTestCase):
         self.assertNotIn('<option value="custom"', html)
         self.assertIn('min="2026-08"', html)
 
+    def test_worker_weekly_template_shows_available_official_weeks(self):
+        from django.template.loader import render_to_string
+        html = render_to_string('boletas/worker/dashboard.html', {
+            'weekly_payroll': True, 'mode': 'week', 'payroll_week': '42+43',
+            'payroll_weeks': [{'number':'42+43','start':date(2026,8,31),'end':date(2026,9,6)}],
+            'document_tabs': [], 'slips': [],
+        })
+        self.assertIn('name="week"', html)
+        self.assertIn('Semana 42+43', html)
+
     def test_before_august_is_not_queried(self):
         with patch.object(PaySlipService, '_execute') as execute:
             self.assertEqual(PaySlipService().list(month_range('2026-07')), [])
@@ -95,13 +105,15 @@ class PeriodPolicyTests(SimpleTestCase):
         self.assertEqual(period, month_range('2026-08'))
 
     @patch('apps.boletas.worker_portal.worker_slips', return_value=[{'payroll_type':'OBP'}])
-    def test_obp_worker_forces_complete_month(self, slips):
-        mode, period, only = resolve_worker_period('01234567','week',week_value='2026-W33')
-        self.assertEqual(mode,'month')
-        self.assertTrue(only)
-        self.assertEqual(period, month_range('2026-08'))
+    def test_obp_worker_uses_official_week(self, slips):
+        calendar = [{'number':'42','start':date(2026,8,31),'end':date(2026,8,31),'equivalent':'42'}]
+        with patch.object(PaySlipService, 'payroll_weeks', return_value=calendar):
+            mode, period, only = resolve_worker_period('01234567','week',month_value='2026-08',week_value='42')
+        self.assertEqual(mode,'week')
+        self.assertFalse(only)
+        self.assertEqual(period.start,date(2026,8,31))
 
-    @patch('apps.boletas.worker_portal.worker_slips', return_value=[{'payroll_type':'OBR'}])
+    @patch('apps.boletas.worker_portal.worker_slips', return_value=[{'payroll_type':''}])
     def test_other_payroll_keeps_week(self, slips):
         mode, period, only = resolve_worker_period('01234567','week',week_value='2026-W33')
         self.assertEqual(mode,'week')

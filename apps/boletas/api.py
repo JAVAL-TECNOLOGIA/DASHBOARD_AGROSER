@@ -23,7 +23,7 @@ from apps.user.models import User
 from .models import AttendanceMark, PayrollRelease, PayslipAcknowledgement, PayslipView, PortalContent, WorkerAccessRestriction, WorkerIdentityProfile
 from .periods import DateRange, portal_month_range as month_range
 from .services import PaySlipService
-from .views import PaySlipPdfView
+from .views import PaySlipPdfView, _official_payroll_period
 from .worker_portal import WorkerIdentityService, payslip_fingerprint, worker_slips
 
 
@@ -205,13 +205,11 @@ def _worker_month_slips(document, month_value, selected_week=""):
         ),
         "",
     )
-    weeks = PaySlipService().payroll_weeks(month_value, weekly_payroll) if weekly_payroll else []
-    valid_numbers = {item["number"] for item in weeks}
-    selected = str(selected_week or "").strip()
-    if weeks and selected not in valid_numbers:
-        selected = weeks[-1]["number"]
+    weeks = []
+    selected = ""
+    if weekly_payroll:
+        period, weeks, selected = _official_payroll_period(PaySlipService(), weekly_payroll, month_value, selected_week)
     if selected:
-        period = _official_week_period(month_value, selected, weekly_payroll)
         results.extend(
             (slip, period, selected)
             for slip in worker_slips(document, period)
@@ -238,7 +236,9 @@ def _requested_worker_slip(document, month_value, requested_hash, week_value="")
         )
         if not weekly_payroll:
             raise ValueError("El trabajador no pertenece a una planilla semanal.")
-        period = _official_week_period(month_value, week_value, weekly_payroll)
+        period, unused_weeks, selected = _official_payroll_period(PaySlipService(), weekly_payroll, month_value, week_value)
+        if not selected:
+            raise ValueError("La semana no pertenece al periodo seleccionado.")
     slip = next(
         (
             item for item in worker_slips(document, period)
@@ -248,19 +248,15 @@ def _requested_worker_slip(document, month_value, requested_hash, week_value="")
     )
     if slip and not _is_released(slip.get("payroll_type"), period):
         slip = None
+    if slip:
+        slip['_payroll_week'] = str(week_value or '').strip()
     return period, slip
 
 
 def _admin_period(month_value, payroll_type, week_number=""):
     if payroll_type not in WEEKLY_PAYROLL_TYPES:
         return month_range(month_value), [], ""
-    weeks = PaySlipService().payroll_weeks(month_value, payroll_type)
-    valid_numbers = {item["number"] for item in weeks}
-    selected = str(week_number or "").strip()
-    if weeks and selected not in valid_numbers:
-        selected = weeks[-1]["number"]
-    period = _official_week_period(month_value, selected, payroll_type) if selected else month_range(month_value)
-    return period, weeks, selected
+    return _official_payroll_period(PaySlipService(), payroll_type, month_value, week_number)
 
 
 def _file_data_url(field):
@@ -464,6 +460,7 @@ def confirm_payslip_api(request):
         return _json({"error": "No fue posible validar la boleta."}, 503)
     if not slip:
         return _json({"error": "Boleta no encontrada."}, 404)
+    slip['_payroll_week'] = request.GET.get('week', '').strip()
     forwarded = request.META.get("HTTP_X_FORWARDED_FOR", "")
     ip_address = forwarded.split(",")[0].strip() if forwarded else request.META.get("REMOTE_ADDR")
     acknowledgement, unused_created = PayslipAcknowledgement.objects.get_or_create(
@@ -568,6 +565,7 @@ def admin_worker_pdf_api(request):
     requested_hash = request.GET.get("hash", "")
     if requested_hash and payslip_fingerprint(slip, period) != requested_hash:
         return _json({"error": "La boleta no corresponde al periodo seleccionado."}, 404)
+    slip['_payroll_week'] = request.GET.get('week', '').strip()
     return _cors(HttpResponse(PaySlipPdfView._build_pdf(slip, period), content_type="application/pdf"))
 
 

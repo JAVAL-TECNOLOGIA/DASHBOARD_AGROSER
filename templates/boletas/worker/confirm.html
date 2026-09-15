@@ -22,7 +22,7 @@
         <div class="alert alert-info small">Al confirmar se registrarán tu identidad, fecha, dirección IP y la huella SHA-256 del contenido. La boleta se abrirá en este navegador para visualizarla o descargarla.</div>
         <form method="post" novalidate>
             {% csrf_token %}
-            <input type="hidden" name="mode" value="custom"><input type="hidden" name="start" value="{{ period.start|date:'Y-m-d' }}"><input type="hidden" name="end" value="{{ period.end|date:'Y-m-d' }}"><input type="hidden" name="hash" value="{{ fingerprint }}">
+            <input type="hidden" name="mode" value="{{ mode|default:'custom' }}"><input type="hidden" name="month" value="{{ month_value }}"><input type="hidden" name="week" value="{{ week_value }}"><input type="hidden" name="start" value="{{ period.start|date:'Y-m-d' }}"><input type="hidden" name="end" value="{{ period.end|date:'Y-m-d' }}"><input type="hidden" name="hash" value="{{ fingerprint }}">
             <button class="btn btn-success btn-lg btn-block" type="submit"><i class="fa fa-check-circle mr-1"></i> Confirmar para visualizar</button>
         </form>
     </div></div>

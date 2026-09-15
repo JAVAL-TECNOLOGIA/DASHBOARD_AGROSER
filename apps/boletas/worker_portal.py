@@ -21,9 +21,9 @@ from .worker_forms import WorkerIdentityForm
 from apps.user.models import User
 
 from .models import PayslipAcknowledgement, PayrollRelease, WorkerIdentityProfile
-from .periods import resolve_date_range, week_value_for_date
+from .periods import month_range, resolve_date_range, week_value_for_date
 from .services import PaySlipService
-from .views import PaySlipPdfView, _confirmed_signature
+from .views import PaySlipPdfView, WEEKLY_PAYROLL_TYPES, _confirmed_signature, _official_payroll_period
 from .worker_forms import (
     PayslipConfirmationForm,
     WorkerLoginForm,
@@ -196,8 +196,8 @@ def worker_slips(document, period):
 
 
 def resolve_worker_period(document, mode, **values):
-    from .periods import month_range
-    period = resolve_date_range(mode, **values)
+    week_value = str(values.get('week_value') or '')
+    period = month_range(values.get('month_value') or timezone.localdate().strftime('%Y-%m')) if mode == 'week' and '-W' not in week_value else resolve_date_range(mode, **values)
     month = month_range(period.end.strftime('%Y-%m'))
     monthly = worker_slips(document, month)
     if not monthly:
@@ -205,7 +205,13 @@ def resolve_worker_period(document, mode, **values):
         if periods:
             latest = periods[0]
             monthly = worker_slips(document, month_range(latest[:4] + '-' + latest[4:6]))
-    monthly_only = any(str(item.get('payroll_type', '')).upper() in ('ERG', 'ERA', 'OBP') for item in monthly)
+    weekly_type = next((str(item.get('payroll_type', '')).upper() for item in monthly if str(item.get('payroll_type', '')).upper() in WEEKLY_PAYROLL_TYPES), '')
+    if weekly_type:
+        official, unused_weeks, unused_selected = _official_payroll_period(
+            PaySlipService(), weekly_type, month.start.strftime('%Y-%m'), values.get('week_value', '')
+        )
+        return 'week', official, False
+    monthly_only = any(str(item.get('payroll_type', '')).upper() in ('ERG', 'ERA') for item in monthly)
     return ('month', month, True) if monthly_only else (mode, period, False)
 
 
@@ -381,10 +387,19 @@ class WorkerDashboardView(WorkerPortalMixin, View):
                 start_value=request.GET.get("start", ""),
                 end_value=request.GET.get("end", ""),
             )
+            selected_month = request.GET.get("month", "") or period.start.strftime("%Y-%m")
+            monthly_slips = worker_slips(request.user.username, month_range(selected_month))
+            weekly_payroll = next((str(item.get('payroll_type') or '').strip().upper() for item in monthly_slips if str(item.get('payroll_type') or '').strip().upper() in WEEKLY_PAYROLL_TYPES), '')
+            if weekly_payroll:
+                period, payroll_weeks, payroll_week = _official_payroll_period(PaySlipService(), weekly_payroll, selected_month, request.GET.get("week", ""))
+                mode = 'week'
+            else:
+                payroll_weeks, payroll_week = [], ''
         except (TypeError, ValueError, DatabaseError):
             mode = "month"
             period = resolve_date_range(mode)
             messages.error(request, "El periodo seleccionado no es válido.")
+            weekly_payroll, payroll_weeks, payroll_week = '', [], ''
         try:
             slips = worker_slips(request.user.username, period)
             slips = [
@@ -440,13 +455,16 @@ class WorkerDashboardView(WorkerPortalMixin, View):
                 "period": period,
                 "mode": mode,
                 "monthly_only": monthly_only,
+                "weekly_payroll": bool(weekly_payroll),
+                "payroll_weeks": payroll_weeks,
+                "payroll_week": payroll_week,
                 "document_type": document_type,
                 "document_tabs": [
                     {"code": code, "label": label, "count": document_counts[code]}
                     for code, label in DOCUMENT_TYPES.items()
                 ],
                 "month_value": params["month"] or period.start.strftime("%Y-%m"),
-                "week_value": params["week"] or week_value_for_date(period.start),
+                "week_value": payroll_week if weekly_payroll else params["week"] or week_value_for_date(period.start),
                 "start_value": params["start"] or period.start.isoformat(),
                 "end_value": params["end"] or period.end.isoformat(),
             },
@@ -473,6 +491,7 @@ class WorkerPayslipPdfView(WorkerPortalMixin, View):
         )
         if slip is None:
             raise Http404("La boleta solicitada no existe.")
+        slip['_payroll_week'] = request.GET.get('week', '').strip()
         if not PayrollRelease.objects.filter(
             payroll_type=str(slip.get("payroll_type") or "").strip().upper(),
             period_start=period.start,
@@ -541,6 +560,9 @@ class WorkerPayslipConfirmView(WorkerPortalMixin, View):
                 "period": period,
                 "slip": slip,
                 "fingerprint": fingerprint,
+                "mode": request.GET.get('mode', 'month'),
+                "month_value": request.GET.get('month', ''),
+                "week_value": request.GET.get('week', ''),
                 "form": PayslipConfirmationForm(),
             },
         )
@@ -556,6 +578,9 @@ class WorkerPayslipConfirmView(WorkerPortalMixin, View):
                     "period": period,
                     "slip": slip,
                     "fingerprint": fingerprint,
+                    "mode": request.POST.get('mode', 'month'),
+                    "month_value": request.POST.get('month', ''),
+                    "week_value": request.POST.get('week', ''),
                     "form": form,
                 },
             )

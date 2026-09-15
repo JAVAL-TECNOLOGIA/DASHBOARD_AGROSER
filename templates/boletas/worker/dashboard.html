@@ -27,9 +27,9 @@
     <div class="card shadow-sm mb-4"><div class="card-body">
         <form method="get" class="form-row align-items-end">
             <input type="hidden" name="type" value="{{ document_type }}">
-            <div class="form-group col-md-3"><label>Periodo</label><select class="form-control" id="mode" name="mode"><option value="month" {% if mode == "month" %}selected{% endif %}>Mes</option>{% if not monthly_only %}<option value="week" {% if mode == "week" %}selected{% endif %}>Semana</option><option value="custom" {% if mode == "custom" %}selected{% endif %}>Rango</option>{% endif %}</select></div>
+            <div class="form-group col-md-3"><label>Periodo</label><select class="form-control" id="mode" name="mode">{% if weekly_payroll %}<option value="week" selected>Semana</option>{% else %}<option value="month" {% if mode == "month" %}selected{% endif %}>Mes</option>{% if not monthly_only %}<option value="week" {% if mode == "week" %}selected{% endif %}>Semana</option><option value="custom" {% if mode == "custom" %}selected{% endif %}>Rango</option>{% endif %}{% endif %}</select></div>
             <div class="form-group col-md-3 filter-field" data-mode="month"><label>Mes</label><input class="form-control" type="month" min="2026-08" name="month" value="{{ month_value }}"></div>
-            <div class="form-group col-md-3 filter-field" data-mode="week"><label>Semana</label><input class="form-control" type="week" min="2026-W31" name="week" value="{{ week_value }}"></div>
+            {% if weekly_payroll %}<div class="form-group col-md-4"><label>Número de semana</label><select class="form-control" name="week">{% for item in payroll_weeks %}<option value="{{ item.number }}" {% if payroll_week == item.number %}selected{% endif %}>Semana {{ item.number }} · {{ item.start|date:"d/m/Y" }} al {{ item.end|date:"d/m/Y" }}</option>{% empty %}<option value="">Sin semanas disponibles</option>{% endfor %}</select></div>{% else %}<div class="form-group col-md-3 filter-field" data-mode="week"><label>Semana</label><input class="form-control" type="week" min="2026-W31" name="week" value="{{ week_value }}"></div>{% endif %}
             <div class="form-group col-md-3 filter-field" data-mode="custom"><label>Desde</label><input class="form-control" type="date" min="2026-08-01" name="start" value="{{ start_value }}"></div>
             <div class="form-group col-md-3 filter-field" data-mode="custom"><label>Hasta</label><input class="form-control" type="date" min="2026-08-01" name="end" value="{{ end_value }}"></div>
             <div class="form-group col-auto"><button class="btn btn-primary" type="submit"><i class="fa fa-search mr-1"></i> Consultar</button></div>
@@ -64,7 +64,7 @@
 </main>
 <script src="{% static 'assets/plugins/jquery/jquery-3.2.1.min.js' %}"></script>
 <script>
-$(function(){const mode=$('#mode');function refresh(){ $('.filter-field').hide().find('input').prop('disabled',true);$('.filter-field[data-mode="'+mode.val()+'"]').show().find('input').prop('disabled',false);}mode.on('change',refresh);refresh();});
+$(function(){const mode=$('#mode');function refresh(){ $('.filter-field').hide().find('input').prop('disabled',true);{% if weekly_payroll %}$('.filter-field[data-mode="month"]').show().find('input').prop('disabled',false);{% else %}$('.filter-field[data-mode="'+mode.val()+'"]').show().find('input').prop('disabled',false);{% endif %}}mode.on('change',refresh);refresh();});
 </script>
 </body>
 </html>
