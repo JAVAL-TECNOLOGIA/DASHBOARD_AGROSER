@@ -1,7 +1,9 @@
 import csv
 import tempfile
 from datetime import date
+from decimal import Decimal
 from pathlib import Path
+from unittest.mock import patch
 from django.test import SimpleTestCase, override_settings
 from django.http import Http404
 from .erg_txt import read_payroll, locate_payroll, PayrollTextError
@@ -27,7 +29,14 @@ class ErgTxtTests(SimpleTestCase):
     def write(self):
         with self.path.open('w', encoding='utf-8', newline='') as f:
             writer = csv.writer(f,delimiter='|')
-            writer.writerows([list(self.header),list(self.header.values()),list(self.detail),list(self.detail.values()),[],['codigo','dia1'],['01234567','0.00']])
+            writer.writerows([
+                list(self.header), list(self.header.values()),
+                list(self.detail), list(self.detail.values()), [],
+                ['codigo', 'nombres', 'dia1', 'fecha1', 'normales1', 'extras1251'],
+                [self.header['codigo'], 'PRUEBA', 'LUNES', self.header['desde1'], '8.00', '1.50'], [],
+                ['codigo', 'dia1', 'rdia1', 'total_rendimiento'],
+                [self.header['codigo'], '0.00', '11.82', '11.82'],
+            ])
 
     def test_sections_totals_and_leading_zero(self):
         data = read_payroll(self.path,'202608','01234567')
@@ -119,6 +128,30 @@ class ErgTxtTests(SimpleTestCase):
             )
         self.assertTrue(result.startswith(b'%PDF'))
         self.assertIn(b'/Subtype /Image', result)
+
+    def test_obp_reads_daily_hours_and_performance(self):
+        self.header['descripcion_planilla'] = 'OBREROS PLANTA'
+        self.write()
+        data = read_payroll(self.path, '202608', '01234567', payroll_type='OBP')
+        self.assertEqual(data['daily_details'], [{
+            'day': 'LUNES',
+            'date': '20260801',
+            'hours': Decimal('9.50'),
+            'performance': Decimal('11.82'),
+        }])
+
+    @patch('apps.boletas.plant_pdf.build_pdf', return_value=b'%PDF-plant')
+    def test_obr_uses_general_plant_source_and_weekly_format(self, build_pdf):
+        self.header['descripcion_planilla'] = 'OBREROS PLANTA GENERAL'
+        self.write()
+        with override_settings(OBR_TXT_ROOT=str(self.root)):
+            result = PaySlipPdfView._build_pdf(
+                {'nrodocumento': '01234567', 'payroll_type': 'OBR'},
+                month_range('2026-08'),
+            )
+        self.assertEqual(result, b'%PDF-plant')
+        self.assertEqual(build_pdf.call_args.args[0]['header']['payroll_type'], 'OBR')
+        self.assertEqual(build_pdf.call_args.args[0]['daily_details'][0]['performance'], Decimal('11.82'))
 
     def test_obp_pdf_joins_txt_files_when_week_crosses_month(self):
         self.header['descripcion_planilla'] = 'OBREROS PLANTA'

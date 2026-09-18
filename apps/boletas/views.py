@@ -915,20 +915,11 @@ class PaySlipPdfView(PaySlipPermissionMixin, View):
     def _build_pdf(slip, period, signature_path=None, signer_name="", signed_at=None):
         employer_signature = Path(__file__).resolve().parent / "assets" / "firma_empleador.bmp"
         employer_signature_path = str(employer_signature) if employer_signature.is_file() else None
-        if str(slip.get("payroll_type") or "").strip().upper() in ("ERG", "ERA", "OBP"):
+        if str(slip.get("payroll_type") or "").strip().upper() in ("ERG", "ERA", "OBP", "OBR"):
             return PaySlipPdfView._build_erg_pdf(
                 slip,
                 period,
                 signature_path=signature_path,
-                employer_signature_path=employer_signature_path,
-            )
-        if str(slip.get("payroll_type") or "").strip().upper() == "OBP":
-            return PaySlipPdfView._build_obp_pdf(
-                slip,
-                period,
-                signature_path=signature_path,
-                signer_name=signer_name,
-                signed_at=signed_at,
                 employer_signature_path=employer_signature_path,
             )
         from reportlab.lib import colors
@@ -1184,12 +1175,13 @@ class PaySlipPdfView(PaySlipPermissionMixin, View):
     def _build_erg_pdf(slip, period, signature_path=None, employer_signature_path=None):
         from django.conf import settings
         from .erg_txt import locate_payroll, read_payroll, PayrollTextError
-        from .erg_pdf import build_pdf
+        from .erg_pdf import build_pdf as build_employee_pdf
+        from .plant_pdf import build_pdf as build_plant_pdf
         from pathlib import Path
         if slip.get('document_type') not in (None, '', 'payment'):
             raise Http404('Esta fuente TXT corresponde a boletas regulares; falta la exportación del documento especial solicitado.')
         payroll_type = str(slip.get('payroll_type') or 'ERG').strip().upper()
-        if period.start.strftime('%Y%m') != period.end.strftime('%Y%m') and payroll_type != 'OBP':
+        if period.start.strftime('%Y%m') != period.end.strftime('%Y%m') and payroll_type not in ('OBP', 'OBR'):
             raise Http404('Selecciona un solo mes para generar la boleta desde TXT.')
         months = [period.start.strftime('%Y%m')]
         if period.end.strftime('%Y%m') not in months:
@@ -1234,12 +1226,30 @@ class PaySlipPdfView(PaySlipPermissionMixin, View):
                         row[prefix + '_valor'] = concepts[prefix].get(description, Decimal('0'))
                     details.append(row)
                 data = {
-                    'header': dict(data['header'], desde1=period.start.strftime('%Y%m%d'), hasta1=period.end.strftime('%Y%m%d')),
+                    'header': dict(
+                        data['header'],
+                        desde1=period.start.strftime('%Y%m%d'),
+                        hasta1=period.end.strftime('%Y%m%d'),
+                    ),
                     'details': details,
+                    'daily_details': sorted(
+                        {
+                            row['date']: row
+                            for payroll in payrolls
+                            for row in payroll.get('daily_details', [])
+                        }.values(),
+                        key=lambda row: row['date'],
+                    ),
                     'totals': {key: sum((payroll['totals'][key] for payroll in payrolls), Decimal('0')) for key in ('ingr', 'desc', 'apor', 'net')},
                     'source': ', '.join(payroll['source'] for payroll in payrolls),
                 }
-            return build_pdf(
+            data['header'] = dict(
+                data['header'],
+                payroll_week=str(slip.get('_payroll_week') or '').strip(),
+                payroll_type=payroll_type,
+            )
+            renderer = build_plant_pdf if payroll_type in ('OBP', 'OBR') else build_employee_pdf
+            return renderer(
                 data,
                 signature_path=signature_path,
                 employer_signature_path=employer_signature_path,

@@ -45,7 +45,7 @@ def read_payroll(path, period, document=None, payroll_type='ERG'):
     if not required.issubset(header):
         raise PayrollTextError('Faltan campos obligatorios de cabecera.')
     payroll_type = str(payroll_type or 'ERG').strip().upper()
-    document_pattern = r'\d{8,12}' if payroll_type == 'OBP' else r'\d{8}'
+    document_pattern = r'\d{8,12}' if payroll_type in ('OBP', 'OBR') else r'\d{8}'
     dni = header['documento']
     if not re.fullmatch(document_pattern, dni) or (document and dni != document) or path.stem.split('_')[0] != dni:
         raise PayrollTextError('El DNI del archivo no coincide con su contenido.')
@@ -56,9 +56,13 @@ def read_payroll(path, period, document=None, payroll_type='ERG'):
         raise PayrollTextError('El TXT no corresponde a régimen general.')
     if payroll_type == 'ERA' and 'AGRARIO' not in description:
         raise PayrollTextError('El TXT no corresponde a régimen agrario.')
-    if payroll_type == 'OBP' and 'OBREROS PLANTA' not in description:
+    if payroll_type == 'OBP' and (
+        'OBREROS PLANTA' not in description or 'GENERAL' in description
+    ):
         raise PayrollTextError('El TXT no corresponde a obreros planta.')
-    if payroll_type not in ('ERG', 'ERA', 'OBP'):
+    if payroll_type == 'OBR' and 'OBREROS PLANTA GENERAL' not in description:
+        raise PayrollTextError('El TXT no corresponde a obreros planta general.')
+    if payroll_type not in ('ERG', 'ERA', 'OBP', 'OBR'):
         raise PayrollTextError('Tipo de planilla TXT no válido.')
     for key in ('desde1', 'hasta1'):
         try:
@@ -100,7 +104,63 @@ def read_payroll(path, period, document=None, payroll_type='ERG'):
             raise PayrollTextError('Los conceptos no cuadran con {}.'.format(field))
         totals[prefix] = total
     totals['net'] = totals['ingr'] - totals['desc']
-    return {'header': header, 'details': details, 'totals': totals, 'source': str(path)}
+
+    # Las planillas semanales incluyen dos secciones adicionales: marcación
+    # diaria y rendimiento. Se enlazan por posición porque así las exporta Nisira.
+    section_headers = [
+        row_index for row_index, row in enumerate(rows)
+        if row and row[0] == 'codigo'
+    ]
+
+    def section_with(field):
+        for row_index in section_headers:
+            fields = rows[row_index]
+            if field not in fields or row_index + 1 >= len(rows):
+                continue
+            values = rows[row_index + 1]
+            if len(values) != len(fields):
+                raise PayrollTextError('Fila de detalle diario incompleta.')
+            result = dict(zip(fields, (value.strip() for value in values)))
+            if result.get('codigo') != header['codigo']:
+                raise PayrollTextError('Detalle diario de un trabajador distinto.')
+            return result
+        return {}
+
+    attendance = section_with('fecha1')
+    performance = section_with('rdia1')
+    daily_details = []
+    if payroll_type in ('OBP', 'OBR'):
+        for day_index in range(1, 17):
+            raw_date = attendance.get('fecha{}'.format(day_index), '')
+            if not raw_date:
+                continue
+            try:
+                datetime.strptime(raw_date, '%Y%m%d')
+            except ValueError:
+                raise PayrollTextError('Fecha diaria no válida en el TXT.')
+            hour_fields = (
+                'normales', 'extras125', 'extras135', 'dobles', 'nocturnas',
+                'nocextras125', 'nocextras135', 'nocdobles',
+            )
+            hours = sum(
+                (amount(attendance.get('{}{}'.format(field, day_index), 0)) for field in hour_fields),
+                Decimal('0'),
+            )
+            performance_value = amount(performance.get('rdia{}'.format(day_index), 0))
+            daily_details.append({
+                'day': attendance.get('dia{}'.format(day_index), ''),
+                'date': raw_date,
+                'hours': hours,
+                'performance': performance_value,
+            })
+
+    return {
+        'header': header,
+        'details': details,
+        'daily_details': daily_details,
+        'totals': totals,
+        'source': str(path),
+    }
 
 
 def locate_payroll(root, period, document, week_number=''):

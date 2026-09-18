@@ -178,12 +178,11 @@ class PayslipPhotoTests(TestCase):
             'basico': 100, 'income_total': 100, 'deduction_total': 10,
             'net_total': 90, 'concepts': [],
         }
-        for payroll_type in ('OBR', 'OTRO'):
-            content = PaySlipPdfView._build_pdf(
-                dict(slip, payroll_type=payroll_type), period,
-            )
-            self.assertTrue(content.startswith(b'%PDF'))
-            self.assertIn(b'/Subtype /Image', content)
+        content = PaySlipPdfView._build_pdf(
+            dict(slip, payroll_type='OTRO'), period,
+        )
+        self.assertTrue(content.startswith(b'%PDF'))
+        self.assertIn(b'/Subtype /Image', content)
 
     def test_badge_sheet_places_six_workers_per_a4_page(self):
         from io import BytesIO
