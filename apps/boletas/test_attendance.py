@@ -57,8 +57,10 @@ class AttendanceKioskTests(TestCase):
         self.client.force_login(self.worker)
         self.assertEqual(self.client.get(self.url).status_code, 403)
         self.client.force_login(self.admin)
-        self.assertEqual(self.client.get(self.url).status_code, 200)
-        self.assertContains(self.client.get(self.url), 'Abrir pantalla de marcación')
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Abrir pantalla de marcación')
+        self.assertContains(response, 'App.init();')
 
     def test_independent_reader_screen_requires_admin_and_renders(self):
         self.client.force_login(self.worker)
