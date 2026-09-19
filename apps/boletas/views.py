@@ -252,14 +252,21 @@ class WorkerBadgeView(PaySlipPermissionMixin, View):
         except (ValueError, TypeError):
             return HttpResponse('Selecciona un mes válido.', status=400)
         profile = get_object_or_404(WorkerIdentityProfile, worker_document=document)
-        if not profile.photo:
-            return HttpResponse('Primero debe registrarse la fotografía del trabajador.', status=409)
+        if not profile.photo or not profile.signature:
+            return HttpResponse('El trabajador debe tener fotografía y firma registradas.', status=409)
         try:
             slips = worker_slips(document, period)
         except DatabaseError:
             return HttpResponse('No se pudo consultar al trabajador. Vuelve a intentarlo.', status=503)
         if not slips:
             raise Http404('No se encontraron datos del trabajador en el mes seleccionado.')
+        from .worker_portal import payslip_fingerprint
+        fingerprints = [payslip_fingerprint(slip, period) for slip in slips]
+        if not PayslipAcknowledgement.objects.filter(
+            worker_document=document,
+            payslip_hash__in=fingerprints,
+        ).exists():
+            return HttpResponse('El trabajador debe confirmar una boleta del periodo antes de generar su fotocheck.', status=409)
         try:
             with profile.photo.open('rb') as photo:
                 content = build_worker_badge(document, slips[0].get('apenom'), slips[0].get('cargo_personal'), photo)
@@ -272,19 +279,30 @@ class WorkerBadgeView(PaySlipPermissionMixin, View):
 
 @method_decorator(never_cache, name='dispatch')
 class WorkerBadgeSheetView(PaySlipPermissionMixin, View):
+    def post(self, request):
+        return self.get(request)
+
     def get(self, request):
         from .badge import build_worker_badge_sheet
+        from .worker_portal import payslip_fingerprint
 
-        mode = 'month' if request.GET.get('payroll_type', '').strip().upper() in ('ERG', 'ERA', 'OBP') else request.GET.get('mode', 'month')
+        payroll_type = request.GET.get('payroll_type', '').strip().upper()
         try:
-            period = resolve_date_range(
-                mode,
-                month_value=request.GET.get('month', ''),
-                week_value=request.GET.get('week', ''),
-                start_value=request.GET.get('start', ''),
-                end_value=request.GET.get('end', ''),
-            )
-        except (TypeError, ValueError):
+            if payroll_type in WEEKLY_PAYROLL_TYPES:
+                period, unused_weeks, unused_selected = _official_payroll_period(
+                    PaySlipService(), payroll_type,
+                    request.GET.get('month', ''), request.GET.get('payroll_week', ''),
+                )
+            else:
+                mode = 'month' if payroll_type in ('ERG', 'ERA') else request.GET.get('mode', 'month')
+                period = resolve_date_range(
+                    mode,
+                    month_value=request.GET.get('month', ''),
+                    week_value=request.GET.get('week', ''),
+                    start_value=request.GET.get('start', ''),
+                    end_value=request.GET.get('end', ''),
+                )
+        except (TypeError, ValueError, DatabaseError):
             return HttpResponse('El periodo seleccionado no es válido.', status=400)
 
         try:
@@ -292,7 +310,6 @@ class WorkerBadgeSheetView(PaySlipPermissionMixin, View):
         except DatabaseError:
             return HttpResponse('No fue posible consultar los trabajadores.', status=503)
 
-        payroll_type = request.GET.get('payroll_type', '').strip().upper()
         if payroll_type:
             slips = [item for item in slips if item.get('payroll_type') == payroll_type]
         query = request.GET.get('q', '').strip().casefold()
@@ -307,10 +324,28 @@ class WorkerBadgeSheetView(PaySlipPermissionMixin, View):
             document = str(slip.get('nrodocumento') or '').strip()
             if document.isdigit() and len(document) == 8:
                 slips_by_document.setdefault(document, slip)
+        if request.method == 'POST':
+            selected_documents = {
+                str(document).strip() for document in request.POST.getlist('documents')
+                if str(document).strip().isdigit() and len(str(document).strip()) == 8
+            }
+            if not selected_documents:
+                return HttpResponse('Selecciona al menos un trabajador habilitado.', status=400)
+            slips_by_document = {
+                document: slip for document, slip in slips_by_document.items()
+                if document in selected_documents
+            }
+        confirmed_documents = set(PayslipAcknowledgement.objects.filter(
+            payslip_hash__in=[
+                payslip_fingerprint(slip, period)
+                for slip in slips_by_document.values()
+            ],
+            worker_document__in=slips_by_document,
+        ).values_list('worker_document', flat=True))
         profiles = {
             profile.worker_document: profile
             for profile in WorkerIdentityProfile.objects.filter(
-                worker_document__in=slips_by_document,
+                worker_document__in=confirmed_documents,
                 photo__gt='',
                 signature__gt='',
             ).order_by('worker_document')
@@ -333,7 +368,7 @@ class WorkerBadgeSheetView(PaySlipPermissionMixin, View):
                 logger.warning('Fotografía no disponible para el fotocheck de %s.', document)
 
         if not workers:
-            return HttpResponse('No hay trabajadores con foto y firma registradas para los filtros seleccionados.', status=404)
+            return HttpResponse('No hay trabajadores con foto, firma y confirmación para los filtros seleccionados.', status=404)
         try:
             content = build_worker_badge_sheet(workers)
         except (OSError, ValueError):
@@ -361,6 +396,14 @@ class WorkerDetailView(PaySlipPermissionMixin, View):
             return HttpResponse('No se encontraron boletas para este trabajador en el mes seleccionado.', status=404)
         profile = WorkerIdentityProfile.objects.filter(worker_document=document).first()
         first = slips[0]
+        fingerprints = [payslip_fingerprint(slip, period) for slip in slips]
+        badge_eligible = bool(
+            profile and profile.photo and profile.signature
+            and PayslipAcknowledgement.objects.filter(
+                worker_document=document,
+                payslip_hash__in=fingerprints,
+            ).exists()
+        )
         for slip in slips:
             slip['attachment_url'] = '{}?{}'.format(reverse('boletas:worker_month_pdf', args=[document]), urlencode({
                 'month': period.start.strftime('%Y-%m'), 'slip': payslip_fingerprint(slip, period)}))
@@ -369,6 +412,7 @@ class WorkerDetailView(PaySlipPermissionMixin, View):
             'badge_url': '{}?{}'.format(reverse('boletas:worker_badge', args=[document]), urlencode({'month': period.start.strftime('%Y-%m')})),
             'photo_url': reverse('boletas:worker_photo', args=[profile.pk]) if profile and profile.photo else '',
             'signature_url': reverse('boletas:worker_signature', args=[profile.pk]) if profile and profile.signature else '',
+            'badge_eligible': badge_eligible,
         })
 
 
@@ -452,7 +496,7 @@ class PaySlipListView(PaySlipPermissionMixin, View):
             for slip in slips
             if str(slip.get('nrodocumento') or '').strip()
         }
-        registered_documents = set(WorkerIdentityProfile.objects.filter(
+        identity_documents = set(WorkerIdentityProfile.objects.filter(
             worker_document__in=all_documents,
             photo__gt='',
             signature__gt='',
@@ -487,6 +531,11 @@ class PaySlipListView(PaySlipPermissionMixin, View):
         }
         for slip in slips:
             slip["acknowledgement"] = acknowledgements.get(slip["fingerprint"])
+        confirmed_documents = {
+            str(slip.get('nrodocumento') or '').strip()
+            for slip in slips if slip.get('acknowledgement')
+        }
+        registered_documents = identity_documents & confirmed_documents
 
         paginator = Paginator(slips, 25)
         page = paginator.get_page(request.GET.get("page"))
@@ -499,6 +548,7 @@ class PaySlipListView(PaySlipPermissionMixin, View):
             slip['worker_document'] = document
             slip['has_photo'] = bool(profile and profile.photo)
             slip['has_signature'] = bool(profile and profile.signature)
+            slip['badge_eligible'] = document in registered_documents
             slip['detail_url'] = '{}?{}'.format(reverse('boletas:worker_detail', args=[document]),
                 urlencode({'month': date_range.end.strftime('%Y-%m')})) if document else ''
         context = {

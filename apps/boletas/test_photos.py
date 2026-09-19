@@ -92,12 +92,16 @@ class PayslipPhotoTests(TestCase):
             payslip_hash=slip['fingerprint'],
             signer_name='Trabajador Prueba',
         )
+        self.profile.signature = SimpleUploadedFile('signature.png', image_bytes(), content_type='image/png')
+        self.profile.save(update_fields=['signature'])
         confirmed = self.client.get(url, params)
         self.assertContains(confirmed, 'CONFIRMADA')
         self.assertContains(
             confirmed,
             timezone.localtime(acknowledgement.confirmed_at).strftime('%d/%m/%Y %H:%M'),
         )
+        self.assertTrue(list(confirmed.context['page'])[0]['badge_eligible'])
+        self.assertContains(confirmed, 'Generar seleccionados (0)')
 
     @patch('apps.boletas.worker_portal.WorkerIdentityService.get_active_worker', return_value={'email': 'worker@example.test'})
     @patch('apps.boletas.worker_portal.worker_slips')
@@ -151,9 +155,25 @@ class PayslipPhotoTests(TestCase):
 
     @patch('apps.boletas.worker_portal.worker_slips', return_value=[{'apenom': 'TRABAJADOR PRUEBA', 'cargo_personal': 'Operario'}])
     def test_badge_requires_permission_and_photo(self, slips):
+        from .periods import portal_month_range
+        from .worker_portal import payslip_fingerprint
+
         url = reverse('boletas:worker_badge', args=['01234567'])
         self.assertEqual(self.client.get(url, {'month': '2026-08'}).status_code, 403)
         self.client.force_login(self.admin)
+        self.assertEqual(self.client.get(url, {'month': '2026-08'}).status_code, 409)
+        self.profile.signature = SimpleUploadedFile('signature.png', image_bytes(), content_type='image/png')
+        self.profile.save(update_fields=['signature'])
+        self.assertEqual(self.client.get(url, {'month': '2026-08'}).status_code, 409)
+        period = portal_month_range('2026-08')
+        PayslipAcknowledgement.objects.create(
+            user=self.worker,
+            worker_document='01234567',
+            period_start=period.start,
+            period_end=period.end,
+            payslip_hash=payslip_fingerprint(slips.return_value[0], period),
+            signer_name='Trabajador Prueba',
+        )
         response = self.client.get(url, {'month': '2026-08'})
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.content.startswith(b'%PDF'))
@@ -204,6 +224,9 @@ class PayslipPhotoTests(TestCase):
 
     @patch('apps.boletas.views.PaySlipService.list')
     def test_badge_sheet_includes_only_complete_registered_workers(self, slips):
+        from .periods import month_range
+        from .worker_portal import payslip_fingerprint
+
         slips.return_value = [{
             'nrodocumento': '01234567',
             'apenom': 'TRABAJADOR PRUEBA',
@@ -217,10 +240,27 @@ class PayslipPhotoTests(TestCase):
 
         self.profile.signature = SimpleUploadedFile('signature.png', image_bytes(), content_type='image/png')
         self.profile.save(update_fields=['signature'])
+        self.assertEqual(self.client.get(url, params).status_code, 404)
+        period = month_range('2026-08')
+        PayslipAcknowledgement.objects.create(
+            user=self.worker,
+            worker_document='01234567',
+            period_start=period.start,
+            period_end=period.end,
+            payroll_code='ERG',
+            payslip_hash=payslip_fingerprint(slips.return_value[0], period),
+            signer_name='Trabajador Prueba',
+        )
         response = self.client.get(url, params)
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response['Content-Type'], 'application/pdf')
         self.assertTrue(response.content.startswith(b'%PDF'))
+        selected = self.client.post('{}?mode=month&month=2026-08&payroll_type=ERG'.format(url), {
+            'documents': ['01234567'],
+        })
+        self.assertEqual(selected.status_code, 200)
+        self.assertTrue(selected.content.startswith(b'%PDF'))
+        self.assertEqual(self.client.post('{}?mode=month&month=2026-08&payroll_type=ERG'.format(url), {}).status_code, 400)
 
     def test_admin_can_reset_worker_password_to_document(self):
         self.worker.set_password('ChangedPassword!42')

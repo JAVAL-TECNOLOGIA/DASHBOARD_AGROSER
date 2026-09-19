@@ -738,8 +738,8 @@ def admin_worker_badge_api(request):
     if not document.isdigit() or len(document) != 8:
         return _json({"error": "DNI no válido."}, 400)
     profile = WorkerIdentityProfile.objects.filter(worker_document=document).first()
-    if not profile or not profile.photo:
-        return _json({"error": "El trabajador todavía no tiene fotografía registrada."}, 409)
+    if not profile or not profile.photo or not profile.signature:
+        return _json({"error": "El trabajador debe tener fotografía y firma registradas."}, 409)
     try:
         identity = WorkerIdentityService().get_active_worker(document)
         period = month_range(request.GET.get("month") or "2026-08")
@@ -748,6 +748,11 @@ def admin_worker_badge_api(request):
         return _json({"error": "No fue posible generar el fotocheck."}, 503)
     if not identity or not slips:
         return _json({"error": "No se encontró información activa del trabajador."}, 404)
+    if not PayslipAcknowledgement.objects.filter(
+        worker_document=document,
+        payslip_hash__in=[payslip_fingerprint(slip, period) for slip in slips],
+    ).exists():
+        return _json({"error": "El trabajador debe confirmar una boleta del periodo antes de generar su fotocheck."}, 409)
 
     from .badge import build_worker_badge
     try:
