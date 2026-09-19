@@ -61,7 +61,8 @@ class AttendanceKioskTests(TestCase):
         self.client.force_login(self.admin)
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Abrir pantalla de marcación')
+        self.assertContains(response, 'Abrir estación por red local')
+        self.assertContains(response, 'http://192.168.100.3:7000/boletas/marcaciones/pantalla/')
         self.assertContains(response, 'App.init();')
 
     def test_independent_reader_screen_requires_admin_and_renders(self):

@@ -6,6 +6,7 @@ from io import BytesIO
 from pathlib import Path
 from urllib.parse import urlencode
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.core.paginator import Paginator
@@ -127,11 +128,20 @@ class AttendanceKioskView(AttendanceAdminMixin, View):
         }
         for mark in marks:
             mark.worker_name = names.get(mark.worker_document, "TRABAJADOR")
+        request_host = request.get_host().split(":", 1)[0]
+        station_url = reverse("boletas:attendance_screen")
+        if request_host not in ("127.0.0.1", "localhost"):
+            station_url = getattr(
+                settings,
+                "ATTENDANCE_STATION_URL",
+                "http://192.168.100.3:7000/boletas/marcaciones/pantalla/",
+            )
         return render(request, self.template_name, {
             "marks": marks,
             "selected_date": day.isoformat(),
             "in_count": sum(mark.action == "IN" for mark in marks),
             "out_count": sum(mark.action == "OUT" for mark in marks),
+            "attendance_station_url": station_url,
         })
 
     def post(self, request):

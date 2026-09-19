@@ -67,6 +67,11 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['p5kyqq-ip-38-250-176-120.tunnelmole.net','oakstp-ip-38-250-176-120.tunnelmole.net','38.250.176.120', '192.168.10.3', '190.187.236.42', '127.0.0.1', 'localhost','192.168.100.3','38.43.135.224', 'ea2c-190-187-236-42.ngrok-free.app']
 
+ATTENDANCE_STATION_URL = os.getenv(
+    'ATTENDANCE_STATION_URL',
+    'http://192.168.100.3:7000/boletas/marcaciones/pantalla/',
+)
+
 # Application definition
 
 INSTALLED_APPS = [ 
