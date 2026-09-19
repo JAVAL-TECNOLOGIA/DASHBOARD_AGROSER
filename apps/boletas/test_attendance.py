@@ -44,6 +44,7 @@ class AttendanceKioskTests(TestCase):
             signer_name='Ana Trabajadora',
         )
         self.url = reverse('boletas:attendance')
+        self.screen_url = reverse('boletas:attendance_screen')
 
     def post_mark(self, document='01234567', source='QR'):
         return self.client.post(
@@ -57,13 +58,22 @@ class AttendanceKioskTests(TestCase):
         self.assertEqual(self.client.get(self.url).status_code, 403)
         self.client.force_login(self.admin)
         self.assertEqual(self.client.get(self.url).status_code, 200)
-        self.assertContains(self.client.get(self.url), 'Lector QR')
+        self.assertContains(self.client.get(self.url), 'Abrir pantalla de marcación')
+
+    def test_independent_reader_screen_requires_admin_and_renders(self):
+        self.client.force_login(self.worker)
+        self.assertEqual(self.client.get(self.screen_url).status_code, 403)
+        self.client.force_login(self.admin)
+        response = self.client.get(self.screen_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'ACERQUE SU FOTOCHECK AL LECTOR')
 
     def test_qr_toggles_entry_and_exit_and_blocks_duplicate_scan(self):
         self.client.force_login(self.admin)
         first = self.post_mark()
         self.assertEqual(first.status_code, 200)
         self.assertEqual(first.json()['action'], 'IN')
+        self.assertEqual(first.json()['photoUrl'], reverse('boletas:worker_photo', kwargs={'pk': self.profile.pk}))
         duplicate = self.post_mark()
         self.assertEqual(duplicate.status_code, 409)
         self.assertTrue(duplicate.json()['duplicate'])

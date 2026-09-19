@@ -176,10 +176,19 @@ class AttendanceKioskView(AttendanceAdminMixin, View):
             "ok": True,
             "document": document,
             "name": str(profile.user).strip() or document,
+            "photoUrl": reverse("boletas:worker_photo", kwargs={"pk": profile.pk}),
             "action": action,
             "actionLabel": "INGRESO" if action == "IN" else "SALIDA",
             "markedAt": timezone.localtime(mark.marked_at).strftime("%d/%m/%Y %H:%M:%S"),
         })
+
+
+@method_decorator(never_cache, name="dispatch")
+class AttendanceScreenView(AttendanceKioskView):
+    """Full-screen station for a USB/serial QR reader acting as a keyboard."""
+
+    def get(self, request):
+        return render(request, "boletas/attendance_screen.html")
 
 
 def _confirmed_signature(slip, period):

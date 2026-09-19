@@ -1,7 +1,7 @@
 from django.urls import path
 from .views import WorkerBadgeView
 
-from .views import AttendanceKioskView, PaySlipConsolidatedView, PaySlipListView, PaySlipPdfView, PayrollReleaseWorkflowView, WorkerPhotoView, WorkerSignatureView, WorkerDetailView, WorkerMonthPdfView, WorkerBadgeSheetView, WorkerPasswordResetView, WorkerIdentityResetView
+from .views import AttendanceKioskView, AttendanceScreenView, PaySlipConsolidatedView, PaySlipListView, PaySlipPdfView, PayrollReleaseWorkflowView, WorkerPhotoView, WorkerSignatureView, WorkerDetailView, WorkerMonthPdfView, WorkerBadgeSheetView, WorkerPasswordResetView, WorkerIdentityResetView
 from .api import admin_attendance_api, admin_release_api, admin_reset_password_api, admin_worker_access_api, admin_worker_badge_api, admin_worker_detail_api, admin_worker_pdf_api, admin_workers_api, change_password_api, confirm_payslip_api, login_api, portal_content_api, register_identity_api, worker_payslips_api, worker_pdf_api
 from .worker_portal import (
     WorkerIdentityView,
@@ -17,6 +17,7 @@ app_name = "boletas"
 
 urlpatterns = [
     path('marcaciones/', AttendanceKioskView.as_view(), name='attendance'),
+    path('marcaciones/pantalla/', AttendanceScreenView.as_view(), name='attendance_screen'),
     path('trabajador/fotocheck/<str:document>/', WorkerBadgeView.as_view(), name='worker_badge'),
     path('trabajadores/fotochecks/', WorkerBadgeSheetView.as_view(), name='worker_badge_sheet'),
     path('trabajador/<str:document>/restablecer-clave/', WorkerPasswordResetView.as_view(), name='worker_reset_password'),

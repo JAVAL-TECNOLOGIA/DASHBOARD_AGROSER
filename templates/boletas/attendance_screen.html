@@ -1,0 +1,119 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Marcación de personal | AGROSERVICE</title>
+    <link rel="icon" type="image/png" href="{% static 'assets/img/logo/agroservice-corporativo.png' %}">
+    <link href="{% static 'assets/plugins/bootstrap/4.0.0/css/bootstrap.min.css' %}" rel="stylesheet">
+    <style>
+        :root { --agro: #17683a; --ink: #15251c; }
+        * { box-sizing: border-box; }
+        body { margin: 0; min-height: 100vh; background: linear-gradient(145deg, #eef7f0, #d5eadb); color: var(--ink); font-family: Arial, sans-serif; overflow: hidden; }
+        .station { min-height: 100vh; display: grid; grid-template-rows: auto 1fr auto; padding: 28px 4vw 22px; }
+        .station-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid rgba(23,104,58,.18); padding-bottom: 18px; }
+        .brand { display: flex; align-items: center; gap: 18px; }
+        .brand img { width: 78px; height: 78px; object-fit: contain; }
+        .brand h1 { margin: 0; font-size: clamp(24px, 3vw, 42px); font-weight: 800; }
+        .clock { text-align: right; }
+        .clock-time { font-size: clamp(32px, 5vw, 64px); line-height: 1; font-weight: 800; }
+        .clock-date { margin-top: 8px; font-size: clamp(15px, 1.8vw, 24px); }
+        .screen-center { display: grid; place-items: center; padding: 3vh 0; }
+        .panel { width: min(100%, 1080px); min-height: 54vh; background: rgba(255,255,255,.96); border-radius: 28px; box-shadow: 0 22px 70px rgba(22,74,43,.16); display: grid; place-items: center; padding: clamp(28px, 5vw, 60px); text-align: center; border: 5px solid transparent; transition: border-color .2s, background .2s; }
+        .panel.success { border-color: #28a745; background: #f2fff6; }
+        .panel.exit { border-color: #146dcc; background: #f1f7ff; }
+        .panel.error { border-color: #d83a3a; background: #fff4f4; }
+        .qr-symbol { font-size: clamp(70px, 10vw, 130px); line-height: 1; font-weight: 900; letter-spacing: -12px; color: var(--agro); }
+        .prompt { font-size: clamp(26px, 3.5vw, 48px); font-weight: 800; margin-top: 22px; }
+        .hint { font-size: clamp(16px, 1.8vw, 24px); color: #637069; margin-top: 12px; }
+        .employee-photo { width: clamp(150px, 18vw, 230px); height: clamp(180px, 22vw, 280px); object-fit: cover; border-radius: 18px; box-shadow: 0 8px 25px rgba(0,0,0,.15); }
+        .employee-name { font-size: clamp(28px, 4vw, 52px); font-weight: 800; margin-top: 20px; text-transform: uppercase; }
+        .action { font-size: clamp(36px, 6vw, 76px); line-height: 1; font-weight: 900; margin-top: 15px; }
+        .success .action { color: #188345; } .exit .action { color: #146dcc; } .error .action { color: #c72e2e; }
+        .mark-time { font-size: clamp(18px, 2vw, 28px); margin-top: 14px; }
+        .status-bar { display: flex; justify-content: space-between; align-items: center; font-size: 16px; }
+        .reader-ready { color: var(--agro); font-weight: 700; }
+        #reader-input { position: fixed; left: -10000px; width: 1px; height: 1px; opacity: 0; }
+        @media (max-width: 650px) { .station { padding: 18px; } .brand img { width: 54px; height: 54px; } .clock-date { display: none; } }
+    </style>
+</head>
+<body>
+<main class="station">
+    <header class="station-header">
+        <div class="brand"><img src="{% static 'assets/img/logo/agroservice-corporativo.png' %}" alt="AGROSERVICE"><div><h1>CONTROL DE ASISTENCIA</h1><div>AGRO SERVICE ICA SUR S.A.C.</div></div></div>
+        <div class="clock"><div class="clock-time" id="clock-time">--:--:--</div><div class="clock-date" id="clock-date"></div></div>
+    </header>
+    <section class="screen-center">
+        <div class="panel" id="result-panel">
+            <div id="result-content"><div class="qr-symbol">▦</div><div class="prompt">ACERQUE SU FOTOCHECK AL LECTOR</div><div class="hint">El sistema está listo para leer el código QR</div></div>
+        </div>
+    </section>
+    <footer class="status-bar"><span class="reader-ready" id="reader-status">● Lector conectado y esperando</span><span>Presione F11 para pantalla completa</span></footer>
+</main>
+<form style="display:none">{% csrf_token %}<input id="reader-input" autocomplete="off" autofocus></form>
+<script>
+(function () {
+    const input = document.getElementById('reader-input');
+    const panel = document.getElementById('result-panel');
+    const content = document.getElementById('result-content');
+    const status = document.getElementById('reader-status');
+    let busy = false;
+    let resetTimer = null;
+
+    function escapeHtml(value) {
+        const node = document.createElement('div'); node.textContent = value || ''; return node.innerHTML;
+    }
+    function focusReader() { if (!busy) input.focus(); }
+    function resetPanel() {
+        panel.className = 'panel';
+        content.innerHTML = '<div class="qr-symbol">▦</div><div class="prompt">ACERQUE SU FOTOCHECK AL LECTOR</div><div class="hint">El sistema está listo para leer el código QR</div>';
+        status.textContent = '● Lector conectado y esperando';
+        input.value = ''; focusReader();
+    }
+    function updateClock() {
+        const now = new Date();
+        document.getElementById('clock-time').textContent = now.toLocaleTimeString('es-PE', {hour12: false});
+        document.getElementById('clock-date').textContent = now.toLocaleDateString('es-PE', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+    }
+    async function registerScan(rawValue) {
+        if (busy) return;
+        const match = String(rawValue || '').match(/(?:^|\D)(\d{8})(?:\D|$)/);
+        input.value = '';
+        if (!match) {
+            panel.className = 'panel error';
+            content.innerHTML = '<div class="action">LECTURA INVÁLIDA</div><div class="hint">El QR no contiene un DNI válido</div>';
+            clearTimeout(resetTimer); resetTimer = setTimeout(resetPanel, 4000); return;
+        }
+        busy = true; status.textContent = 'Procesando marcación…';
+        try {
+            const response = await fetch('{% url "boletas:attendance_screen" %}', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value},
+                body: JSON.stringify({document: match[1], source: 'QR'})
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'No se pudo registrar la marcación.');
+            panel.className = 'panel ' + (data.action === 'IN' ? 'success' : 'exit');
+            content.innerHTML = '<img class="employee-photo" src="' + escapeHtml(data.photoUrl) + '" alt="Foto del trabajador"><div class="employee-name">' + escapeHtml(data.name) + '</div><div class="action">' + escapeHtml(data.actionLabel) + '</div><div class="mark-time">' + escapeHtml(data.markedAt) + '</div>';
+            status.textContent = '✓ Marcación registrada correctamente';
+            clearTimeout(resetTimer); resetTimer = setTimeout(resetPanel, 6000);
+        } catch (error) {
+            panel.className = 'panel error';
+            content.innerHTML = '<div class="action">NO REGISTRADO</div><div class="hint">' + escapeHtml(error.message) + '</div>';
+            status.textContent = 'Revise el mensaje y vuelva a intentarlo';
+            clearTimeout(resetTimer); resetTimer = setTimeout(resetPanel, 5000);
+        } finally {
+            busy = false; setTimeout(focusReader, 50);
+        }
+    }
+    input.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter') { event.preventDefault(); registerScan(input.value.trim()); }
+    });
+    document.addEventListener('click', focusReader);
+    window.addEventListener('focus', focusReader);
+    setInterval(updateClock, 1000); updateClock(); focusReader();
+})();
+</script>
+</body>
+</html>
