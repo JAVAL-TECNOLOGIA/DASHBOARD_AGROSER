@@ -24,6 +24,7 @@
         <li class="nav-item">
             <a class="nav-link active" href="{% url 'boletas:consolidated' %}"><i class="fa fa-chart-bar mr-1"></i> Consolidado</a>
         </li>
+        {% if request.user.admin %}<li class="nav-item"><a class="nav-link" href="{% url 'boletas:attendance' %}"><i class="fa fa-qrcode mr-1"></i> Marcaciones</a></li>{% endif %}
     </ul>
 
     <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4">

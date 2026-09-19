@@ -1,7 +1,7 @@
 import logging
 import re
 from decimal import Decimal
-from datetime import timedelta
+from datetime import datetime, timedelta
 from io import BytesIO
 from pathlib import Path
 from urllib.parse import urlencode
@@ -10,7 +10,7 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.core.paginator import Paginator
 from django.db import DatabaseError, transaction
-from django.http import FileResponse, Http404, HttpResponse
+from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -22,7 +22,7 @@ from apps.user.models import User
 
 from .periods import DateRange, month_range, resolve_date_range, week_value_for_date
 from .analytics import build_payroll_summary
-from .models import PayrollRelease, PayslipAcknowledgement, WorkerIdentityProfile
+from .models import AttendanceMark, PayrollRelease, PayslipAcknowledgement, WorkerIdentityProfile
 from .services import PAYROLL_TYPES, PaySlipService
 
 
@@ -96,6 +96,90 @@ class PaySlipPermissionMixin(LoginRequiredMixin, PermissionRequiredMixin):
         return user.is_authenticated and (
             getattr(user, "admin", False) or super().has_permission()
         )
+
+
+class AttendanceAdminMixin(PaySlipPermissionMixin):
+    def has_permission(self):
+        return bool(
+            self.request.user.is_authenticated
+            and getattr(self.request.user, "admin", False)
+        )
+
+
+@method_decorator(never_cache, name="dispatch")
+class AttendanceKioskView(AttendanceAdminMixin, View):
+    template_name = "boletas/attendance.html"
+    duplicate_seconds = 30
+
+    def get(self, request):
+        selected_date = request.GET.get("date", "").strip()
+        try:
+            day = datetime.strptime(selected_date, "%Y-%m-%d").date() if selected_date else timezone.localdate()
+        except ValueError:
+            day = timezone.localdate()
+            messages.error(request, "La fecha seleccionada no es válida.")
+        marks = list(AttendanceMark.objects.filter(marked_at__date=day).select_related("marked_by")[:500])
+        documents = {mark.worker_document for mark in marks}
+        names = {
+            user.username: str(user).strip() or user.username
+            for user in User.objects.filter(username__in=documents)
+        }
+        for mark in marks:
+            mark.worker_name = names.get(mark.worker_document, "TRABAJADOR")
+        return render(request, self.template_name, {
+            "marks": marks,
+            "selected_date": day.isoformat(),
+            "in_count": sum(mark.action == "IN" for mark in marks),
+            "out_count": sum(mark.action == "OUT" for mark in marks),
+        })
+
+    def post(self, request):
+        import json
+
+        try:
+            payload = json.loads(request.body or b"{}")
+        except (TypeError, ValueError):
+            payload = request.POST
+        document = str(payload.get("document") or "").strip()
+        source = str(payload.get("source") or "QR").strip().upper()
+        if not document.isdigit() or len(document) != 8:
+            return JsonResponse({"error": "El QR no contiene un DNI válido."}, status=400)
+        if source not in ("QR", "MANUAL"):
+            source = "QR"
+        profile = WorkerIdentityProfile.objects.select_related("user").filter(
+            worker_document=document,
+            photo__gt="",
+            signature__gt="",
+        ).first()
+        if not profile or not PayslipAcknowledgement.objects.filter(worker_document=document).exists():
+            return JsonResponse({
+                "error": "El trabajador no tiene un fotocheck habilitado con firma y confirmación."
+            }, status=409)
+        now = timezone.now()
+        last_mark = AttendanceMark.objects.filter(
+            worker_document=document,
+            marked_at__date=timezone.localdate(),
+        ).first()
+        if last_mark and (now - last_mark.marked_at).total_seconds() < self.duplicate_seconds:
+            return JsonResponse({
+                "error": "Marcación repetida. Espera unos segundos antes de volver a escanear.",
+                "duplicate": True,
+            }, status=409)
+        action = "OUT" if last_mark and last_mark.action == "IN" else "IN"
+        mark = AttendanceMark.objects.create(
+            worker_document=document,
+            action=action,
+            source=source,
+            marked_by=request.user,
+        )
+        return JsonResponse({
+            "ok": True,
+            "document": document,
+            "name": str(profile.user).strip() or document,
+            "action": action,
+            "actionLabel": "INGRESO" if action == "IN" else "SALIDA",
+            "markedAt": timezone.localtime(mark.marked_at).strftime("%d/%m/%Y %H:%M:%S"),
+        })
 
 
 def _confirmed_signature(slip, period):

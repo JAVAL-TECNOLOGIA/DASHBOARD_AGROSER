@@ -1,0 +1,146 @@
+{% load static %}
+{% include 'base/header.html' %}
+{% block page %}Marcaciones de personal{% endblock %}
+{% include 'base/sidebar.html' %}
+
+{% block css %}
+<style>
+    .scanner-shell { max-width: 760px; margin: 0 auto; }
+    .scanner-video { width: 100%; min-height: 280px; max-height: 470px; background: #101820; border-radius: 12px; object-fit: cover; }
+    .scan-result { border-radius: 12px; min-height: 110px; display: flex; align-items: center; justify-content: center; text-align: center; }
+    .scan-result.success { background: #dff4e8; color: #12613b; }
+    .scan-result.error { background: #fde7e7; color: #9f2525; }
+    .mark-count { font-size: 1.6rem; font-weight: 700; }
+</style>
+{% endblock %}
+
+<div id="content" class="content">
+    <ul class="nav nav-tabs mb-4">
+        <li class="nav-item"><a class="nav-link" href="{% url 'boletas:index' %}"><i class="fa fa-file-invoice mr-1"></i> Boletas</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'boletas:consolidated' %}"><i class="fa fa-chart-bar mr-1"></i> Consolidado</a></li>
+        <li class="nav-item"><a class="nav-link active" href="{% url 'boletas:attendance' %}"><i class="fa fa-qrcode mr-1"></i> Marcaciones</a></li>
+    </ul>
+
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4">
+        <div><h1 class="page-header mb-1">Marcaciones de personal</h1><p class="text-muted mb-0">Escanea el QR del fotocheck para registrar ingreso o salida automáticamente.</p></div>
+        <form method="get" class="form-inline mt-3 mt-md-0"><label class="mr-2" for="attendance-date">Fecha</label><input class="form-control" id="attendance-date" type="date" name="date" value="{{ selected_date }}"><button class="btn btn-primary ml-2" type="submit">Consultar</button></form>
+    </div>
+
+    {% for message in messages %}<div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>{% endfor %}
+    <input type="hidden" id="attendance-csrf" value="{{ csrf_token }}">
+
+    <div class="row mb-4">
+        <div class="col-lg-8 mb-4 mb-lg-0">
+            <div class="card shadow-sm h-100"><div class="card-header bg-white"><strong><i class="fa fa-camera mr-2 text-primary"></i>Lector QR</strong></div><div class="card-body scanner-shell">
+                <video id="attendance-camera" class="scanner-video" playsinline muted></video>
+                <div class="d-flex flex-wrap justify-content-center mt-3">
+                    <button class="btn btn-primary mr-2 mb-2" id="start-scanner" type="button"><i class="fa fa-camera mr-1"></i> Iniciar cámara</button>
+                    <button class="btn btn-outline-secondary mb-2" id="stop-scanner" type="button" disabled><i class="fa fa-stop mr-1"></i> Detener</button>
+                </div>
+                <p class="small text-muted text-center">La cámara requiere HTTPS o acceso desde localhost. Si no está disponible, utiliza el ingreso manual.</p>
+                <form id="manual-mark-form" class="form-row justify-content-center mt-3">
+                    <div class="col-sm-7"><label for="manual-document">DNI del trabajador</label><input class="form-control" id="manual-document" inputmode="numeric" maxlength="8" pattern="[0-9]{8}" placeholder="8 dígitos" required></div>
+                    <div class="col-sm-auto align-self-end mt-2 mt-sm-0"><button class="btn btn-outline-primary" type="submit">Registrar manualmente</button></div>
+                </form>
+            </div></div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card shadow-sm mb-3"><div class="card-body"><div class="row text-center"><div class="col-6 border-right"><div class="text-muted">Ingresos</div><div class="mark-count text-success" id="in-count">{{ in_count }}</div></div><div class="col-6"><div class="text-muted">Salidas</div><div class="mark-count text-danger" id="out-count">{{ out_count }}</div></div></div></div></div>
+            <div id="scan-result" class="scan-result border p-3"><div><i class="fa fa-qrcode fa-2x mb-2"></i><br>Esperando lectura</div></div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm"><div class="card-header bg-white"><strong>Marcaciones del {{ selected_date }}</strong></div><div class="table-responsive"><table class="table table-hover mb-0"><thead class="thead-light"><tr><th>Hora</th><th>Trabajador</th><th>DNI</th><th>Tipo</th><th>Origen</th><th>Registrado por</th></tr></thead><tbody id="attendance-rows">
+        {% for mark in marks %}<tr><td>{{ mark.marked_at|date:"H:i:s" }}</td><td>{{ mark.worker_name }}</td><td>{{ mark.worker_document }}</td><td>{% if mark.action == 'IN' %}<span class="badge badge-success">INGRESO</span>{% else %}<span class="badge badge-danger">SALIDA</span>{% endif %}</td><td>{{ mark.source }}</td><td>{{ mark.marked_by|default:mark.marked_by.username }}</td></tr>{% empty %}<tr id="empty-marks"><td colspan="6" class="text-center text-muted py-4">No hay marcaciones para esta fecha.</td></tr>{% endfor %}
+    </tbody></table></div></div>
+</div>
+
+{% include 'base/footer.html' %}
+{% block js %}
+<script>
+$(document).ready(function () {
+    App.init();
+    const video = document.getElementById('attendance-camera');
+    const result = $('#scan-result');
+    const startButton = $('#start-scanner');
+    const stopButton = $('#stop-scanner');
+    let stream = null;
+    let detector = null;
+    let running = false;
+    let submitting = false;
+
+    function showResult(kind, html) {
+        result.removeClass('success error').addClass(kind).html(html);
+    }
+    function stopScanner() {
+        running = false;
+        if (stream) stream.getTracks().forEach(function (track) { track.stop(); });
+        stream = null;
+        video.srcObject = null;
+        startButton.prop('disabled', false);
+        stopButton.prop('disabled', true);
+    }
+    async function submitMark(documentValue, source) {
+        if (submitting) return;
+        const match = String(documentValue || '').match(/(?:^|\D)(\d{8})(?:\D|$)/);
+        if (!match) { showResult('error', '<div><strong>QR inválido</strong><br>Debe contener un DNI de 8 dígitos.</div>'); return; }
+        submitting = true;
+        try {
+            const response = await fetch('{% url "boletas:attendance" %}', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json', 'X-CSRFToken': $('#attendance-csrf').val()},
+                body: JSON.stringify({document: match[1], source: source})
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'No se pudo registrar la marcación.');
+            const badge = data.action === 'IN' ? 'success' : 'danger';
+            showResult('success', '<div><strong class="h4">' + data.actionLabel + '</strong><br>' + $('<div>').text(data.name).html() + '<br><span>' + data.markedAt + '</span></div>');
+            $('#empty-marks').remove();
+            $('#attendance-rows').prepend('<tr><td>' + data.markedAt.slice(-8) + '</td><td>' + $('<div>').text(data.name).html() + '</td><td>' + data.document + '</td><td><span class="badge badge-' + badge + '">' + data.actionLabel + '</span></td><td>' + source + '</td><td>Operador actual</td></tr>');
+            const counter = data.action === 'IN' ? $('#in-count') : $('#out-count');
+            counter.text(parseInt(counter.text() || '0', 10) + 1);
+        } catch (error) {
+            showResult('error', '<div><strong>No registrado</strong><br>' + $('<div>').text(error.message).html() + '</div>');
+        } finally {
+            window.setTimeout(function () { submitting = false; }, 2500);
+        }
+    }
+    async function scanFrame() {
+        if (!running) return;
+        if (!submitting && detector && video.readyState >= 2) {
+            try {
+                const codes = await detector.detect(video);
+                if (codes.length) submitMark(codes[0].rawValue, 'QR');
+            } catch (unusedError) {}
+        }
+        window.requestAnimationFrame(scanFrame);
+    }
+    startButton.on('click', async function () {
+        if (!('BarcodeDetector' in window)) {
+            showResult('error', '<div>Este navegador no dispone del lector QR integrado.<br>Usa Chrome actualizado o el ingreso manual.</div>');
+            return;
+        }
+        try {
+            detector = new BarcodeDetector({formats: ['qr_code']});
+            stream = await navigator.mediaDevices.getUserMedia({video: {facingMode: {ideal: 'environment'}}, audio: false});
+            video.srcObject = stream;
+            await video.play();
+            running = true;
+            startButton.prop('disabled', true);
+            stopButton.prop('disabled', false);
+            result.removeClass('success error').html('<div><i class="fa fa-qrcode fa-2x mb-2"></i><br>Apunta la cámara al QR</div>');
+            scanFrame();
+        } catch (error) {
+            showResult('error', '<div>No se pudo iniciar la cámara.<br>Verifica el permiso y que el sitio use HTTPS.</div>');
+        }
+    });
+    stopButton.on('click', stopScanner);
+    $('#manual-mark-form').on('submit', function (event) {
+        event.preventDefault();
+        submitMark($('#manual-document').val(), 'MANUAL');
+        $('#manual-document').val('');
+    });
+    window.addEventListener('beforeunload', stopScanner);
+});
+</script>
+{% endblock %}
