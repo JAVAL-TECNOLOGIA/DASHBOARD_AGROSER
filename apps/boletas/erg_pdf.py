@@ -1,114 +1,179 @@
-"""Reconstrucción de las dos copias del reporte rpt_boleta_pago FRX/FRT."""
+"""Formato A4 de boleta para empleados de régimen general y agrario."""
+from datetime import datetime
 from io import BytesIO
 from pathlib import Path
-from xml.sax.saxutils import escape
-from reportlab.lib.pagesizes import A4, landscape
-from reportlab.lib.styles import ParagraphStyle
+
+from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
-from reportlab.platypus import Paragraph, Table, TableStyle
-from .erg_txt import amount, PayrollTextError
+
+from .erg_txt import PayrollTextError, amount
 
 
 def build_pdf(data, signature_path=None, employer_signature_path=None):
-    regular, bold = 'Times-Roman', 'Times-Bold'
-    fonts = Path('C:/Windows/Fonts')
-    if (fonts / 'gara.ttf').exists() and (fonts / 'garabd.ttf').exists():
-        if 'ERG-Garamond' not in pdfmetrics.getRegisteredFontNames():
-            pdfmetrics.registerFont(TTFont('ERG-Garamond', str(fonts / 'gara.ttf')))
-            pdfmetrics.registerFont(TTFont('ERG-Garamond-Bold', str(fonts / 'garabd.ttf')))
-        regular, bold = 'ERG-Garamond', 'ERG-Garamond-Bold'
-    h, details, totals = data['header'], data['details'], data['totals']
-    out = BytesIO()
-    width, height = A4[1] / 2, A4[0]
-    pdf = canvas.Canvas(out, pagesize=(width, height))
-    pdf.setTitle('Boleta ERG {} {}'.format(h['documento'], h['periodo']))
-    pdf.setAuthor(h.get('razon_social', 'Agroservice'))
-    style = ParagraphStyle('body', fontName=regular, fontSize=7, leading=8)
-    def para(value, size=7, strong=False):
-        st = ParagraphStyle('cell', parent=style, fontName=bold if strong else regular, fontSize=size, leading=size+1)
-        return Paragraph(escape(str(value or '')), st)
+    header, details, totals = data["header"], data["details"], data["totals"]
+    output = BytesIO()
+    width, height = A4
+    pdf = canvas.Canvas(output, pagesize=A4)
+    pdf.setTitle("Boleta de remuneraciones {} {}".format(
+        header.get("documento", ""), header.get("periodo", "")
+    ))
+    pdf.setAuthor(header.get("razon_social", "AGROSERVICE ICA SUR S.A.C."))
+
+    regular, bold = "Helvetica", "Helvetica-Bold"
+    fonts = Path("C:/Windows/Fonts")
+    if (fonts / "arial.ttf").is_file() and (fonts / "arialbd.ttf").is_file():
+        if "Employee-Arial" not in pdfmetrics.getRegisteredFontNames():
+            pdfmetrics.registerFont(TTFont("Employee-Arial", str(fonts / "arial.ttf")))
+            pdfmetrics.registerFont(TTFont("Employee-Arial-Bold", str(fonts / "arialbd.ttf")))
+        regular, bold = "Employee-Arial", "Employee-Arial-Bold"
+
+    left, right = 2.5 * mm, width - 2.5 * mm
+    content_width = right - left
+
+    def clean(value, default=""):
+        return str(value).strip() if value not in (None, "") else default
+
     def money(value):
-        return '{:,.2f}'.format(amount(value))
-    def date(value):
-        return '{}/{}/{}'.format(value[6:8], value[4:6], value[:4])
-    half = width
-    for copy in range(1):
-        x, w = copy * half + 6 * mm, half - 12 * mm
-        y = height - 10 * mm
-        pdf.setFont(bold, 10)
-        pdf.drawString(x, y, h.get('razon_social', ''))
-        pdf.setFont(regular, 8)
-        pdf.drawString(x, y - 4 * mm, 'R.U.C.: ' + h.get('ruc', ''))
-        p = para(h.get('direccion_empresa'), 7)
-        _, ph = p.wrap(w, 12 * mm); p.drawOn(pdf, x, y - 7 * mm - ph)
-        pdf.setFont(bold, 11)
-        pdf.drawCentredString(x + w/2, height - 29 * mm, 'BOLETA DE REMUNERACIONES')
-        info = [
-            [para('CÓDIGO: ' + h['codigo'] + '  ' + h['apenom'], 8, True)],
-            [para('DNI: ' + h['documento'] + '    CARGO: ' + h.get('cargo', ''), 8)],
-            [para('SUELDO: ' + h.get('moneda', 'S/.') + ' ' + money(h.get('basico', 0)) + '    FEC. INGRESO: ' + h.get('ingreso', ''), 8)],
-            [para('AFP: ' + h.get('afp', '') + ' - ' + h.get('afp_dsc', '') + '    CUSSP/ONP: ' + h.get('autogene', '') + ' ' + h.get('autoipss', ''), 8)],
-            [para('SITUACIÓN: ' + h.get('situacion_especial', '') + '    FEC. CESE: ' + h.get('cese', ''), 8)],
-            [para('PERÍODO: ' + h['periodo'] + '    DEL ' + date(h['desde1']) + ' AL ' + date(h['hasta1']), 8, True)],
+        return "{:,.2f}".format(amount(value or 0))
+
+    def display_date(value, empty=" / /"):
+        raw = clean(value)
+        if not raw:
+            return empty
+        for pattern in ("%Y%m%d", "%Y-%m-%d", "%d/%m/%Y"):
+            try:
+                return datetime.strptime(raw[:10], pattern).strftime("%d/%m/%Y")
+            except ValueError:
+                continue
+        return raw
+
+    def fit(value, available, font=regular, size=7):
+        original = clean(value, "-")
+        fitted = original
+        while len(fitted) > 1 and pdf.stringWidth(fitted, font, size) > available:
+            fitted = fitted[:-1]
+        return fitted if fitted == original else fitted.rstrip() + "..."
+
+    def label_value(label, value, x, y, label_width, value_width, strong=False, size=7.2):
+        pdf.setFont(bold, size)
+        pdf.drawString(x, y, label)
+        pdf.setFont(bold if strong else regular, size)
+        pdf.drawString(x + label_width, y, fit(value, value_width, bold if strong else regular, size))
+
+    top = height - 18 * mm
+    pdf.setFont(regular, 8)
+    pdf.drawString(left, top, clean(header.get("razon_social"), "AGROSERVICE ICA SUR S.A.C."))
+    pdf.setFont(regular, 7.3)
+    pdf.drawString(left, top - 5.2 * mm, "R.U.C : {}".format(clean(header.get("ruc"), "20534627077")))
+    pdf.drawString(left, top - 10.5 * mm, fit(header.get("direccion_empresa"), content_width, regular, 7.3))
+
+    pdf.setFont(bold, 11.2)
+    pdf.drawCentredString(width / 2, height - 39 * mm, "BOLETA DE REMUNERACIONES")
+
+    info_top = height - 49 * mm
+    info_right = left + 139 * mm
+    right_value = info_right + 31 * mm
+    employee_code = clean(header.get("codigo") or header.get("documento"), "-")
+    employee_name = clean(header.get("apenom"), "-")
+    affiliate = "{} - {}".format(clean(header.get("afp")), clean(header.get("afp_dsc"))).strip(" -")
+    cussp = "{} {}".format(clean(header.get("autogene")), clean(header.get("autoipss"))).strip()
+
+    label_value("CODIGO :", "{}  {}".format(employee_code, employee_name), left, info_top, 24 * mm, 112 * mm, strong=True)
+    label_value("SUELDO :", "{}   {}".format(clean(header.get("moneda"), "S/"), money(header.get("basico"))), info_right, info_top, 31 * mm, right - right_value, strong=True)
+    label_value("CARGO :", header.get("cargo"), left, info_top - 6 * mm, 24 * mm, 112 * mm)
+    label_value("DNI", header.get("documento"), info_right, info_top - 6 * mm, 31 * mm, right - right_value)
+    label_value("AFP :", affiliate, left, info_top - 12 * mm, 24 * mm, 56 * mm)
+    label_value("CUSSP/ONP :", cussp, left + 82 * mm, info_top - 12 * mm, 30 * mm, 25 * mm)
+    label_value("FEC. INGRESO", display_date(header.get("ingreso"), "-"), info_right, info_top - 12 * mm, 31 * mm, right - right_value)
+    label_value("SITUACION :", clean(header.get("situacion_especial"), "NINGUNO"), left, info_top - 18 * mm, 31 * mm, 105 * mm)
+    label_value("FEC. CESE :", display_date(header.get("cese")), info_right, info_top - 18 * mm, 31 * mm, right - right_value)
+
+    period_top = height - 68 * mm
+    period_height = 8.5 * mm
+    pdf.setLineWidth(0.5)
+    pdf.rect(left, period_top - period_height, content_width, period_height)
+    pdf.setFont(regular, 7.5)
+    pdf.drawString(left + 1 * mm, period_top - 5.5 * mm, "PERIODO {} DEL {} AL {}".format(
+        clean(header.get("periodo"), "-"),
+        display_date(header.get("desde1"), "-"),
+        display_date(header.get("hasta1"), "-"),
+    ))
+
+    table_top = period_top - period_height
+    table_bottom = 104 * mm
+    header_height = 13 * mm
+    column_width = content_width / 4
+    headings = (
+        (("REMUNERACIONES",), "ingr"),
+        (("RETENCIONES AL", "TRABAJADOR"), "desc"),
+        (("CONTRIBUCIONES", "DEL EMPLEADOR"), "apor"),
+        (("TIEMPOS",), "tiem"),
+    )
+    pdf.rect(left, table_bottom, content_width, table_top - table_bottom)
+    pdf.line(left, table_top - header_height, right, table_top - header_height)
+    for index, (heading_lines, prefix) in enumerate(headings):
+        x = left + index * column_width
+        if index:
+            pdf.line(x, table_bottom, x, table_top)
+        pdf.setFont(regular, 6.8)
+        first_y = table_top - (5.6 if len(heading_lines) == 1 else 4.2) * mm
+        for line_index, heading in enumerate(heading_lines):
+            pdf.drawCentredString(x + column_width / 2, first_y - line_index * 4.1 * mm, heading)
+        concept_rows = [
+            (clean(row.get(prefix + "_descri")), row.get(prefix + "_valor"))
+            for row in details if clean(row.get(prefix + "_descri"))
         ]
-        table = Table(info, colWidths=[w]); table.setStyle(TableStyle([('LEFTPADDING',(0,0),(-1,-1),0),('TOPPADDING',(0,0),(-1,-1),2),('BOTTOMPADDING',(0,0),(-1,-1),2)]))
-        _, ih = table.wrap(w, height); top = height - 34 * mm; table.drawOn(pdf,x,top-ih)
-        concept_font = 6 if len(details) > 11 else 7
-        concept_padding = 1 if len(details) > 11 else 3
-        cells = [[para(label,concept_font,True) for label in ('REMUNERACIONES','RETENCIONES AL TRABAJADOR','CONTRIBUCIONES DEL EMPLEADOR','TIEMPOS')]]
-        for row in details:
-            cols=[]
-            for prefix in ('ingr','desc','apor','tiem'):
-                label=row.get(prefix+'_descri','')
-                if label:
-                    nested=Table([[para(label,concept_font),para(money(row[prefix+'_valor']),concept_font)]],colWidths=[w/4-14*mm,12*mm])
-                    nested.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'TOP'),('LEFTPADDING',(0,0),(-1,-1),0),('RIGHTPADDING',(0,0),(-1,-1),0),('TOPPADDING',(0,0),(-1,-1),1),('BOTTOMPADDING',(0,0),(-1,-1),1)]))
-                    cols.append(nested)
-                else: cols.append('')
-            cells.append(cols)
-        concepts=Table(cells,colWidths=[w/4]*4)
-        concepts.setStyle(TableStyle([('BOX',(0,0),(-1,-1),.5,'black'),('INNERGRID',(0,0),(-1,0),.5,'black'),('LINEBEFORE',(1,0),(-1,-1),.4,'black'),('VALIGN',(0,0),(-1,-1),'TOP'),('LEFTPADDING',(0,0),(-1,-1),2),('RIGHTPADDING',(0,0),(-1,-1),2),('TOPPADDING',(0,0),(-1,-1),concept_padding),('BOTTOMPADDING',(0,0),(-1,-1),concept_padding)]))
-        _, ch=concepts.wrap(w,height); cy=top-ih-4*mm-ch
-        if cy < 40*mm:
-            raise PayrollTextError('Los conceptos exceden el espacio del formato; se requiere una página adicional.')
-        concepts.drawOn(pdf,x,cy)
-        y=cy-6*mm
-        for label,value in [('Total ingresos S/.',totals['ingr']),('Total retenciones S/.',totals['desc']),('Total aportaciones S/.',totals['apor']),('NETO A PAGAR S/.',totals['net'])]:
-            pdf.setFont(bold if label.startswith('NETO') else regular,9)
-            pdf.drawString(x,y,label);pdf.drawRightString(x+w,y,money(value));y-=5*mm
-        pdf.line(x+5*mm,18*mm,x+57*mm,18*mm);pdf.line(x+w-57*mm,18*mm,x+w-5*mm,18*mm)
-        if employer_signature_path:
-            try:
-                pdf.drawImage(
-                    employer_signature_path,
-                    x+10*mm,
-                    19*mm,
-                    42*mm,
-                    14*mm,
-                    preserveAspectRatio=True,
-                    anchor='c',
-                    mask='auto',
-                )
-            except Exception as exc:
-                raise PayrollTextError('No se pudo insertar la firma del empleador en la boleta.') from exc
-        if signature_path:
-            try:
-                pdf.drawImage(
-                    signature_path,
-                    x+w-52*mm,
-                    19*mm,
-                    42*mm,
-                    14*mm,
-                    preserveAspectRatio=True,
-                    anchor='c',
-                    mask='auto',
-                )
-            except Exception as exc:
-                raise PayrollTextError('No se pudo insertar la firma registrada en la boleta.') from exc
-        pdf.setFont(regular,8);pdf.drawCentredString(x+31*mm,14*mm,'EMPLEADOR');pdf.drawCentredString(x+w-31*mm,14*mm,'TRABAJADOR')
-        pdf.setFont(regular,7);pdf.drawCentredString(x+w/2,7*mm,'COPIA DEL TRABAJADOR' if copy == 0 else 'CARGO - EMPLEADOR')
+        if len(concept_rows) > 20:
+            raise PayrollTextError("Los conceptos exceden el espacio del formato de boleta.")
+        font_size = 6.1 if len(concept_rows) <= 15 else 5.2
+        row_step = 5.2 * mm if len(concept_rows) <= 15 else 4.1 * mm
+        row_y = table_top - header_height - 5.5 * mm
+        for description, value in concept_rows:
+            pdf.setFont(regular, font_size)
+            pdf.drawString(x + 1 * mm, row_y, fit(description, column_width - 18 * mm, regular, font_size))
+            pdf.drawRightString(x + column_width - 1.2 * mm, row_y, money(value))
+            row_y -= row_step
+
+    totals_top = table_bottom
+    totals_bottom = 80 * mm
+    pdf.rect(left, totals_bottom, content_width, totals_top - totals_bottom)
+    for index in range(1, 4):
+        pdf.line(left + index * column_width, totals_bottom, left + index * column_width, totals_top)
+    total_rows = (
+        ("TOTAL INGRESOS", totals["ingr"]),
+        ("TOTAL RETENCIONES S/.", totals["desc"]),
+        ("TOTAL APORTACION S/.", totals["apor"]),
+        ("NETO A PAGAR S/.", totals["net"]),
+    )
+    for index, (label, value) in enumerate(total_rows):
+        x = left + index * column_width
+        pdf.setFont(bold if index == 3 else regular, 9 if index == 3 else 7.1)
+        pdf.drawString(x + 1.2 * mm, totals_top - 5.5 * mm, label)
+        pdf.setFont(bold if index == 3 else regular, 10.5 if index == 3 else 8.8)
+        pdf.drawRightString(x + column_width - 5 * mm, totals_bottom + 10.5 * mm, money(value))
+
+    employer_x = left + 24 * mm
+    if employer_signature_path:
+        try:
+            pdf.drawImage(employer_signature_path, employer_x, 15 * mm, 48 * mm, 18 * mm, preserveAspectRatio=True, anchor="c", mask="auto")
+        except Exception as exc:
+            raise PayrollTextError("No se pudo insertar la firma del empleador en la boleta.") from exc
+
+    worker_left, worker_right = width - 67 * mm, width - 18 * mm
+    worker_center = (worker_left + worker_right) / 2
+    worker_line_y = 17 * mm
+    if signature_path:
+        try:
+            pdf.drawImage(signature_path, worker_center - 23 * mm, worker_line_y + 1.5 * mm, 46 * mm, 17 * mm, preserveAspectRatio=True, anchor="c", mask="auto")
+        except Exception as exc:
+            raise PayrollTextError("No se pudo insertar la firma registrada en la boleta.") from exc
+    pdf.line(worker_left, worker_line_y, worker_right, worker_line_y)
+    pdf.setFont(regular, 8.2)
+    pdf.drawCentredString(worker_center, 10.5 * mm, "TRABAJADOR")
+
+    pdf.showPage()
     pdf.save()
-    return out.getvalue()
+    return output.getvalue()
