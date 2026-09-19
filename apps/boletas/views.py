@@ -14,6 +14,7 @@ from django.http import FileResponse, Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.cache import never_cache
@@ -142,10 +143,14 @@ class AttendanceKioskView(AttendanceAdminMixin, View):
             payload = request.POST
         document = str(payload.get("document") or "").strip()
         source = str(payload.get("source") or "QR").strip().upper()
+        client_event_id = str(payload.get("clientEventId") or "").strip()
+        captured_at_value = str(payload.get("capturedAt") or "").strip()
         if not document.isdigit() or len(document) != 8:
             return JsonResponse({"error": "El QR no contiene un DNI válido."}, status=400)
-        if source not in ("QR", "MANUAL"):
+        if source not in ("QR", "QR_OFFLINE", "MANUAL"):
             source = "QR"
+        if client_event_id and not re.fullmatch(r"[A-Za-z0-9-]{8,64}", client_event_id):
+            return JsonResponse({"error": "El identificador de la marcación no es válido."}, status=400)
         profile = WorkerIdentityProfile.objects.select_related("user").filter(
             worker_document=document,
             photo__gt="",
@@ -155,12 +160,23 @@ class AttendanceKioskView(AttendanceAdminMixin, View):
             return JsonResponse({
                 "error": "El trabajador no tiene un fotocheck habilitado con firma y confirmación."
             }, status=409)
+        existing = AttendanceMark.objects.filter(client_event_id=client_event_id).first() if client_event_id else None
+        if existing:
+            return self._success_response(existing, profile, synchronized=True)
         now = timezone.now()
+        captured_at = parse_datetime(captured_at_value) if captured_at_value else now
+        if not captured_at:
+            return JsonResponse({"error": "La fecha de la marcación no es válida."}, status=400)
+        if timezone.is_naive(captured_at):
+            captured_at = timezone.make_aware(captured_at, timezone.get_current_timezone())
+        if captured_at > now + timedelta(minutes=5) or captured_at < now - timedelta(days=30):
+            return JsonResponse({"error": "La fecha de la marcación está fuera del rango permitido."}, status=400)
         last_mark = AttendanceMark.objects.filter(
             worker_document=document,
-            marked_at__date=timezone.localdate(),
+            marked_at__date=timezone.localdate(captured_at),
+            marked_at__lte=captured_at,
         ).first()
-        if last_mark and (now - last_mark.marked_at).total_seconds() < self.duplicate_seconds:
+        if last_mark and (captured_at - last_mark.marked_at).total_seconds() < self.duplicate_seconds:
             return JsonResponse({
                 "error": "Marcación repetida. Espera unos segundos antes de volver a escanear.",
                 "duplicate": True,
@@ -171,15 +187,24 @@ class AttendanceKioskView(AttendanceAdminMixin, View):
             action=action,
             source=source,
             marked_by=request.user,
+            client_event_id=client_event_id or None,
         )
+        if captured_at_value:
+            AttendanceMark.objects.filter(pk=mark.pk).update(marked_at=captured_at)
+            mark.marked_at = captured_at
+        return self._success_response(mark, profile, synchronized=source == "QR_OFFLINE")
+
+    @staticmethod
+    def _success_response(mark, profile, synchronized=False):
         return JsonResponse({
             "ok": True,
-            "document": document,
-            "name": str(profile.user).strip() or document,
+            "document": mark.worker_document,
+            "name": str(profile.user).strip() or mark.worker_document,
             "photoUrl": reverse("boletas:worker_photo", kwargs={"pk": profile.pk}),
-            "action": action,
-            "actionLabel": "INGRESO" if action == "IN" else "SALIDA",
+            "action": mark.action,
+            "actionLabel": "INGRESO" if mark.action == "IN" else "SALIDA",
             "markedAt": timezone.localtime(mark.marked_at).strftime("%d/%m/%Y %H:%M:%S"),
+            "synchronized": synchronized,
         })
 
 
@@ -189,6 +214,29 @@ class AttendanceScreenView(AttendanceKioskView):
 
     def get(self, request):
         return render(request, "boletas/attendance_screen.html")
+
+
+class AttendanceServiceWorkerView(AttendanceAdminMixin, View):
+    def get(self, request):
+        script = """
+const CACHE = 'agroservice-attendance-v1';
+const SCREEN = '/boletas/marcaciones/pantalla/';
+self.addEventListener('install', event => event.waitUntil(caches.open(CACHE).then(cache => cache.add(SCREEN)).then(() => self.skipWaiting())));
+self.addEventListener('activate', event => event.waitUntil(self.clients.claim()));
+self.addEventListener('fetch', event => {
+  if (event.request.method !== 'GET') return;
+  const url = new URL(event.request.url);
+  if (url.pathname === SCREEN) {
+    event.respondWith(fetch(event.request).then(response => { const copy = response.clone(); caches.open(CACHE).then(cache => cache.put(SCREEN, copy)); return response; }).catch(() => caches.match(SCREEN)));
+  } else if (url.pathname.startsWith('/static/')) {
+    event.respondWith(caches.match(event.request).then(cached => cached || fetch(event.request).then(response => { const copy = response.clone(); caches.open(CACHE).then(cache => cache.put(event.request, copy)); return response; })));
+  }
+});
+"""
+        response = HttpResponse(script, content_type="application/javascript")
+        response["Service-Worker-Allowed"] = "/boletas/marcaciones/"
+        response["Cache-Control"] = "no-cache"
+        return response
 
 
 def _confirmed_signature(slip, period):

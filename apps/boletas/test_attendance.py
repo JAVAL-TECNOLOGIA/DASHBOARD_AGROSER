@@ -46,10 +46,12 @@ class AttendanceKioskTests(TestCase):
         self.url = reverse('boletas:attendance')
         self.screen_url = reverse('boletas:attendance_screen')
 
-    def post_mark(self, document='01234567', source='QR'):
+    def post_mark(self, document='01234567', source='QR', **extra):
+        payload = {'document': document, 'source': source}
+        payload.update(extra)
         return self.client.post(
             self.url,
-            data=json.dumps({'document': document, 'source': source}),
+            data=json.dumps(payload),
             content_type='application/json',
         )
 
@@ -98,3 +100,29 @@ class AttendanceKioskTests(TestCase):
     def test_invalid_qr_is_rejected(self):
         self.client.force_login(self.admin)
         self.assertEqual(self.post_mark('123').status_code, 400)
+
+    def test_offline_mark_keeps_capture_time_and_is_idempotent(self):
+        self.client.force_login(self.admin)
+        captured = timezone.now() - timedelta(hours=1)
+        event_id = 'offline-event-12345678'
+        first = self.post_mark(
+            source='QR_OFFLINE', clientEventId=event_id,
+            capturedAt=captured.isoformat(),
+        )
+        self.assertEqual(first.status_code, 200)
+        self.assertTrue(first.json()['synchronized'])
+        mark = AttendanceMark.objects.get(client_event_id=event_id)
+        self.assertAlmostEqual(mark.marked_at.timestamp(), captured.timestamp(), delta=1)
+        repeated = self.post_mark(
+            source='QR_OFFLINE', clientEventId=event_id,
+            capturedAt=captured.isoformat(),
+        )
+        self.assertEqual(repeated.status_code, 200)
+        self.assertEqual(AttendanceMark.objects.filter(client_event_id=event_id).count(), 1)
+
+    def test_service_worker_is_available_to_admin(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(reverse('boletas:attendance_service_worker'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response['Content-Type'], 'application/javascript')
+        self.assertContains(response, 'agroservice-attendance-v1')

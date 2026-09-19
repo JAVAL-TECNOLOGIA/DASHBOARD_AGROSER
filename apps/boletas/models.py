@@ -148,6 +148,7 @@ class PortalContent(models.Model):
 class AttendanceMark(models.Model):
     worker_document = models.CharField(max_length=20, db_index=True)
     marked_at = models.DateTimeField(auto_now_add=True)
+    client_event_id = models.CharField(max_length=64, unique=True, null=True, blank=True)
     action = models.CharField(max_length=10, choices=(("IN", "Ingreso"), ("OUT", "Salida")), default="IN")
     source = models.CharField(max_length=20, default="QR")
     marked_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
