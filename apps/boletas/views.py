@@ -9,6 +9,7 @@ from urllib.parse import urlencode
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.contrib.auth.views import redirect_to_login
 from django.core.paginator import Paginator
 from django.db import DatabaseError, transaction
 from django.http import FileResponse, Http404, HttpResponse, JsonResponse
@@ -103,6 +104,14 @@ class PaySlipPermissionMixin(LoginRequiredMixin, PermissionRequiredMixin):
 
 class AttendanceAdminMixin(PaySlipPermissionMixin):
     permission_required = "boletas.ver_marcaciones"
+
+    def handle_no_permission(self):
+        if not self.request.user.is_authenticated:
+            return redirect_to_login(
+                self.request.get_full_path(), self.get_login_url(),
+                self.get_redirect_field_name(),
+            )
+        return super().handle_no_permission()
 
 
 @method_decorator(never_cache, name="dispatch")

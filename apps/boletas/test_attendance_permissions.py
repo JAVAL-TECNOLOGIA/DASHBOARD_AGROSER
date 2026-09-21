@@ -41,3 +41,9 @@ class AttendancePermissionTests(TestCase):
         self.worker.save(update_fields=['admin'])
         self.client.force_login(self.worker)
         self.assertEqual(self.client.get(reverse('boletas:attendance')).status_code, 200)
+
+    def test_anonymous_station_redirects_to_login(self):
+        response = self.client.get(reverse('boletas:attendance_screen'))
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/accounts/login/', response.url)
+        self.assertIn('next=', response.url)
