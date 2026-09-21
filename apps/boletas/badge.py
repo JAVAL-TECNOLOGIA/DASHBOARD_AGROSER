@@ -1,4 +1,4 @@
-"""Fotocheck imprimible de fondo blanco; el QR contiene el documento."""
+"""Fotocheck con código de barras Code 128 del documento más el sufijo 1."""
 from io import BytesIO
 from xml.sax.saxutils import escape
 from PIL import Image, ImageOps
@@ -46,10 +46,14 @@ def draw_worker_badge(pdf, document, name, position, photo_file, x=0, y=0):
     paragraph(position, 28, 7, 6)
     pdf.setFont('Helvetica-Bold', 8)
     pdf.drawString(x + 30 * mm, y + 17 * mm, 'Documento: ' + document)
-    pdf.setFont('Helvetica', 6)
-    pdf.drawString(x + 30 * mm, y + 12 * mm, 'Identificación del trabajador')
-    qr = createBarcodeDrawing('QR', value=document, width=18 * mm, height=18 * mm, barLevel='M')
-    renderPDF.draw(qr, pdf, x + 63 * mm, y + 3 * mm)
+    barcode_value = document + '1'
+    barcode = createBarcodeDrawing(
+        'Code128', value=barcode_value, barWidth=0.36 * mm,
+        barHeight=10 * mm, humanReadable=False,
+    )
+    renderPDF.draw(barcode, pdf, x + 30 * mm + (51 * mm - barcode.width) / 2, y + 5 * mm)
+    pdf.setFont('Helvetica', 5.5)
+    pdf.drawCentredString(x + 55.5 * mm, y + 2 * mm, barcode_value)
     pdf.setFont('Helvetica', 5.5)
     pdf.drawString(x + 4 * mm, y + 4 * mm, 'AGROSERVICE · ICA SUR')
 

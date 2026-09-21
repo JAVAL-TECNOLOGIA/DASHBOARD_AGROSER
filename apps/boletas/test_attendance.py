@@ -102,6 +102,41 @@ class AttendanceKioskTests(TestCase):
         self.client.force_login(self.admin)
         self.assertEqual(self.post_mark('123').status_code, 400)
 
+    def test_barcode_suffix_is_removed_before_recording(self):
+        self.client.force_login(self.admin)
+        response = self.post_mark(source='BARCODE', barcode='012345671')
+        self.assertEqual(response.status_code, 200)
+        mark = AttendanceMark.objects.get()
+        self.assertEqual(mark.worker_document, '01234567')
+        self.assertEqual(mark.source, 'BARCODE')
+        self.assertEqual(self.post_mark(source='BARCODE', barcode='012345672').status_code, 400)
+        self.assertEqual(self.post_mark(source='BARCODE', barcode='0025987241').status_code, 400)
+
+    def test_nine_digit_worker_barcode_preserves_leading_zeroes(self):
+        foreign_worker = User.objects.create_user(
+            '002598724', 'foreign-worker@example.test', 'Ana', 'Extranjera', 'test-password',
+        )
+        WorkerIdentityProfile.objects.create(
+            user=foreign_worker, worker_document='002598724',
+            photo=SimpleUploadedFile('foreign-photo.png', image_bytes(), content_type='image/png'),
+            signature=SimpleUploadedFile('foreign-signature.png', image_bytes(), content_type='image/png'),
+        )
+        PayslipAcknowledgement.objects.create(
+            user=foreign_worker, worker_document='002598724',
+            period_start=timezone.localdate().replace(day=1), period_end=timezone.localdate(),
+            payslip_hash='d' * 64, signer_name='Ana Extranjera',
+        )
+        self.client.force_login(self.admin)
+        response = self.post_mark(document='002598724', source='BARCODE', barcode='0025987241')
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(AttendanceMark.objects.get().worker_document, '002598724')
+
+    def test_barcode_offline_records_synchronized_source(self):
+        self.client.force_login(self.admin)
+        response = self.post_mark(source='BARCODE_OFFLINE', barcode='012345671')
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()['synchronized'])
+
     def test_offline_mark_keeps_capture_time_and_is_idempotent(self):
         self.client.force_login(self.admin)
         captured = timezone.now() - timedelta(hours=1)
@@ -126,4 +161,4 @@ class AttendanceKioskTests(TestCase):
         response = self.client.get(reverse('boletas:attendance_service_worker'))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response['Content-Type'], 'application/javascript')
-        self.assertContains(response, 'agroservice-attendance-v1')
+        self.assertContains(response, 'agroservice-attendance-v2')

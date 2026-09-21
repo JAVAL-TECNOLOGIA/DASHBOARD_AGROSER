@@ -10,6 +10,7 @@ from apps.user.models import User
 
 from .documents import valid_worker_document
 from .badge import build_worker_badge
+from reportlab.graphics.barcode import createBarcodeDrawing
 from .worker_forms import WorkerLoginForm
 
 
@@ -22,11 +23,14 @@ class WorkerDocumentValidationTests(SimpleTestCase):
         for value in ('1234567', '1234567890', '00259872X', '１２３４５６７８９'):
             self.assertFalse(valid_worker_document(value))
 
-    def test_badge_qr_accepts_nine_digits(self):
+    def test_badge_barcode_appends_one_to_nine_digit_document(self):
         photo = BytesIO()
         Image.new('RGB', (100, 100), 'white').save(photo, format='PNG')
         photo.seek(0)
-        result = build_worker_badge('002598724', 'Prueba Extranjero', 'Operario', photo)
+        with patch('apps.boletas.badge.createBarcodeDrawing', wraps=createBarcodeDrawing) as barcode:
+            result = build_worker_badge('002598724', 'Prueba Extranjero', 'Operario', photo)
+        self.assertEqual(barcode.call_args.args, ('Code128',))
+        self.assertEqual(barcode.call_args.kwargs['value'], '0025987241')
         self.assertTrue(result.startswith(b'%PDF'))
 
 

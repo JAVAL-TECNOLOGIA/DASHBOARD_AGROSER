@@ -10,9 +10,9 @@
 </div>
 <section class="border rounded p-3 mb-4">
     <h4 class="h5">Fotocheck</h4>
-    <p class="small text-muted">Fondo blanco, fotografía y código QR con el documento del trabajador. Formato para imprimir: 86 × 54 mm.</p>
-    {% if badge_eligible %}<a class="btn btn-primary" href="{{ badge_url }}" target="_blank" rel="noopener">Generar fotocheck con QR</a>
-    {% else %}<button class="btn btn-secondary" disabled>Generar fotocheck con QR</button><p class="small text-muted mt-2 mb-0">Requiere fotografía, firma y una boleta confirmada en el periodo.</p>{% endif %}
+    <p class="small text-muted">Fondo blanco, fotografía y código de barras con el documento más el dígito 1. Formato para imprimir: 86 × 54 mm.</p>
+    {% if badge_eligible %}<a class="btn btn-primary" href="{{ badge_url }}" target="_blank" rel="noopener">Generar fotocheck con código de barras</a>
+    {% else %}<button class="btn btn-secondary" disabled>Generar fotocheck con código de barras</button><p class="small text-muted mt-2 mb-0">Requiere fotografía, firma y una boleta confirmada en el periodo.</p>{% endif %}
 </section>
 <h4 class="h5 mt-4">Boletas del mes — {{ period.start|date:"m/Y" }}</h4>
 <p class="small text-muted">Documentos PDF disponibles a partir de la planilla del mes seleccionado.</p>

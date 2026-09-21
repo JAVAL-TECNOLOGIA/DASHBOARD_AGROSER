@@ -148,13 +148,18 @@ class AttendanceKioskView(AttendanceAdminMixin, View):
             payload = json.loads(request.body or b"{}")
         except (TypeError, ValueError):
             payload = request.POST
-        document = str(payload.get("document") or "").strip()
         source = str(payload.get("source") or "QR").strip().upper()
+        document = str(payload.get("document") or "").strip()
+        if source in ("BARCODE", "BARCODE_OFFLINE"):
+            match = re.fullmatch(r"([0-9]{8,9})1", str(payload.get("barcode") or "").strip())
+            if not match or (document and document != match.group(1)):
+                return JsonResponse({"error": "El código de barras no corresponde al documento."}, status=400)
+            document = match.group(1)
         client_event_id = str(payload.get("clientEventId") or "").strip()
         captured_at_value = str(payload.get("capturedAt") or "").strip()
         if not valid_worker_document(document):
-            return JsonResponse({"error": "El QR no contiene un DNI válido."}, status=400)
-        if source not in ("QR", "QR_OFFLINE", "MANUAL"):
+            return JsonResponse({"error": "El documento leído no es válido."}, status=400)
+        if source not in ("BARCODE", "BARCODE_OFFLINE", "QR", "QR_OFFLINE", "MANUAL"):
             source = "QR"
         if client_event_id and not re.fullmatch(r"[A-Za-z0-9-]{8,64}", client_event_id):
             return JsonResponse({"error": "El identificador de la marcación no es válido."}, status=400)
@@ -199,7 +204,7 @@ class AttendanceKioskView(AttendanceAdminMixin, View):
         if captured_at_value:
             AttendanceMark.objects.filter(pk=mark.pk).update(marked_at=captured_at)
             mark.marked_at = captured_at
-        return self._success_response(mark, profile, synchronized=source == "QR_OFFLINE")
+        return self._success_response(mark, profile, synchronized=source in ("BARCODE_OFFLINE", "QR_OFFLINE"))
 
     @staticmethod
     def _success_response(mark, profile, synchronized=False):
@@ -217,7 +222,7 @@ class AttendanceKioskView(AttendanceAdminMixin, View):
 
 @method_decorator(never_cache, name="dispatch")
 class AttendanceScreenView(AttendanceKioskView):
-    """Full-screen station for a USB/serial QR reader acting as a keyboard."""
+    """Full-screen station for a USB/serial barcode reader acting as a keyboard."""
 
     def get(self, request):
         return render(request, "boletas/attendance_screen.html")
@@ -226,7 +231,7 @@ class AttendanceScreenView(AttendanceKioskView):
 class AttendanceServiceWorkerView(AttendanceAdminMixin, View):
     def get(self, request):
         script = """
-const CACHE = 'agroservice-attendance-v1';
+const CACHE = 'agroservice-attendance-v2';
 const SCREEN = '/boletas/marcaciones/pantalla/';
 self.addEventListener('install', event => event.waitUntil(caches.open(CACHE).then(cache => cache.add(SCREEN)).then(() => self.skipWaiting())));
 self.addEventListener('activate', event => event.waitUntil(self.clients.claim()));

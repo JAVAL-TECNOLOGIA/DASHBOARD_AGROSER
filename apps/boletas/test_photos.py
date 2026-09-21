@@ -180,13 +180,14 @@ class PayslipPhotoTests(TestCase):
         self.profile.photo.delete()
         self.assertEqual(self.client.get(url, {'month': '2026-08'}).status_code, 409)
 
-    def test_badge_qr_keeps_leading_zero(self):
+    def test_badge_barcode_keeps_leading_zero_and_appends_one(self):
         from .badge import build_worker_badge
         from io import BytesIO
         from reportlab.graphics.barcode import createBarcodeDrawing
-        with patch('apps.boletas.badge.createBarcodeDrawing', wraps=createBarcodeDrawing) as qr:
+        with patch('apps.boletas.badge.createBarcodeDrawing', wraps=createBarcodeDrawing) as barcode:
             build_worker_badge('01234567', 'Prueba', 'Operario', BytesIO(image_bytes()))
-        self.assertEqual(qr.call_args.kwargs['value'], '01234567')
+        self.assertEqual(barcode.call_args.args, ('Code128',))
+        self.assertEqual(barcode.call_args.kwargs['value'], '012345671')
 
     def test_employer_signature_is_default_for_other_payslip_formats(self):
         from .periods import month_range
