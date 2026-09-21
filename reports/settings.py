@@ -6,21 +6,23 @@ from apps.connection.odbc_config import get_django_db_options
 # Define la ruta base del proyecto
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Fuente de boletas ERG para el arranque habitual de producción y WSGI.
-# La cuenta del servicio debe tener acceso de lectura a esta carpeta.
-ERG_TXT_ROOT = os.getenv(
-    'ERG_TXT_ROOT',
-    r'\\192.168.100.3\NISIRA\NISIRA_GCH\AGROSERVICE\EMPLEADOS REMIGEN GENERAL',
-)
-ERA_TXT_ROOT = os.getenv(
-    'ERA_TXT_ROOT',
-    r'\\192.168.100.3\NISIRA\NISIRA_GCH\AGROSERVICE\EMPLEADOS REGIMEN AGRARIO',
-)
-OBP_TXT_ROOT = os.getenv(
-    'OBP_TXT_ROOT',
-    r'\\192.168.100.3\NISIRA\NISIRA_GCH\AGROSERVICE\OBREROS PLANTA',
-)
-OBR_TXT_ROOT = os.getenv('OBR_TXT_ROOT', r'\\192.168.100.3\NISIRA\NISIRA_GCH\AGROSERVICE\OBREROS PLANTA GENERAL')
+# En el servidor NISIRA está compartido desde D:\NISIRA. Leer el disco local
+# evita depender de una sesión SMB para generar los PDF en producción.
+# Desde otros equipos se conserva el acceso por la VPN a la carpeta compartida.
+def _payroll_txt_root(setting_name, folder_name):
+    configured = os.getenv(setting_name)
+    if configured:
+        return configured
+    local_root = Path(r'D:\NISIRA') / 'NISIRA_GCH' / 'AGROSERVICE' / folder_name
+    if local_root.is_dir():
+        return str(local_root)
+    return str(Path(r'\\192.168.100.3\NISIRA') / 'NISIRA_GCH' / 'AGROSERVICE' / folder_name)
+
+
+ERG_TXT_ROOT = _payroll_txt_root('ERG_TXT_ROOT', 'EMPLEADOS REMIGEN GENERAL')
+ERA_TXT_ROOT = _payroll_txt_root('ERA_TXT_ROOT', 'EMPLEADOS REGIMEN AGRARIO')
+OBP_TXT_ROOT = _payroll_txt_root('OBP_TXT_ROOT', 'OBREROS PLANTA')
+OBR_TXT_ROOT = _payroll_txt_root('OBR_TXT_ROOT', 'OBREROS PLANTA GENERAL')
 
 
 # Ruta para archivos estáticos
