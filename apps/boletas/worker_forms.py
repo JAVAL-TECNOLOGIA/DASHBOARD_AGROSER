@@ -6,6 +6,7 @@ from io import BytesIO
 import base64
 import binascii
 import uuid
+from .documents import valid_worker_document
 
 
 class WorkerIdentityForm(forms.Form):
@@ -61,14 +62,14 @@ class WorkerIdentityForm(forms.Form):
 
 class WorkerLoginForm(forms.Form):
     document = forms.CharField(
-        label="DNI",
+        label="DNI o código de extranjero",
         max_length=20,
         widget=forms.TextInput(
             attrs={
                 "class": "form-control form-control-lg",
                 "inputmode": "numeric",
                 "autocomplete": "username",
-                "placeholder": "Número de DNI",
+                "placeholder": "DNI o código de 9 dígitos",
             }
         ),
     )
@@ -85,8 +86,8 @@ class WorkerLoginForm(forms.Form):
 
     def clean_document(self):
         value = self.cleaned_data["document"].strip()
-        if not value.isdigit() or len(value) != 8:
-            raise forms.ValidationError("Ingresa un DNI válido de 8 dígitos.")
+        if not valid_worker_document(value):
+            raise forms.ValidationError("Ingresa un DNI de 8 dígitos o un código de extranjero de 9 dígitos.")
         return value
 
 
@@ -112,7 +113,7 @@ class WorkerPasswordChangeForm(forms.Form):
         if first and second and first != second:
             self.add_error("new_password2", "Las contraseñas no coinciden.")
         if first and self.user and first == self.user.username:
-            self.add_error("new_password1", "La nueva contraseña no puede ser tu DNI.")
+            self.add_error("new_password1", "La nueva contraseña no puede ser tu documento.")
         return cleaned
 
 

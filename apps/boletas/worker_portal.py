@@ -239,13 +239,13 @@ class WorkerLoginView(View):
             form.add_error(None, "No fue posible validar tus datos en este momento.")
             return render(request, self.template_name, {"form": form})
         if not identity:
-            form.add_error(None, "DNI o contraseña incorrectos.")
+            form.add_error(None, "Documento o contraseña incorrectos.")
             return render(request, self.template_name, {"form": form})
 
         user = User.objects.filter(username=document).first()
         if user is None:
             if password != document:
-                form.add_error(None, "DNI o contraseña incorrectos.")
+                form.add_error(None, "Documento o contraseña incorrectos.")
                 return render(request, self.template_name, {"form": form})
             email = identity.get("email") or "{}@boletas.local".format(document)
             if User.objects.filter(email=email).exists():
@@ -266,7 +266,7 @@ class WorkerLoginView(View):
 
         authenticated = authenticate(request, username=document, password=password)
         if authenticated is None:
-            form.add_error(None, "DNI o contraseña incorrectos.")
+            form.add_error(None, "Documento o contraseña incorrectos.")
             return render(request, self.template_name, {"form": form})
         login(request, authenticated)
         if authenticated.check_password(document):

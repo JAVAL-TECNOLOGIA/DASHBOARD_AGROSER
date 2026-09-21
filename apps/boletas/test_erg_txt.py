@@ -60,6 +60,15 @@ class ErgTxtTests(SimpleTestCase):
         self.path.rename(target)
         self.assertEqual(locate_payroll(self.root, '202608', '01234567'), target)
 
+    def test_employee_txt_accepts_nine_digit_foreign_code(self):
+        self.path = self.path.with_name('002598724_N.txt')
+        self.header['codigo'] = '002598724'
+        self.header['documento'] = '002598724'
+        self.detail['codigo'] = '002598724'
+        self.write()
+        data = read_payroll(self.path, '202608', '002598724')
+        self.assertEqual(data['header']['documento'], '002598724')
+
     def test_week_number_selects_the_matching_folder_when_worker_has_multiple_weeks(self):
         second = self.root / '20260842-20260842' / 'normal'
         second.mkdir(parents=True)

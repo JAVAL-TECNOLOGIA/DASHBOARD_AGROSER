@@ -18,7 +18,7 @@
 <main class="container py-4">
     {% for message in messages %}<div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>{% endfor %}
     <div class="d-flex flex-column flex-md-row justify-content-between mb-4">
-        <div><h2 class="mb-1">{{ request.user.first_name }} {{ request.user.last_name }}</h2><div class="text-muted">DNI {{ identity.document }}</div></div>
+        <div><h2 class="mb-1">{{ request.user.first_name }} {{ request.user.last_name }}</h2><div class="text-muted">Documento {{ identity.document }}</div></div>
         <span class="badge badge-primary align-self-start p-2 mt-2">{{ period.label }}</span>
     </div>
     <div class="nav nav-pills nav-fill document-tabs d-grid mb-4">

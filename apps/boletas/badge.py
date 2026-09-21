@@ -1,4 +1,4 @@
-"""Fotocheck imprimible de fondo blanco; el QR contiene únicamente el DNI."""
+"""Fotocheck imprimible de fondo blanco; el QR contiene el documento."""
 from io import BytesIO
 from xml.sax.saxutils import escape
 from PIL import Image, ImageOps
@@ -11,6 +11,7 @@ from reportlab.lib.utils import ImageReader
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.platypus import Paragraph
 from reportlab.pdfgen import canvas
+from .documents import valid_worker_document
 
 
 BADGE_WIDTH = 86 * mm
@@ -18,8 +19,8 @@ BADGE_HEIGHT = 54 * mm
 
 
 def draw_worker_badge(pdf, document, name, position, photo_file, x=0, y=0):
-    if not document.isdigit() or len(document) != 8:
-        raise ValueError('El DNI debe tener 8 dígitos.')
+    if not valid_worker_document(document):
+        raise ValueError('El documento debe tener 8 o 9 dígitos.')
     pdf.setFillColor(colors.white)
     pdf.rect(x, y, BADGE_WIDTH, BADGE_HEIGHT, fill=1, stroke=0)
     pdf.setFillColor(colors.HexColor('#12645d'))
@@ -44,7 +45,7 @@ def draw_worker_badge(pdf, document, name, position, photo_file, x=0, y=0):
     paragraph(name, 40, 8, 11)
     paragraph(position, 28, 7, 6)
     pdf.setFont('Helvetica-Bold', 8)
-    pdf.drawString(x + 30 * mm, y + 17 * mm, 'DNI: ' + document)
+    pdf.drawString(x + 30 * mm, y + 17 * mm, 'Documento: ' + document)
     pdf.setFont('Helvetica', 6)
     pdf.drawString(x + 30 * mm, y + 12 * mm, 'Identificación del trabajador')
     qr = createBarcodeDrawing('QR', value=document, width=18 * mm, height=18 * mm, barLevel='M')

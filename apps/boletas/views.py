@@ -23,6 +23,7 @@ from django.views.decorators.cache import never_cache
 from apps.user.models import User
 
 from .periods import DateRange, month_range, resolve_date_range, week_value_for_date
+from .documents import valid_worker_document
 from .analytics import build_payroll_summary
 from .models import AttendanceMark, PayrollRelease, PayslipAcknowledgement, WorkerIdentityProfile
 from .services import PAYROLL_TYPES, PaySlipService
@@ -155,7 +156,7 @@ class AttendanceKioskView(AttendanceAdminMixin, View):
         source = str(payload.get("source") or "QR").strip().upper()
         client_event_id = str(payload.get("clientEventId") or "").strip()
         captured_at_value = str(payload.get("capturedAt") or "").strip()
-        if not document.isdigit() or len(document) != 8:
+        if not valid_worker_document(document):
             return JsonResponse({"error": "El QR no contiene un DNI válido."}, status=400)
         if source not in ("QR", "QR_OFFLINE", "MANUAL"):
             source = "QR"
@@ -300,7 +301,7 @@ def _return_to_payslips(request):
 
 class WorkerPasswordResetView(PaySlipPermissionMixin, View):
     def post(self, request, document):
-        if not document.isdigit() or len(document) != 8:
+        if not valid_worker_document(document):
             messages.error(request, 'El DNI indicado no es válido.')
             return _return_to_payslips(request)
         worker = User.objects.filter(username=document).first()
@@ -315,7 +316,7 @@ class WorkerPasswordResetView(PaySlipPermissionMixin, View):
 
 class WorkerIdentityResetView(PaySlipPermissionMixin, View):
     def post(self, request, document):
-        if not document.isdigit() or len(document) != 8:
+        if not valid_worker_document(document):
             messages.error(request, 'El DNI indicado no es válido.')
             return _return_to_payslips(request)
 
@@ -396,8 +397,8 @@ class WorkerBadgeView(PaySlipPermissionMixin, View):
         from .badge import build_worker_badge
         from .worker_portal import worker_slips
         from .periods import portal_month_range as month_range
-        if not document.isdigit() or len(document) != 8:
-            return HttpResponse('El DNI debe tener 8 dígitos.', status=400)
+        if not valid_worker_document(document):
+            return HttpResponse('El documento debe tener 8 o 9 dígitos.', status=400)
         try:
             period = month_range(request.GET.get('month', ''))
         except (ValueError, TypeError):

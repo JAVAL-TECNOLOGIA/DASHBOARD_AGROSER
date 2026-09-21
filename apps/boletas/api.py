@@ -21,6 +21,7 @@ from django.views.decorators.http import require_http_methods
 from apps.user.models import User
 
 from .models import AttendanceMark, PayrollRelease, PayslipAcknowledgement, PayslipView, PortalContent, WorkerAccessRestriction, WorkerIdentityProfile
+from .documents import valid_worker_document
 from .periods import DateRange, portal_month_range as month_range
 from .services import PaySlipService
 from .views import PaySlipPdfView, _official_payroll_period
@@ -67,7 +68,7 @@ def admin_attendance_api(request):
         return _json({"error": "SesiÃ³n administrativa no vÃ¡lida."}, 401)
     if request.method == "POST":
         data = _body(request); document = str(data.get("document") or "").strip(); action = str(data.get("action") or "IN").upper()
-        if not document.isdigit() or len(document) != 8 or action not in ("IN", "OUT"):
+        if not valid_worker_document(document) or action not in ("IN", "OUT"):
             return _json({"error": "DNI o tipo de marcaciÃ³n invÃ¡lido."}, 400)
         mark = AttendanceMark.objects.create(worker_document=document, action=action, marked_by=user)
         return _json({"ok": True, "document": document, "action": action, "markedAt": mark.marked_at.isoformat()})
@@ -285,7 +286,7 @@ def login_api(request):
         return _json({"token": _token(admin, "admin"), "role": "admin", "mustChangePassword": False,
                       "name": _full_name(admin)})
 
-    if not username.isdigit() or len(username) != 8:
+    if not valid_worker_document(username):
         return _json({"error": "DNI o contraseña incorrectos."}, 401)
     if WorkerAccessRestriction.objects.filter(worker_document=username, disabled=True).exists():
         return _json({"error": "Tu acceso al portal fue deshabilitado. Comunícate con Recursos Humanos."}, 403)
@@ -529,7 +530,7 @@ def admin_reset_password_api(request):
     if not user:
         return _json({"error": "SesiÃ³n administrativa no vÃ¡lida."}, 401)
     document = str(_body(request).get("document") or "").strip()
-    if not document.isdigit() or len(document) != 8:
+    if not valid_worker_document(document):
         return _json({"error": "DNI no vÃ¡lido."}, 400)
     worker = User.objects.filter(username=document).first()
     if not worker:
@@ -673,7 +674,7 @@ def admin_worker_access_api(request):
         return _json({"error": "Sesión administrativa no válida."}, 401)
     data = _body(request)
     document = str(data.get("document") or "").strip()
-    if not document.isdigit() or len(document) != 8:
+    if not valid_worker_document(document):
         return _json({"error": "DNI no válido."}, 400)
     disabled = data.get("disabled") is True
     restriction, unused_created = WorkerAccessRestriction.objects.update_or_create(
@@ -696,7 +697,7 @@ def admin_worker_detail_api(request):
     if not user:
         return _json({"error": "Sesión administrativa no válida."}, 401)
     document = str(request.GET.get("document") or "").strip()
-    if not document.isdigit() or len(document) != 8:
+    if not valid_worker_document(document):
         return _json({"error": "DNI no válido."}, 400)
     try:
         payroll_type = str(request.GET.get("payroll") or "").strip().upper()
@@ -735,7 +736,7 @@ def admin_worker_badge_api(request):
     if not user:
         return _json({"error": "Sesión administrativa no válida."}, 401)
     document = str(request.GET.get("document") or "").strip()
-    if not document.isdigit() or len(document) != 8:
+    if not valid_worker_document(document):
         return _json({"error": "DNI no válido."}, 400)
     profile = WorkerIdentityProfile.objects.filter(worker_document=document).first()
     if not profile or not profile.photo or not profile.signature:

@@ -45,7 +45,7 @@ def read_payroll(path, period, document=None, payroll_type='ERG'):
     if not required.issubset(header):
         raise PayrollTextError('Faltan campos obligatorios de cabecera.')
     payroll_type = str(payroll_type or 'ERG').strip().upper()
-    document_pattern = r'\d{8,12}' if payroll_type in ('OBP', 'OBR') else r'\d{8}'
+    document_pattern = r'\d{8,12}' if payroll_type in ('OBP', 'OBR') else r'\d{8,9}'
     dni = header['documento']
     if not re.fullmatch(document_pattern, dni) or (document and dni != document) or path.stem.split('_')[0] != dni:
         raise PayrollTextError('El DNI del archivo no coincide con su contenido.')

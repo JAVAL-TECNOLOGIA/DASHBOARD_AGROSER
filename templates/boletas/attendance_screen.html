@@ -138,11 +138,11 @@
     }
     async function registerScan(rawValue) {
         if (busy) return;
-        const match = String(rawValue || '').match(/(?:^|\D)(\d{8})(?:\D|$)/);
+        const match = String(rawValue || '').match(/(?:^|\D)(\d{8,9})(?:\D|$)/);
         input.value = '';
         if (!match) {
             panel.className = 'panel error';
-            content.innerHTML = '<div class="action">LECTURA INVÁLIDA</div><div class="hint">El QR no contiene un DNI válido</div>';
+            content.innerHTML = '<div class="action">LECTURA INVÁLIDA</div><div class="hint">El QR no contiene un documento válido</div>';
             clearTimeout(resetTimer); resetTimer = setTimeout(resetPanel, 4000); return;
         }
         busy = true;
@@ -150,7 +150,7 @@
         const queue = readQueue(); queue.push(item); writeQueue(queue);
         if (!navigator.onLine) {
             panel.className = 'panel exit';
-            content.innerHTML = '<div class="employee-name">DNI ' + escapeHtml(item.document) + '</div><div class="action">GUARDADO OFFLINE</div><div class="hint">Se sincronizará automáticamente al recuperar la conexión</div>';
+            content.innerHTML = '<div class="employee-name">Documento ' + escapeHtml(item.document) + '</div><div class="action">GUARDADO OFFLINE</div><div class="hint">Se sincronizará automáticamente al recuperar la conexión</div>';
             status.textContent = '✓ Lectura guardada de forma segura en este equipo';
             clearTimeout(resetTimer); resetTimer = setTimeout(resetPanel, 6000);
             busy = false; focusReader(); return;
@@ -164,7 +164,7 @@
                 item.offline = true;
                 writeQueue(readQueue().map(function(row) { return row.id === item.id ? item : row; }));
                 panel.className = 'panel exit';
-                content.innerHTML = '<div class="employee-name">DNI ' + escapeHtml(item.document) + '</div><div class="action">GUARDADO PENDIENTE</div><div class="hint">El servidor no responde. Se sincronizará automáticamente.</div>';
+                content.innerHTML = '<div class="employee-name">Documento ' + escapeHtml(item.document) + '</div><div class="action">GUARDADO PENDIENTE</div><div class="hint">El servidor no responde. Se sincronizará automáticamente.</div>';
                 status.textContent = '✓ Lectura guardada de forma segura en este equipo';
             } else {
                 panel.className = 'panel error';
