@@ -10,7 +10,7 @@
     <style>
         :root { --agro: #17683a; --ink: #15251c; }
         * { box-sizing: border-box; }
-        body { margin: 0; min-height: 100vh; background: linear-gradient(145deg, #eef7f0, #d5eadb); color: var(--ink); font-family: Arial, sans-serif; overflow: hidden; }
+        body { margin: 0; min-height: 100vh; background: linear-gradient(145deg, #eef7f0, #d5eadb); color: var(--ink); font-family: Arial, sans-serif; }
         .station { min-height: 100vh; display: grid; grid-template-rows: auto 1fr auto; padding: 28px 4vw 22px; }
         .station-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid rgba(23,104,58,.18); padding-bottom: 18px; }
         .brand { display: flex; align-items: center; gap: 18px; }
@@ -22,7 +22,11 @@
         .screen-center { display: grid; place-items: center; align-content: center; gap: 14px; padding: 3vh 0; }
         .scan-display { width: min(100%, 1080px); padding: 12px 20px; border-radius: 14px; background: #fff; font-size: clamp(16px, 2vw, 23px); text-align: center; overflow-wrap: anywhere; }
         .scan-display strong { font-family: monospace; letter-spacing: .08em; }
-        .panel { width: min(100%, 1080px); min-height: 54vh; background: rgba(255,255,255,.96); border-radius: 28px; box-shadow: 0 22px 70px rgba(22,74,43,.16); display: grid; place-items: center; padding: clamp(28px, 5vw, 60px); text-align: center; border: 5px solid transparent; transition: border-color .2s, background .2s; }
+        .reader-form { width: min(100%, 1080px); text-align: center; }
+        .reader-form label { display: block; margin-bottom: 7px; font-size: 18px; font-weight: 700; }
+        #reader-input { display: block; width: 100%; min-height: 62px; padding: 10px 18px; border: 2px solid #9bbba8; border-radius: 14px; background: #fff; color: var(--ink); font: 700 clamp(22px, 3vw, 34px) monospace; letter-spacing: .12em; text-align: center; }
+        #reader-input:focus { outline: 3px solid rgba(23,104,58,.28); border-color: var(--agro); }
+        .panel { width: min(100%, 1080px); min-height: 46vh; background: rgba(255,255,255,.96); border-radius: 28px; box-shadow: 0 22px 70px rgba(22,74,43,.16); display: grid; place-items: center; padding: clamp(28px, 5vw, 60px); text-align: center; border: 5px solid transparent; transition: border-color .2s, background .2s; }
         .panel.success { border-color: #28a745; background: #f2fff6; }
         .panel.exit { border-color: #146dcc; background: #f1f7ff; }
         .panel.error { border-color: #d83a3a; background: #fff4f4; }
@@ -40,7 +44,6 @@
         .network-state.online { color: #146c38; background: #dff5e7; }
         .network-state.offline { color: #9c4d00; background: #fff0d5; }
         .pending-count { margin-left: 8px; }
-        #reader-input { position: fixed; left: -10000px; width: 1px; height: 1px; opacity: 0; }
         @media (max-width: 650px) { .station { padding: 18px; } .brand img { width: 54px; height: 54px; } .clock-date { display: none; } }
     </style>
 </head>
@@ -54,11 +57,15 @@
         <div class="panel" id="result-panel">
             <div id="result-content"><div class="barcode-symbol">▥</div><div class="prompt">ACERQUE SU FOTOCHECK AL LECTOR</div><div class="hint">El sistema está listo para leer el código de barras</div></div>
         </div>
-        <div class="scan-display" aria-live="polite">Código recibido: <strong id="scan-value">Esperando lectura…</strong></div>
+        <form class="reader-form" id="reader-form" autocomplete="off">
+            {% csrf_token %}
+            <label for="reader-input">Código de barras que está leyendo el lector</label>
+            <input id="reader-input" type="text" inputmode="numeric" placeholder="Escanee el código de barras" aria-label="Código de barras leído" spellcheck="false" autofocus>
+        </form>
+        <div class="scan-display" aria-live="polite">Último código recibido: <strong id="scan-value">Esperando lectura…</strong></div>
     </section>
     <footer class="status-bar"><span class="reader-ready" id="reader-status">● Lector conectado y esperando</span><span><span id="pending-count"></span> Presione F11 para pantalla completa</span></footer>
 </main>
-<form style="display:none">{% csrf_token %}<input id="reader-input" autocomplete="off" autofocus></form>
 <script>
 (function () {
     const input = document.getElementById('reader-input');
@@ -208,6 +215,7 @@
     input.addEventListener('keydown', function (event) {
         if (event.key === 'Enter' || event.key === 'Tab') { event.preventDefault(); submitReaderInput(); }
     });
+    document.getElementById('reader-form').addEventListener('submit', function (event) { event.preventDefault(); submitReaderInput(); });
     document.addEventListener('click', focusReader);
     window.addEventListener('focus', focusReader);
     window.addEventListener('online', async function () { updateConnection(); status.textContent = 'Sincronizando marcaciones pendientes…'; await syncQueue(); if (!readQueue().length) resetPanel(); });
