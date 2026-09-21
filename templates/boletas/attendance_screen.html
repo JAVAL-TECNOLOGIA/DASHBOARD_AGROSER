@@ -64,9 +64,11 @@
     const status = document.getElementById('reader-status');
     const networkState = document.getElementById('network-state');
     const pendingCount = document.getElementById('pending-count');
+    const loginUrl = '{% url "login" %}?next={% url "boletas:attendance_screen" %}';
     const queueKey = 'agroservice-attendance-queue-v1';
     let busy = false;
     let resetTimer = null;
+    let scanTimer = null;
 
     function escapeHtml(value) {
         const node = document.createElement('div'); node.textContent = value || ''; return node.innerHTML;
@@ -106,8 +108,12 @@
                 headers: {'Content-Type': 'application/json', 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value},
                 body: JSON.stringify({document: item.document, barcode: item.code || '', source: item.code ? (item.offline ? 'BARCODE_OFFLINE' : 'BARCODE') : 'LEGACY_OFFLINE', clientEventId: item.id, capturedAt: item.capturedAt})
         });
+        if (response.redirected || !String(response.headers.get('Content-Type') || '').includes('application/json')) {
+            const error = new Error('La sesión no está autorizada. Inicia sesión de nuevo con acceso a Marcaciones.');
+            error.status = 401; error.preserve = true; throw error;
+        }
         const data = await response.json();
-        if (!response.ok) { const error = new Error(data.error || 'No se pudo registrar la marcación.'); error.status = response.status; throw error; }
+        if (!response.ok) { const error = new Error(data.error || 'No se pudo registrar la marcación.'); error.status = response.status; error.preserve = response.status === 401 || response.status === 403; throw error; }
         return data;
     }
     async function syncQueue(targetId) {
@@ -120,8 +126,13 @@
                 if (item.id === targetId) targetResult = data;
                 queue = queue.filter(function(row) { return row.id !== item.id; }); writeQueue(queue);
             } catch (error) {
-                if (!error.status || error.status >= 500) {
+                if (error.preserve || !error.status || error.status >= 500) {
                     if (item.id === targetId) throw error;
+                    if (error.preserve) {
+                        panel.className = 'panel error';
+                        content.innerHTML = '<div class="action">ACCESO REQUERIDO</div><div class="hint">' + escapeHtml(error.message) + '</div><a class="btn btn-primary mt-4" href="' + loginUrl + '">Iniciar sesión</a>';
+                        status.textContent = 'Las lecturas pendientes siguen guardadas en este equipo';
+                    }
                     break;
                 }
                 if (item.id === targetId) throw error;
@@ -138,7 +149,8 @@
     }
     async function registerScan(rawValue) {
         if (busy) return;
-        const match = String(rawValue || '').trim().match(/^(\d{8,9})1$/);
+        const code = String(rawValue || '').trim().replace(/^\u0002+|\u0003+$/g, '').replace(/^\]C[01]/, '');
+        const match = code.match(/^(\d{8,9})1$/);
         input.value = '';
         if (!match) {
             panel.className = 'panel error';
@@ -168,20 +180,28 @@
                 status.textContent = '✓ Lectura guardada de forma segura en este equipo';
             } else {
                 panel.className = 'panel error';
-                content.innerHTML = '<div class="action">NO REGISTRADO</div><div class="hint">' + escapeHtml(error.message) + '</div>';
-                status.textContent = 'Revise el mensaje y vuelva a intentarlo';
+                content.innerHTML = '<div class="action">NO REGISTRADO</div><div class="hint">' + escapeHtml(error.message) + '</div>' + (error.preserve ? '<a class="btn btn-primary mt-4" href="' + loginUrl + '">Iniciar sesión</a>' : '');
+                status.textContent = error.preserve ? 'Lectura pendiente; vuelve a iniciar sesión' : 'Revise el mensaje y vuelva a intentarlo';
             }
-            clearTimeout(resetTimer); resetTimer = setTimeout(resetPanel, 5000);
+            clearTimeout(resetTimer); resetTimer = setTimeout(resetPanel, error.preserve ? 15000 : 8000);
         } finally {
             busy = false; setTimeout(focusReader, 50);
         }
     }
+    function submitReaderInput() {
+        clearTimeout(scanTimer);
+        if (input.value.trim()) registerScan(input.value);
+    }
+    input.addEventListener('input', function () {
+        clearTimeout(scanTimer);
+        scanTimer = setTimeout(submitReaderInput, 500);
+    });
     input.addEventListener('keydown', function (event) {
-        if (event.key === 'Enter') { event.preventDefault(); registerScan(input.value.trim()); }
+        if (event.key === 'Enter' || event.key === 'Tab') { event.preventDefault(); submitReaderInput(); }
     });
     document.addEventListener('click', focusReader);
     window.addEventListener('focus', focusReader);
-    window.addEventListener('online', async function () { updateConnection(); status.textContent = 'Sincronizando marcaciones pendientes…'; await syncQueue(); resetPanel(); });
+    window.addEventListener('online', async function () { updateConnection(); status.textContent = 'Sincronizando marcaciones pendientes…'; await syncQueue(); if (!readQueue().length) resetPanel(); });
     window.addEventListener('offline', function () { updateConnection(); resetPanel(); });
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('{% url "boletas:attendance_service_worker" %}', {scope: '/boletas/marcaciones/'}).catch(function () {});
     setInterval(updateClock, 1000); setInterval(function () { if (navigator.onLine && readQueue().length && !busy) syncQueue(); }, 15000);

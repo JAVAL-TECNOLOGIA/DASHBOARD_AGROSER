@@ -238,7 +238,7 @@ class AttendanceScreenView(AttendanceKioskView):
 class AttendanceServiceWorkerView(AttendanceAdminMixin, View):
     def get(self, request):
         script = """
-const CACHE = 'agroservice-attendance-v3';
+const CACHE = 'agroservice-attendance-v4';
 const SCREEN = '/boletas/marcaciones/pantalla/';
 self.addEventListener('install', event => event.waitUntil(caches.open(CACHE).then(cache => cache.add(SCREEN)).then(() => self.skipWaiting())));
 self.addEventListener('activate', event => event.waitUntil(self.clients.claim()));

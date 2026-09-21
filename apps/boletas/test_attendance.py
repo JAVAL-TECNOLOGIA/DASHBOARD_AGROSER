@@ -165,4 +165,4 @@ class AttendanceKioskTests(TestCase):
         response = self.client.get(reverse('boletas:attendance_service_worker'))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response['Content-Type'], 'application/javascript')
-        self.assertContains(response, 'agroservice-attendance-v3')
+        self.assertContains(response, 'agroservice-attendance-v4')
