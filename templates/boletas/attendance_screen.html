@@ -19,7 +19,9 @@
         .clock { text-align: right; }
         .clock-time { font-size: clamp(32px, 5vw, 64px); line-height: 1; font-weight: 800; }
         .clock-date { margin-top: 8px; font-size: clamp(15px, 1.8vw, 24px); }
-        .screen-center { display: grid; place-items: center; padding: 3vh 0; }
+        .screen-center { display: grid; place-items: center; align-content: center; gap: 14px; padding: 3vh 0; }
+        .scan-display { width: min(100%, 1080px); padding: 12px 20px; border-radius: 14px; background: #fff; font-size: clamp(16px, 2vw, 23px); text-align: center; overflow-wrap: anywhere; }
+        .scan-display strong { font-family: monospace; letter-spacing: .08em; }
         .panel { width: min(100%, 1080px); min-height: 54vh; background: rgba(255,255,255,.96); border-radius: 28px; box-shadow: 0 22px 70px rgba(22,74,43,.16); display: grid; place-items: center; padding: clamp(28px, 5vw, 60px); text-align: center; border: 5px solid transparent; transition: border-color .2s, background .2s; }
         .panel.success { border-color: #28a745; background: #f2fff6; }
         .panel.exit { border-color: #146dcc; background: #f1f7ff; }
@@ -52,6 +54,7 @@
         <div class="panel" id="result-panel">
             <div id="result-content"><div class="barcode-symbol">▥</div><div class="prompt">ACERQUE SU FOTOCHECK AL LECTOR</div><div class="hint">El sistema está listo para leer el código de barras</div></div>
         </div>
+        <div class="scan-display" aria-live="polite">Código recibido: <strong id="scan-value">Esperando lectura…</strong></div>
     </section>
     <footer class="status-bar"><span class="reader-ready" id="reader-status">● Lector conectado y esperando</span><span><span id="pending-count"></span> Presione F11 para pantalla completa</span></footer>
 </main>
@@ -64,6 +67,7 @@
     const status = document.getElementById('reader-status');
     const networkState = document.getElementById('network-state');
     const pendingCount = document.getElementById('pending-count');
+    const scanValue = document.getElementById('scan-value');
     const loginUrl = '{% url "login" %}?next={% url "boletas:attendance_screen" %}';
     const queueKey = 'agroservice-attendance-queue-v1';
     let busy = false;
@@ -72,6 +76,9 @@
 
     function escapeHtml(value) {
         const node = document.createElement('div'); node.textContent = value || ''; return node.innerHTML;
+    }
+    function showScan(value) {
+        scanValue.textContent = value || 'Esperando lectura…';
     }
     function focusReader() { if (!busy) input.focus(); }
     function readQueue() {
@@ -150,6 +157,7 @@
     async function registerScan(rawValue) {
         if (busy) return;
         const code = String(rawValue || '').trim().replace(/^\u0002+|\u0003+$/g, '').replace(/^\]C[01]/, '');
+        showScan(code);
         const match = code.match(/^(\d{8,9})1$/);
         input.value = '';
         if (!match) {
@@ -193,6 +201,7 @@
         if (input.value.trim()) registerScan(input.value);
     }
     input.addEventListener('input', function () {
+        showScan(input.value);
         clearTimeout(scanTimer);
         scanTimer = setTimeout(submitReaderInput, 500);
     });
