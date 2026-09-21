@@ -102,11 +102,7 @@ class PaySlipPermissionMixin(LoginRequiredMixin, PermissionRequiredMixin):
 
 
 class AttendanceAdminMixin(PaySlipPermissionMixin):
-    def has_permission(self):
-        return bool(
-            self.request.user.is_authenticated
-            and getattr(self.request.user, "admin", False)
-        )
+    permission_required = "boletas.ver_marcaciones"
 
 
 @method_decorator(never_cache, name="dispatch")
