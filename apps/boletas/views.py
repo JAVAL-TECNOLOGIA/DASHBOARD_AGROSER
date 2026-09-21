@@ -1387,7 +1387,12 @@ class PaySlipPdfView(PaySlipPermissionMixin, View):
         months = [period.start.strftime('%Y%m')]
         if period.end.strftime('%Y%m') not in months:
             months.append(period.end.strftime('%Y%m'))
-        week_numbers = [value for value in str(slip.get('_payroll_week') or '').split('+') if value]
+        # El formulario mensual también envía un valor ISO en `week` (p. ej.
+        # 2026-W31). Solo las planillas de planta usan la semana para ubicar TXT.
+        week_numbers = (
+            [value for value in str(slip.get('_payroll_week') or '').split('+') if value]
+            if payroll_type in ('OBP', 'OBR') else []
+        )
         document = str(slip.get('nrodocumento') or '').strip()
         setting_name = '{}_TXT_ROOT'.format(payroll_type)
         fallback_folder = '{}-source'.format(payroll_type.lower())
