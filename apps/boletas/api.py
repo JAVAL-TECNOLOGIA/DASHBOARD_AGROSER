@@ -70,7 +70,7 @@ def admin_attendance_api(request):
         data = _body(request); document = str(data.get("document") or "").strip(); action = str(data.get("action") or "IN").upper()
         if not valid_worker_document(document) or action not in ("IN", "OUT"):
             return _json({"error": "DNI o tipo de marcaciÃ³n invÃ¡lido."}, 400)
-        mark = AttendanceMark.objects.create(worker_document=document, action=action, marked_by=user)
+        mark = AttendanceMark.objects.create(worker_document=document, action=action, source="MANUAL", marked_by=user)
         return _json({"ok": True, "document": document, "action": action, "markedAt": mark.marked_at.isoformat()})
     rows = AttendanceMark.objects.all()[:100]
     return _json({"marks": [{"document": x.worker_document, "action": x.action, "markedAt": x.marked_at.isoformat()} for x in rows]})

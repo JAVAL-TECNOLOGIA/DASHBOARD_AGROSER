@@ -151,7 +151,7 @@ class AttendanceMark(models.Model):
     marked_at = models.DateTimeField(auto_now_add=True)
     client_event_id = models.CharField(max_length=64, unique=True, null=True, blank=True)
     action = models.CharField(max_length=10, choices=(("IN", "Ingreso"), ("OUT", "Salida")), default="IN")
-    source = models.CharField(max_length=20, default="QR")
+    source = models.CharField(max_length=20, default="BARCODE")
     marked_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
 
     class Meta:

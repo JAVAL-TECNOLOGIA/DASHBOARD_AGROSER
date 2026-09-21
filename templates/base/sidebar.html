@@ -212,7 +212,7 @@
                 {% if perms.boletas.ver_marcaciones or user.admin %}
                 <li class="{% if request.path|slice:':21' == '/boletas/marcaciones/' %}active{% endif %}">
                     <a href="{% url 'boletas:attendance' %}">
-                        <i class="fa fa-qrcode"></i>
+                        <i class="fa fa-barcode"></i>
                         <span style="font-size: 16px;">Marcaciones</span>
                     </a>
                 </li>

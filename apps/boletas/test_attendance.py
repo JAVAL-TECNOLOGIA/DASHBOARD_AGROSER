@@ -46,8 +46,10 @@ class AttendanceKioskTests(TestCase):
         self.url = reverse('boletas:attendance')
         self.screen_url = reverse('boletas:attendance_screen')
 
-    def post_mark(self, document='01234567', source='QR', **extra):
+    def post_mark(self, document='01234567', source='BARCODE', **extra):
         payload = {'document': document, 'source': source}
+        if source in ('BARCODE', 'BARCODE_OFFLINE') and 'barcode' not in extra:
+            payload['barcode'] = document + '1'
         payload.update(extra)
         return self.client.post(
             self.url,
@@ -73,7 +75,7 @@ class AttendanceKioskTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'ACERQUE SU FOTOCHECK AL LECTOR')
 
-    def test_qr_toggles_entry_and_exit_and_blocks_duplicate_scan(self):
+    def test_barcode_toggles_entry_and_exit_and_blocks_duplicate_scan(self):
         self.client.force_login(self.admin)
         first = self.post_mark()
         self.assertEqual(first.status_code, 200)
@@ -85,11 +87,11 @@ class AttendanceKioskTests(TestCase):
         AttendanceMark.objects.filter(worker_document='01234567').update(
             marked_at=timezone.now() - timedelta(seconds=31),
         )
-        second = self.post_mark(source='MANUAL')
+        second = self.post_mark()
         self.assertEqual(second.status_code, 200)
         self.assertEqual(second.json()['action'], 'OUT')
         self.assertEqual(AttendanceMark.objects.count(), 2)
-        self.assertEqual(AttendanceMark.objects.first().source, 'MANUAL')
+        self.assertEqual(AttendanceMark.objects.first().source, 'BARCODE')
 
     def test_worker_without_enabled_badge_cannot_mark(self):
         PayslipAcknowledgement.objects.all().delete()
@@ -98,9 +100,11 @@ class AttendanceKioskTests(TestCase):
         self.assertEqual(response.status_code, 409)
         self.assertFalse(AttendanceMark.objects.exists())
 
-    def test_invalid_qr_is_rejected(self):
+    def test_invalid_barcode_and_old_qr_source_are_rejected(self):
         self.client.force_login(self.admin)
         self.assertEqual(self.post_mark('123').status_code, 400)
+        self.assertEqual(self.post_mark(source='QR').status_code, 400)
+        self.assertEqual(self.post_mark(source='QR_OFFLINE').status_code, 503)
 
     def test_barcode_suffix_is_removed_before_recording(self):
         self.client.force_login(self.admin)
@@ -142,7 +146,7 @@ class AttendanceKioskTests(TestCase):
         captured = timezone.now() - timedelta(hours=1)
         event_id = 'offline-event-12345678'
         first = self.post_mark(
-            source='QR_OFFLINE', clientEventId=event_id,
+            source='LEGACY_OFFLINE', clientEventId=event_id,
             capturedAt=captured.isoformat(),
         )
         self.assertEqual(first.status_code, 200)
@@ -150,7 +154,7 @@ class AttendanceKioskTests(TestCase):
         mark = AttendanceMark.objects.get(client_event_id=event_id)
         self.assertAlmostEqual(mark.marked_at.timestamp(), captured.timestamp(), delta=1)
         repeated = self.post_mark(
-            source='QR_OFFLINE', clientEventId=event_id,
+            source='LEGACY_OFFLINE', clientEventId=event_id,
             capturedAt=captured.isoformat(),
         )
         self.assertEqual(repeated.status_code, 200)
@@ -161,4 +165,4 @@ class AttendanceKioskTests(TestCase):
         response = self.client.get(reverse('boletas:attendance_service_worker'))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response['Content-Type'], 'application/javascript')
-        self.assertContains(response, 'agroservice-attendance-v2')
+        self.assertContains(response, 'agroservice-attendance-v3')

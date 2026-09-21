@@ -24,7 +24,7 @@
         .panel.success { border-color: #28a745; background: #f2fff6; }
         .panel.exit { border-color: #146dcc; background: #f1f7ff; }
         .panel.error { border-color: #d83a3a; background: #fff4f4; }
-        .qr-symbol { font-size: clamp(70px, 10vw, 130px); line-height: 1; font-weight: 900; letter-spacing: -12px; color: var(--agro); }
+        .barcode-symbol { font-size: clamp(70px, 10vw, 130px); line-height: 1; font-weight: 900; letter-spacing: -12px; color: var(--agro); }
         .prompt { font-size: clamp(26px, 3.5vw, 48px); font-weight: 800; margin-top: 22px; }
         .hint { font-size: clamp(16px, 1.8vw, 24px); color: #637069; margin-top: 12px; }
         .employee-photo { width: clamp(150px, 18vw, 230px); height: clamp(180px, 22vw, 280px); object-fit: cover; border-radius: 18px; box-shadow: 0 8px 25px rgba(0,0,0,.15); }
@@ -50,7 +50,7 @@
     </header>
     <section class="screen-center">
         <div class="panel" id="result-panel">
-            <div id="result-content"><div class="qr-symbol">▥</div><div class="prompt">ACERQUE SU FOTOCHECK AL LECTOR</div><div class="hint">El sistema está listo para leer el código de barras</div></div>
+            <div id="result-content"><div class="barcode-symbol">▥</div><div class="prompt">ACERQUE SU FOTOCHECK AL LECTOR</div><div class="hint">El sistema está listo para leer el código de barras</div></div>
         </div>
     </section>
     <footer class="status-bar"><span class="reader-ready" id="reader-status">● Lector conectado y esperando</span><span><span id="pending-count"></span> Presione F11 para pantalla completa</span></footer>
@@ -91,7 +91,7 @@
     }
     function resetPanel() {
         panel.className = 'panel';
-        content.innerHTML = '<div class="qr-symbol">▥</div><div class="prompt">ACERQUE SU FOTOCHECK AL LECTOR</div><div class="hint">El sistema está listo para leer el código de barras</div>';
+        content.innerHTML = '<div class="barcode-symbol">▥</div><div class="prompt">ACERQUE SU FOTOCHECK AL LECTOR</div><div class="hint">El sistema está listo para leer el código de barras</div>';
         status.textContent = navigator.onLine ? '● Lector conectado y esperando' : '● Modo offline: las lecturas se guardarán en este equipo';
         input.value = ''; focusReader();
     }
@@ -104,7 +104,7 @@
         const response = await fetch('{% url "boletas:attendance_screen" %}', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json', 'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value},
-                body: JSON.stringify({document: item.document, barcode: item.code || '', source: item.code ? (item.offline ? 'BARCODE_OFFLINE' : 'BARCODE') : (item.offline ? 'QR_OFFLINE' : 'QR'), clientEventId: item.id, capturedAt: item.capturedAt})
+                body: JSON.stringify({document: item.document, barcode: item.code || '', source: item.code ? (item.offline ? 'BARCODE_OFFLINE' : 'BARCODE') : 'LEGACY_OFFLINE', clientEventId: item.id, capturedAt: item.capturedAt})
         });
         const data = await response.json();
         if (!response.ok) { const error = new Error(data.error || 'No se pudo registrar la marcación.'); error.status = response.status; throw error; }

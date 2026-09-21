@@ -115,7 +115,7 @@ class PayslipPhotoTests(TestCase):
         self.client.force_login(self.admin)
         response = self.client.get(url, {'month': '2026-08'})
         self.assertNotContains(response, 'Datos del trabajador')
-        self.assertContains(response, 'Generar fotocheck con QR')
+        self.assertContains(response, 'Generar fotocheck con código de barras')
         self.assertContains(response, self.url)
         self.assertContains(response, 'Boleta CTS')
         self.assertContains(response, 'Abrir boleta PDF', count=2)
