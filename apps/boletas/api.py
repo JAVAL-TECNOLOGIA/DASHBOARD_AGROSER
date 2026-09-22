@@ -20,12 +20,12 @@ from django.views.decorators.http import require_http_methods
 
 from apps.user.models import User
 
-from .models import AttendanceMark, PayrollRelease, PayslipAcknowledgement, PayslipView, PortalContent, WorkerAccessRestriction, WorkerIdentityProfile
+from .models import AttendanceMark, PayrollRelease, PayslipAcknowledgement, PortalContent, WorkerAccessRestriction, WorkerIdentityProfile
 from .documents import valid_worker_document
 from .periods import DateRange, portal_month_range as month_range
 from .services import PaySlipService
 from .views import PaySlipPdfView, _official_payroll_period
-from .worker_portal import WorkerIdentityService, payslip_fingerprint, worker_slips
+from .worker_portal import WorkerIdentityService, payslip_fingerprint, record_worker_pdf_access, worker_slips
 
 
 TOKEN_SALT = "agroservice-rrhh-api"
@@ -793,28 +793,16 @@ def worker_pdf_api(request):
     ).first()
     if not acknowledgement:
         return _json({"error": "Debes dar conformidad antes de descargar el PDF."}, 403)
-    forwarded = request.META.get("HTTP_X_FORWARDED_FOR", "")
-    ip_address = forwarded.split(",")[0].strip() if forwarded else request.META.get("REMOTE_ADDR")
-    PayslipView.objects.update_or_create(
-        payslip_hash=requested_hash,
-        defaults={
-            "user": user,
-            "worker_document": user.username,
-            "period_start": period.start,
-            "period_end": period.end,
-            "ip_address": ip_address,
-            "user_agent": request.META.get("HTTP_USER_AGENT", "")[:300],
-        },
-    )
     profile = WorkerIdentityProfile.objects.get(user=user)
-    response = HttpResponse(
-        PaySlipPdfView._build_pdf(
+    with transaction.atomic():
+        record_worker_pdf_access(request, user, period, requested_hash)
+        data = PaySlipPdfView._build_pdf(
             slip, period,
             signature_path=profile.signature.path,
             signer_name=acknowledgement.signer_name,
             signed_at=acknowledgement.confirmed_at,
-        ),
-        content_type="application/pdf",
-    )
+            delivery=PaySlipPdfView._delivery_data(slip, period),
+        )
+    response = HttpResponse(data, content_type="application/pdf")
     response["Content-Disposition"] = 'inline; filename="boleta.pdf"'
     return _cors(response)

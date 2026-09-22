@@ -5,7 +5,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.user.models import User
-from .models import PayrollRelease, PayslipAcknowledgement, WorkerIdentityProfile
+from .models import PayrollRelease, PayslipAcknowledgement, PayslipView, WorkerIdentityProfile
 from .periods import custom_range
 from .worker_portal import payslip_fingerprint
 
@@ -96,6 +96,22 @@ class WorkerConfirmationTests(TestCase):
         response = self.client.get(reverse('boletas:worker_pdf'), self.params)
         self.assertEqual(response.status_code, 200)
         self.assertNotIn('signature_path', build_pdf.call_args.kwargs)
+        access = PayslipView.objects.get(payslip_hash=self.fingerprint)
+        self.assertEqual(build_pdf.call_args.kwargs['delivery']['released_at'],
+                         timezone.localtime(access.first_viewed_at).strftime('%d/%m/%Y'))
+        self.client.get(reverse('boletas:worker_pdf'), self.params)
+        self.assertEqual(PayslipView.objects.get(pk=access.pk).first_viewed_at, access.first_viewed_at)
+
+    @patch('apps.boletas.worker_portal.PaySlipPdfView._build_pdf', side_effect=RuntimeError('PDF fallido'))
+    def test_failed_pdf_does_not_record_worker_access(self, build_pdf):
+        PayslipAcknowledgement.objects.create(
+            user=self.user, worker_document=self.user.username,
+            period_start=self.period.start, period_end=self.period.end,
+            payslip_hash=self.fingerprint, signer_name='Trabajador Prueba',
+        )
+        with self.assertRaises(RuntimeError):
+            self.client.get(reverse('boletas:worker_pdf'), self.params)
+        self.assertFalse(PayslipView.objects.filter(payslip_hash=self.fingerprint).exists())
 
     def test_invalid_hash_is_never_confirmed(self):
         params = dict(self.params, hash='invalid')

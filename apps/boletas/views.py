@@ -1434,15 +1434,14 @@ class PaySlipPdfView(PaySlipPermissionMixin, View):
         ).first()
         fingerprint = payslip_fingerprint(slip, period)
         viewed = PayslipView.objects.filter(payslip_hash=fingerprint).first()
-        acknowledged = PayslipAcknowledgement.objects.filter(payslip_hash=fingerprint).first()
 
         def date(value):
             return timezone.localtime(value).strftime('%d/%m/%Y') if value else ''
 
         return {
-            'issued_at': date(release.validated_at or release.released_at) if release else '',
-            'released_at': date(release.released_at) if release else '',
-            'accessed_at': date(viewed.first_viewed_at if viewed else acknowledged.confirmed_at if acknowledged else None),
+            'issued_at': date(release.released_at) if release else '',
+            'released_at': date(viewed.first_viewed_at) if viewed else '',
+            'accessed_at': date(viewed.first_viewed_at) if viewed else '',
         }
 
     @staticmethod

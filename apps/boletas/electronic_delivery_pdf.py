@@ -25,7 +25,7 @@ def draw_delivery_footer(pdf, left, right, delivery):
         ("Medio:", "Portal del trabajador"),
         ("Fecha de emisión:", delivery.get("issued_at") or "No registrada"),
         ("Fecha de puesta a disposición:", delivery.get("released_at") or "No registrada"),
-        ("Constancia de emisión:", "Sí (publicación registrada)" if delivery.get("released_at") else "No registrada"),
+        ("Constancia de emisión:", "Sí (autorización registrada)" if delivery.get("issued_at") else "No registrada"),
         ("Constancia de recepción/acceso:", "Sí (acceso registrado)" if delivery.get("accessed_at") else "No registrada"),
     )
     row_height = height / len(rows)

@@ -26,15 +26,19 @@ class PayslipPhotoTests(TestCase):
             payroll_type='ERG', period_start=period.start, period_end=period.end,
             validated_at=timezone.now(), released_at=timezone.now(),
         )
+        self.assertEqual(PaySlipPdfView._delivery_data(slip, period), {
+            'issued_at': timezone.localtime(release.released_at).strftime('%d/%m/%Y'),
+            'released_at': '', 'accessed_at': '',
+        })
         PayslipView.objects.create(
             user=self.worker, worker_document=self.worker.username,
             period_start=period.start, period_end=period.end,
             payslip_hash=payslip_fingerprint(slip, period),
         )
         delivery = PaySlipPdfView._delivery_data(slip, period)
-        self.assertEqual(delivery['issued_at'], timezone.localtime(release.validated_at).strftime('%d/%m/%Y'))
-        self.assertEqual(delivery['released_at'], timezone.localtime(release.released_at).strftime('%d/%m/%Y'))
-        self.assertTrue(delivery['accessed_at'])
+        self.assertEqual(delivery['issued_at'], timezone.localtime(release.released_at).strftime('%d/%m/%Y'))
+        self.assertEqual(delivery['released_at'], delivery['accessed_at'])
+        self.assertEqual(delivery['released_at'], timezone.localtime(PayslipView.objects.get().first_viewed_at).strftime('%d/%m/%Y'))
 
     @patch('apps.boletas.views.PaySlipService.list', return_value=[])
     def test_erg_filter_forces_month_even_with_week_url(self, slips):

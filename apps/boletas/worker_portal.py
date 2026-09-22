@@ -20,7 +20,7 @@ from .worker_forms import WorkerIdentityForm
 
 from apps.user.models import User
 
-from .models import PayslipAcknowledgement, PayrollRelease, WorkerIdentityProfile
+from .models import PayslipAcknowledgement, PayslipView, PayrollRelease, WorkerIdentityProfile
 from .periods import month_range, resolve_date_range, week_value_for_date
 from .services import PaySlipService
 from .views import PaySlipPdfView, WEEKLY_PAYROLL_TYPES, _confirmed_signature, _official_payroll_period
@@ -155,6 +155,28 @@ def payslip_fingerprint(slip, period):
     }
     canonical = json.dumps(payload, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def record_worker_pdf_access(request, user, period, fingerprint):
+    """Conserva el primer acceso al PDF y actualiza la última visita."""
+    forwarded = request.META.get("HTTP_X_FORWARDED_FOR", "")
+    ip_address = forwarded.split(",")[0].strip() if forwarded else request.META.get("REMOTE_ADDR")
+    view, created = PayslipView.objects.get_or_create(
+        payslip_hash=fingerprint,
+        defaults={
+            "user": user,
+            "worker_document": user.username,
+            "period_start": period.start,
+            "period_end": period.end,
+            "ip_address": ip_address,
+            "user_agent": request.META.get("HTTP_USER_AGENT", "")[:300],
+        },
+    )
+    if not created:
+        view.ip_address = ip_address
+        view.user_agent = request.META.get("HTTP_USER_AGENT", "")[:300]
+        view.save(update_fields=("ip_address", "user_agent", "last_viewed_at"))
+    return view
 
 
 def worker_slips(document, period):
@@ -505,12 +527,14 @@ class WorkerPayslipPdfView(WorkerPortalMixin, View):
         if not acknowledgement:
             messages.error(request, "Debes dar tu conformidad antes de visualizar la boleta.")
             return redirect("boletas:worker_dashboard")
-        data = PaySlipPdfView._build_pdf(
-            slip,
-            period,
-            delivery=PaySlipPdfView._delivery_data(slip, period),
-            **_confirmed_signature(slip, period),
-        )
+        with transaction.atomic():
+            record_worker_pdf_access(request, request.user, period, requested_hash)
+            data = PaySlipPdfView._build_pdf(
+                slip,
+                period,
+                delivery=PaySlipPdfView._delivery_data(slip, period),
+                **_confirmed_signature(slip, period),
+            )
         response = HttpResponse(data, content_type="application/pdf")
         response["Content-Disposition"] = 'inline; filename="mi_boleta_{}_{}.pdf"'.format(
             slip.get("document_type", "pago"), period.end.strftime("%Y%m%d")
