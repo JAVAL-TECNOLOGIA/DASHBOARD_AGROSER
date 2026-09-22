@@ -1,6 +1,6 @@
 import json
 import tempfile
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
@@ -74,6 +74,35 @@ class AttendanceKioskTests(TestCase):
         response = self.client.get(self.screen_url)
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'ACERQUE SU FOTOCHECK AL LECTOR')
+
+    def test_attendance_table_groups_shifts_and_sums_worked_hours(self):
+        self.client.force_login(self.admin)
+        day = timezone.localdate()
+        for action, hour, minute in [('IN', 8, 0), ('OUT', 12, 0), ('IN', 13, 0), ('OUT', 17, 15)]:
+            mark = AttendanceMark.objects.create(
+                worker_document=self.worker.username, action=action, marked_by=self.admin,
+            )
+            captured_at = timezone.make_aware(datetime.combine(day, datetime.min.time()).replace(hour=hour, minute=minute))
+            AttendanceMark.objects.filter(pk=mark.pk).update(marked_at=captured_at)
+        response = self.client.get(self.url, {'date': day.isoformat()})
+        self.assertEqual(response.status_code, 200)
+        row, = response.context['attendance_rows']
+        self.assertEqual(row['document'], self.worker.username)
+        self.assertEqual(row['first_name'], 'Ana')
+        self.assertEqual(row['last_name'], 'Trabajadora')
+        self.assertEqual(row['worked_time'], '08:15')
+        self.assertTrue(row['complete'])
+        self.assertContains(response, 'Hora Ingreso')
+        self.assertContains(response, 'Horas Trabajadas')
+
+    def test_attendance_table_marks_missing_exit_incomplete(self):
+        self.client.force_login(self.admin)
+        AttendanceMark.objects.create(worker_document=self.worker.username, action='IN', marked_by=self.admin)
+        response = self.client.get(self.url)
+        row, = response.context['attendance_rows']
+        self.assertFalse(row['complete'])
+        self.assertEqual(row['worked_time'], '')
+        self.assertContains(response, 'Incompleto')
 
     def test_barcode_toggles_entry_and_exit_and_blocks_duplicate_scan(self):
         self.client.force_login(self.admin)

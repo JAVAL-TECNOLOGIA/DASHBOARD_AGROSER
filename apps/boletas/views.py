@@ -126,14 +126,45 @@ class AttendanceKioskView(AttendanceAdminMixin, View):
         except ValueError:
             day = timezone.localdate()
             messages.error(request, "La fecha seleccionada no es válida.")
-        marks = list(AttendanceMark.objects.filter(marked_at__date=day).select_related("marked_by")[:500])
+        marks = list(AttendanceMark.objects.filter(marked_at__date=day).order_by("marked_at", "pk"))
         documents = {mark.worker_document for mark in marks}
-        names = {
-            user.username: str(user).strip() or user.username
-            for user in User.objects.filter(username__in=documents)
-        }
+        workers = {user.username: user for user in User.objects.filter(username__in=documents)}
+        rows = {}
         for mark in marks:
-            mark.worker_name = names.get(mark.worker_document, "TRABAJADOR")
+            document = mark.worker_document
+            if document not in rows:
+                worker = workers.get(document)
+                rows[document] = {
+                    "document": document,
+                    "first_name": worker.first_name if worker else "",
+                    "last_name": worker.last_name if worker else "",
+                    "company": "AGROSERVICE ICA SUR S.A.C.",
+                    "date": day,
+                    "entry": None,
+                    "exit": None,
+                    "worked_seconds": 0,
+                    "open_entry": None,
+                    "incomplete": False,
+                    "pairs": 0,
+                }
+            row = rows[document]
+            if mark.action == "IN":
+                if row["open_entry"] is not None:
+                    row["incomplete"] = True
+                row["open_entry"] = mark.marked_at
+                if row["entry"] is None:
+                    row["entry"] = timezone.localtime(mark.marked_at)
+            elif row["open_entry"] is not None and mark.marked_at >= row["open_entry"]:
+                row["worked_seconds"] += int((mark.marked_at - row["open_entry"]).total_seconds())
+                row["exit"] = timezone.localtime(mark.marked_at)
+                row["open_entry"] = None
+                row["pairs"] += 1
+            else:
+                row["incomplete"] = True
+        for row in rows.values():
+            row["complete"] = row["pairs"] > 0 and row["open_entry"] is None and not row["incomplete"]
+            minutes = row["worked_seconds"] // 60
+            row["worked_time"] = f"{minutes // 60:02d}:{minutes % 60:02d}" if row["pairs"] else ""
         request_host = request.get_host().split(":", 1)[0]
         station_url = reverse("boletas:attendance_screen")
         if request_host not in ("127.0.0.1", "localhost"):
@@ -143,7 +174,7 @@ class AttendanceKioskView(AttendanceAdminMixin, View):
                 "http://192.168.100.3:7000/boletas/marcaciones/pantalla/",
             )
         return render(request, self.template_name, {
-            "marks": marks,
+            "attendance_rows": list(rows.values()),
             "selected_date": day.isoformat(),
             "in_count": sum(mark.action == "IN" for mark in marks),
             "out_count": sum(mark.action == "OUT" for mark in marks),
