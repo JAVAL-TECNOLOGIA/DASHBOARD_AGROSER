@@ -84,7 +84,7 @@ class WorkerConfirmationTests(TestCase):
 
     @patch('apps.boletas.worker_portal.PaySlipPdfView._build_pdf', return_value=b'%PDF-test')
     def test_missing_local_signature_file_does_not_break_confirmed_pdf(self, build_pdf):
-        PayslipAcknowledgement.objects.create(
+        acknowledgement = PayslipAcknowledgement.objects.create(
             user=self.user,
             worker_document='01234567',
             period_start=self.period.start,
@@ -98,7 +98,7 @@ class WorkerConfirmationTests(TestCase):
         self.assertNotIn('signature_path', build_pdf.call_args.kwargs)
         access = PayslipView.objects.get(payslip_hash=self.fingerprint)
         self.assertEqual(build_pdf.call_args.kwargs['delivery']['released_at'],
-                         timezone.localtime(access.first_viewed_at).strftime('%d/%m/%Y'))
+                         timezone.localtime(acknowledgement.confirmed_at).strftime('%d/%m/%Y'))
         self.client.get(reverse('boletas:worker_pdf'), self.params)
         self.assertEqual(PayslipView.objects.get(pk=access.pk).first_viewed_at, access.first_viewed_at)
 

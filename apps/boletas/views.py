@@ -26,7 +26,7 @@ from apps.user.models import User
 from .periods import DateRange, month_range, resolve_date_range, week_value_for_date
 from .documents import valid_worker_document
 from .analytics import build_payroll_summary
-from .models import AttendanceMark, PayrollRelease, PayslipAcknowledgement, PayslipView, WorkerIdentityProfile
+from .models import AttendanceMark, PayrollRelease, PayslipAcknowledgement, WorkerIdentityProfile
 from .services import PAYROLL_TYPES, PaySlipService
 
 
@@ -1433,15 +1433,15 @@ class PaySlipPdfView(PaySlipPermissionMixin, View):
             period_end=period.end,
         ).first()
         fingerprint = payslip_fingerprint(slip, period)
-        viewed = PayslipView.objects.filter(payslip_hash=fingerprint).first()
+        acknowledgement = PayslipAcknowledgement.objects.filter(payslip_hash=fingerprint).first()
 
         def date(value):
             return timezone.localtime(value).strftime('%d/%m/%Y') if value else ''
 
         return {
             'issued_at': date(release.released_at) if release else '',
-            'released_at': date(viewed.first_viewed_at) if viewed else '',
-            'accessed_at': date(viewed.first_viewed_at) if viewed else '',
+            'released_at': date(acknowledgement.confirmed_at) if acknowledgement else '',
+            'accessed_at': date(acknowledgement.confirmed_at) if acknowledgement else '',
         }
 
     @staticmethod

@@ -12,7 +12,7 @@ from .test_identity import image_bytes
 
 
 class PayslipPhotoTests(TestCase):
-    def test_electronic_delivery_uses_release_and_access_records(self):
+    def test_electronic_delivery_uses_authorization_and_confirmation(self):
         from .periods import month_range
         from .views import PaySlipPdfView
         from .worker_portal import payslip_fingerprint
@@ -35,10 +35,16 @@ class PayslipPhotoTests(TestCase):
             period_start=period.start, period_end=period.end,
             payslip_hash=payslip_fingerprint(slip, period),
         )
+        self.assertEqual(PaySlipPdfView._delivery_data(slip, period)['released_at'], '')
+        acknowledgement = PayslipAcknowledgement.objects.create(
+            user=self.worker, worker_document=self.worker.username,
+            period_start=period.start, period_end=period.end,
+            payslip_hash=payslip_fingerprint(slip, period), signer_name='Trabajador Prueba',
+        )
         delivery = PaySlipPdfView._delivery_data(slip, period)
         self.assertEqual(delivery['issued_at'], timezone.localtime(release.released_at).strftime('%d/%m/%Y'))
         self.assertEqual(delivery['released_at'], delivery['accessed_at'])
-        self.assertEqual(delivery['released_at'], timezone.localtime(PayslipView.objects.get().first_viewed_at).strftime('%d/%m/%Y'))
+        self.assertEqual(delivery['released_at'], timezone.localtime(acknowledgement.confirmed_at).strftime('%d/%m/%Y'))
 
     @patch('apps.boletas.views.PaySlipService.list', return_value=[])
     def test_erg_filter_forces_month_even_with_week_url(self, slips):
