@@ -11,6 +11,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
 
 from .erg_txt import PayrollTextError, amount
+from .electronic_delivery_pdf import draw_delivery_footer
 
 
 MONTHS = (
@@ -24,7 +25,7 @@ DAY_NAMES = {
 }
 
 
-def build_pdf(data, signature_path=None, employer_signature_path=None):
+def build_pdf(data, signature_path=None, employer_signature_path=None, delivery=None):
     header, details, totals = data["header"], data["details"], data["totals"]
     output = BytesIO()
     width, height = A4
@@ -253,6 +254,8 @@ def build_pdf(data, signature_path=None, employer_signature_path=None):
             pdf.drawImage(employer_signature_path, signature_center - 24 * mm, detail_bottom + 1 * mm, 48 * mm, 18 * mm, preserveAspectRatio=True, anchor="c", mask="auto")
         except Exception as exc:
             raise PayrollTextError("No se pudo insertar la firma del empleador en la boleta.") from exc
+
+    draw_delivery_footer(pdf, left, right, delivery)
 
     pdf.showPage()
     pdf.save()

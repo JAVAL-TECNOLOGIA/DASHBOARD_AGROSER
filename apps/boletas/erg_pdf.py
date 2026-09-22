@@ -10,9 +10,10 @@ from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas
 
 from .erg_txt import PayrollTextError, amount
+from .electronic_delivery_pdf import draw_delivery_footer
 
 
-def build_pdf(data, signature_path=None, employer_signature_path=None):
+def build_pdf(data, signature_path=None, employer_signature_path=None, delivery=None):
     header, details, totals = data["header"], data["details"], data["totals"]
     output = BytesIO()
     width, height = A4
@@ -158,13 +159,13 @@ def build_pdf(data, signature_path=None, employer_signature_path=None):
     employer_x = left + 24 * mm
     if employer_signature_path:
         try:
-            pdf.drawImage(employer_signature_path, employer_x, 15 * mm, 48 * mm, 18 * mm, preserveAspectRatio=True, anchor="c", mask="auto")
+            pdf.drawImage(employer_signature_path, employer_x, 41 * mm, 48 * mm, 18 * mm, preserveAspectRatio=True, anchor="c", mask="auto")
         except Exception as exc:
             raise PayrollTextError("No se pudo insertar la firma del empleador en la boleta.") from exc
 
     worker_left, worker_right = width - 67 * mm, width - 18 * mm
     worker_center = (worker_left + worker_right) / 2
-    worker_line_y = 17 * mm
+    worker_line_y = 43 * mm
     if signature_path:
         try:
             pdf.drawImage(signature_path, worker_center - 23 * mm, worker_line_y + 1.5 * mm, 46 * mm, 17 * mm, preserveAspectRatio=True, anchor="c", mask="auto")
@@ -172,7 +173,9 @@ def build_pdf(data, signature_path=None, employer_signature_path=None):
             raise PayrollTextError("No se pudo insertar la firma registrada en la boleta.") from exc
     pdf.line(worker_left, worker_line_y, worker_right, worker_line_y)
     pdf.setFont(regular, 8.2)
-    pdf.drawCentredString(worker_center, 10.5 * mm, "TRABAJADOR")
+    pdf.drawCentredString(worker_center, 36.5 * mm, "TRABAJADOR")
+
+    draw_delivery_footer(pdf, left, right, delivery)
 
     pdf.showPage()
     pdf.save()

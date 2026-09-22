@@ -508,6 +508,7 @@ class WorkerPayslipPdfView(WorkerPortalMixin, View):
         data = PaySlipPdfView._build_pdf(
             slip,
             period,
+            delivery=PaySlipPdfView._delivery_data(slip, period),
             **_confirmed_signature(slip, period),
         )
         response = HttpResponse(data, content_type="application/pdf")

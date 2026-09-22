@@ -26,7 +26,7 @@ from apps.user.models import User
 from .periods import DateRange, month_range, resolve_date_range, week_value_for_date
 from .documents import valid_worker_document
 from .analytics import build_payroll_summary
-from .models import AttendanceMark, PayrollRelease, PayslipAcknowledgement, WorkerIdentityProfile
+from .models import AttendanceMark, PayrollRelease, PayslipAcknowledgement, PayslipView, WorkerIdentityProfile
 from .services import PAYROLL_TYPES, PaySlipService
 
 
@@ -633,7 +633,7 @@ class WorkerMonthPdfView(PaySlipPermissionMixin, View):
         if slip is None:
             raise Http404('La boleta no existe para este trabajador y mes.')
         response = HttpResponse(
-            PaySlipPdfView._build_pdf(slip, period, **_confirmed_signature(slip, period)),
+            PaySlipPdfView._build_pdf(slip, period, delivery=PaySlipPdfView._delivery_data(slip, period), **_confirmed_signature(slip, period)),
             content_type='application/pdf',
         )
         response['Content-Disposition'] = 'inline; filename="boleta_{}_{}.pdf"'.format(document, period.start.strftime('%Y%m'))
@@ -945,7 +945,7 @@ class PaySlipPdfView(PaySlipPermissionMixin, View):
         slip["_payroll_week"] = request.GET.get("payroll_week", "").strip()
 
         response = HttpResponse(
-            self._build_pdf(slip, period, **_confirmed_signature(slip, period)),
+            self._build_pdf(slip, period, delivery=self._delivery_data(slip, period), **_confirmed_signature(slip, period)),
             content_type="application/pdf",
         )
         filename = "boleta_{}_{}.pdf".format(
@@ -1162,7 +1162,7 @@ class PaySlipPdfView(PaySlipPermissionMixin, View):
         return buffer.getvalue()
 
     @staticmethod
-    def _build_pdf(slip, period, signature_path=None, signer_name="", signed_at=None):
+    def _build_pdf(slip, period, signature_path=None, signer_name="", signed_at=None, delivery=None):
         employer_signature = Path(__file__).resolve().parent / "assets" / "firma_empleador.bmp"
         employer_signature_path = str(employer_signature) if employer_signature.is_file() else None
         if str(slip.get("payroll_type") or "").strip().upper() in ("ERG", "ERA", "OBP", "OBR"):
@@ -1171,6 +1171,7 @@ class PaySlipPdfView(PaySlipPermissionMixin, View):
                 period,
                 signature_path=signature_path,
                 employer_signature_path=employer_signature_path,
+                delivery=delivery,
             )
         from reportlab.lib import colors
         from reportlab.lib.enums import TA_CENTER, TA_RIGHT
@@ -1422,7 +1423,30 @@ class PaySlipPdfView(PaySlipPermissionMixin, View):
         return buffer.getvalue()
 
     @staticmethod
-    def _build_erg_pdf(slip, period, signature_path=None, employer_signature_path=None):
+    def _delivery_data(slip, period):
+        from .worker_portal import payslip_fingerprint
+
+        payroll_type = str(slip.get('payroll_type') or 'ERG').strip().upper()
+        release = PayrollRelease.objects.filter(
+            payroll_type=payroll_type,
+            period_start=period.start,
+            period_end=period.end,
+        ).first()
+        fingerprint = payslip_fingerprint(slip, period)
+        viewed = PayslipView.objects.filter(payslip_hash=fingerprint).first()
+        acknowledged = PayslipAcknowledgement.objects.filter(payslip_hash=fingerprint).first()
+
+        def date(value):
+            return timezone.localtime(value).strftime('%d/%m/%Y') if value else ''
+
+        return {
+            'issued_at': date(release.validated_at or release.released_at) if release else '',
+            'released_at': date(release.released_at) if release else '',
+            'accessed_at': date(viewed.first_viewed_at if viewed else acknowledged.confirmed_at if acknowledged else None),
+        }
+
+    @staticmethod
+    def _build_erg_pdf(slip, period, signature_path=None, employer_signature_path=None, delivery=None):
         from django.conf import settings
         from .erg_txt import locate_payroll, read_payroll, PayrollTextError
         from .erg_pdf import build_pdf as build_employee_pdf
@@ -1508,6 +1532,7 @@ class PaySlipPdfView(PaySlipPermissionMixin, View):
                 data,
                 signature_path=signature_path,
                 employer_signature_path=employer_signature_path,
+                delivery=delivery,
             )
         except (OSError, PayrollTextError) as exc:
             logger.warning('No se pudo generar ERG desde TXT: %s', exc)

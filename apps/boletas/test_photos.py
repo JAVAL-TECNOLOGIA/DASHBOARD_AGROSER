@@ -7,11 +7,35 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.user.models import User
-from .models import PayslipAcknowledgement, WorkerIdentityProfile
+from .models import PayrollRelease, PayslipAcknowledgement, PayslipView, WorkerIdentityProfile
 from .test_identity import image_bytes
 
 
 class PayslipPhotoTests(TestCase):
+    def test_electronic_delivery_uses_release_and_access_records(self):
+        from .periods import month_range
+        from .views import PaySlipPdfView
+        from .worker_portal import payslip_fingerprint
+
+        period = month_range('2026-08')
+        slip = {'nrodocumento': self.worker.username, 'payroll_type': 'ERG'}
+        self.assertEqual(PaySlipPdfView._delivery_data(slip, period), {
+            'issued_at': '', 'released_at': '', 'accessed_at': '',
+        })
+        release = PayrollRelease.objects.create(
+            payroll_type='ERG', period_start=period.start, period_end=period.end,
+            validated_at=timezone.now(), released_at=timezone.now(),
+        )
+        PayslipView.objects.create(
+            user=self.worker, worker_document=self.worker.username,
+            period_start=period.start, period_end=period.end,
+            payslip_hash=payslip_fingerprint(slip, period),
+        )
+        delivery = PaySlipPdfView._delivery_data(slip, period)
+        self.assertEqual(delivery['issued_at'], timezone.localtime(release.validated_at).strftime('%d/%m/%Y'))
+        self.assertEqual(delivery['released_at'], timezone.localtime(release.released_at).strftime('%d/%m/%Y'))
+        self.assertTrue(delivery['accessed_at'])
+
     @patch('apps.boletas.views.PaySlipService.list', return_value=[])
     def test_erg_filter_forces_month_even_with_week_url(self, slips):
         self.client.force_login(self.admin)
