@@ -1,5 +1,7 @@
 from django.test import TestCase
 from django.urls import reverse
+from django.contrib.auth.models import Permission
+from unittest.mock import patch
 
 from apps.user.models import User
 
@@ -58,3 +60,44 @@ class PayrollReleaseWorkflowTests(TestCase):
         response = self.client.post(self.url, {**self.data, "action": "validate"})
         self.assertEqual(response.status_code, 403)
         self.assertFalse(PayrollRelease.objects.exists())
+
+    def test_user_with_release_permission_can_validate_and_authorize(self):
+        operator = User.objects.create_user(
+            username="LNEYRA",
+            email="lneyra@example.test",
+            first_name="Luis",
+            last_name="Neyra",
+            password="test-password",
+        )
+        operator.user_permissions.add(
+            Permission.objects.get(content_type__app_label="boletas", codename="visualizar_boletas"),
+            Permission.objects.get(content_type__app_label="boletas", codename="gestionar_publicacion_boletas"),
+        )
+        self.client.force_login(operator)
+        response = self.client.post(self.url, {**self.data, "action": "validate"})
+        self.assertEqual(response.status_code, 302)
+        release = PayrollRelease.objects.get(payroll_type="ERG")
+        self.assertEqual(release.validated_by, operator)
+        response = self.client.post(self.url, {**self.data, "action": "authorize"})
+        self.assertEqual(response.status_code, 302)
+        release.refresh_from_db()
+        self.assertEqual(release.released_by, operator)
+
+    @patch("apps.boletas.views.PaySlipService.list", return_value=[])
+    def test_release_controls_are_visible_with_specific_permission(self, unused_slips):
+        operator = User.objects.create_user(
+            username="release-operator",
+            email="operator@example.test",
+            first_name="Operador",
+            last_name="Boletas",
+            password="test-password",
+        )
+        operator.user_permissions.add(
+            Permission.objects.get(content_type__app_label="boletas", codename="visualizar_boletas"),
+            Permission.objects.get(content_type__app_label="boletas", codename="gestionar_publicacion_boletas"),
+        )
+        self.client.force_login(operator)
+        response = self.client.get(reverse("boletas:index"), {"mode": "month", "month": "2026-08", "payroll_type": "ERG"})
+        self.assertTrue(operator.has_perm("boletas.gestionar_publicacion_boletas"))
+        self.assertTrue(response.context["can_manage_release"])
+        self.assertContains(response, "Validar boletas")

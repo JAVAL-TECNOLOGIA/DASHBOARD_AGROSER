@@ -8,6 +8,7 @@ class BoletaPermission(models.Model):
         default_permissions = ()
         permissions = [
             ("visualizar_boletas", "Puede visualizar boletas"),
+            ("gestionar_publicacion_boletas", "Puede validar y autorizar boletas"),
             ("ver_marcaciones", "Puede ver marcaciones"),
         ]
         verbose_name = "Permiso de boletas"

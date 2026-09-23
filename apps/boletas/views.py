@@ -397,9 +397,9 @@ class WorkerIdentityResetView(PaySlipPermissionMixin, View):
 class PayrollReleaseWorkflowView(PaySlipPermissionMixin, View):
     """Valida y luego autoriza un periodo antes de mostrarlo a trabajadores."""
 
+    permission_required = "boletas.gestionar_publicacion_boletas"
+
     def post(self, request):
-        if not getattr(request.user, "admin", False):
-            return HttpResponse("Solo un administrador puede autorizar boletas.", status=403)
         action = request.POST.get("action", "")
         payroll_type = request.POST.get("payroll_type", "").strip().upper()
         if action not in ("validate", "authorize") or payroll_type not in dict(PAYROLL_TYPES):
@@ -771,6 +771,9 @@ class PaySlipListView(PaySlipPermissionMixin, View):
                 period_end=date_range.end,
             ).first() if payroll_type else None,
             "registered_count": len(registered_documents),
+            "can_manage_release": getattr(request.user, "admin", False) or request.user.has_perm(
+                "boletas.gestionar_publicacion_boletas"
+            ),
             "badge_sheet_url": "{}?{}".format(
                 reverse("boletas:worker_badge_sheet"),
                 urlencode({**base_params, "q": query}),
