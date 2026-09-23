@@ -1468,6 +1468,22 @@ class PaySlipPdfView(PaySlipPermissionMixin, View):
             [value for value in str(slip.get('_payroll_week') or '').split('+') if value]
             if payroll_type in ('OBP', 'OBR') else []
         )
+        # Los enlaces confirmados antes de habilitar el filtro semanal pueden no
+        # incluir `week`. Deducir la semana de planilla por las fechas evita que
+        # locate_payroll encuentre dos carpetas del mismo mes y las rechace como
+        # una fuente ambigua.
+        if payroll_type in ('OBP', 'OBR') and not week_numbers:
+            inferred_weeks = []
+            service = PaySlipService()
+            for month in months:
+                for row in service.payroll_weeks(
+                    '{}-{}'.format(month[:4], month[4:]), payroll_type
+                ):
+                    if row['start'] <= period.end and row['end'] >= period.start:
+                        number = str(row.get('number') or '').strip()
+                        if number and number not in inferred_weeks:
+                            inferred_weeks.append(number)
+            week_numbers = inferred_weeks
         document = str(slip.get('nrodocumento') or '').strip()
         setting_name = '{}_TXT_ROOT'.format(payroll_type)
         fallback_folder = '{}-source'.format(payroll_type.lower())

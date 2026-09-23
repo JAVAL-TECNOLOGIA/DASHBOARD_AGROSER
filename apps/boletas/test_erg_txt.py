@@ -76,6 +76,32 @@ class ErgTxtTests(SimpleTestCase):
         target.write_bytes(self.path.read_bytes())
         self.assertEqual(locate_payroll(self.root, '202608', '01234567', week_number='42'), target)
 
+    @patch('apps.boletas.views.PaySlipService.payroll_weeks')
+    def test_plant_pdf_infers_missing_week_from_confirmed_period(self, payroll_weeks):
+        self.header['descripcion_planilla'] = 'OBREROS PLANTA'
+        self.header['periodo'] = '202609'
+        self.header['desde1'], self.header['hasta1'] = '20260907', '20260913'
+        week_43 = self.root / '20260943-20260943' / 'normal'
+        week_43.mkdir(parents=True)
+        self.path = week_43 / '01234567_NS.txt'
+        self.write()
+        week_44 = self.root / '20260944-20260944' / 'normal'
+        week_44.mkdir(parents=True)
+        (week_44 / self.path.name).write_bytes(self.path.read_bytes())
+        payroll_weeks.return_value = [{
+            'number': '43', 'start': date(2026, 9, 7),
+            'end': date(2026, 9, 13), 'equivalent': '',
+        }]
+        period = DateRange(date(2026, 9, 7), date(2026, 9, 13), 'Semana 43')
+
+        with override_settings(OBP_TXT_ROOT=str(self.root)):
+            result = PaySlipPdfView._build_pdf(
+                {'nrodocumento': '01234567', 'payroll_type': 'OBP'}, period
+            )
+
+        self.assertTrue(result.startswith(b'%PDF'))
+        payroll_weeks.assert_called_once_with('2026-09', 'OBP')
+
     def test_source_missing_never_falls_back_to_estimates(self):
         with override_settings(ERG_TXT_ROOT=str(self.root)):
             with self.assertRaises(Http404):PaySlipPdfView._build_erg_pdf({'nrodocumento':'99999999'},month_range('2026-08'))
