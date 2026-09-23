@@ -527,14 +527,18 @@ class WorkerPayslipPdfView(WorkerPortalMixin, View):
         if not acknowledgement:
             messages.error(request, "Debes dar tu conformidad antes de visualizar la boleta.")
             return redirect("boletas:worker_dashboard")
-        with transaction.atomic():
-            record_worker_pdf_access(request, request.user, period, requested_hash)
-            data = PaySlipPdfView._build_pdf(
-                slip,
-                period,
-                delivery=PaySlipPdfView._delivery_data(slip, period),
-                **_confirmed_signature(slip, period),
-            )
+        try:
+            with transaction.atomic():
+                record_worker_pdf_access(request, request.user, period, requested_hash)
+                data = PaySlipPdfView._build_pdf(
+                    slip,
+                    period,
+                    delivery=PaySlipPdfView._delivery_data(slip, period),
+                    **_confirmed_signature(slip, period),
+                )
+        except Http404 as exc:
+            messages.error(request, str(exc))
+            return redirect('boletas:worker_dashboard')
         response = HttpResponse(data, content_type="application/pdf")
         response["Content-Disposition"] = 'inline; filename="mi_boleta_{}_{}.pdf"'.format(
             slip.get("document_type", "pago"), period.end.strftime("%Y%m%d")

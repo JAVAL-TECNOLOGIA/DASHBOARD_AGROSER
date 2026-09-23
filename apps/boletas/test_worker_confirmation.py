@@ -1,6 +1,7 @@
 from unittest.mock import patch
 
 from django.test import TestCase
+from django.http import Http404
 from django.urls import reverse
 from django.utils import timezone
 
@@ -111,6 +112,19 @@ class WorkerConfirmationTests(TestCase):
         )
         with self.assertRaises(RuntimeError):
             self.client.get(reverse('boletas:worker_pdf'), self.params)
+        self.assertFalse(PayslipView.objects.filter(payslip_hash=self.fingerprint).exists())
+
+    @patch('apps.boletas.worker_portal.PaySlipPdfView._build_pdf', side_effect=Http404('TXT no disponible.'))
+    def test_pdf_source_error_returns_to_portal_without_technical_page(self, build_pdf):
+        PayslipAcknowledgement.objects.create(
+            user=self.user, worker_document=self.user.username,
+            period_start=self.period.start, period_end=self.period.end,
+            payslip_hash=self.fingerprint, signer_name='Trabajador Prueba',
+        )
+
+        response = self.client.get(reverse('boletas:worker_pdf'), self.params)
+
+        self.assertRedirects(response, reverse('boletas:worker_dashboard'))
         self.assertFalse(PayslipView.objects.filter(payslip_hash=self.fingerprint).exists())
 
     def test_invalid_hash_is_never_confirmed(self):
