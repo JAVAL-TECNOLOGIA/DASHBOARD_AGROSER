@@ -10,7 +10,7 @@
         <li class="nav-item">
             <a class="nav-link" href="{% url 'boletas:consolidated' %}"><i class="fa fa-chart-bar mr-1"></i> Consolidado</a>
         </li>
-        {% if perms.boletas.ver_marcaciones or request.user.admin %}<li class="nav-item"><a class="nav-link" href="{% url 'boletas:attendance' %}"><i class="fa fa-barcode mr-1"></i> Marcaciones</a></li>{% endif %}
+        {% if perms.boletas.ver_marcaciones or perms.boletas.administrar_boletas or request.user.admin %}<li class="nav-item"><a class="nav-link" href="{% url 'boletas:attendance' %}"><i class="fa fa-barcode mr-1"></i> Marcaciones</a></li>{% endif %}
     </ul>
     <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4">
         <div>
@@ -27,7 +27,7 @@
                     <i class="fa fa-id-card mr-1"></i> Generación masiva (0)
                 </button>
             {% endif %}
-            {% if request.user.admin %}
+            {% if can_administer_payslips %}
                 <button class="btn btn-outline-success mr-2" id="generate-selected-badges" type="submit" form="badge-selection-form" disabled>
                     <i class="fa fa-check-square mr-1"></i> Generar seleccionados (0)
                 </button>
@@ -210,7 +210,7 @@
                 <table class="table table-hover mb-0">
                     <thead class="thead-light">
                         <tr>
-                            {% if request.user.admin %}<th class="text-center" style="width:42px"><input id="select-all-badges" type="checkbox" aria-label="Seleccionar trabajadores habilitados de esta página"></th>{% endif %}
+                            {% if can_administer_payslips %}<th class="text-center" style="width:42px"><input id="select-all-badges" type="checkbox" aria-label="Seleccionar trabajadores habilitados de esta página"></th>{% endif %}
                             <th>Trabajador</th>
                             <th>Documento</th>
                             <th class="text-center">Foto</th>
@@ -220,14 +220,14 @@
                             <th class="text-right">Días</th>
                             <th class="text-right">Básico</th>
                             <th>Firma</th>
-                            {% if request.user.admin %}<th class="text-center">Confirmación</th>{% endif %}
+                            {% if can_administer_payslips %}<th class="text-center">Confirmación</th>{% endif %}
                             <th>Detalle</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for slip in page %}
                             <tr>
-                                {% if request.user.admin %}
+                                {% if can_administer_payslips %}
                                 <td class="text-center align-middle">
                                     <input class="badge-worker-selector" type="checkbox" name="documents" value="{{ slip.worker_document }}" form="badge-selection-form" aria-label="Seleccionar a {{ slip.apenom|default:'trabajador' }}" {% if not slip.badge_eligible %}disabled title="Requiere foto, firma y confirmación"{% endif %}>
                                 </td>
@@ -251,7 +251,7 @@
                                 <td>
                                     {% if slip.has_signature %}<span class="badge badge-success">SUBIDO</span>{% else %}<span class="badge badge-warning">PENDIENTE</span>{% endif %}
                                 </td>
-                                {% if request.user.admin %}
+                                {% if can_administer_payslips %}
                                 <td class="text-center align-middle">
                                     {% if slip.acknowledgement %}
                                         <span class="badge badge-success">CONFIRMADA</span>
@@ -286,7 +286,7 @@
                             </tr>
 
                         {% empty %}
-                            <tr><td colspan="{% if request.user.admin %}12{% else %}10{% endif %}" class="text-center text-muted py-5"><i class="fa fa-inbox fa-2x d-block mb-3"></i>No se encontraron boletas para los filtros seleccionados.</td></tr>
+                            <tr><td colspan="{% if can_administer_payslips %}12{% else %}10{% endif %}" class="text-center text-muted py-5"><i class="fa fa-inbox fa-2x d-block mb-3"></i>No se encontraron boletas para los filtros seleccionados.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>

@@ -201,7 +201,7 @@
                 <!--RECUSOS HUMANOS-->
                 <!--=============================================================-->
 
-                {% if perms.boletas.visualizar_boletas or user.admin %}
+                {% if perms.boletas.visualizar_boletas or perms.boletas.administrar_boletas or user.admin %}
                 <li class="{% if request.path|slice:':9' == '/boletas/' and request.path|slice:':21' != '/boletas/marcaciones/' %}active{% endif %}">
                     <a href="{% url 'boletas:index' %}">
                         <i class="fa fa-file-invoice-dollar"></i>
@@ -209,7 +209,7 @@
                     </a>
                 </li>
                 {% endif %}
-                {% if perms.boletas.ver_marcaciones or user.admin %}
+                {% if perms.boletas.ver_marcaciones or perms.boletas.administrar_boletas or user.admin %}
                 <li class="{% if request.path|slice:':21' == '/boletas/marcaciones/' %}active{% endif %}">
                     <a href="{% url 'boletas:attendance' %}">
                         <i class="fa fa-barcode"></i>

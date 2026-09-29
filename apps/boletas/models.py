@@ -10,6 +10,7 @@ class BoletaPermission(models.Model):
             ("visualizar_boletas", "Puede visualizar boletas"),
             ("gestionar_publicacion_boletas", "Puede validar y autorizar boletas"),
             ("ver_marcaciones", "Puede ver marcaciones"),
+            ("administrar_boletas", "Puede administrar completamente las boletas"),
         ]
         verbose_name = "Permiso de boletas"
         verbose_name_plural = "Permisos de boletas"

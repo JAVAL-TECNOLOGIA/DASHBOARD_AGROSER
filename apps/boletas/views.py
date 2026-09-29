@@ -34,6 +34,16 @@ logger = logging.getLogger(__name__)
 WEEKLY_PAYROLL_TYPES = ("OBP", "OBR")
 
 
+def can_administer_payslips(user):
+    return bool(
+        user.is_authenticated
+        and (
+            getattr(user, "admin", False)
+            or user.has_perm("boletas.administrar_boletas")
+        )
+    )
+
+
 def _official_payroll_period(service, payroll_type, month_value, week_number=""):
     month = month_range(month_value)
     if payroll_type not in WEEKLY_PAYROLL_TYPES:
@@ -98,8 +108,13 @@ class PaySlipPermissionMixin(LoginRequiredMixin, PermissionRequiredMixin):
     def has_permission(self):
         user = self.request.user
         return user.is_authenticated and (
-            getattr(user, "admin", False) or super().has_permission()
+            can_administer_payslips(user) or super().has_permission()
         )
+
+
+class PaySlipAdminMixin(PaySlipPermissionMixin):
+    def has_permission(self):
+        return can_administer_payslips(self.request.user)
 
 
 class AttendanceAdminMixin(PaySlipPermissionMixin):
@@ -347,7 +362,7 @@ def _return_to_payslips(request):
     return redirect('{}?{}'.format(url, query_string) if query_string else url)
 
 
-class WorkerPasswordResetView(PaySlipPermissionMixin, View):
+class WorkerPasswordResetView(PaySlipAdminMixin, View):
     def post(self, request, document):
         if not valid_worker_document(document):
             messages.error(request, 'El DNI indicado no es válido.')
@@ -362,7 +377,7 @@ class WorkerPasswordResetView(PaySlipPermissionMixin, View):
         return _return_to_payslips(request)
 
 
-class WorkerIdentityResetView(PaySlipPermissionMixin, View):
+class WorkerIdentityResetView(PaySlipAdminMixin, View):
     def post(self, request, document):
         if not valid_worker_document(document):
             messages.error(request, 'El DNI indicado no es válido.')
@@ -802,7 +817,8 @@ class PaySlipListView(PaySlipPermissionMixin, View):
             "registered_count": len(registered_documents),
             "identity_registered_count": identity_registered_count,
             "payroll_registration_stats": payroll_registration_stats,
-            "can_manage_release": getattr(request.user, "admin", False) or request.user.has_perm(
+            "can_administer_payslips": can_administer_payslips(request.user),
+            "can_manage_release": can_administer_payslips(request.user) or request.user.has_perm(
                 "boletas.gestionar_publicacion_boletas"
             ),
             "badge_sheet_url": "{}?{}".format(

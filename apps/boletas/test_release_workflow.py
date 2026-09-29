@@ -84,6 +84,34 @@ class PayrollReleaseWorkflowTests(TestCase):
         self.assertEqual(release.released_by, operator)
 
     @patch("apps.boletas.views.PaySlipService.list", return_value=[])
+    def test_module_administrator_permission_grants_complete_access(self, unused_slips):
+        operator = User.objects.create_user(
+            username="LNEYRA",
+            email="lneyra-admin@example.test",
+            first_name="Luis",
+            last_name="Neyra",
+            password="test-password",
+        )
+        operator.user_permissions.add(Permission.objects.get(
+            content_type__app_label="boletas",
+            codename="administrar_boletas",
+        ))
+        self.client.force_login(operator)
+
+        index_response = self.client.get(reverse("boletas:index"))
+        attendance_response = self.client.get(reverse("boletas:attendance"))
+        release_response = self.client.post(
+            self.url, {**self.data, "action": "validate"}
+        )
+
+        self.assertEqual(index_response.status_code, 200)
+        self.assertTrue(index_response.context["can_administer_payslips"])
+        self.assertTrue(index_response.context["can_manage_release"])
+        self.assertEqual(attendance_response.status_code, 200)
+        self.assertEqual(release_response.status_code, 302)
+        self.assertEqual(PayrollRelease.objects.get(payroll_type="ERG").validated_by, operator)
+
+    @patch("apps.boletas.views.PaySlipService.list", return_value=[])
     def test_release_controls_are_visible_with_specific_permission(self, unused_slips):
         operator = User.objects.create_user(
             username="release-operator",
