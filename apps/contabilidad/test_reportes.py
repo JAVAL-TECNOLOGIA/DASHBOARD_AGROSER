@@ -3,6 +3,8 @@ from django.contrib.auth.models import Permission
 from django.test import TestCase
 from django.urls import reverse
 
+from apps.user.views import UserAdministrationMixin
+
 
 class ContabilidadReportesViewTests(TestCase):
     def setUp(self):
@@ -37,6 +39,17 @@ class ContabilidadReportesViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Reportes de Contabilidad')
+
+    def test_reports_permission_appears_in_user_administration(self):
+        permission = Permission.objects.get(
+            content_type__app_label='contabilidad',
+            codename='ver_reportes_contabilidad',
+        )
+
+        permission_groups = dict(UserAdministrationMixin.permission_groups())
+
+        self.assertIn('contabilidad', permission_groups)
+        self.assertIn(permission, permission_groups['contabilidad'])
 
     def test_allows_administrator(self):
         self.user.admin = True
