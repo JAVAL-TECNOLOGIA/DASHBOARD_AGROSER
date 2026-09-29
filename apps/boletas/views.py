@@ -674,6 +674,31 @@ class PaySlipListView(PaySlipPermissionMixin, View):
             messages.error(request, "No fue posible consultar las boletas en este momento.")
             slips = []
 
+        payroll_documents = {code: set() for code, unused_label in PAYROLL_TYPES}
+        for slip in slips:
+            slip_payroll = str(slip.get('payroll_type') or '').strip().upper()
+            document = str(slip.get('nrodocumento') or '').strip()
+            if slip_payroll in payroll_documents and document:
+                payroll_documents[slip_payroll].add(document)
+        period_documents = set().union(*payroll_documents.values())
+        complete_period_documents = set(WorkerIdentityProfile.objects.filter(
+            worker_document__in=period_documents,
+            photo__gt='',
+            signature__gt='',
+        ).values_list('worker_document', flat=True))
+        payroll_registration_stats = []
+        for code, label in PAYROLL_TYPES:
+            documents = payroll_documents[code]
+            total = len(documents)
+            registered = len(documents & complete_period_documents)
+            payroll_registration_stats.append({
+                'code': code,
+                'label': label,
+                'total': total,
+                'registered': registered,
+                'percentage': round(registered * 100 / total) if total else 0,
+            })
+
         if payroll_type:
             slips = [
                 slip for slip in slips if slip.get("payroll_type") == payroll_type
@@ -776,6 +801,7 @@ class PaySlipListView(PaySlipPermissionMixin, View):
             ).first() if payroll_type else None,
             "registered_count": len(registered_documents),
             "identity_registered_count": identity_registered_count,
+            "payroll_registration_stats": payroll_registration_stats,
             "can_manage_release": getattr(request.user, "admin", False) or request.user.has_perm(
                 "boletas.gestionar_publicacion_boletas"
             ),

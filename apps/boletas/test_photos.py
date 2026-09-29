@@ -121,6 +121,31 @@ class PayslipPhotoTests(TestCase):
         self.assertContains(response, 'Con fotografía y firma')
 
     @patch('apps.boletas.views.PaySlipService.list')
+    def test_registration_indicator_is_broken_down_by_payroll(self, slips):
+        slips.return_value = [
+            {'nrodocumento': '01234567', 'payroll_type': 'ERG'},
+            {'nrodocumento': '01234567', 'payroll_type': 'ERG'},
+            {'nrodocumento': '99999999', 'payroll_type': 'ERG'},
+            {'nrodocumento': '88888888', 'payroll_type': 'ERA'},
+        ]
+        self.profile.signature = SimpleUploadedFile(
+            'signature.png', image_bytes(), content_type='image/png'
+        )
+        self.profile.save(update_fields=['signature'])
+        self.client.force_login(self.admin)
+
+        response = self.client.get(reverse('boletas:index'))
+
+        stats = {item['code']: item for item in response.context['payroll_registration_stats']}
+        self.assertEqual(stats['ERG']['total'], 2)
+        self.assertEqual(stats['ERG']['registered'], 1)
+        self.assertEqual(stats['ERG']['percentage'], 50)
+        self.assertEqual(stats['ERA']['total'], 1)
+        self.assertEqual(stats['ERA']['registered'], 0)
+        self.assertContains(response, 'EMPLEADOS REGIMEN GENERAL')
+        self.assertContains(response, '1 <span class="h6 text-muted">de 2</span>', html=True)
+
+    @patch('apps.boletas.views.PaySlipService.list')
     def test_admin_confirmation_column_shows_status_and_date(self, slips):
         slips.return_value = [{
             'nrodocumento': '01234567', 'apenom': 'TRABAJADOR',
