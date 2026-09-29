@@ -102,6 +102,24 @@ class PayslipPhotoTests(TestCase):
         self.assertContains(response, 'VER DETALLE')
         self.assertNotContains(response, 'Ver conceptos')
 
+    @patch('apps.boletas.views.PaySlipService.list', return_value=[])
+    def test_registered_identity_indicator_counts_only_photo_and_signature(self, slips):
+        self.client.force_login(self.admin)
+
+        without_signature = self.client.get(reverse('boletas:index'))
+        self.assertEqual(without_signature.context['identity_registered_count'], 0)
+
+        self.profile.signature = SimpleUploadedFile(
+            'signature.png', image_bytes(), content_type='image/png'
+        )
+        self.profile.save(update_fields=['signature'])
+
+        response = self.client.get(reverse('boletas:index'))
+
+        self.assertEqual(response.context['identity_registered_count'], 1)
+        self.assertContains(response, 'Registrados en la app')
+        self.assertContains(response, 'Con fotografía y firma')
+
     @patch('apps.boletas.views.PaySlipService.list')
     def test_admin_confirmation_column_shows_status_and_date(self, slips):
         slips.return_value = [{

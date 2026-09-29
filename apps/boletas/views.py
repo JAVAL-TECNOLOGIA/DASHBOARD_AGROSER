@@ -736,6 +736,10 @@ class PaySlipListView(PaySlipPermissionMixin, View):
             for slip in slips if slip.get('acknowledgement')
         }
         registered_documents = identity_documents & confirmed_documents
+        identity_registered_count = WorkerIdentityProfile.objects.filter(
+            photo__gt='',
+            signature__gt='',
+        ).count()
 
         paginator = Paginator(slips, 25)
         page = paginator.get_page(request.GET.get("page"))
@@ -771,6 +775,7 @@ class PaySlipListView(PaySlipPermissionMixin, View):
                 period_end=date_range.end,
             ).first() if payroll_type else None,
             "registered_count": len(registered_documents),
+            "identity_registered_count": identity_registered_count,
             "can_manage_release": getattr(request.user, "admin", False) or request.user.has_perm(
                 "boletas.gestionar_publicacion_boletas"
             ),
