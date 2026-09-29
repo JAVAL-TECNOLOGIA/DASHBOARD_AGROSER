@@ -1,7 +1,9 @@
 from django.shortcuts import render
 from django.views.generic import TemplateView
 from django.views.generic import View
-from django.http import JsonResponse
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.contrib.auth.views import redirect_to_login
+from django.http import Http404, JsonResponse
 from apps.connection.connect_donluis import connection_donluis
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
@@ -9,6 +11,7 @@ from apps.connection.connect_portalaei import connection_portalaei
 from decimal import Decimal
 from datetime import datetime
 import json
+from pathlib import Path
 from django.db import connection
 from django.db import IntegrityError
 from django.db import transaction
@@ -17,7 +20,110 @@ from datetime import date
 from datetime import datetime
 
 
-# Create your views here.
+CONTABILIDAD_REPORTES = (
+    {
+        'slug': 'comparacion',
+        'nombre': 'Comparación',
+        'descripcion': 'Comparación de información contable entre periodos.',
+        'icono': 'bi-arrow-left-right',
+        'color': '#0d6b45',
+    },
+    {
+        'slug': 'ventas',
+        'nombre': 'Ventas',
+        'descripcion': 'Consulta y análisis de la información de ventas.',
+        'icono': 'bi-graph-up-arrow',
+        'color': '#176b87',
+    },
+    {
+        'slug': 'detalle-cajas-kilos',
+        'nombre': 'Detalle Cajas y Kilos',
+        'descripcion': 'Detalle consolidado de cajas y kilos registrados.',
+        'icono': 'bi-box-seam',
+        'color': '#8a5a12',
+    },
+    {
+        'slug': 'consolidado-costos-gastos-junio-julio-2025-2026',
+        'nombre': 'Consolidado de Costos y Gastos Junio/Julio 2025 - 2026',
+        'descripcion': 'Consolidado comparativo de costos y gastos del periodo.',
+        'icono': 'bi-cash-stack',
+        'color': '#6f42c1',
+    },
+    {
+        'slug': 'balance-general-agosto-2026',
+        'nombre': 'Balance General Agosto 2026',
+        'descripcion': 'Consulta del balance general correspondiente a agosto de 2026.',
+        'icono': 'bi-clipboard-data',
+        'color': '#a33b20',
+    },
+)
+
+
+class ContabilidadReportesAccessMixin(LoginRequiredMixin, PermissionRequiredMixin):
+    permission_required = 'contabilidad.ver_reportes_contabilidad'
+    raise_exception = True
+
+    def has_permission(self):
+        user = self.request.user
+        return user.is_authenticated and (
+            getattr(user, 'admin', False) or super().has_permission()
+        )
+
+    def handle_no_permission(self):
+        if not self.request.user.is_authenticated:
+            return redirect_to_login(
+                self.request.get_full_path(),
+                self.get_login_url(),
+                self.get_redirect_field_name(),
+            )
+        return super().handle_no_permission()
+
+
+class ContabilidadReportesView(ContabilidadReportesAccessMixin, TemplateView):
+    template_name = 'contabilidad/reportes/index.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['reportes'] = CONTABILIDAD_REPORTES
+        return context
+
+
+class ContabilidadReporteDetalleView(ContabilidadReportesAccessMixin, TemplateView):
+    template_name = 'contabilidad/reportes/detalle.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        slug = kwargs['slug']
+        reporte = next(
+            (item for item in CONTABILIDAD_REPORTES if item['slug'] == slug),
+            None,
+        )
+        if reporte is None:
+            raise Http404('El reporte solicitado no existe.')
+        context['reporte'] = reporte
+        if slug == 'comparacion':
+            data_path = Path(__file__).resolve().parent / 'data' / 'comparacion.json'
+            with data_path.open(encoding='utf-8') as data_file:
+                context['comparacion_data'] = json.load(data_file)
+        elif slug == 'ventas':
+            data_path = Path(__file__).resolve().parent / 'data' / 'ventas.json'
+            with data_path.open(encoding='utf-8') as data_file:
+                context['ventas_data'] = json.load(data_file)
+        elif slug == 'detalle-cajas-kilos':
+            data_path = Path(__file__).resolve().parent / 'data' / 'cajas_kilos.json'
+            with data_path.open(encoding='utf-8') as data_file:
+                context['cajas_kilos_data'] = json.load(data_file)
+        elif slug == 'balance-general-agosto-2026':
+            data_path = Path(__file__).resolve().parent / 'data' / 'balance_agosto_2026.json'
+            with data_path.open(encoding='utf-8') as data_file:
+                context['balance_data'] = json.load(data_file)
+        elif slug == 'consolidado-costos-gastos-junio-julio-2025-2026':
+            data_path = Path(__file__).resolve().parent / 'data' / 'costos_gastos_junio_julio.json'
+            with data_path.open(encoding='utf-8') as data_file:
+                context['costos_gastos_data'] = json.load(data_file)
+        return context
+
+
 class Contabilidad_libro_af(TemplateView):
     permission_required = 'modulo_contabilidad'
     template_name = 'contabilidad/contabilidad_libro_af.html'

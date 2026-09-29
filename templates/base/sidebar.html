@@ -379,6 +379,24 @@
                 <!--CONTABILIDAD-->
                 <!--=============================================================-->
 
+                {% if perms.contabilidad.ver_reportes_contabilidad or user.admin %}
+                <li class="has-sub {% if request.resolver_match.url_name == 'contabilidad_reportes' or request.resolver_match.url_name == 'contabilidad_reporte_detalle' %}active{% endif %}">
+                    <a href="javascript:;">
+                        <b class="caret"></b>
+                        <i class="bi bi-calculator"></i>
+                        <span style="font-size: 16px;">Contabilidad</span>
+                    </a>
+                    <ul style="font-size: 14px;" class="sub-menu">
+                        <li class="{% if request.resolver_match.url_name == 'contabilidad_reportes' or request.resolver_match.url_name == 'contabilidad_reporte_detalle' %}active{% endif %}">
+                            <a href="{% url 'contabilidad_reportes' %}">
+                                <i class="bi bi-bar-chart-line"></i>
+                                Reportes
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                {% endif %}
+
                 {% comment %} {% if perms.contabilidad.modulo_contabilidad  %}
                 <li class="has-sub">
 

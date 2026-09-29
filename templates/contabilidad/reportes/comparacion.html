@@ -1,0 +1,158 @@
+<div class="executive-dashboard">
+    <div class="card dashboard-filter shadow-sm border-0 mb-4">
+        <div class="card-body py-3">
+            <div class="row align-items-end">
+                <div class="col-xl-4 col-lg-5 mb-3 mb-lg-0">
+                    <label class="filter-label">Años a comparar</label>
+                    <div class="year-options" id="year-options">
+                        {% for year in comparacion_data.data %}
+                        <label class="year-chip">
+                            <input type="checkbox" value="{{ year }}" checked>
+                            <span>{{ year }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="col-xl-3 col-lg-3 col-md-4 mb-3 mb-md-0">
+                    <label class="filter-label" for="metric-filter">Indicador</label>
+                    <select class="form-control" id="metric-filter">
+                        {% for descripcion in comparacion_data.descriptions %}
+                        <option value="{{ descripcion }}">{{ descripcion|title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-xl-2 col-lg-2 col-md-4 mb-3 mb-md-0">
+                    <label class="filter-label" for="month-from">Desde</label>
+                    <select class="form-control" id="month-from"></select>
+                </div>
+                <div class="col-xl-2 col-lg-2 col-md-4">
+                    <label class="filter-label" for="month-to">Hasta</label>
+                    <select class="form-control" id="month-to"></select>
+                </div>
+                <div class="col-xl-1 d-none d-xl-block text-right">
+                    <button class="btn btn-light" id="reset-comparison" type="button" title="Restablecer filtros">
+                        <i class="fa fa-undo"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row kpi-row">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card kpi-card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="kpi-title">Total del periodo</div>
+                    <div class="kpi-value" id="kpi-total">—</div>
+                    <div class="kpi-detail" id="kpi-total-detail">—</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card kpi-card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="kpi-title">Variación interanual</div>
+                    <div class="kpi-value" id="kpi-yoy">—</div>
+                    <div class="kpi-detail" id="kpi-yoy-detail">—</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card kpi-card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="kpi-title">Mejor mes</div>
+                    <div class="kpi-value" id="kpi-best">—</div>
+                    <div class="kpi-detail" id="kpi-best-detail">—</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card kpi-card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="kpi-title">Promedio mensual</div>
+                    <div class="kpi-value" id="kpi-average">—</div>
+                    <div class="kpi-detail" id="kpi-average-detail">—</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-xl-8 mb-4">
+            <div class="card chart-card h-100 border-0 shadow-sm">
+                <div class="card-header bg-white border-0 pt-4 px-4">
+                    <h4 class="mb-1">Evolución mensual</h4>
+                    <p class="text-muted mb-0" id="trend-subtitle">Comparación por año</p>
+                </div>
+                <div class="card-body px-4"><div class="chart-wrap"><canvas id="monthly-trend-chart"></canvas></div></div>
+            </div>
+        </div>
+        <div class="col-xl-4 mb-4">
+            <div class="card chart-card h-100 border-0 shadow-sm">
+                <div class="card-header bg-white border-0 pt-4 px-4">
+                    <h4 class="mb-1">Acumulado por año</h4>
+                    <p class="text-muted mb-0">Periodo seleccionado</p>
+                </div>
+                <div class="card-body px-4"><div class="chart-wrap"><canvas id="annual-total-chart"></canvas></div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-xl-4 mb-4">
+            <div class="card insight-card h-100 border-0 shadow-sm">
+                <div class="card-header bg-white border-0 pt-4 px-4">
+                    <h4 class="mb-1">Lectura ejecutiva</h4>
+                    <p class="text-muted mb-0">Señales del periodo seleccionado</p>
+                </div>
+                <div class="card-body px-4 pt-2">
+                    <ul class="executive-insights" id="executive-insights"></ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-8 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="mb-1">Detalle mensual y anual por descripción</h4>
+                        <p class="text-muted mb-0">Meses, total del periodo y años seleccionados</p>
+                    </div>
+                    <span class="source-note">Fuente: comparacion.xlsx</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table executive-table mb-0">
+                        <thead><tr id="comparison-table-head"></tr></thead>
+                        <tbody id="comparison-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .executive-dashboard { --erp-green: #0b6b45; --erp-navy: #17324d; }
+    .dashboard-filter { border-radius: 12px; }
+    .filter-label { color: #697684; display: block; font-size: .72rem; font-weight: 700; letter-spacing: .06em; margin-bottom: .5rem; text-transform: uppercase; }
+    .year-options { display: flex; flex-wrap: wrap; gap: .45rem; }
+    .year-chip { margin: 0; }
+    .year-chip input { position: absolute; opacity: 0; }
+    .year-chip span { background: #edf1f4; border: 1px solid #dce3e8; border-radius: 7px; color: #52606d; cursor: pointer; display: inline-block; font-weight: 700; padding: .52rem .85rem; transition: .15s ease; }
+    .year-chip input:checked + span { background: var(--erp-navy); border-color: var(--erp-navy); color: white; }
+    .kpi-card { border-radius: 12px; border-top: 4px solid var(--erp-green) !important; }
+    .kpi-title { color: #768390; font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+    .kpi-value { color: #172b3a; font-size: 1.8rem; font-weight: 700; line-height: 1.2; margin: .55rem 0 .4rem; }
+    .kpi-detail { color: #87929c; font-size: .82rem; }
+    .kpi-positive { color: #078447; } .kpi-negative { color: #c43d32; }
+    .chart-card, .insight-card { border-radius: 12px; min-height: 390px; }
+    .chart-card .card-header h4, .insight-card .card-header h4 { color: #233746; font-size: 1rem; font-weight: 700; }
+    .chart-wrap { height: 285px; position: relative; }
+    .executive-insights { list-style: none; margin: 0; padding: 0; }
+    .executive-insights li { border-bottom: 1px solid #edf0f2; color: #4d5b66; line-height: 1.45; padding: 1rem 0 1rem 2rem; position: relative; }
+    .executive-insights li:last-child { border-bottom: 0; }
+    .executive-insights li:before { background: #dff3ea; border-radius: 50%; color: var(--erp-green); content: '\f00c'; font-family: 'Font Awesome 5 Free'; font-size: .65rem; font-weight: 900; height: 20px; left: 0; line-height: 20px; position: absolute; text-align: center; top: 1.05rem; width: 20px; }
+    .executive-table thead th { background: #f6f8f9; border-top: 0; color: #64727e; font-size: .72rem; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; }
+    .executive-table td { color: #344553; font-size: .84rem; white-space: nowrap; }
+    .source-note { background: #eff7f3; border-radius: 20px; color: var(--erp-green); font-size: .72rem; padding: .4rem .7rem; }
+    @media (max-width: 767px) { .kpi-value { font-size: 1.45rem; } .chart-wrap { height: 245px; } .source-note { display: none; } }
+</style>

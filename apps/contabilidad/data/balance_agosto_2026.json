@@ -1,0 +1,12 @@
+{
+  "source": "Imagen proporcionada por el usuario",
+  "period": "Agosto 2026",
+  "currency": "PEN",
+  "items": [
+    {"key": "bancos", "label": "Bancos", "group": "activo", "amount": 857849.11},
+    {"key": "cuentas_por_cobrar", "label": "Cuentas por cobrar", "group": "activo", "amount": 827654.78},
+    {"key": "impuestos", "label": "Impuestos", "group": "obligacion", "amount": 382461.79},
+    {"key": "cuentas_por_pagar", "label": "Cuentas por pagar", "group": "obligacion", "amount": 1408001.24}
+  ],
+  "net_position": -104959.14
+}

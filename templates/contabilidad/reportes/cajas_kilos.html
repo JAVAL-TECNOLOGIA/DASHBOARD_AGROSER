@@ -1,0 +1,38 @@
+<div class="ck-dashboard">
+    <div class="card ck-filter shadow-sm border-0 mb-4"><div class="card-body py-3"><div class="row align-items-end">
+        <div class="col-xl-3 col-lg-4 col-md-6 mb-3 mb-xl-0"><label class="ck-label" for="ck-metric">Indicador</label><select class="form-control" id="ck-metric"><option value="cajas">Producción de cajas</option><option value="kilos">Kilogramos procesados</option></select></div>
+        <div class="col-xl-3 col-lg-4 col-md-6 mb-3 mb-xl-0"><label class="ck-label" for="ck-client">Cliente</label><select class="form-control" id="ck-client"><option value="__all__">Todos los clientes</option>{% for client in cajas_kilos_data.clients %}<option value="{{ client }}">{{ client|title }}</option>{% endfor %}</select></div>
+        <div class="col-xl-3 col-lg-4 mb-3 mb-xl-0"><label class="ck-label">Años a comparar</label><div class="ck-years" id="ck-years">{% for year in cajas_kilos_data.years %}<label class="ck-year"><input type="checkbox" value="{{ year }}" checked><span>{{ year }}</span></label>{% endfor %}</div></div>
+        <div class="col-xl-1 col-md-5 mb-3 mb-md-0"><label class="ck-label" for="ck-from">Desde</label><select class="form-control" id="ck-from"></select></div>
+        <div class="col-xl-1 col-md-5 mb-3 mb-md-0"><label class="ck-label" for="ck-to">Hasta</label><select class="form-control" id="ck-to"></select></div>
+        <div class="col-xl-1 col-md-2 text-right"><button class="btn btn-light" id="ck-reset" type="button" title="Restablecer filtros"><i class="fa fa-undo"></i></button></div>
+    </div></div></div>
+
+    <div class="row">
+        <div class="col-xl-3 col-md-6 mb-4"><div class="card ck-kpi h-100 border-0 shadow-sm"><div class="card-body"><div class="ck-kpi-title">Producción del periodo</div><div class="ck-kpi-value" id="ck-total">—</div><div class="ck-kpi-detail" id="ck-total-detail">—</div></div></div></div>
+        <div class="col-xl-3 col-md-6 mb-4"><div class="card ck-kpi h-100 border-0 shadow-sm"><div class="card-body"><div class="ck-kpi-title">Variación interanual</div><div class="ck-kpi-value" id="ck-yoy">—</div><div class="ck-kpi-detail" id="ck-yoy-detail">—</div></div></div></div>
+        <div class="col-xl-3 col-md-6 mb-4"><div class="card ck-kpi h-100 border-0 shadow-sm"><div class="card-body"><div class="ck-kpi-title">Cliente principal</div><div class="ck-kpi-value ck-kpi-text" id="ck-leader">—</div><div class="ck-kpi-detail" id="ck-leader-detail">—</div></div></div></div>
+        <div class="col-xl-3 col-md-6 mb-4"><div class="card ck-kpi h-100 border-0 shadow-sm"><div class="card-body"><div class="ck-kpi-title">Promedio mensual</div><div class="ck-kpi-value" id="ck-average">—</div><div class="ck-kpi-detail" id="ck-average-detail">—</div></div></div></div>
+    </div>
+
+    <div class="row">
+        <div class="col-xl-8 mb-4"><div class="card ck-chart h-100 border-0 shadow-sm"><div class="card-header bg-white border-0 pt-4 px-4"><h4 class="mb-1">Evolución mensual</h4><p class="text-muted mb-0" id="ck-trend-subtitle">Comparación por año</p></div><div class="card-body px-4"><div class="ck-chart-wrap"><canvas id="ck-month-chart"></canvas></div></div></div></div>
+        <div class="col-xl-4 mb-4"><div class="card ck-chart h-100 border-0 shadow-sm"><div class="card-header bg-white border-0 pt-4 px-4"><h4 class="mb-1">Acumulado por año</h4><p class="text-muted mb-0">Periodo seleccionado</p></div><div class="card-body px-4"><div class="ck-chart-wrap"><canvas id="ck-year-chart"></canvas></div></div></div></div>
+    </div>
+
+    <div class="row">
+        <div class="col-xl-8 mb-4"><div class="card ck-chart ck-chart-large h-100 border-0 shadow-sm"><div class="card-header bg-white border-0 pt-4 px-4"><h4 class="mb-1">Producción por cliente</h4><p class="text-muted mb-0" id="ck-ranking-subtitle">Ranking del último año seleccionado</p></div><div class="card-body px-4"><div class="ck-chart-wrap ck-chart-tall"><canvas id="ck-client-chart"></canvas></div></div></div></div>
+        <div class="col-xl-4 mb-4"><div class="card ck-chart ck-chart-large h-100 border-0 shadow-sm"><div class="card-header bg-white border-0 pt-4 px-4"><h4 class="mb-1">Participación por cliente</h4><p class="text-muted mb-0">Último año seleccionado</p></div><div class="card-body px-4"><div class="ck-chart-wrap ck-chart-tall"><canvas id="ck-share-chart"></canvas></div></div></div></div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4"><div class="card-header bg-white border-0 pt-4 px-4 d-flex justify-content-between align-items-center"><div><h4 class="mb-1">Historial mensual por cliente</h4><p class="text-muted mb-0">Detalle del indicador y periodo seleccionado</p></div><span class="ck-source">Fuente: cajas y kilos.xlsx</span></div><div class="table-responsive ck-table-wrap"><table class="table ck-table mb-0"><thead><tr id="ck-table-head"></tr></thead><tbody id="ck-table-body"></tbody></table></div></div>
+</div>
+
+<style>
+    .ck-dashboard { --ck-green: #0b6b45; --ck-navy: #17324d; }.ck-filter, .ck-kpi, .ck-chart { border-radius: 12px; }
+    .ck-label { color: #697684; display: block; font-size: .7rem; font-weight: 700; letter-spacing: .05em; margin-bottom: .5rem; text-transform: uppercase; }.ck-years { display: flex; gap: .3rem; }.ck-year { margin: 0; }.ck-year input { position: absolute; opacity: 0; }.ck-year span { background: #edf1f4; border: 1px solid #dce3e8; border-radius: 7px; color: #52606d; cursor: pointer; display: inline-block; font-size: .8rem; font-weight: 700; padding: .52rem .55rem; }.ck-year input:checked + span { background: var(--ck-navy); border-color: var(--ck-navy); color: #fff; }
+    .ck-kpi { border-top: 4px solid var(--ck-green) !important; }.ck-kpi-title { color: #768390; font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }.ck-kpi-value { color: #172b3a; font-size: 1.7rem; font-weight: 700; line-height: 1.2; margin: .55rem 0 .4rem; }.ck-kpi-text { font-size: 1.05rem; }.ck-kpi-detail { color: #87929c; font-size: .82rem; }.ck-positive { color: #078447; }.ck-negative { color: #c43d32; }
+    .ck-chart { min-height: 390px; }.ck-chart-large { min-height: 440px; }.ck-chart h4 { color: #233746; font-size: 1rem; font-weight: 700; }.ck-chart-wrap { height: 285px; position: relative; }.ck-chart-tall { height: 335px; }
+    .ck-source { background: #eff7f3; border-radius: 20px; color: var(--ck-green); font-size: .72rem; padding: .4rem .7rem; }.ck-table-wrap { max-height: 560px; }.ck-table thead th { background: #f6f8f9; border-top: 0; color: #64727e; font-size: .7rem; letter-spacing: .03em; position: sticky; text-transform: uppercase; top: 0; white-space: nowrap; z-index: 1; }.ck-table td { color: #344553; font-size: .8rem; white-space: nowrap; }
+    @media (max-width: 767px) { .ck-kpi-value { font-size: 1.35rem; }.ck-chart-wrap { height: 245px; }.ck-source { display: none; }.ck-years { flex-wrap: wrap; } }
+</style>

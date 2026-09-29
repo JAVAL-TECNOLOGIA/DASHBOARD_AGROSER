@@ -26,6 +26,23 @@ MONTHS = (
 )
 
 
+def _bank_name(header):
+    """Return the bank label exported by Nisira without assuming one entity."""
+    return str(header.get("idbanco") or header.get("banco") or "").strip() or "-"
+
+
+def _payroll_week(header):
+    """Return one week or the joined week range exported by Nisira."""
+    explicit = str(header.get("payroll_week") or header.get("semana") or "").strip()
+    if explicit:
+        return explicit
+    start = str(header.get("semana_desde") or header.get("semana1") or "").strip()
+    end = str(header.get("semana_hasta") or header.get("semana2") or "").strip()
+    if start and end and start != end:
+        return "{}+{}".format(start, end)
+    return start or end or "-"
+
+
 def build_pdf(data, signature_path=None, employer_signature_path=None, delivery=None, weekly=False):
     header, details, totals = data["header"], data["details"], data["totals"]
     output = BytesIO()
@@ -99,6 +116,8 @@ def build_pdf(data, signature_path=None, employer_signature_path=None, delivery=
     else:
         period_label = period_code or "Período"
     text(120 * mm, height - 34 * mm, "PERÍODO DE PAGO", 6.5, bold)
+    if weekly:
+        period_label = "Semana {}".format(_payroll_week(header))
     text(120 * mm, height - 41 * mm, period_label, 11, bold, max_width=40 * mm)
     period_line = "Del {} al {}".format(date(header.get("desde1")), date(header.get("hasta1")))
     text(120 * mm, height - 46 * mm, period_line, 6.3, max_width=40 * mm)
@@ -127,10 +146,11 @@ def build_pdf(data, signature_path=None, employer_signature_path=None, delivery=
     )
     right_rows = (
         ("DNI", header.get("documento")),
+        ("Banco", _bank_name(header)),
+        ("Cuenta", header.get("cta_banco")),
         ("CUSSP/ONP", "{} {}".format(clean(header.get("autogene"), ""), clean(header.get("autoipss"), "")).strip() or "-"),
         ("Situación", header.get("situacion_especial") or "Ninguno"),
         ("Fec. Ingreso", date(header.get("ingreso"))),
-        ("Fec. Cese", date(header.get("cese"))),
     )
     for index, (label, value) in enumerate(left_rows):
         y = worker_bottom + 27.5 * mm - index * 5.1 * mm
@@ -138,7 +158,7 @@ def build_pdf(data, signature_path=None, employer_signature_path=None, delivery=
         text(left + 21 * mm, y, ":", 7.2)
         text(left + 27 * mm, y, value, 7.2, bold, max_width=width / 2 - left - 31 * mm)
     for index, (label, value) in enumerate(right_rows):
-        y = worker_bottom + 27.5 * mm - index * 5.1 * mm
+        y = worker_bottom + 27.5 * mm - index * 4.35 * mm
         text(width / 2 + 6 * mm, y, label, 7.2)
         text(width / 2 + 27 * mm, y, ":", 7.2)
         text(width / 2 + 33 * mm, y, value, 7.2, bold, max_width=right - width / 2 - 37 * mm)

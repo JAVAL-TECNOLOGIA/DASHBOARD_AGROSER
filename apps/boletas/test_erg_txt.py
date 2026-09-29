@@ -9,6 +9,7 @@ from django.http import Http404
 from .erg_txt import read_payroll, locate_payroll, PayrollTextError
 from .views import PaySlipPdfView
 from .periods import DateRange, month_range
+from .modern_pdf import _bank_name, _payroll_week
 
 
 class ErgTxtTests(SimpleTestCase):
@@ -43,6 +44,12 @@ class ErgTxtTests(SimpleTestCase):
         self.assertEqual(data['totals']['net'],90)
         self.assertEqual(len(data['details']),1)
         self.assertEqual(locate_payroll(self.root,'202608','01234567'),self.path)
+
+    def test_bank_and_week_labels_use_nisira_values(self):
+        self.assertEqual(_bank_name({'idbanco': 'BBVA', 'banco': 'BANCO BBVA'}), 'BBVA')
+        self.assertEqual(_bank_name({'banco': 'SCOTIABANK PERU'}), 'SCOTIABANK PERU')
+        self.assertEqual(_payroll_week({'payroll_week': '42+43'}), '42+43')
+        self.assertEqual(_payroll_week({'semana_desde': '44', 'semana_hasta': '45'}), '44+45')
 
     def test_dni_period_and_totals_must_match(self):
         for period,dni in [('202609','01234567'),('202608','99999999')]:
@@ -167,7 +174,7 @@ class ErgTxtTests(SimpleTestCase):
             read_payroll(self.path, '202608', '012345678', payroll_type='ERA')
         with override_settings(OBP_TXT_ROOT=str(self.root)):
             result = PaySlipPdfView._build_pdf(
-                {'nrodocumento': '012345678', 'payroll_type': 'OBP'},
+                {'nrodocumento': '012345678', 'payroll_type': 'OBP', '_payroll_week': '08'},
                 month_range('2026-08'),
             )
         self.assertTrue(result.startswith(b'%PDF'))
@@ -190,7 +197,7 @@ class ErgTxtTests(SimpleTestCase):
         self.write()
         with override_settings(OBR_TXT_ROOT=str(self.root)):
             result = PaySlipPdfView._build_pdf(
-                {'nrodocumento': '01234567', 'payroll_type': 'OBR'},
+                {'nrodocumento': '01234567', 'payroll_type': 'OBR', '_payroll_week': '08'},
                 month_range('2026-08'),
             )
         self.assertEqual(result, b'%PDF-plant')

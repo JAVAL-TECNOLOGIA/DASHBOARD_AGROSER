@@ -1,0 +1,87 @@
+<div class="sales-dashboard">
+    <div class="card sales-filter shadow-sm border-0 mb-4">
+        <div class="card-body py-3">
+            <div class="row align-items-end">
+                <div class="col-xl-5 col-lg-6 mb-3 mb-lg-0">
+                    <label class="sales-filter-label">Años a comparar</label>
+                    <div class="sales-year-options" id="sales-year-options">
+                        {% for year in ventas_data.years %}
+                        <label class="sales-year-chip"><input type="checkbox" value="{{ year }}" checked><span>{{ year }}</span></label>
+                        {% endfor %}
+                    </div>
+                </div>
+                <div class="col-xl-3 col-lg-2 col-md-5 mb-3 mb-md-0">
+                    <label class="sales-filter-label" for="sales-month-from">Desde</label>
+                    <select class="form-control" id="sales-month-from"></select>
+                </div>
+                <div class="col-xl-3 col-lg-2 col-md-5 mb-3 mb-md-0">
+                    <label class="sales-filter-label" for="sales-month-to">Hasta</label>
+                    <select class="form-control" id="sales-month-to"></select>
+                </div>
+                <div class="col-xl-1 col-lg-2 col-md-2 text-right">
+                    <button class="btn btn-light" id="reset-sales" type="button" title="Restablecer filtros"><i class="fa fa-undo"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-xl-3 col-md-6 mb-4"><div class="card sales-kpi h-100 border-0 shadow-sm"><div class="card-body">
+            <div class="sales-kpi-title">Ventas del periodo</div><div class="sales-kpi-value" id="sales-total">—</div><div class="sales-kpi-detail" id="sales-total-detail">—</div>
+        </div></div></div>
+        <div class="col-xl-3 col-md-6 mb-4"><div class="card sales-kpi h-100 border-0 shadow-sm"><div class="card-body">
+            <div class="sales-kpi-title">Variación interanual</div><div class="sales-kpi-value" id="sales-yoy">—</div><div class="sales-kpi-detail" id="sales-yoy-detail">—</div>
+        </div></div></div>
+        <div class="col-xl-3 col-md-6 mb-4"><div class="card sales-kpi h-100 border-0 shadow-sm"><div class="card-body">
+            <div class="sales-kpi-title">Mejor mes</div><div class="sales-kpi-value sales-kpi-text" id="sales-best">—</div><div class="sales-kpi-detail" id="sales-best-detail">—</div>
+        </div></div></div>
+        <div class="col-xl-3 col-md-6 mb-4"><div class="card sales-kpi h-100 border-0 shadow-sm"><div class="card-body">
+            <div class="sales-kpi-title">Promedio mensual</div><div class="sales-kpi-value" id="sales-average">—</div><div class="sales-kpi-detail" id="sales-average-detail">—</div>
+        </div></div></div>
+    </div>
+
+    <div class="row">
+        <div class="col-xl-8 mb-4"><div class="card sales-chart-card h-100 border-0 shadow-sm">
+            <div class="card-header bg-white border-0 pt-4 px-4"><h4 class="mb-1">Evolución mensual de ventas</h4><p class="text-muted mb-0" id="sales-trend-subtitle">Comparación por año</p></div>
+            <div class="card-body px-4"><div class="sales-chart-wrap"><canvas id="sales-monthly-chart"></canvas></div></div>
+        </div></div>
+        <div class="col-xl-4 mb-4"><div class="card sales-chart-card h-100 border-0 shadow-sm">
+            <div class="card-header bg-white border-0 pt-4 px-4"><h4 class="mb-1">Acumulado por año</h4><p class="text-muted mb-0">Mismo periodo seleccionado</p></div>
+            <div class="card-body px-4"><div class="sales-chart-wrap"><canvas id="sales-annual-chart"></canvas></div></div>
+        </div></div>
+    </div>
+
+    <div class="row">
+        <div class="col-xl-4 mb-4"><div class="card sales-insight-card h-100 border-0 shadow-sm">
+            <div class="card-header bg-white border-0 pt-4 px-4"><h4 class="mb-1">Lectura ejecutiva</h4><p class="text-muted mb-0">Resultados del periodo seleccionado</p></div>
+            <div class="card-body px-4 pt-2"><ul class="sales-insights" id="sales-insights"></ul></div>
+        </div></div>
+        <div class="col-xl-8 mb-4"><div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+                <div><h4 class="mb-1">Detalle mensual y anual</h4><p class="text-muted mb-0">Ventas por año y meses seleccionados</p></div>
+                <span class="sales-source">Fuente: ventas.xlsx</span>
+            </div>
+            <div class="table-responsive sales-table-wrap"><table class="table sales-table mb-0"><thead><tr id="sales-table-head"></tr></thead><tbody id="sales-table-body"></tbody></table></div>
+        </div></div>
+    </div>
+</div>
+
+<style>
+    .sales-dashboard { --sales-green: #0b6b45; --sales-navy: #17324d; }
+    .sales-filter, .sales-kpi, .sales-chart-card, .sales-insight-card { border-radius: 12px; }
+    .sales-filter-label { color: #697684; display: block; font-size: .72rem; font-weight: 700; letter-spacing: .06em; margin-bottom: .5rem; text-transform: uppercase; }
+    .sales-year-options { display: flex; flex-wrap: wrap; gap: .45rem; }.sales-year-chip { margin: 0; }.sales-year-chip input { position: absolute; opacity: 0; }
+    .sales-year-chip span { background: #edf1f4; border: 1px solid #dce3e8; border-radius: 7px; color: #52606d; cursor: pointer; display: inline-block; font-weight: 700; padding: .52rem .85rem; }
+    .sales-year-chip input:checked + span { background: var(--sales-navy); border-color: var(--sales-navy); color: #fff; }
+    .sales-kpi { border-top: 4px solid var(--sales-green) !important; }.sales-kpi-title { color: #768390; font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+    .sales-kpi-value { color: #172b3a; font-size: 1.75rem; font-weight: 700; line-height: 1.2; margin: .55rem 0 .4rem; }.sales-kpi-text { font-size: 1.15rem; }
+    .sales-kpi-detail { color: #87929c; font-size: .82rem; }.sales-positive { color: #078447; }.sales-negative { color: #c43d32; }
+    .sales-chart-card, .sales-insight-card { min-height: 390px; }.sales-chart-card h4, .sales-insight-card h4 { color: #233746; font-size: 1rem; font-weight: 700; }
+    .sales-chart-wrap { height: 285px; position: relative; }.sales-insights { list-style: none; margin: 0; padding: 0; }
+    .sales-insights li { border-bottom: 1px solid #edf0f2; color: #4d5b66; line-height: 1.45; padding: 1rem 0 1rem 2rem; position: relative; }
+    .sales-insights li:last-child { border-bottom: 0; }.sales-insights li:before { background: #dff3ea; border-radius: 50%; color: var(--sales-green); content: '\f00c'; font-family: 'Font Awesome 5 Free'; font-size: .65rem; font-weight: 900; height: 20px; left: 0; line-height: 20px; position: absolute; text-align: center; top: 1.05rem; width: 20px; }
+    .sales-table thead th { background: #f6f8f9; border-top: 0; color: #64727e; font-size: .72rem; letter-spacing: .04em; position: sticky; text-transform: uppercase; top: 0; white-space: nowrap; }
+    .sales-table td { color: #344553; font-size: .84rem; white-space: nowrap; }.sales-table-wrap { max-height: 480px; }
+    .sales-source { background: #eff7f3; border-radius: 20px; color: var(--sales-green); font-size: .72rem; padding: .4rem .7rem; }
+    @media (max-width: 767px) { .sales-kpi-value { font-size: 1.4rem; }.sales-chart-wrap { height: 245px; }.sales-source { display: none; } }
+</style>

@@ -1,0 +1,66 @@
+{% include 'base/header.html' %}
+{% block page %}Reportes de Contabilidad{% endblock %}
+{% include 'base/sidebar.html' %}
+
+<div id="content" class="content">
+    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4">
+        <div>
+            <h1 class="page-header mb-1">Reportes de Contabilidad</h1>
+            <p class="text-muted mb-0">Consulta y genera los reportes contables de la empresa.</p>
+        </div>
+        <span class="badge badge-success p-2 mt-3 mt-md-0">
+            <i class="bi bi-calculator mr-1"></i> Contabilidad
+        </span>
+    </div>
+
+    <div class="row">
+        {% for reporte in reportes %}
+        <div class="col-xl-4 col-md-6 mb-4">
+            <a class="text-decoration-none" href="{% url 'contabilidad_reporte_detalle' reporte.slug %}">
+                <div class="card h-100 shadow-sm border-0 reporte-card">
+                    <div class="card-body p-4">
+                        <div class="reporte-icon mb-3" style="background-color: {{ reporte.color }};">
+                            <i class="bi {{ reporte.icono }}"></i>
+                        </div>
+                        <h4 class="text-dark mb-2">{{ reporte.nombre }}</h4>
+                        <p class="text-muted mb-4">{{ reporte.descripcion }}</p>
+                        <span class="font-weight-bold" style="color: {{ reporte.color }};">
+                            Ver reporte <i class="fa fa-arrow-right ml-1"></i>
+                        </span>
+                    </div>
+                </div>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+    .reporte-card {
+        border-radius: 12px;
+        transition: transform .2s ease, box-shadow .2s ease;
+    }
+    .reporte-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 .6rem 1.5rem rgba(0, 0, 0, .12) !important;
+    }
+    .reporte-icon {
+        align-items: center;
+        border-radius: 12px;
+        color: #fff;
+        display: flex;
+        font-size: 1.65rem;
+        height: 54px;
+        justify-content: center;
+        width: 54px;
+    }
+</style>
+
+{% include 'base/footer.html' %}
+{% block js %}
+<script>
+$(document).ready(function () {
+    App.init();
+});
+</script>
+{% endblock %}

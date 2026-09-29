@@ -1,0 +1,120 @@
+<div class="cost-dashboard">
+    <div class="card cost-filter shadow-sm border-0 mb-4">
+        <div class="card-body py-3">
+            <div class="row align-items-end">
+                <div class="col-xl-2 col-md-4 mb-3 mb-xl-0">
+                    <label class="cost-filter-label">Meses</label>
+                    <div class="cost-chip-group" id="cost-months">
+                        <label class="cost-chip"><input type="checkbox" value="6" checked><span>Junio</span></label>
+                        <label class="cost-chip"><input type="checkbox" value="7" checked><span>Julio</span></label>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-md-4 mb-3 mb-xl-0">
+                    <label class="cost-filter-label" for="cost-area">Centro de costo</label>
+                    <select class="form-control" id="cost-area">
+                        <option value="__total__">Todos los centros</option>
+                        {% for area in costos_gastos_data.areas %}<option value="{{ area }}">{{ area|title }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="col-xl-6 col-md-8 mb-3 mb-xl-0">
+                    <label class="cost-filter-label" for="cost-indicator">Indicador (descripción)</label>
+                    <select class="form-control" id="cost-indicator">
+                        <option value="__all__">Todos los indicadores</option>
+                        {% for item in costos_gastos_data.accounts %}
+                        <option value="{{ item.account }} | {{ item.description }}">{{ item.account }} · {{ item.description|title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-xl-1 text-right">
+                    <button class="btn btn-light" id="reset-costs" type="button" title="Restablecer filtros"><i class="fa fa-undo"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row cost-period-summary mb-1">
+        <div class="col-xl-3 col-md-6 mb-3"><div class="card border-0 shadow-sm h-100"><div class="card-body py-3">
+            <div class="cost-period-label">Junio 2025</div><div class="cost-period-value" id="cost-period-2025-6">—</div>
+        </div></div></div>
+        <div class="col-xl-3 col-md-6 mb-3"><div class="card border-0 shadow-sm h-100"><div class="card-body py-3">
+            <div class="cost-period-label">Julio 2025</div><div class="cost-period-value" id="cost-period-2025-7">—</div>
+        </div></div></div>
+        <div class="col-xl-3 col-md-6 mb-3"><div class="card border-0 shadow-sm h-100"><div class="card-body py-3">
+            <div class="cost-period-label">Junio 2026</div><div class="cost-period-value" id="cost-period-2026-6">—</div>
+        </div></div></div>
+        <div class="col-xl-3 col-md-6 mb-3"><div class="card border-0 shadow-sm h-100"><div class="card-body py-3">
+            <div class="cost-period-label">Julio 2026</div><div class="cost-period-value" id="cost-period-2026-7">—</div>
+        </div></div></div>
+    </div>
+
+    <div class="row">
+        <div class="col-xl-3 col-md-6 mb-4"><div class="card cost-kpi h-100 border-0 shadow-sm"><div class="card-body">
+            <div class="cost-kpi-title">Costo 2026</div><div class="cost-kpi-value" id="cost-total-latest">—</div><div class="cost-kpi-detail" id="cost-total-detail">—</div>
+        </div></div></div>
+        <div class="col-xl-3 col-md-6 mb-4"><div class="card cost-kpi h-100 border-0 shadow-sm"><div class="card-body">
+            <div class="cost-kpi-title">Variación 2026 vs. 2025</div><div class="cost-kpi-value" id="cost-yoy">—</div><div class="cost-kpi-detail" id="cost-yoy-detail">Mismo periodo</div>
+        </div></div></div>
+        <div class="col-xl-3 col-md-6 mb-4"><div class="card cost-kpi h-100 border-0 shadow-sm"><div class="card-body">
+            <div class="cost-kpi-title">Principal indicador 2026</div><div class="cost-kpi-value cost-kpi-text" id="cost-top-name">—</div><div class="cost-kpi-detail" id="cost-top-value">—</div>
+        </div></div></div>
+        <div class="col-xl-3 col-md-6 mb-4"><div class="card cost-kpi h-100 border-0 shadow-sm"><div class="card-body">
+            <div class="cost-kpi-title">Indicadores con movimiento</div><div class="cost-kpi-value" id="cost-active-count">—</div><div class="cost-kpi-detail">Cuentas con importe distinto de cero</div>
+        </div></div></div>
+    </div>
+
+    <div class="row">
+        <div class="col-xl-8 mb-4"><div class="card cost-chart-card h-100 border-0 shadow-sm">
+            <div class="card-header bg-white border-0 pt-4 px-4"><h4 class="mb-1">Comparación mensual</h4><p class="text-muted mb-0" id="cost-month-chart-subtitle">Junio y julio · 2025 vs. 2026</p></div>
+            <div class="card-body px-4"><div class="cost-chart-wrap"><canvas id="cost-month-chart"></canvas></div></div>
+        </div></div>
+        <div class="col-xl-4 mb-4"><div class="card cost-chart-card h-100 border-0 shadow-sm">
+            <div class="card-header bg-white border-0 pt-4 px-4"><h4 class="mb-1">Acumulado por año</h4><p class="text-muted mb-0">Periodo seleccionado</p></div>
+            <div class="card-body px-4"><div class="cost-chart-wrap"><canvas id="cost-year-chart"></canvas></div></div>
+        </div></div>
+    </div>
+
+    <div class="row">
+        <div class="col-xl-8 mb-4"><div class="card cost-chart-card h-100 border-0 shadow-sm">
+            <div class="card-header bg-white border-0 pt-4 px-4"><h4 class="mb-1">Principales indicadores</h4><p class="text-muted mb-0">Top 10 por importe acumulado de 2026</p></div>
+            <div class="card-body px-4"><div class="cost-chart-wrap cost-chart-tall"><canvas id="cost-top-chart"></canvas></div></div>
+        </div></div>
+        <div class="col-xl-4 mb-4"><div class="card cost-chart-card h-100 border-0 shadow-sm">
+            <div class="card-header bg-white border-0 pt-4 px-4"><h4 class="mb-1">Distribución 2026</h4><p class="text-muted mb-0">Participación por centro de costo</p></div>
+            <div class="card-body px-4"><div class="cost-chart-wrap cost-chart-tall"><canvas id="cost-area-chart"></canvas></div></div>
+        </div></div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+            <div><h4 class="mb-1">Detalle por cuenta y descripción</h4><p class="text-muted mb-0">Comparación de junio y julio de 2025 y 2026</p></div>
+            <span class="cost-source">Fuente: COMPARATIVO Julio 2025-2026 ok.xlsx</span>
+        </div>
+        <div class="table-responsive cost-table-wrap">
+            <table class="table cost-detail-table mb-0">
+                <thead><tr><th>Cuenta</th><th>Descripción</th><th class="text-right">Jun 2025</th><th class="text-right">Jul 2025</th><th class="text-right">Total 2025</th><th class="text-right">Jun 2026</th><th class="text-right">Jul 2026</th><th class="text-right">Total 2026</th><th class="text-right">Variación</th></tr></thead>
+                <tbody id="cost-detail-body"></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    .cost-dashboard { --cost-green: #0b6b45; --cost-navy: #17324d; }
+    .cost-filter, .cost-kpi, .cost-chart-card { border-radius: 12px; }
+    .cost-period-summary .card { border-left: 4px solid var(--cost-green) !important; border-radius: 10px; }
+    .cost-period-label { color: #74818c; font-size: .72rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+    .cost-period-value { color: #17324d; font-size: 1.35rem; font-weight: 700; margin-top: .3rem; }
+    .cost-filter-label { color: #697684; display: block; font-size: .72rem; font-weight: 700; letter-spacing: .06em; margin-bottom: .5rem; text-transform: uppercase; }
+    .cost-chip-group { display: flex; gap: .45rem; }.cost-chip { margin: 0; }.cost-chip input { position: absolute; opacity: 0; }
+    .cost-chip span { background: #edf1f4; border: 1px solid #dce3e8; border-radius: 7px; color: #52606d; cursor: pointer; display: inline-block; font-weight: 700; padding: .52rem .85rem; }
+    .cost-chip input:checked + span { background: var(--cost-navy); border-color: var(--cost-navy); color: #fff; }
+    .cost-kpi { border-top: 4px solid var(--cost-green) !important; }.cost-kpi-title { color: #768390; font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+    .cost-kpi-value { color: #172b3a; font-size: 1.75rem; font-weight: 700; line-height: 1.2; margin: .55rem 0 .4rem; }.cost-kpi-text { font-size: 1.05rem; min-height: 2.1rem; }
+    .cost-kpi-detail { color: #87929c; font-size: .82rem; }.cost-positive { color: #078447; }.cost-negative { color: #c43d32; }
+    .cost-chart-card { min-height: 390px; }.cost-chart-card h4 { color: #233746; font-size: 1rem; font-weight: 700; }.cost-chart-wrap { height: 285px; position: relative; }.cost-chart-tall { height: 330px; }
+    .cost-source { background: #eff7f3; border-radius: 20px; color: var(--cost-green); font-size: .72rem; padding: .4rem .7rem; }
+    .cost-detail-table thead th { background: #f6f8f9; border-top: 0; color: #64727e; font-size: .7rem; letter-spacing: .03em; position: sticky; text-transform: uppercase; top: 0; white-space: nowrap; z-index: 1; }
+    .cost-detail-table td { color: #344553; font-size: .8rem; white-space: nowrap; }.cost-detail-table td:nth-child(2) { min-width: 320px; white-space: normal; }
+    .cost-table-wrap { max-height: 560px; }.cost-row-positive { color: #078447 !important; font-weight: 700; }.cost-row-negative { color: #c43d32 !important; font-weight: 700; }
+    @media (max-width: 767px) { .cost-kpi-value { font-size: 1.4rem; }.cost-chart-wrap { height: 245px; }.cost-source { display: none; } }
+</style>

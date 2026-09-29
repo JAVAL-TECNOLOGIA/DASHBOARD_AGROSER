@@ -1,0 +1,33 @@
+<div class="balance-dashboard">
+    <div class="balance-period card border-0 shadow-sm mb-4"><div class="card-body py-3 d-flex flex-wrap align-items-center justify-content-between">
+        <div><span class="balance-period-label">Periodo contable</span><strong>Agosto 2026</strong></div>
+        <div class="balance-period-note"><i class="fa fa-chart-pie mr-2"></i>Posición financiera resumida</div>
+    </div></div>
+
+    <div class="row">
+        <div class="col-xl-3 col-md-6 mb-4"><div class="card balance-kpi h-100 border-0 shadow-sm"><div class="card-body"><div class="balance-kpi-title">Activos líquidos</div><div class="balance-kpi-value" id="balance-assets">—</div><div class="balance-kpi-detail">Bancos + cuentas por cobrar</div></div></div></div>
+        <div class="col-xl-3 col-md-6 mb-4"><div class="card balance-kpi balance-kpi-obligation h-100 border-0 shadow-sm"><div class="card-body"><div class="balance-kpi-title">Obligaciones</div><div class="balance-kpi-value" id="balance-obligations">—</div><div class="balance-kpi-detail">Impuestos + cuentas por pagar</div></div></div></div>
+        <div class="col-xl-3 col-md-6 mb-4"><div class="card balance-kpi h-100 border-0 shadow-sm"><div class="card-body"><div class="balance-kpi-title">Cobertura</div><div class="balance-kpi-value" id="balance-coverage">—</div><div class="balance-kpi-detail">Activos líquidos / obligaciones</div></div></div></div>
+        <div class="col-xl-3 col-md-6 mb-4"><div class="card balance-kpi balance-kpi-net h-100 border-0 shadow-sm"><div class="card-body"><div class="balance-kpi-title">Posición neta</div><div class="balance-kpi-value" id="balance-net">—</div><div class="balance-kpi-detail">Saldo financiero de agosto</div></div></div></div>
+    </div>
+
+    <div class="row">
+        <div class="col-xl-8 mb-4"><div class="card balance-chart h-100 border-0 shadow-sm"><div class="card-header bg-white border-0 pt-4 px-4"><h4 class="mb-1">Activos líquidos frente a obligaciones</h4><p class="text-muted mb-0">Comparación de los saldos principales</p></div><div class="card-body px-4"><div class="balance-chart-wrap"><canvas id="balance-position-chart"></canvas></div></div></div></div>
+        <div class="col-xl-4 mb-4"><div class="card balance-chart h-100 border-0 shadow-sm"><div class="card-header bg-white border-0 pt-4 px-4"><h4 class="mb-1">Composición financiera</h4><p class="text-muted mb-0">Participación de cada componente</p></div><div class="card-body px-4"><div class="balance-chart-wrap"><canvas id="balance-composition-chart"></canvas></div></div></div></div>
+    </div>
+
+    <div class="row">
+        <div class="col-xl-7 mb-4"><div class="card border-0 shadow-sm h-100"><div class="card-header bg-white border-0 pt-4 px-4"><h4 class="mb-1">Detalle de saldos</h4><p class="text-muted mb-0">Importes expresados en soles</p></div><div class="table-responsive"><table class="table balance-table mb-0"><thead><tr><th>Concepto</th><th>Clasificación</th><th class="text-right">Importe</th><th class="text-right">Participación</th></tr></thead><tbody id="balance-detail-body"></tbody><tfoot><tr><th colspan="2">Posición neta</th><th class="text-right" id="balance-detail-net">—</th><th></th></tr></tfoot></table></div></div></div>
+        <div class="col-xl-5 mb-4"><div class="card balance-insight h-100 border-0 shadow-sm"><div class="card-header bg-white border-0 pt-4 px-4"><h4 class="mb-1">Lectura gerencial</h4><p class="text-muted mb-0">Indicadores para la toma de decisiones</p></div><div class="card-body px-4 pt-2"><ul class="balance-insights" id="balance-insights"></ul></div></div></div>
+    </div>
+</div>
+
+<style>
+    .balance-dashboard { --balance-green: #0b6b45; --balance-navy: #17324d; --balance-red: #c43d32; }.balance-period, .balance-kpi, .balance-chart, .balance-insight { border-radius: 12px; }
+    .balance-period { border-left: 5px solid var(--balance-green) !important; }.balance-period-label { color: #7a8791; display: block; font-size: .7rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }.balance-period strong { color: var(--balance-navy); font-size: 1.25rem; }.balance-period-note { background: #eaf4ef; border-radius: 20px; color: var(--balance-green); font-size: .82rem; font-weight: 700; padding: .55rem .9rem; }
+    .balance-kpi { border-top: 4px solid var(--balance-green) !important; }.balance-kpi-obligation { border-top-color: #e58a13 !important; }.balance-kpi-net { border-top-color: var(--balance-red) !important; }.balance-kpi-title { color: #768390; font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }.balance-kpi-value { color: #172b3a; font-size: 1.7rem; font-weight: 700; line-height: 1.2; margin: .55rem 0 .4rem; }.balance-kpi-detail { color: #87929c; font-size: .82rem; }.balance-negative { color: var(--balance-red); }.balance-positive { color: #078447; }
+    .balance-chart, .balance-insight { min-height: 390px; }.balance-chart h4, .balance-insight h4, .balance-dashboard .card-header h4 { color: #233746; font-size: 1rem; font-weight: 700; }.balance-chart-wrap { height: 285px; position: relative; }
+    .balance-table thead th { background: #f6f8f9; border-top: 0; color: #64727e; font-size: .72rem; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; }.balance-table td { color: #344553; font-size: .85rem; }.balance-table tfoot th { background: #f0f5f2; border-top: 2px solid #cbd9d2; color: var(--balance-navy); }.balance-badge { border-radius: 12px; display: inline-block; font-size: .68rem; font-weight: 700; padding: .3rem .55rem; text-transform: uppercase; }.balance-badge-asset { background: #dff3ea; color: #087346; }.balance-badge-obligation { background: #fff0dd; color: #a45e00; }
+    .balance-insights { list-style: none; margin: 0; padding: 0; }.balance-insights li { border-bottom: 1px solid #edf0f2; color: #4d5b66; line-height: 1.5; padding: 1rem 0 1rem 2rem; position: relative; }.balance-insights li:last-child { border-bottom: 0; }.balance-insights li:before { background: #dff3ea; border-radius: 50%; color: var(--balance-green); content: '\f00c'; font-family: 'Font Awesome 5 Free'; font-size: .65rem; font-weight: 900; height: 20px; left: 0; line-height: 20px; position: absolute; text-align: center; top: 1.1rem; width: 20px; }
+    @media (max-width: 767px) { .balance-kpi-value { font-size: 1.4rem; }.balance-chart-wrap { height: 245px; }.balance-period-note { margin-top: .75rem; } }
+</style>

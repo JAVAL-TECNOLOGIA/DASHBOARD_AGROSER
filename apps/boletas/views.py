@@ -1542,7 +1542,7 @@ class PaySlipPdfView(PaySlipPermissionMixin, View):
                 }
             data['header'] = dict(
                 data['header'],
-                payroll_week=str(slip.get('_payroll_week') or '').strip(),
+                payroll_week=str(slip.get('_payroll_week') or '+'.join(week_numbers)).strip(),
                 payroll_type=payroll_type,
             )
             renderer = build_plant_pdf if payroll_type in ('OBP', 'OBR') else build_employee_pdf

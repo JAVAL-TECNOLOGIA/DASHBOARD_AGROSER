@@ -25,6 +25,9 @@ class ContabilidadPermission(models.Model):
                 
                 #PERMISO EXCLUSIVO PARA EL ANALISIS DE COSTOS
                 ('contabilidad_costos','contabilidad_costos'),
+
+                # PERMISO PARA EL NUEVO SUBMODULO DE REPORTES
+                ('ver_reportes_contabilidad', 'Puede ver reportes de contabilidad'),
         ]
         verbose_name = 'Permisos_Contabilidad'
         verbose_name_plural = 'Permisos_Contabilidad'

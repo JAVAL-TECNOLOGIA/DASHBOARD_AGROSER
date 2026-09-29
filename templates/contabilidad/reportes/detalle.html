@@ -1,0 +1,72 @@
+{% load static %}
+{% include 'base/header.html' %}
+{% block page %}{{ reporte.nombre }}{% endblock %}
+{% include 'base/sidebar.html' %}
+
+<div id="content" class="content">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb bg-transparent px-0 pt-0">
+            <li class="breadcrumb-item"><a href="{% url 'contabilidad_reportes' %}">Reportes</a></li>
+            <li class="breadcrumb-item active" aria-current="page">{{ reporte.nombre }}</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex align-items-center mb-4">
+        <div class="mr-3 text-white d-flex align-items-center justify-content-center"
+             style="width: 54px; height: 54px; border-radius: 12px; background-color: {{ reporte.color }}; font-size: 1.6rem;">
+            <i class="bi {{ reporte.icono }}"></i>
+        </div>
+        <div>
+            <h1 class="page-header mb-1">{{ reporte.nombre }}</h1>
+            <p class="text-muted mb-0">{{ reporte.descripcion }}</p>
+        </div>
+    </div>
+
+    {% if comparacion_data %}
+        {% include 'contabilidad/reportes/comparacion.html' %}
+    {% elif ventas_data %}
+        {% include 'contabilidad/reportes/ventas.html' %}
+    {% elif cajas_kilos_data %}
+        {% include 'contabilidad/reportes/cajas_kilos.html' %}
+    {% elif balance_data %}
+        {% include 'contabilidad/reportes/balance_general.html' %}
+    {% elif costos_gastos_data %}
+        {% include 'contabilidad/reportes/costos_gastos.html' %}
+    {% else %}
+    <div class="card shadow-sm border-0">
+        <div class="card-body text-center py-5">
+            <i class="bi bi-file-earmark-bar-graph text-muted" style="font-size: 3rem;"></i>
+            <h4 class="mt-3 mb-2">Reporte preparado</h4>
+            <p class="text-muted mb-4">Esta vista está lista para incorporar la información y los filtros del reporte.</p>
+            <a class="btn btn-outline-secondary" href="{% url 'contabilidad_reportes' %}">
+                <i class="fa fa-arrow-left mr-1"></i> Volver a reportes
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% if comparacion_data %}{{ comparacion_data|json_script:"comparacion-data" }}{% endif %}
+{% if ventas_data %}{{ ventas_data|json_script:"ventas-data" }}{% endif %}
+{% if cajas_kilos_data %}{{ cajas_kilos_data|json_script:"cajas-kilos-data" }}{% endif %}
+{% if balance_data %}{{ balance_data|json_script:"balance-data" }}{% endif %}
+{% if costos_gastos_data %}{{ costos_gastos_data|json_script:"costos-gastos-data" }}{% endif %}
+{% include 'base/footer.html' %}
+{% block js %}
+{% if comparacion_data or ventas_data or cajas_kilos_data or balance_data or costos_gastos_data %}<script src="{% static 'assets/plugins/chart-js/Chart.bundle.min.js' %}"></script>{% endif %}
+{% if comparacion_data %}<script src="{% static 'core/js/CONTABILIDAD/comparacion_dashboard.js' %}"></script>{% endif %}
+{% if ventas_data %}<script src="{% static 'core/js/CONTABILIDAD/ventas_dashboard.js' %}"></script>{% endif %}
+{% if cajas_kilos_data %}<script src="{% static 'core/js/CONTABILIDAD/cajas_kilos_dashboard.js' %}"></script>{% endif %}
+{% if balance_data %}<script src="{% static 'core/js/CONTABILIDAD/balance_general_dashboard.js' %}"></script>{% endif %}
+{% if costos_gastos_data %}<script src="{% static 'core/js/CONTABILIDAD/costos_gastos_dashboard.js' %}"></script>{% endif %}
+<script>
+$(document).ready(function () {
+    App.init();
+    {% if comparacion_data %}window.initComparacionDashboard();{% endif %}
+    {% if ventas_data %}window.initVentasDashboard();{% endif %}
+    {% if cajas_kilos_data %}window.initCajasKilosDashboard();{% endif %}
+    {% if balance_data %}window.initBalanceGeneralDashboard();{% endif %}
+    {% if costos_gastos_data %}window.initCostosGastosDashboard();{% endif %}
+});
+</script>
+{% endblock %}

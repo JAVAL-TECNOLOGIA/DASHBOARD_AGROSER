@@ -2,7 +2,9 @@ from django.urls import path
 from .views import *
 
 urlpatterns = [
-        
+    path('reportes/', ContabilidadReportesView.as_view(), name='contabilidad_reportes'),
+    path('reportes/<slug:slug>/', ContabilidadReporteDetalleView.as_view(), name='contabilidad_reporte_detalle'),
+
     path('contabilidad_libro_af/', Contabilidad_libro_af.as_view(), name='contabilidad_libro_af'),
     path('script_contabilidad_libro_af/', Script_Contabilidad_libro_af.as_view(), name='script_contabilidad_libro_af'),
 
