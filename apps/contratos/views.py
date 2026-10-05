@@ -1,4 +1,5 @@
 import logging
+import calendar
 from datetime import date, timedelta
 
 from django.contrib import messages
@@ -36,6 +37,7 @@ class ContractListView(ContractPermissionMixin, View):
         end_value = request.GET.get("end") or today.isoformat()
         status = request.GET.get("status", "")
         query = request.GET.get("q", "").strip().casefold()
+        expiry_month = request.GET.get("expiry_month") or today.strftime("%Y-%m")
         try:
             start_date = date.fromisoformat(start_value)
             end_date = date.fromisoformat(end_value)
@@ -47,11 +49,30 @@ class ContractListView(ContractPermissionMixin, View):
             start_value, end_value = start_date.isoformat(), end_date.isoformat()
 
         try:
-            personnel = ContractService().list_personnel(start_date, end_date)
+            expiry_year, expiry_month_number = map(int, expiry_month.split("-"))
+            expiry_start = date(expiry_year, expiry_month_number, 1)
+            expiry_end = date(
+                expiry_year,
+                expiry_month_number,
+                calendar.monthrange(expiry_year, expiry_month_number)[1],
+            )
+        except (TypeError, ValueError):
+            messages.error(request, "El mes de vencimiento no es válido.")
+            expiry_month = today.strftime("%Y-%m")
+            expiry_start = today.replace(day=1)
+            expiry_end = date(
+                today.year, today.month, calendar.monthrange(today.year, today.month)[1]
+            )
+
+        try:
+            service = ContractService()
+            personnel = service.list_personnel(start_date, end_date)
+            expiring_contracts = service.list_expiring_contracts(expiry_start, expiry_end)
         except DatabaseError:
             logger.exception("No se pudo consultar el personal para contratos.")
             messages.error(request, "No fue posible consultar los contratos.")
             personnel = []
+            expiring_contracts = []
 
         for person in personnel:
             if not person.get("contract_id"):
@@ -94,6 +115,12 @@ class ContractListView(ContractPermissionMixin, View):
                 "end_value": end_value,
                 "status": status,
                 "query": request.GET.get("q", ""),
+                "expiry_month": expiry_month,
+                "expiry_start": expiry_start,
+                "expiry_end": expiry_end,
+                "expiring_contracts": expiring_contracts,
+                "expiring_count": len(expiring_contracts),
+                "show_expiring": request.GET.get("show_expiring") == "1",
             },
         )
 
@@ -111,16 +138,29 @@ class ContractGenerateView(ContractPermissionMixin, View):
         return service, person, choices
 
     def get(self, request, worker_id):
-        unused_service, person, choices = self.get_service_data(worker_id)
+        service, person, choices = self.get_service_data(worker_id)
+        renewal = None
+        initial = {
+            "worker_id": worker_id,
+            "start_date": person.get("fecha_ingreso"),
+            "trial_days": 0,
+        }
+        renewal_id = request.GET.get("renew", "").strip()
+        if renewal_id:
+            renewal = service.get_contract(worker_id, renewal_id)
+            if renewal:
+                initial.update({
+                    "contract_type": renewal.get("idtipocontrato"),
+                    "start_date": renewal["final_contrato"] + timedelta(days=1),
+                    "basic": renewal.get("basico"),
+                })
         form = ContractGenerationForm(
             contract_types=choices,
-            initial={
-                "worker_id": worker_id,
-                "start_date": person.get("fecha_ingreso"),
-                "trial_days": 0,
-            },
+            initial=initial,
         )
-        return render(request, self.template_name, {"person": person, "form": form})
+        return render(request, self.template_name, {
+            "person": person, "form": form, "renewal": renewal,
+        })
 
     def post(self, request, worker_id):
         service, person, choices = self.get_service_data(worker_id)

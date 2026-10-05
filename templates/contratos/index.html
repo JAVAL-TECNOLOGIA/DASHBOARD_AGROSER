@@ -16,21 +16,33 @@
     {% endfor %}
 
     <div class="row mb-4">
-        <div class="col-md-4 mb-3 mb-md-0"><div class="card border-warning shadow-sm"><div class="card-body">
+        <div class="col-xl-3 col-md-6 mb-3"><div class="card border-warning shadow-sm h-100"><div class="card-body">
             <div class="text-muted small text-uppercase">Pendientes de generar</div><div class="h3 mb-0">{{ counts.pending }}</div>
         </div></div></div>
-        <div class="col-md-4 mb-3 mb-md-0"><div class="card border-info shadow-sm"><div class="card-body">
+        <div class="col-xl-3 col-md-6 mb-3"><div class="card border-info shadow-sm h-100"><div class="card-body">
             <div class="text-muted small text-uppercase">Pendientes de firma</div><div class="h3 mb-0">{{ counts.signature }}</div>
         </div></div></div>
-        <div class="col-md-4"><div class="card border-success shadow-sm"><div class="card-body">
+        <div class="col-xl-3 col-md-6 mb-3"><div class="card border-success shadow-sm h-100"><div class="card-body">
             <div class="text-muted small text-uppercase">Firmados</div><div class="h3 mb-0">{{ counts.signed }}</div>
         </div></div></div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <a id="expiring-contracts-card" class="card border-danger shadow-sm h-100 text-decoration-none" href="?start={{ start_value }}&amp;end={{ end_value }}&amp;status={{ status }}&amp;q={{ query|urlencode }}&amp;expiry_month={{ expiry_month }}&amp;show_expiring=1#expiring-contracts" title="Abrir contratos por vencer">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div><div class="text-muted small text-uppercase">Vencen en el mes</div><div class="h3 mb-0 text-danger">{{ expiring_count }}</div></div>
+                        <i class="fa fa-calendar-times fa-2x text-danger"></i>
+                    </div>
+                    <div class="small text-muted mt-2">{{ expiry_start|date:"F Y" }} · doble clic para ver</div>
+                </div>
+            </a>
+        </div>
     </div>
 
     <div class="card shadow-sm mb-4">
         <div class="card-header bg-white"><strong><i class="fa fa-filter mr-2 text-primary"></i>Filtros</strong></div>
         <div class="card-body">
             <form method="get" class="form-row align-items-end">
+                <input type="hidden" name="show_expiring" value="{% if show_expiring %}1{% endif %}">
                 <div class="form-group col-lg-3 col-md-6">
                     <label for="start">Ingresos desde</label>
                     <input class="form-control" id="start" name="start" type="date" value="{{ start_value }}">
@@ -48,6 +60,10 @@
                         <option value="signed" {% if status == "signed" %}selected{% endif %}>Firmado</option>
                     </select>
                 </div>
+                <div class="form-group col-lg-2 col-md-5">
+                    <label for="expiry_month">Mes de vencimiento</label>
+                    <input class="form-control" id="expiry_month" name="expiry_month" type="month" value="{{ expiry_month }}">
+                </div>
                 <div class="form-group col-lg-3 col-md-5">
                     <label for="q">Trabajador, DNI, cargo o planilla</label>
                     <input class="form-control" id="q" name="q" value="{{ query }}" placeholder="Buscar...">
@@ -56,6 +72,34 @@
             </form>
         </div>
     </div>
+
+    {% if show_expiring %}
+    <div class="card shadow-sm mb-4 border-danger" id="expiring-contracts">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <strong><i class="fa fa-calendar-times mr-2 text-danger"></i>Contratos que vencen en {{ expiry_start|date:"F Y" }}</strong>
+            <span class="badge badge-danger">{{ expiring_count }}</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="thead-light"><tr><th>Trabajador</th><th>Planilla</th><th>Cargo</th><th>Contrato vigente</th><th>Vencimiento</th><th class="text-right">Acción</th></tr></thead>
+                    <tbody>
+                        {% for contract in expiring_contracts %}
+                        <tr>
+                            <td><strong>{{ contract.full_name }}</strong><div class="small text-muted">{{ contract.document }}</div></td>
+                            <td>{{ contract.payroll|default:contract.payroll_id }}</td>
+                            <td>{{ contract.position }}</td>
+                            <td>N.º {{ contract.contract_id }}<div class="small text-muted">{{ contract.contract_type }}</div></td>
+                            <td><strong class="text-danger">{{ contract.final_contrato|date:"d/m/Y" }}</strong></td>
+                            <td class="text-right"><a class="btn btn-sm btn-primary" href="{% url 'contratos:generate' contract.idcodigogeneral %}?renew={{ contract.contract_id|urlencode }}"><i class="fa fa-redo mr-1"></i> Renovar</a></td>
+                        </tr>
+                        {% empty %}<tr><td colspan="6" class="text-center text-muted py-4">No hay contratos que venzan en el mes seleccionado.</td></tr>{% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 
     <div class="card shadow-sm">
         <div class="card-header bg-white"><strong>Personal ingresado</strong></div>
@@ -109,4 +153,4 @@
 </div>
 
 {% include 'base/footer.html' %}
-<script>$(document).ready(function () { App.init(); });</script>
+<script>$(document).ready(function () { App.init(); $('#expiring-contracts-card').on('dblclick', function () { window.location.href = this.href; }); });</script>

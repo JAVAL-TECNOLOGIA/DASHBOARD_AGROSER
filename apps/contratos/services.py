@@ -92,6 +92,63 @@ class ContractService:
         rows = self._rows(sql, [self.company_id, worker_id])
         return rows[0] if rows else None
 
+    def list_expiring_contracts(self, start_date, end_date):
+        sql = """
+            WITH latest_contract AS (
+                SELECT c.*, ROW_NUMBER() OVER (
+                    PARTITION BY c.idempresa, c.idcodigogeneral
+                    ORDER BY TRY_CONVERT(int, c.idcontrato) DESC, c.fechacreacion DESC
+                ) AS row_number
+                FROM contrato c WITH (NOLOCK)
+                WHERE c.idempresa = %s AND c.estado = 1
+            )
+            SELECT
+                pg.idcodigogeneral,
+                RTRIM(pg.nrodocumento) AS document,
+                LTRIM(RTRIM(CONCAT(pg.a_paterno, ' ', pg.a_materno, ' ', pg.nombres))) AS full_name,
+                RTRIM(p.idplanilla) AS payroll_id,
+                RTRIM(pl.descripcion) AS payroll,
+                RTRIM(ISNULL(cp.descripcion, 'SIN CARGO')) AS position,
+                lc.idcontrato AS contract_id,
+                lc.idtipocontrato AS contract_type_id,
+                tc.descripcion AS contract_type,
+                lc.inicio_contrato,
+                lc.final_contrato,
+                lc.basico
+            FROM latest_contract lc
+            INNER JOIN personal_general pg WITH (NOLOCK)
+                ON pg.idcodigogeneral = lc.idcodigogeneral
+            OUTER APPLY (
+                SELECT TOP 1 p0.idempresa, p0.idcodigogeneral, p0.idplanilla, p0.idcargo
+                FROM personal p0 WITH (NOLOCK)
+                WHERE p0.idempresa = lc.idempresa
+                  AND p0.idcodigogeneral = lc.idcodigogeneral
+            ) p
+            LEFT JOIN planilla pl WITH (NOLOCK)
+                ON pl.idempresa = p.idempresa AND pl.idplanilla = p.idplanilla
+            LEFT JOIN cargos_personal cp WITH (NOLOCK)
+                ON cp.idempresa = p.idempresa AND cp.idcargo = p.idcargo
+            LEFT JOIN tipo_contrato tc WITH (NOLOCK)
+                ON tc.idtipocontrato = lc.idtipocontrato
+            WHERE lc.row_number = 1
+              AND lc.final_contrato BETWEEN %s AND %s
+            ORDER BY lc.final_contrato, full_name
+        """
+        return self._rows(sql, [self.company_id, start_date, end_date])
+
+    def get_contract(self, worker_id, contract_id):
+        rows = self._rows(
+            """
+            SELECT TOP 1 idcontrato, idtipocontrato, inicio_contrato,
+                final_contrato, basico
+            FROM contrato WITH (NOLOCK)
+            WHERE idempresa = %s AND idcodigogeneral = %s
+              AND idcontrato = %s AND estado = 1
+            """,
+            [self.company_id, worker_id, contract_id],
+        )
+        return rows[0] if rows else None
+
     def contract_types(self):
         return self._rows(
             """

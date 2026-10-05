@@ -6,6 +6,10 @@
     <h1 class="page-header mt-3 mb-1">Generar contrato</h1>
     <p class="text-muted">Registra la vigencia y el tipo contractual aprobado para el trabajador.</p>
 
+    {% if renewal %}
+        <div class="alert alert-warning"><i class="fa fa-redo mr-1"></i> Renovación del contrato <strong>N.º {{ renewal.idcontrato }}</strong>, vigente hasta {{ renewal.final_contrato|date:"d/m/Y" }}. La nueva vigencia inicia al día siguiente.</div>
+    {% endif %}
+
     <div class="row">
         <div class="col-xl-4 mb-4">
             <div class="card shadow-sm">
