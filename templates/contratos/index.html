@@ -32,7 +32,7 @@
             <div class="text-muted small text-uppercase">Firmados</div><div class="h3 mb-0">{{ counts.signed }}</div>
         </div></div></div>
         <div class="col-xl col-md-6 mb-3">
-            <a id="expiring-contracts-card" class="card border-danger shadow-sm h-100 text-decoration-none" href="?start={{ start_value }}&amp;end={{ end_value }}&amp;status={{ status }}&amp;q={{ query|urlencode }}&amp;expiry_month={{ expiry_month }}&amp;show_expiring=1#expiring-contracts" title="Abrir contratos por vencer">
+            <a id="expiring-contracts-card" class="card border-danger shadow-sm h-100 text-decoration-none" href="?start={{ start_value }}&amp;end={{ end_value }}&amp;status={{ status }}&amp;payroll={{ payroll|urlencode }}&amp;q={{ query|urlencode }}&amp;expiry_month={{ expiry_month }}&amp;show_expiring=1#expiring-contracts" title="Abrir contratos por vencer">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start">
                         <div><div class="text-muted small text-uppercase">Vencen en el mes</div><div class="h3 mb-0 text-danger">{{ expiring_count }}</div></div>
@@ -64,6 +64,15 @@
                         <option value="pending" {% if status == "pending" %}selected{% endif %}>Pendiente de generar</option>
                         <option value="signature" {% if status == "signature" %}selected{% endif %}>Pendiente de firma</option>
                         <option value="signed" {% if status == "signed" %}selected{% endif %}>Firmado</option>
+                    </select>
+                </div>
+                <div class="form-group col-lg-2 col-md-5">
+                    <label for="payroll">Planilla</label>
+                    <select class="form-control" id="payroll" name="payroll">
+                        <option value="">Todas</option>
+                        {% for payroll_id, payroll_name in payroll_options %}
+                            <option value="{{ payroll_id }}" {% if payroll == payroll_id %}selected{% endif %}>{{ payroll_name }}</option>
+                        {% endfor %}
                     </select>
                 </div>
                 <div class="form-group col-lg-2 col-md-5">

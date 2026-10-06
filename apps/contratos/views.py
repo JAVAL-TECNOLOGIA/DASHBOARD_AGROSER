@@ -69,6 +69,7 @@ class ContractListView(ContractPermissionMixin, View):
         start_value = request.GET.get("start") or (today - timedelta(days=60)).isoformat()
         end_value = request.GET.get("end") or today.isoformat()
         status = request.GET.get("status", "")
+        payroll = request.GET.get("payroll", "").strip()
         query = request.GET.get("q", "").strip().casefold()
         expiry_month = request.GET.get("expiry_month") or today.strftime("%Y-%m")
         try:
@@ -126,6 +127,24 @@ class ContractListView(ContractPermissionMixin, View):
                 contract["idcodigogeneral"], contract["contract_id"]
             ).is_file()
 
+        payroll_options = sorted(
+            {
+                (str(person.get("payroll_id") or "").strip(), person.get("payroll") or person.get("payroll_id"))
+                for person in personnel
+                if person.get("payroll_id")
+            },
+            key=lambda option: str(option[1]).casefold(),
+        )
+        if payroll:
+            personnel = [
+                person for person in personnel
+                if str(person.get("payroll_id") or "").strip() == payroll
+            ]
+            expiring_contracts = [
+                contract for contract in expiring_contracts
+                if str(contract.get("payroll_id") or "").strip() == payroll
+            ]
+
         counts = {
             "total": len(personnel),
             "pending": sum(p["contract_status"] == "pending" for p in personnel),
@@ -156,6 +175,8 @@ class ContractListView(ContractPermissionMixin, View):
                 "start_value": start_value,
                 "end_value": end_value,
                 "status": status,
+                "payroll": payroll,
+                "payroll_options": payroll_options,
                 "query": request.GET.get("q", ""),
                 "expiry_month": expiry_month,
                 "expiry_start": expiry_start,
