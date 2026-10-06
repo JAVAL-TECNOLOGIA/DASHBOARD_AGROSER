@@ -1,5 +1,6 @@
 import logging
 import calendar
+import re
 from datetime import date, timedelta
 
 from django.contrib import messages
@@ -11,6 +12,7 @@ from django.urls import reverse
 from django.views import View
 
 from .forms import ContractGenerationForm
+from .pdf import build_contract_pdf
 from .services import ContractService
 
 
@@ -177,7 +179,7 @@ class ContractGenerateView(ContractPermissionMixin, View):
             return render(request, self.template_name, {"person": person, "form": form})
         messages.success(
             request,
-            "Contrato {} registrado. Descarga la plantilla para impresión y firma.".format(
+            "Contrato {} registrado. Descarga el PDF completo para impresión y firma.".format(
                 contract_id
             ),
         )
@@ -194,6 +196,27 @@ class ContractTemplateView(ContractPermissionMixin, View):
             path.open("rb"),
             as_attachment=True,
             filename=path.name,
+        )
+
+
+class ContractPdfView(ContractPermissionMixin, View):
+    def get(self, request, worker_id, contract_id):
+        service = ContractService()
+        data = service.contract_document_data(worker_id, contract_id)
+        if not data:
+            raise Http404("No se encontró el contrato del trabajador.")
+        try:
+            template = service.template_path(data["idtipocontrato"])
+            pdf = build_contract_pdf(template, data)
+        except (FileNotFoundError, RuntimeError, OSError) as exc:
+            logger.exception("No se pudo generar el PDF del contrato %s/%s.", worker_id, contract_id)
+            raise Http404("No se pudo generar el contrato PDF: {}".format(exc))
+        safe_name = re.sub(r"[^A-Z0-9]+", "_", data["full_name"].upper()).strip("_")
+        return FileResponse(
+            pdf,
+            as_attachment=True,
+            filename="CONTRATO_{}_{}.pdf".format(safe_name, contract_id),
+            content_type="application/pdf",
         )
 
 

@@ -149,6 +149,52 @@ class ContractService:
         )
         return rows[0] if rows else None
 
+    def contract_document_data(self, worker_id, contract_id):
+        rows = self._rows(
+            """
+            SELECT TOP 1
+                pg.idcodigogeneral,
+                RTRIM(pg.nrodocumento) AS document,
+                LTRIM(RTRIM(CONCAT(pg.a_paterno, ' ', pg.a_materno, ' ', pg.nombres))) AS full_name,
+                pg.sexo,
+                LTRIM(RTRIM(CONCAT(
+                    NULLIF(LTRIM(RTRIM(pg.descripcion_via)), ''),
+                    CASE WHEN NULLIF(LTRIM(RTRIM(CONVERT(varchar(30), pg.direccion_numero))), '') IS NULL
+                         OR LTRIM(RTRIM(CONVERT(varchar(30), pg.direccion_numero))) = '0' THEN ''
+                         ELSE ' ' + LTRIM(RTRIM(CONVERT(varchar(30), pg.direccion_numero))) END,
+                    CASE WHEN NULLIF(LTRIM(RTRIM(pg.descripcion_zona)), '') IS NULL THEN ''
+                         ELSE ' ' + LTRIM(RTRIM(pg.descripcion_zona)) END
+                ))) AS address,
+                RTRIM(pg.direccion_referencia) AS address_reference,
+                RTRIM(ISNULL(u.ubigeo, '')) AS district,
+                RTRIM(ISNULL(u.provincia, '')) AS province,
+                RTRIM(ISNULL(u.departamento, '')) AS department,
+                RTRIM(ISNULL(cp.descripcion, 'SIN CARGO')) AS position,
+                RTRIM(p.idplanilla) AS payroll_id,
+                c.idcontrato,
+                c.idtipocontrato,
+                c.inicio_contrato,
+                c.final_contrato,
+                c.basico
+            FROM contrato c WITH (NOLOCK)
+            INNER JOIN personal_general pg WITH (NOLOCK)
+                ON pg.idcodigogeneral = c.idcodigogeneral
+            OUTER APPLY (
+                SELECT TOP 1 p0.idempresa, p0.idcodigogeneral, p0.idplanilla, p0.idcargo
+                FROM personal p0 WITH (NOLOCK)
+                WHERE p0.idempresa = c.idempresa AND p0.idcodigogeneral = c.idcodigogeneral
+            ) p
+            LEFT JOIN cargos_personal cp WITH (NOLOCK)
+                ON cp.idempresa = p.idempresa AND cp.idcargo = p.idcargo
+            LEFT JOIN VW_UBIGEO u WITH (NOLOCK)
+                ON u.idubigeo = pg.idubigeo
+            WHERE c.idempresa = %s AND c.idcodigogeneral = %s
+              AND c.idcontrato = %s AND c.estado = 1
+            """,
+            [self.company_id, worker_id, contract_id],
+        )
+        return rows[0] if rows else None
+
     def contract_types(self):
         return self._rows(
             """

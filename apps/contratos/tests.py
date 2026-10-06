@@ -1,5 +1,6 @@
 from datetime import date
 from unittest.mock import patch
+from io import BytesIO
 
 from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
@@ -100,3 +101,21 @@ class ContractExpirationDashboardTests(TestCase):
         self.assertEqual(response.context["form"].initial["start_date"], date(2026, 11, 1))
         self.assertEqual(response.context["form"].initial["contract_type"], "01")
         self.assertContains(response, "Renovación del contrato")
+
+    @patch("apps.contratos.views.build_contract_pdf", return_value=BytesIO(b"%PDF-1.4\n"))
+    @patch("apps.contratos.views.ContractService.template_path")
+    @patch("apps.contratos.views.ContractService.contract_document_data")
+    def test_contract_pdf_download_uses_worker_and_contract_data(self, document_data, template_path, build_pdf):
+        document_data.return_value = {
+            "full_name": "TRABAJADOR PRUEBA",
+            "idtipocontrato": "01",
+        }
+        template_path.return_value = "template.docx"
+
+        response = self.client.get(reverse("contratos:pdf", args=["W001", "002"]))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "application/pdf")
+        self.assertIn("CONTRATO_TRABAJADOR_PRUEBA_002.pdf", response["Content-Disposition"])
+        document_data.assert_called_once_with("W001", "002")
+        build_pdf.assert_called_once_with("template.docx", document_data.return_value)

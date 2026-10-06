@@ -44,7 +44,7 @@
                             <div class="form-group col-md-6"><label>{{ form.basic.label }}</label>{{ form.basic }}{% for error in form.basic.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>
                             <div class="form-group col-md-6"><label>{{ form.trial_days.label }}</label>{{ form.trial_days }}{% for error in form.trial_days.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>
                         </div>
-                        <div class="alert alert-info"><i class="fa fa-info-circle mr-1"></i> Al guardar se registrará el contrato oficial. Luego podrás descargar la plantilla legal configurada para impresión y firma.</div>
+                        <div class="alert alert-info"><i class="fa fa-info-circle mr-1"></i> Al guardar se registrará el contrato oficial. Luego podrás descargar el PDF completo para impresión y firma.</div>
                         <div class="text-right">
                             <a class="btn btn-light" href="{% url 'contratos:index' %}">Cancelar</a>
                             <button class="btn btn-primary" type="submit"><i class="fa fa-file-signature mr-1"></i> Generar contrato</button>
