@@ -100,6 +100,28 @@ class PaySlipCacheTests(SimpleTestCase):
 
         self.assertEqual(execute.call_count, 2)
 
+    @patch("apps.boletas.views.PaySlipPdfView._build_erg_pdf", return_value=b"pdf-data")
+    def test_same_payslip_reuses_rendered_pdf(self, render_pdf):
+        from .views import PaySlipPdfView
+
+        period = month_range("2026-08")
+        slip = {
+            "nrodocumento": "12345678",
+            "idcodigogeneral": "12345678",
+            "payroll_type": "ERG",
+            "income_total": Decimal("100"),
+            "deduction_total": Decimal("10"),
+            "net_total": Decimal("90"),
+            "concepts": [],
+        }
+
+        first = PaySlipPdfView._build_pdf(slip, period)
+        second = PaySlipPdfView._build_pdf(slip, period)
+
+        self.assertEqual(first, b"pdf-data")
+        self.assertEqual(second, b"pdf-data")
+        render_pdf.assert_called_once()
+
 class PayrollSummaryTests(SimpleTestCase):
     def test_summary_groups_payrolls_positions_and_totals(self):
         summary = build_payroll_summary(

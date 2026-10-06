@@ -211,6 +211,13 @@ def payroll_folders(root):
 def locate_payroll(root, period, document, week_number=''):
     if not re.fullmatch(r'\d{6}', period) or not re.fullmatch(r'\d{8,12}', document):
         raise PayrollTextError('DNI o período no válido.')
+    location_id = hashlib.sha256(
+        '{}|{}|{}|{}'.format(root, period, document, week_number).casefold().encode('utf-8')
+    ).hexdigest()[:24]
+    location_key = 'boletas:txt-location:{}'.format(location_id)
+    cached_location = cache.get(location_key)
+    if cached_location:
+        return Path(cached_location)
     candidates = set()
     for folder_name, folder in payroll_folders(root):
         folder_match = re.fullmatch(r'(\d{6})(\d+)-(\d{6})(\d+)', folder_name)
@@ -228,4 +235,10 @@ def locate_payroll(root, period, document, week_number=''):
                         candidates.add(candidate)
     if len(candidates) != 1:
         raise PayrollTextError('No se encontró un TXT único del trabajador para el mes seleccionado.')
-    return next(iter(candidates))
+    result = next(iter(candidates))
+    cache.set(
+        location_key,
+        str(result),
+        getattr(settings, 'PAYSLIP_TXT_INDEX_CACHE_SECONDS', 45),
+    )
+    return result

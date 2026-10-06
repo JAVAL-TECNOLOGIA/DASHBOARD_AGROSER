@@ -1,4 +1,6 @@
 import logging
+import hashlib
+import json
 import re
 from decimal import Decimal
 from datetime import datetime, timedelta
@@ -10,6 +12,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.contrib.auth.views import redirect_to_login
+from django.core.cache import cache
 from django.core.paginator import Paginator
 from django.db import DatabaseError, transaction
 from django.http import FileResponse, Http404, HttpResponse, JsonResponse
@@ -1222,13 +1225,38 @@ class PaySlipPdfView(PaySlipPermissionMixin, View):
         employer_signature = Path(__file__).resolve().parent / "assets" / "firma_empleador.bmp"
         employer_signature_path = str(employer_signature) if employer_signature.is_file() else None
         if str(slip.get("payroll_type") or "").strip().upper() in ("ERG", "ERA", "OBP", "OBR"):
-            return PaySlipPdfView._build_erg_pdf(
+            from .worker_portal import payslip_fingerprint
+
+            signature_version = ""
+            if signature_path:
+                try:
+                    signature_stat = Path(signature_path).stat()
+                    signature_version = "{}:{}".format(signature_stat.st_mtime_ns, signature_stat.st_size)
+                except OSError:
+                    signature_version = "missing"
+            cache_payload = {
+                "fingerprint": payslip_fingerprint(slip, period),
+                "week": str(slip.get("_payroll_week") or ""),
+                "signature": signature_version,
+                "signed_at": signed_at.isoformat() if signed_at else "",
+                "delivery": delivery or {},
+            }
+            cache_hash = hashlib.sha256(
+                json.dumps(cache_payload, sort_keys=True, default=str).encode("utf-8")
+            ).hexdigest()
+            cache_key = "boletas:pdf:{}".format(cache_hash)
+            cached_pdf = cache.get(cache_key)
+            if cached_pdf is not None:
+                return cached_pdf
+            pdf = PaySlipPdfView._build_erg_pdf(
                 slip,
                 period,
                 signature_path=signature_path,
                 employer_signature_path=employer_signature_path,
                 delivery=delivery,
             )
+            cache.set(cache_key, pdf, getattr(settings, "PAYSLIP_PDF_CACHE_SECONDS", 300))
+            return pdf
         from reportlab.lib import colors
         from reportlab.lib.enums import TA_CENTER, TA_RIGHT
         from reportlab.lib.pagesizes import A4
