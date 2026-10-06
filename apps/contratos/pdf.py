@@ -7,6 +7,7 @@ import subprocess
 import tempfile
 import threading
 import time
+import json
 from decimal import Decimal
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
@@ -16,6 +17,7 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 _template_cache_lock = threading.Lock()
+_word_conversion_lock = threading.Lock()
 
 
 MONTHS = (
@@ -78,7 +80,7 @@ def _replace_docx_fields(source, destination, values):
             dst.writestr(item, data)
 
 
-def _word_convert(source, destination, pdf=False):
+def _word_convert_unlocked(source, destination, pdf=False):
     try:
         import pythoncom
         import win32com.client
@@ -124,6 +126,11 @@ def _word_convert(source, destination, pdf=False):
         pythoncom.CoUninitialize()
 
 
+def _word_convert(source, destination, pdf=False):
+    with _word_conversion_lock:
+        return _word_convert_unlocked(source, destination, pdf=pdf)
+
+
 def _libreoffice_convert(source, destination_dir):
     executable = shutil.which("soffice") or shutil.which("libreoffice")
     if not executable:
@@ -134,6 +141,66 @@ def _libreoffice_convert(source, destination_dir):
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
+
+
+def _word_convert_many(pairs):
+    """Convert several DOCX files with a single Microsoft Word process."""
+    with _word_conversion_lock:
+        return _word_convert_many_unlocked(pairs)
+
+
+def _word_convert_many_unlocked(pairs):
+    try:
+        import pythoncom
+        import win32com.client
+    except ImportError:
+        work_dir = Path(pairs[0][0]).parent
+        manifest = work_dir / "contracts.json"
+        script = work_dir / "convert_contracts.ps1"
+        manifest.write_text(
+            json.dumps([{"source": str(Path(src).resolve()), "destination": str(Path(dst).resolve())} for src, dst in pairs]),
+            encoding="utf-8",
+        )
+        script.write_text(
+            "$ErrorActionPreference = 'Stop'\n"
+            "$items = Get-Content -Raw -LiteralPath $args[0] | ConvertFrom-Json\n"
+            "$word = New-Object -ComObject Word.Application\n"
+            "$word.Visible = $false\n"
+            "$word.DisplayAlerts = 0\n"
+            "try {\n"
+            "  foreach ($item in $items) {\n"
+            "    $doc = $word.Documents.Open($item.source, $false, $true)\n"
+            "    try { $doc.SaveAs2($item.destination, 17) } finally { $doc.Close($false) }\n"
+            "  }\n"
+            "} finally { $word.Quit() }\n",
+            encoding="utf-8",
+        )
+        result = subprocess.run(
+            ["powershell", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-File", str(script), str(manifest)],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        if result.returncode:
+            raise RuntimeError(result.stderr.strip() or "Microsoft Word no pudo convertir el lote.")
+        return
+
+    pythoncom.CoInitialize()
+    word = None
+    try:
+        word = win32com.client.DispatchEx("Word.Application")
+        word.Visible = False
+        word.DisplayAlerts = 0
+        for source, destination in pairs:
+            document = word.Documents.Open(str(Path(source).resolve()), ReadOnly=True)
+            try:
+                document.SaveAs(str(Path(destination).resolve()), FileFormat=17)
+            finally:
+                document.Close(False)
+    finally:
+        if word is not None:
+            word.Quit()
+        pythoncom.CoUninitialize()
 
 
 def _cached_docx_template(template_path):
@@ -187,13 +254,12 @@ def _cached_docx_template(template_path):
     return cached
 
 
-def build_contract_pdf(template_path, data):
-    started = time.perf_counter()
+def _contract_values(data):
     start = data["inicio_contrato"]
     end = data["final_contrato"]
     address = ", ".join(filter(None, [data.get("address"), data.get("address_reference")]))
     basic = Decimal(data.get("basico") or 0).quantize(Decimal("0.01"))
-    values = {
+    return {
         "tbr_nombre": data.get("full_name"),
         "tbr_dni": data.get("document"),
         "tbr_sexo": "FEMENINO" if str(data.get("sexo", "")).upper().startswith("F") else "MASCULINO",
@@ -211,6 +277,11 @@ def build_contract_pdf(template_path, data):
         "tbr_rem_diaria": "{:,.2f}".format(basic),
         "tbr_rem_diariad": _amount_in_words(basic),
     }
+
+
+def build_contract_pdf(template_path, data):
+    started = time.perf_counter()
+    values = _contract_values(data)
 
     template_started = time.perf_counter()
     source_template = _cached_docx_template(template_path)
@@ -238,3 +309,46 @@ def build_contract_pdf(template_path, data):
             len(result.getbuffer()),
         )
         return result
+
+
+def build_contract_pdfs_batch(jobs):
+    """Generate multiple contracts while starting Microsoft Word only once."""
+    if not jobs:
+        return 0
+    started = time.perf_counter()
+    work_root = Path(settings.MEDIA_ROOT) / "contratos" / "tmp"
+    work_root.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(
+        prefix="agroservice_contract_batch_", dir=str(work_root)
+    ) as temp:
+        temp_dir = Path(temp)
+        pairs = []
+        outputs = []
+        for index, job in enumerate(jobs):
+            source_template = _cached_docx_template(job["template_path"])
+            job_dir = temp_dir / str(index)
+            job_dir.mkdir()
+            merged = job_dir / "contrato.docx"
+            _replace_docx_fields(source_template, merged, _contract_values(job["data"]))
+            temporary_pdf = job_dir / "contrato.pdf"
+            pairs.append((merged, temporary_pdf))
+            outputs.append((temporary_pdf, Path(job["output_path"])))
+
+        if platform.system() == "Windows":
+            _word_convert_many(pairs)
+        else:
+            for source, _destination in pairs:
+                _libreoffice_convert(source, source.parent)
+
+        for temporary_pdf, output_path in outputs:
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            temporary_output = output_path.with_suffix(".pdf.tmp")
+            shutil.copy2(str(temporary_pdf), str(temporary_output))
+            temporary_output.replace(output_path)
+    logger.info(
+        "Lote de contratos generado: cantidad=%s total=%.3fs promedio=%.3fs",
+        len(jobs),
+        time.perf_counter() - started,
+        (time.perf_counter() - started) / len(jobs),
+    )
+    return len(jobs)

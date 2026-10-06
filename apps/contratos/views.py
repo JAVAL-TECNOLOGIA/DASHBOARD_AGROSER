@@ -15,7 +15,7 @@ from django.urls import reverse
 from django.views import View
 
 from .forms import ContractGenerationForm
-from .pdf import build_contract_pdf
+from .pdf import build_contract_pdf, build_contract_pdfs_batch
 from .services import ContractService
 
 
@@ -256,6 +256,79 @@ class ContractPdfView(ContractPermissionMixin, View):
             filename=filename,
             content_type="application/pdf",
         )
+
+
+class ContractBulkPdfView(ContractPermissionMixin, View):
+    max_contracts = 100
+
+    def post(self, request):
+        selected = request.POST.getlist("contracts")
+        if not selected:
+            messages.warning(request, "Selecciona al menos un contrato.")
+            return redirect("contratos:index")
+        if len(selected) > self.max_contracts:
+            messages.error(
+                request,
+                "Solo se pueden procesar hasta {} contratos por lote.".format(self.max_contracts),
+            )
+            return redirect("contratos:index")
+
+        service = ContractService()
+        jobs = []
+        ready = 0
+        invalid = 0
+        seen = set()
+        for value in selected:
+            try:
+                worker_id, contract_id = value.split("::", 1)
+            except ValueError:
+                invalid += 1
+                continue
+            key = (worker_id.strip(), contract_id.strip())
+            if not all(key) or key in seen:
+                invalid += 1
+                continue
+            seen.add(key)
+            output_path = _contract_pdf_path(*key)
+            if output_path.is_file():
+                ready += 1
+                continue
+            data = service.contract_document_data(*key)
+            if not data:
+                invalid += 1
+                continue
+            try:
+                template = service.template_path(data["idtipocontrato"])
+            except FileNotFoundError:
+                invalid += 1
+                continue
+            jobs.append({
+                "template_path": template,
+                "data": data,
+                "output_path": output_path,
+            })
+
+        generated = 0
+        if jobs:
+            try:
+                generated = build_contract_pdfs_batch(jobs)
+            except (RuntimeError, OSError):
+                logger.exception("No se pudo generar el lote de contratos.")
+                messages.error(request, "No se pudo completar la generación masiva.")
+                return redirect("contratos:index")
+
+        messages.success(
+            request,
+            "Proceso masivo completado: {} generados y {} ya disponibles.".format(
+                generated, ready
+            ),
+        )
+        if invalid:
+            messages.warning(
+                request,
+                "{} contrato(s) no se procesaron por datos o plantilla no disponibles.".format(invalid),
+            )
+        return redirect("contratos:index")
 
 
 class ContractSignView(ContractPermissionMixin, View):
