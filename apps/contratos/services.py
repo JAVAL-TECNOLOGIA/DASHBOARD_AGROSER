@@ -63,6 +63,7 @@ class ContractService:
                 ON tc.idtipocontrato = lc.idtipocontrato
             WHERE pe.row_number = 1
                 AND pe.fecha_ingreso BETWEEN %s AND %s
+                AND (pe.fecha_cese IS NULL OR pe.fecha_cese >= CAST(GETDATE() AS date))
             ORDER BY pe.fecha_ingreso DESC, full_name
         """
         return self._rows(sql, [self.company_id, self.company_id, start_date, end_date])
@@ -132,6 +133,13 @@ class ContractService:
                 ON tc.idtipocontrato = lc.idtipocontrato
             WHERE lc.row_number = 1
               AND lc.final_contrato BETWEEN %s AND %s
+              AND EXISTS (
+                  SELECT 1
+                  FROM personal_empresa pe WITH (NOLOCK)
+                  WHERE pe.idempresa = lc.idempresa
+                    AND pe.idcodigogeneral = lc.idcodigogeneral
+                    AND (pe.fecha_cese IS NULL OR pe.fecha_cese >= CAST(GETDATE() AS date))
+              )
             ORDER BY lc.final_contrato, full_name
         """
         return self._rows(sql, [self.company_id, start_date, end_date])
@@ -175,7 +183,10 @@ class ContractService:
                 c.idtipocontrato,
                 c.inicio_contrato,
                 c.final_contrato,
-                c.basico
+                c.basico,
+                CASE WHEN pe.idcodigogeneral IS NOT NULL
+                           AND (pe.fecha_cese IS NULL OR pe.fecha_cese >= CAST(GETDATE() AS date))
+                     THEN 1 ELSE 0 END AS is_active
             FROM contrato c WITH (NOLOCK)
             INNER JOIN personal_general pg WITH (NOLOCK)
                 ON pg.idcodigogeneral = c.idcodigogeneral
@@ -184,6 +195,13 @@ class ContractService:
                 FROM personal p0 WITH (NOLOCK)
                 WHERE p0.idempresa = c.idempresa AND p0.idcodigogeneral = c.idcodigogeneral
             ) p
+            OUTER APPLY (
+                SELECT TOP 1 pe0.idcodigogeneral, pe0.fecha_cese
+                FROM personal_empresa pe0 WITH (NOLOCK)
+                WHERE pe0.idempresa = c.idempresa
+                  AND pe0.idcodigogeneral = c.idcodigogeneral
+                ORDER BY pe0.fecha_ingreso DESC, pe0.item DESC
+            ) pe
             LEFT JOIN cargos_personal cp WITH (NOLOCK)
                 ON cp.idempresa = p.idempresa AND cp.idcargo = p.idcargo
             LEFT JOIN VW_UBIGEO u WITH (NOLOCK)

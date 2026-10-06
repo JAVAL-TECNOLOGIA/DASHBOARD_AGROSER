@@ -294,7 +294,7 @@ class ContractBulkPdfView(ContractPermissionMixin, View):
                 ready += 1
                 continue
             data = service.contract_document_data(*key)
-            if not data:
+            if not data or not data.get("is_active"):
                 invalid += 1
                 continue
             try:
@@ -326,7 +326,7 @@ class ContractBulkPdfView(ContractPermissionMixin, View):
         if invalid:
             messages.warning(
                 request,
-                "{} contrato(s) no se procesaron por datos o plantilla no disponibles.".format(invalid),
+                "{} contrato(s) no se procesaron porque el trabajador no está activo o faltan datos de la plantilla.".format(invalid),
             )
         return redirect("contratos:index")
 

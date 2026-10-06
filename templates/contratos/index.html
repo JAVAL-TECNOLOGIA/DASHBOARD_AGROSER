@@ -125,8 +125,10 @@
                         {% for person in personnel %}
                             <tr>
                                 <td class="text-center">
-                                    {% if person.contract_id %}
+                                    {% if person.contract_id and not person.contract_pdf_ready %}
                                         <input class="contract-selector" type="checkbox" name="contracts" value="{{ person.idcodigogeneral }}::{{ person.contract_id }}" form="bulk-contract-form" aria-label="Seleccionar contrato de {{ person.full_name }}">
+                                    {% elif person.contract_pdf_ready %}
+                                        <i class="fa fa-check-circle text-success" title="Contrato ya generado"></i>
                                     {% endif %}
                                 </td>
                                 <td><strong>{{ person.full_name }}</strong><div class="small text-muted">{{ person.document }}</div></td>
