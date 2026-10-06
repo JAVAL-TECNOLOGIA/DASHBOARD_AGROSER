@@ -214,7 +214,7 @@ class ContractPdfView(ContractPermissionMixin, View):
         safe_name = re.sub(r"[^A-Z0-9]+", "_", data["full_name"].upper()).strip("_")
         return FileResponse(
             pdf,
-            as_attachment=True,
+            as_attachment=False,
             filename="CONTRATO_{}_{}.pdf".format(safe_name, contract_id),
             content_type="application/pdf",
         )

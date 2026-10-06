@@ -116,6 +116,7 @@ class ContractExpirationDashboardTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response["Content-Type"], "application/pdf")
+        self.assertTrue(response["Content-Disposition"].startswith("inline;"))
         self.assertIn("CONTRATO_TRABAJADOR_PRUEBA_002.pdf", response["Content-Disposition"])
         document_data.assert_called_once_with("W001", "002")
         build_pdf.assert_called_once_with("template.docx", document_data.return_value)
