@@ -1,8 +1,11 @@
 import logging
 import calendar
 import re
+import tempfile
 from datetime import date, timedelta
+from pathlib import Path
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.db import DatabaseError
@@ -17,6 +20,34 @@ from .services import ContractService
 
 
 logger = logging.getLogger(__name__)
+
+
+def _contract_pdf_path(worker_id, contract_id):
+    worker = re.sub(r"[^A-Za-z0-9_-]+", "_", str(worker_id)).strip("_")
+    contract = re.sub(r"[^A-Za-z0-9_-]+", "_", str(contract_id)).strip("_")
+    return Path(settings.MEDIA_ROOT) / "contratos" / "generados" / "{}_{}.pdf".format(
+        worker, contract
+    )
+
+
+def _ensure_contract_pdf(service, worker_id, contract_id):
+    path = _contract_pdf_path(worker_id, contract_id)
+    if path.is_file():
+        return path, "CONTRATO_{}_{}.pdf".format(worker_id, contract_id)
+    data = service.contract_document_data(worker_id, contract_id)
+    if not data:
+        raise FileNotFoundError("No se encontró el contrato del trabajador.")
+    template = service.template_path(data["idtipocontrato"])
+    pdf = build_contract_pdf(template, data)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(
+        mode="wb", suffix=".pdf", prefix="contract_", dir=str(path.parent), delete=False
+    ) as temporary:
+        temporary.write(pdf.getvalue())
+        temporary_path = Path(temporary.name)
+    temporary_path.replace(path)
+    safe_name = re.sub(r"[^A-Z0-9]+", "_", data["full_name"].upper()).strip("_")
+    return path, "CONTRATO_{}_{}.pdf".format(safe_name, contract_id)
 
 
 class ContractPermissionMixin(LoginRequiredMixin, PermissionRequiredMixin):
@@ -86,6 +117,14 @@ class ContractListView(ContractPermissionMixin, View):
             else:
                 person["contract_status"] = "signature"
                 person["contract_status_label"] = "Pendiente de firma"
+            person["contract_pdf_ready"] = bool(
+                person.get("contract_id")
+                and _contract_pdf_path(person["idcodigogeneral"], person["contract_id"]).is_file()
+            )
+        for contract in expiring_contracts:
+            contract["contract_pdf_ready"] = _contract_pdf_path(
+                contract["idcodigogeneral"], contract["contract_id"]
+            ).is_file()
 
         counts = {
             "pending": sum(p["contract_status"] == "pending" for p in personnel),
@@ -177,13 +216,17 @@ class ContractGenerateView(ContractPermissionMixin, View):
             logger.exception("No se pudo generar el contrato del trabajador %s.", worker_id)
             form.add_error(None, str(exc))
             return render(request, self.template_name, {"person": person, "form": form})
-        messages.success(
-            request,
-            "Contrato {} registrado. Descarga el PDF completo para impresión y firma.".format(
-                contract_id
-            ),
-        )
-        return redirect("contratos:index")
+        try:
+            _ensure_contract_pdf(service, worker_id, contract_id)
+        except (FileNotFoundError, RuntimeError, OSError):
+            logger.exception("El contrato %s fue registrado pero su PDF no pudo generarse.", contract_id)
+            messages.warning(
+                request,
+                "Contrato {} registrado. Usa Generar contrato para crear el PDF.".format(contract_id),
+            )
+            return redirect("contratos:index")
+        messages.success(request, "Contrato {} registrado y PDF generado.".format(contract_id))
+        return redirect("contratos:pdf", worker_id=worker_id, contract_id=contract_id)
 
 
 class ContractTemplateView(ContractPermissionMixin, View):
@@ -202,20 +245,15 @@ class ContractTemplateView(ContractPermissionMixin, View):
 class ContractPdfView(ContractPermissionMixin, View):
     def get(self, request, worker_id, contract_id):
         service = ContractService()
-        data = service.contract_document_data(worker_id, contract_id)
-        if not data:
-            raise Http404("No se encontró el contrato del trabajador.")
         try:
-            template = service.template_path(data["idtipocontrato"])
-            pdf = build_contract_pdf(template, data)
+            path, filename = _ensure_contract_pdf(service, worker_id, contract_id)
         except (FileNotFoundError, RuntimeError, OSError) as exc:
             logger.exception("No se pudo generar el PDF del contrato %s/%s.", worker_id, contract_id)
             raise Http404("No se pudo generar el contrato PDF: {}".format(exc))
-        safe_name = re.sub(r"[^A-Z0-9]+", "_", data["full_name"].upper()).strip("_")
         return FileResponse(
-            pdf,
+            path.open("rb"),
             as_attachment=False,
-            filename="CONTRATO_{}_{}.pdf".format(safe_name, contract_id),
+            filename=filename,
             content_type="application/pdf",
         )
 

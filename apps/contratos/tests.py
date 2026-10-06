@@ -1,4 +1,6 @@
 from datetime import date
+from pathlib import Path
+import tempfile
 from unittest.mock import patch
 from io import BytesIO
 
@@ -112,11 +114,18 @@ class ContractExpirationDashboardTests(TestCase):
         }
         template_path.return_value = "template.docx"
 
-        response = self.client.get(reverse("contratos:pdf", args=["W001", "002"]))
+        with tempfile.TemporaryDirectory() as directory, patch(
+            "apps.contratos.views._contract_pdf_path",
+            return_value=Path(directory) / "W001_002.pdf",
+        ):
+            response = self.client.get(reverse("contratos:pdf", args=["W001", "002"]))
+            second = self.client.get(reverse("contratos:pdf", args=["W001", "002"]))
 
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response["Content-Type"], "application/pdf")
-        self.assertTrue(response["Content-Disposition"].startswith("inline;"))
-        self.assertIn("CONTRATO_TRABAJADOR_PRUEBA_002.pdf", response["Content-Disposition"])
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response["Content-Type"], "application/pdf")
+            self.assertTrue(response["Content-Disposition"].startswith("inline;"))
+            self.assertIn("CONTRATO_TRABAJADOR_PRUEBA_002.pdf", response["Content-Disposition"])
+            response.close()
+            second.close()
         document_data.assert_called_once_with("W001", "002")
         build_pdf.assert_called_once_with("template.docx", document_data.return_value)

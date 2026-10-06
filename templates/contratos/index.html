@@ -92,7 +92,7 @@
                             <td>N.º {{ contract.contract_id }}<div class="small text-muted">{{ contract.contract_type }}</div></td>
                             <td><strong class="text-danger">{{ contract.final_contrato|date:"d/m/Y" }}</strong></td>
                             <td class="text-right text-nowrap">
-                                <a class="btn btn-sm btn-outline-danger" target="_blank" rel="noopener" href="{% url 'contratos:pdf' contract.idcodigogeneral contract.contract_id %}"><i class="fa fa-file-pdf mr-1"></i> Ver PDF</a>
+                                <a class="btn btn-sm btn-outline-danger" target="_blank" rel="noopener" href="{% url 'contratos:pdf' contract.idcodigogeneral contract.contract_id %}"><i class="fa fa-file-pdf mr-1"></i> {% if contract.contract_pdf_ready %}Abrir contrato{% else %}Generar contrato{% endif %}</a>
                                 <a class="btn btn-sm btn-primary" href="{% url 'contratos:generate' contract.idcodigogeneral %}?renew={{ contract.contract_id|urlencode }}"><i class="fa fa-redo mr-1"></i> Renovar</a>
                             </td>
                         </tr>
@@ -135,7 +135,7 @@
                                     {% if person.contract_status == "pending" %}
                                         <a class="btn btn-sm btn-primary" href="{% url 'contratos:generate' person.idcodigogeneral %}"><i class="fa fa-file-signature mr-1"></i> Generar</a>
                                     {% else %}
-                                        <a class="btn btn-sm btn-outline-danger" target="_blank" rel="noopener" href="{% url 'contratos:pdf' person.idcodigogeneral person.contract_id %}"><i class="fa fa-file-pdf mr-1"></i> Ver contrato PDF</a>
+                                        <a class="btn btn-sm btn-outline-danger" target="_blank" rel="noopener" href="{% url 'contratos:pdf' person.idcodigogeneral person.contract_id %}"><i class="fa fa-file-pdf mr-1"></i> {% if person.contract_pdf_ready %}Abrir contrato{% else %}Generar contrato{% endif %}</a>
                                         {% if person.contract_status == "signature" %}
                                             <form class="d-inline" method="post" action="{% url 'contratos:sign' person.idcodigogeneral person.contract_id %}" onsubmit="return confirm('¿Confirmas que el contrato fue firmado físicamente?');">
                                                 {% csrf_token %}
