@@ -66,7 +66,8 @@ class ContractListView(ContractPermissionMixin, View):
 
     def get(self, request):
         today = date.today()
-        start_value = request.GET.get("start") or (today - timedelta(days=60)).isoformat()
+        minimum_start = date(2023, 1, 1)
+        start_value = request.GET.get("start") or minimum_start.isoformat()
         end_value = request.GET.get("end") or today.isoformat()
         status = request.GET.get("status", "")
         payroll = request.GET.get("payroll", "").strip()
@@ -75,11 +76,11 @@ class ContractListView(ContractPermissionMixin, View):
         try:
             start_date = date.fromisoformat(start_value)
             end_date = date.fromisoformat(end_value)
-            if end_date < start_date or (end_date - start_date).days > 366:
+            if start_date < minimum_start or end_date < start_date:
                 raise ValueError
         except ValueError:
-            messages.error(request, "El rango de fechas no es válido.")
-            start_date, end_date = today - timedelta(days=60), today
+            messages.error(request, "El rango debe comenzar desde el 01/01/2023.")
+            start_date, end_date = minimum_start, today
             start_value, end_value = start_date.isoformat(), end_date.isoformat()
 
         try:

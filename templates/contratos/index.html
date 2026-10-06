@@ -51,11 +51,11 @@
                 <input type="hidden" name="show_expiring" value="{% if show_expiring %}1{% endif %}">
                 <div class="form-group col-lg-3 col-md-6">
                     <label for="start">Ingresos desde</label>
-                    <input class="form-control" id="start" name="start" type="date" value="{{ start_value }}">
+                    <input class="form-control" id="start" name="start" type="date" min="2023-01-01" value="{{ start_value }}">
                 </div>
                 <div class="form-group col-lg-3 col-md-6">
                     <label for="end">Ingresos hasta</label>
-                    <input class="form-control" id="end" name="end" type="date" value="{{ end_value }}">
+                    <input class="form-control" id="end" name="end" type="date" min="2023-01-01" value="{{ end_value }}">
                 </div>
                 <div class="form-group col-lg-2 col-md-5">
                     <label for="status">Estado</label>
