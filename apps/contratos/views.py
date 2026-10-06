@@ -127,6 +127,7 @@ class ContractListView(ContractPermissionMixin, View):
             ).is_file()
 
         counts = {
+            "total": len(personnel),
             "pending": sum(p["contract_status"] == "pending" for p in personnel),
             "signature": sum(p["contract_status"] == "signature" for p in personnel),
             "signed": sum(p["contract_status"] == "signed" for p in personnel),

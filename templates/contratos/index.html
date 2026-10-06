@@ -16,16 +16,22 @@
     {% endfor %}
 
     <div class="row mb-4">
-        <div class="col-xl-3 col-md-6 mb-3"><div class="card border-warning shadow-sm h-100"><div class="card-body">
+        <div class="col-xl col-md-6 mb-3"><div class="card border-primary shadow-sm h-100"><div class="card-body">
+            <div class="d-flex justify-content-between align-items-start">
+                <div><div class="text-muted small text-uppercase">Total trabajadores activos</div><div class="h3 mb-0 text-primary">{{ counts.total }}</div></div>
+                <i class="fa fa-users fa-2x text-primary"></i>
+            </div>
+        </div></div></div>
+        <div class="col-xl col-md-6 mb-3"><div class="card border-warning shadow-sm h-100"><div class="card-body">
             <div class="text-muted small text-uppercase">Pendientes de generar</div><div class="h3 mb-0">{{ counts.pending }}</div>
         </div></div></div>
-        <div class="col-xl-3 col-md-6 mb-3"><div class="card border-info shadow-sm h-100"><div class="card-body">
+        <div class="col-xl col-md-6 mb-3"><div class="card border-info shadow-sm h-100"><div class="card-body">
             <div class="text-muted small text-uppercase">Pendientes de firma</div><div class="h3 mb-0">{{ counts.signature }}</div>
         </div></div></div>
-        <div class="col-xl-3 col-md-6 mb-3"><div class="card border-success shadow-sm h-100"><div class="card-body">
+        <div class="col-xl col-md-6 mb-3"><div class="card border-success shadow-sm h-100"><div class="card-body">
             <div class="text-muted small text-uppercase">Firmados</div><div class="h3 mb-0">{{ counts.signed }}</div>
         </div></div></div>
-        <div class="col-xl-3 col-md-6 mb-3">
+        <div class="col-xl col-md-6 mb-3">
             <a id="expiring-contracts-card" class="card border-danger shadow-sm h-100 text-decoration-none" href="?start={{ start_value }}&amp;end={{ end_value }}&amp;status={{ status }}&amp;q={{ query|urlencode }}&amp;expiry_month={{ expiry_month }}&amp;show_expiring=1#expiring-contracts" title="Abrir contratos por vencer">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-start">
