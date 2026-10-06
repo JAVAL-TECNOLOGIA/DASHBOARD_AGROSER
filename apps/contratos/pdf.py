@@ -1,11 +1,21 @@
 import io
+import hashlib
+import logging
 import platform
 import shutil
 import subprocess
 import tempfile
+import threading
+import time
 from decimal import Decimal
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
+
+from django.conf import settings
+
+
+logger = logging.getLogger(__name__)
+_template_cache_lock = threading.Lock()
 
 
 MONTHS = (
@@ -126,7 +136,59 @@ def _libreoffice_convert(source, destination_dir):
     )
 
 
+def _cached_docx_template(template_path):
+    """Return a local DOCX template, converting legacy DOC files only once."""
+    template_path = Path(template_path)
+    cache_dir = Path(settings.MEDIA_ROOT) / "contratos" / "plantillas"
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    stat = template_path.stat()
+    fingerprint = "{}|{}|{}".format(
+        str(template_path).casefold(), stat.st_mtime_ns, stat.st_size
+    )
+    digest = hashlib.sha256(fingerprint.encode("utf-8")).hexdigest()[:20]
+    cached = cache_dir / "{}_{}{}.docx".format(
+        template_path.stem[:60], digest, "_doc" if template_path.suffix.lower() == ".doc" else ""
+    )
+    if cached.is_file():
+        return cached
+
+    with _template_cache_lock:
+        if cached.is_file():
+            return cached
+        with tempfile.TemporaryDirectory(
+            prefix="agroservice_template_", dir=str(cache_dir)
+        ) as temp:
+            temp_dir = Path(temp)
+            local_source = temp_dir / template_path.name
+            shutil.copy2(str(template_path), str(local_source))
+            if local_source.suffix.lower() == ".doc":
+                converted = temp_dir / "template.docx"
+                if platform.system() == "Windows":
+                    _word_convert(local_source, converted)
+                else:
+                    executable = shutil.which("soffice") or shutil.which("libreoffice")
+                    if not executable:
+                        raise RuntimeError("LibreOffice es necesario para convertir la plantilla DOC.")
+                    subprocess.run(
+                        [executable, "--headless", "--convert-to", "docx", "--outdir", str(temp_dir), str(local_source)],
+                        check=True,
+                    )
+                    generated = temp_dir / (local_source.stem + ".docx")
+                    if generated != converted:
+                        generated.replace(converted)
+            elif local_source.suffix.lower() == ".docx":
+                converted = local_source
+            else:
+                raise RuntimeError("La plantilla contractual debe estar en formato DOC o DOCX.")
+
+            temporary = cache_dir / (cached.name + ".tmp")
+            shutil.copy2(str(converted), str(temporary))
+            temporary.replace(cached)
+    return cached
+
+
 def build_contract_pdf(template_path, data):
+    started = time.perf_counter()
     start = data["inicio_contrato"]
     end = data["final_contrato"]
     address = ", ".join(filter(None, [data.get("address"), data.get("address_reference")]))
@@ -150,31 +212,29 @@ def build_contract_pdf(template_path, data):
         "tbr_rem_diariad": _amount_in_words(basic),
     }
 
+    template_started = time.perf_counter()
+    source_template = _cached_docx_template(template_path)
+    template_seconds = time.perf_counter() - template_started
+
     with tempfile.TemporaryDirectory(prefix="agroservice_contract_") as temp:
         temp_dir = Path(temp)
-        source = temp_dir / template_path.name
-        shutil.copy2(str(template_path), str(source))
-        if source.suffix.lower() == ".doc":
-            converted = temp_dir / "template.docx"
-            if platform.system() == "Windows":
-                _word_convert(source, converted)
-            else:
-                executable = shutil.which("soffice") or shutil.which("libreoffice")
-                if not executable:
-                    raise RuntimeError("LibreOffice es necesario para convertir la plantilla DOC.")
-                subprocess.run([executable, "--headless", "--convert-to", "docx", "--outdir", str(temp_dir), str(source)], check=True)
-                generated = temp_dir / (source.stem + ".docx")
-                if generated != converted:
-                    generated.replace(converted)
-            source = converted
-        if source.suffix.lower() != ".docx":
-            raise RuntimeError("La plantilla contractual debe estar en formato DOC o DOCX.")
-
+        source = temp_dir / "template.docx"
+        shutil.copy2(str(source_template), str(source))
         merged = temp_dir / "contrato.docx"
         _replace_docx_fields(source, merged, values)
         pdf_path = temp_dir / "contrato.pdf"
+        conversion_started = time.perf_counter()
         if platform.system() == "Windows":
             _word_convert(merged, pdf_path, pdf=True)
         else:
             _libreoffice_convert(merged, temp_dir)
-        return io.BytesIO(pdf_path.read_bytes())
+        conversion_seconds = time.perf_counter() - conversion_started
+        result = io.BytesIO(pdf_path.read_bytes())
+        logger.info(
+            "Contrato PDF generado: plantilla=%.3fs conversion=%.3fs total=%.3fs bytes=%s",
+            template_seconds,
+            conversion_seconds,
+            time.perf_counter() - started,
+            len(result.getbuffer()),
+        )
+        return result
