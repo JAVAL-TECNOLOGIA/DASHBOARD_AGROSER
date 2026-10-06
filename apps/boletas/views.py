@@ -73,23 +73,29 @@ def _official_payroll_period(service, payroll_type, month_value, week_number="")
         combined.append(row)
     weeks = combined
     from django.conf import settings
+    from .erg_txt import PayrollTextError, payroll_folders
     root_value = getattr(settings, '{}_TXT_ROOT'.format(payroll_type), '')
     root = Path(root_value) if root_value else None
-    if root and root.is_dir():
+    if root:
         available = set()
-        for folder in root.iterdir():
-            match = re.fullmatch(r'(\d{6})(\d+)-(\d{6})(\d+)', folder.name)
-            if folder.is_dir() and match:
+        try:
+            folders = payroll_folders(root)
+        except PayrollTextError:
+            folders = []
+        for folder_name, unused_folder in folders:
+            match = re.fullmatch(r'(\d{6})(\d+)-(\d{6})(\d+)', folder_name)
+            if match:
                 available.update(((match.group(1), match.group(2)), (match.group(3), match.group(4))))
-        filtered = []
-        for row in weeks:
-            numbers = row['number'].split('+')
-            required = {(row['start'].strftime('%Y%m'), numbers[0])}
-            if len(numbers) > 1:
-                required.add((row['end'].strftime('%Y%m'), numbers[-1]))
-            if required.issubset(available):
-                filtered.append(row)
-        weeks = filtered
+        if folders:
+            filtered = []
+            for row in weeks:
+                numbers = row['number'].split('+')
+                required = {(row['start'].strftime('%Y%m'), numbers[0])}
+                if len(numbers) > 1:
+                    required.add((row['end'].strftime('%Y%m'), numbers[-1]))
+                if required.issubset(available):
+                    filtered.append(row)
+            weeks = filtered
     selected = str(week_number or "").strip()
     if weeks and selected not in {item["number"] for item in weeks}:
         selected = weeks[-1]["number"]

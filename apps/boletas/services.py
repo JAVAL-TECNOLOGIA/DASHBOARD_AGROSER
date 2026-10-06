@@ -1,4 +1,5 @@
 import logging
+import copy
 from collections import defaultdict
 from decimal import Decimal
 
@@ -36,6 +37,15 @@ class PaySlipService:
         date_range = visible_period(date_range)
         if date_range is None:
             return []
+        cache_key = "boletas:slips:{}:{}:{}:{}".format(
+            self.company_id,
+            date_range.start.isoformat(),
+            date_range.end.isoformat(),
+            self.currency,
+        )
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return copy.deepcopy(cached)
         params = [
             self.company_id,
             date_range.start_sql,
@@ -107,10 +117,15 @@ class PaySlipService:
                 slip["net_total"] = official_total("TO0002", slip["income_total"] - slip["deduction_total"])
                 slips.append(slip)
 
-        return slips
+        cache.set(cache_key, slips, getattr(settings, "PAYSLIP_DATA_CACHE_SECONDS", 120))
+        return copy.deepcopy(slips)
 
     def payroll_weeks(self, period, payroll_type="OBP"):
         """Return the official weekly calendar stored by payroll."""
+        cache_key = "boletas:weeks:{}:{}:{}".format(self.company_id, payroll_type, period)
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return cached
         sql = """
             SELECT
                 RTRIM(SEMANA) AS week_number,
@@ -126,7 +141,7 @@ class PaySlipService:
         """
         with connections["payroll"].cursor() as cursor:
             cursor.execute(sql, [self.company_id, payroll_type, period.replace("-", "")])
-            return [
+            result = [
                 {
                     "number": str(row[0]).strip(),
                     "start": row[1].date() if hasattr(row[1], "date") else row[1],
@@ -135,6 +150,8 @@ class PaySlipService:
                 }
                 for row in cursor.fetchall()
             ]
+        cache.set(cache_key, result, getattr(settings, "PAYSLIP_WEEK_CACHE_SECONDS", 300))
+        return result
 
     def payroll_periods(self):
         """Return processed periods from payroll movements (from January 2026)."""

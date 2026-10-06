@@ -1,9 +1,15 @@
 """Lectura estricta de la exportación TXT multisección de Nisira ERG."""
 import csv
+import copy
+import hashlib
 import re
 from pathlib import Path
 from decimal import Decimal, InvalidOperation
 from datetime import datetime
+from functools import lru_cache
+
+from django.conf import settings
+from django.core.cache import cache
 
 
 class PayrollTextError(ValueError):
@@ -21,6 +27,20 @@ def amount(value):
 
 
 def read_payroll(path, period, document=None, payroll_type='ERG'):
+    path = Path(path)
+    try:
+        stat = path.stat()
+    except OSError:
+        raise PayrollTextError('El TXT seleccionado no está disponible.')
+    data = _read_payroll_cached(
+        str(path), stat.st_mtime_ns, stat.st_size, period, document, payroll_type
+    )
+    return copy.deepcopy(data)
+
+
+@lru_cache(maxsize=256)
+def _read_payroll_cached(path_value, unused_mtime_ns, unused_size, period, document, payroll_type):
+    path = Path(path_value)
     path = Path(path)
     if not re.fullmatch(r'\d{6}', period):
         raise PayrollTextError('Período no válido; usa AAAAMM.')
@@ -163,22 +183,44 @@ def read_payroll(path, period, document=None, payroll_type='ERG'):
     }
 
 
-def locate_payroll(root, period, document, week_number=''):
-    if not re.fullmatch(r'\d{6}', period) or not re.fullmatch(r'\d{8,12}', document):
-        raise PayrollTextError('DNI o período no válido.')
+def payroll_folders(root):
     root = Path(root)
     if not root.is_dir():
         raise PayrollTextError('La carpeta de boletas TXT no está disponible. Verifica la VPN.')
+    cache_id = hashlib.sha256(str(root).casefold().encode('utf-8')).hexdigest()[:20]
+    cache_key = 'boletas:txt-folders:{}'.format(cache_id)
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return [(name, Path(path)) for name, path in cached]
+    try:
+        folders = [
+            (item.name, item)
+            for item in root.iterdir()
+            if item.is_dir()
+        ]
+    except OSError:
+        raise PayrollTextError('La carpeta de boletas TXT no está disponible. Verifica la VPN.')
+    cache.set(
+        cache_key,
+        [(name, str(path)) for name, path in folders],
+        getattr(settings, 'PAYSLIP_TXT_INDEX_CACHE_SECONDS', 45),
+    )
+    return folders
+
+
+def locate_payroll(root, period, document, week_number=''):
+    if not re.fullmatch(r'\d{6}', period) or not re.fullmatch(r'\d{8,12}', document):
+        raise PayrollTextError('DNI o período no válido.')
     candidates = set()
-    for folder in root.iterdir():
-        folder_match = re.fullmatch(r'(\d{6})(\d+)-(\d{6})(\d+)', folder.name)
-        matches_period = folder.name.startswith(period)
+    for folder_name, folder in payroll_folders(root):
+        folder_match = re.fullmatch(r'(\d{6})(\d+)-(\d{6})(\d+)', folder_name)
+        matches_period = folder_name.startswith(period)
         if week_number:
             matches_period = bool(folder_match and (
                 (folder_match.group(1) == period and folder_match.group(2) == str(week_number))
                 or (folder_match.group(3) == period and folder_match.group(4) == str(week_number))
             ))
-        if folder.is_dir() and matches_period:
+        if matches_period:
             for location in (folder, folder / 'normal'):
                 for name in (document + '_N.txt', document + '_NS.txt', document + '.txt'):
                     candidate = location / name

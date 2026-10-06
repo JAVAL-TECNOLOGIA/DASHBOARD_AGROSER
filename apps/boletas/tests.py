@@ -1,6 +1,8 @@
 from datetime import date
 from decimal import Decimal
+from unittest.mock import patch
 
+from django.core.cache import cache
 from django.test import SimpleTestCase
 
 from .analytics import build_payroll_summary
@@ -83,6 +85,20 @@ class PayrollTypeTests(SimpleTestCase):
         self.assertTrue(PaySlipService._is_income({"idtipoconcepto": "IN"}))
         self.assertTrue(PaySlipService._is_deduction({"idtipoconcepto": "DE"}))
 
+
+class PaySlipCacheTests(SimpleTestCase):
+    def setUp(self):
+        cache.clear()
+
+    @patch.object(PaySlipService, "_execute", side_effect=[[], []])
+    def test_same_period_reuses_processed_payroll_data(self, execute):
+        service = PaySlipService(company_id="CACHE-TEST", currency="PEN")
+        period = month_range("2026-08")
+
+        self.assertEqual(service.list(period), [])
+        self.assertEqual(service.list(period), [])
+
+        self.assertEqual(execute.call_count, 2)
 
 class PayrollSummaryTests(SimpleTestCase):
     def test_summary_groups_payrolls_positions_and_totals(self):
