@@ -218,3 +218,33 @@ class ErgTxtTests(SimpleTestCase):
         with override_settings(OBP_TXT_ROOT=str(self.root)):
             result = PaySlipPdfView._build_pdf({'nrodocumento':'01234567','payroll_type':'OBP','_payroll_week':'42+43'}, period)
         self.assertTrue(result.startswith(b'%PDF'))
+
+    @patch('apps.boletas.plant_pdf.build_pdf', return_value=b'%PDF-combined')
+    def test_obp_accepts_one_combined_txt_across_two_months_without_duplication(self, build_pdf):
+        self.path.unlink()
+        folder = self.root / '20260842-20260943' / 'normal'
+        folder.mkdir(parents=True)
+        self.path = folder / '01234567_NS.txt'
+        self.header.update({
+            'periodo': '',
+            'periodo1': '202608',
+            'periodo2': '202609',
+            'descripcion_planilla': 'OBREROS PLANTA',
+            'desde1': '20260831',
+            'hasta1': '20260831',
+            'desde2': '20260901',
+            'hasta2': '20260906',
+        })
+        self.write()
+        period = DateRange(date(2026, 8, 31), date(2026, 9, 6), 'Semana 42 + 43')
+
+        with override_settings(OBP_TXT_ROOT=str(self.root)):
+            result = PaySlipPdfView._build_pdf(
+                {'nrodocumento': '01234567', 'payroll_type': 'OBP', '_payroll_week': '42+43'},
+                period,
+            )
+
+        self.assertEqual(result, b'%PDF-combined')
+        data = build_pdf.call_args.args[0]
+        self.assertEqual(data['totals']['ingr'], Decimal('100.00'))
+        self.assertNotIn(',', data['source'])

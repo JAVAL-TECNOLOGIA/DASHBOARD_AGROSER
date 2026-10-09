@@ -1571,12 +1571,17 @@ class PaySlipPdfView(PaySlipPermissionMixin, View):
         root = getattr(settings, setting_name, str(Path(settings.BASE_DIR) / 'runtime_logs' / fallback_folder))
         try:
             payrolls = []
+            payroll_sources = set()
             for index, month in enumerate(months):
                 try:
                     week_number = week_numbers[index] if index < len(week_numbers) else ''
                     source = locate_payroll(root, month, document, week_number=week_number)
                 except PayrollTextError:
                     continue
+                source_key = str(source.resolve()).casefold()
+                if source_key in payroll_sources:
+                    continue
+                payroll_sources.add(source_key)
                 payrolls.append(read_payroll(source, month, document, payroll_type=payroll_type))
             if not payrolls:
                 raise PayrollTextError('No se encontró un TXT del trabajador para la semana seleccionada.')

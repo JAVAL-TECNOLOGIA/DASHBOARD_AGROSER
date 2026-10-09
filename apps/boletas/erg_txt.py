@@ -69,7 +69,16 @@ def _read_payroll_cached(path_value, unused_mtime_ns, unused_size, period, docum
     dni = header['documento']
     if not re.fullmatch(document_pattern, dni) or (document and dni != document) or path.stem.split('_')[0] != dni:
         raise PayrollTextError('El DNI del archivo no coincide con su contenido.')
-    if header.get('periodo') != period:
+    weekly_periods = [
+        str(header.get(key) or '').strip()
+        for key in ('periodo1', 'periodo2')
+        if re.fullmatch(r'\d{6}', str(header.get(key) or '').strip())
+    ]
+    declared_periods = set(weekly_periods)
+    if re.fullmatch(r'\d{6}', str(header.get('periodo') or '').strip()):
+        declared_periods.add(str(header.get('periodo')).strip())
+    combined_weekly = payroll_type in ('OBP', 'OBR') and len(set(weekly_periods)) > 1
+    if period not in declared_periods:
         raise PayrollTextError('El TXT corresponde a otro período.')
     description = header.get('descripcion_planilla', '').upper()
     if payroll_type == 'ERG' and ('GENERAL' not in description or 'AGRARIO' in description):
@@ -84,15 +93,27 @@ def _read_payroll_cached(path_value, unused_mtime_ns, unused_size, period, docum
         raise PayrollTextError('El TXT no corresponde a obreros planta general.')
     if payroll_type not in ('ERG', 'ERA', 'OBP', 'OBR'):
         raise PayrollTextError('Tipo de planilla TXT no válido.')
-    for key in ('desde1', 'hasta1'):
+    date_groups = [('periodo1', 'desde1', 'hasta1')]
+    if combined_weekly:
+        date_groups.append(('periodo2', 'desde2', 'hasta2'))
+    previous_end = None
+    for period_key, start_key, end_key in date_groups:
+        expected_period = str(header.get(period_key) or header.get('periodo') or '').strip()
         try:
-            date = datetime.strptime(header[key], '%Y%m%d')
+            start_date = datetime.strptime(header[start_key], '%Y%m%d')
+            end_date = datetime.strptime(header[end_key], '%Y%m%d')
         except (ValueError, KeyError):
             raise PayrollTextError('Fechas no válidas en el TXT.')
-        if date.strftime('%Y%m') != period:
+        if start_date > end_date:
+            raise PayrollTextError('Fechas invertidas en el TXT.')
+        if expected_period and (
+            start_date.strftime('%Y%m') != expected_period
+            or end_date.strftime('%Y%m') != expected_period
+        ):
             raise PayrollTextError('Las fechas del TXT no corresponden al mes.')
-    if header['desde1'] > header['hasta1']:
-        raise PayrollTextError('Fechas invertidas en el TXT.')
+        if previous_end is not None and start_date <= previous_end:
+            raise PayrollTextError('Los periodos semanales del TXT se superponen.')
+        previous_end = end_date
     try:
         index = next(i for i, row in enumerate(rows) if row[:3] == ['codigo', 'copia', 'item'])
     except StopIteration:
