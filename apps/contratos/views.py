@@ -15,7 +15,12 @@ from django.urls import reverse
 from django.views import View
 from django.utils import timezone
 
-from .forms import ContractGenerationForm, ContractTemplateUploadForm
+from .forms import (
+    ContractGenerationForm,
+    ContractTemplateUploadForm,
+    NewEmployeeContractForm,
+)
+from .identity import IdentityLookupError, lookup_dni
 from .pdf import (
     build_contract_pdf,
     build_contract_pdfs_batch,
@@ -294,6 +299,65 @@ class ContractGenerateView(ContractPermissionMixin, View):
             )
             return redirect("contratos:index")
         messages.success(request, "Contrato {} registrado y PDF generado.".format(contract_id))
+        return redirect("contratos:pdf", worker_id=worker_id, contract_id=contract_id)
+
+
+class NewEmployeeContractView(ContractPermissionMixin, View):
+    template_name = "contratos/new_employee.html"
+
+    def _catalogs(self, service):
+        catalogs = service.employee_catalogs()
+        catalogs["contract_type"] = [
+            (str(item["idtipocontrato"]), item["descripcion"])
+            for item in service.contract_types()
+        ]
+        return catalogs
+
+    def get(self, request):
+        service = ContractService()
+        try:
+            catalogs = self._catalogs(service)
+        except DatabaseError:
+            logger.exception("No se pudieron cargar los catálogos de NISIRA.")
+            raise Http404("No fue posible cargar los catálogos de NISIRA.")
+        initial = {"document": request.GET.get("dni", "").strip()}
+        if initial["document"]:
+            if not re.fullmatch(r"\d{8}", initial["document"]):
+                messages.error(request, "El DNI debe contener exactamente 8 dígitos.")
+            else:
+                try:
+                    initial.update(lookup_dni(initial["document"]))
+                    messages.success(request, "Identidad encontrada. Completa los datos laborales y personales faltantes.")
+                except IdentityLookupError as exc:
+                    messages.warning(request, "{} Puedes completar los datos manualmente.".format(exc))
+        form = NewEmployeeContractForm(catalogs=catalogs, initial=initial)
+        return render(request, self.template_name, {"form": form})
+
+    def post(self, request):
+        service = ContractService()
+        try:
+            catalogs = self._catalogs(service)
+        except DatabaseError:
+            raise Http404("No fue posible cargar los catálogos de NISIRA.")
+        form = NewEmployeeContractForm(request.POST, catalogs=catalogs)
+        if not form.is_valid():
+            return render(request, self.template_name, {"form": form})
+        try:
+            worker_id, contract_id = service.create_employee_and_contract(form.cleaned_data)
+        except (ValueError, DatabaseError) as exc:
+            logger.exception("No se pudo registrar al nuevo trabajador y su contrato.")
+            form.add_error(None, str(exc))
+            return render(request, self.template_name, {"form": form})
+        try:
+            _ensure_contract_pdf(service, worker_id, contract_id)
+        except (FileNotFoundError, RuntimeError, OSError):
+            logger.exception("El trabajador fue registrado, pero el PDF no pudo generarse.")
+            messages.warning(
+                request,
+                "Trabajador y contrato registrados en NISIRA. Genera el PDF desde la lista.",
+            )
+            return redirect("contratos:index")
+        messages.success(request, "Trabajador y contrato registrados correctamente en NISIRA.")
         return redirect("contratos:pdf", worker_id=worker_id, contract_id=contract_id)
 
 

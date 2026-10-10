@@ -237,6 +237,66 @@ class ContractService:
             [],
         )
 
+    def employee_catalogs(self):
+        def choices(sql, params=()):
+            return [(str(row[0]).strip(), str(row[1]).strip()) for row in self._tuples(sql, params)]
+        return {
+            "marital_status": choices("SELECT IDESTADOCIVIL, DESCRIPCION FROM ESTADO_CIVIL WITH (NOLOCK) WHERE ESTADO=1 ORDER BY DESCRIPCION"),
+            "nationality": choices("SELECT IDNACIONALIDAD, DESCRIPCION FROM NACIONALIDAD WITH (NOLOCK) WHERE ESTADO=1 ORDER BY DESCRIPCION"),
+            "issuing_country": choices("SELECT CODIGO, DESCRIPCION FROM RTPS_PAISEMISOR WITH (NOLOCK) WHERE ESTADO=1 ORDER BY DESCRIPCION"),
+            "birth_place": [("", "Seleccione...")] + choices("SELECT IDUBIGEO, DESCRIPCION FROM UBIGEO WITH (NOLOCK) ORDER BY DESCRIPCION"),
+            "payroll": choices("SELECT IDPLANILLA, DESCRIPCION FROM planilla WITH (NOLOCK) WHERE IDEMPRESA=%s AND ISNULL(ESTADO,1)=1 AND IDPLANILLA IN ('ERG','ERA','OBP','OBR') ORDER BY DESCRIPCION", [self.company_id]),
+            "position": choices("SELECT IDCARGO, DESCRIPCION FROM cargos_personal WITH (NOLOCK) WHERE IDEMPRESA=%s AND ISNULL(estado,1)=1 ORDER BY DESCRIPCION", [self.company_id]),
+        }
+
+    def create_employee_and_contract(self, data):
+        worker_id = data["document"]
+        with transaction.atomic(using=self.connection_name):
+            connection = connections[self.connection_name]
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT COUNT(*) FROM personal_general WITH (UPDLOCK,HOLDLOCK) WHERE idcodigogeneral=%s OR nrodocumento=%s", [worker_id, worker_id])
+                if cursor.fetchone()[0]:
+                    raise ValueError("El DNI ya está registrado en NISIRA.")
+                cursor.execute(
+                    """INSERT INTO personal_general
+                    (idcodigogeneral,estado,a_materno,a_paterno,nombres,sexo,sincroniza,
+                     fecha_nacimiento,nrodocumento,telefono,telefono2,celular,email,
+                     idnacionalidad,idlugarnac,iddocidentidad,idestadocivil,procedencia,
+                     idpaisemisor,fechacreacion)
+                    VALUES (%s,1,%s,%s,%s,%s,'N',%s,%s,%s,%s,%s,%s,%s,%s,'01',%s,'',%s,GETDATE())""",
+                    [worker_id, data["maternal_surname"], data["paternal_surname"],
+                     data["first_names"], data["sex"], data["birth_date"], worker_id,
+                     data.get("phone"), data.get("phone2"), data.get("mobile"), data.get("email"),
+                     data["nationality"], data.get("birth_place") or None,
+                     data["marital_status"], data["issuing_country"]],
+                )
+                cursor.execute("""SELECT TOP 1 IDTIPOTRABAJADOR,IDTIPOPERSONAL,IDGRUPOTRABAJO,
+                    IDSUCURSAL,idhorariotrabajo,dia_descanso FROM personal WITH (NOLOCK)
+                    WHERE IDEMPRESA=%s AND IDPLANILLA=%s AND ESTADO=1 ORDER BY FECHACREACION DESC""",
+                    [self.company_id, data["payroll"]])
+                defaults = cursor.fetchone()
+                if not defaults:
+                    raise ValueError("La planilla seleccionada no tiene una configuración laboral de referencia.")
+                worker_type, personnel_type, work_group, branch, schedule, rest_day = defaults
+                cursor.execute("""INSERT INTO personal
+                    (idempresa,idcodigogeneral,idplanilla,fecha_inicioplanilla,sincroniza,
+                     en_plantilla_asistencia,fechacreacion,idcargo,idtipotrabajador,
+                     idtipopersonal,idgrupotrabajo,idsucursal,estado,idhorariotrabajo,dia_descanso)
+                    VALUES (%s,%s,%s,%s,'N','S',GETDATE(),%s,%s,%s,%s,%s,1,%s,%s)""",
+                    [self.company_id, worker_id, data["payroll"], data["employment_start"],
+                     data["position"], worker_type, personnel_type, work_group, branch,
+                     schedule, rest_day])
+                cursor.execute("""INSERT INTO personal_empresa
+                    (idempresa,idcodigogeneral,item,fecha_ingreso,idsituacion,idtipo,
+                     fecha_ocurrencia,idgrupo,idtipotrabajador)
+                    VALUES (%s,%s,'001',%s,'11','1',%s,'003',%s)""",
+                    [self.company_id, worker_id, data["employment_start"],
+                     data["employment_start"], worker_type])
+            contract_data = dict(data)
+            contract_data["worker_id"] = worker_id
+            contract_data["contract_type"] = data["contract_type"]
+            return worker_id, self.generate(contract_data)
+
     def generate(self, data):
         worker = self.get_person(data["worker_id"])
         if not worker:
@@ -348,3 +408,8 @@ class ContractService:
                 }
                 for row in cursor.fetchall()
             ]
+
+    def _tuples(self, sql, params):
+        with connections[self.connection_name].cursor() as cursor:
+            cursor.execute(sql, params)
+            return cursor.fetchall()

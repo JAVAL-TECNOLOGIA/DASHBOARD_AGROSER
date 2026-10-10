@@ -12,6 +12,7 @@ from django.urls import reverse
 from apps.user.models import User
 
 from .forms import ContractGenerationForm
+from .identity import IdentityLookupError, lookup_dni
 
 
 class ContractGenerationFormTests(SimpleTestCase):
@@ -49,6 +50,31 @@ class ContractGenerationFormTests(SimpleTestCase):
         self.assertTrue(form.is_valid())
         self.assertEqual(form.cleaned_data["start_date"], date(2026, 7, 27))
         self.assertEqual(form.cleaned_data["duration_days"], 66)
+
+
+class IdentityLookupTests(SimpleTestCase):
+    @patch("apps.contratos.identity._api_token", return_value="secret")
+    @patch("apps.contratos.identity.requests.post")
+    def test_maps_api_peru_dni_response(self, post, unused_token):
+        post.return_value.status_code = 200
+        post.return_value.json.return_value = {
+            "success": True,
+            "data": {
+                "numero": "00932970", "nombres": "BELTRAN",
+                "apellido_paterno": "PASHANACE", "apellido_materno": "TAPULLIMA",
+            },
+        }
+        self.assertEqual(lookup_dni("00932970")["first_names"], "BELTRAN")
+
+    @patch("apps.contratos.identity._api_token", return_value="secret")
+    @patch("apps.contratos.identity.requests.post")
+    def test_reports_document_not_found(self, post, unused_token):
+        post.return_value.status_code = 404
+        post.return_value.json.return_value = {
+            "success": False, "message": "El DNI no existe",
+        }
+        with self.assertRaises(IdentityLookupError):
+            lookup_dni("00000000")
 
 
 class ContractExpirationDashboardTests(TestCase):

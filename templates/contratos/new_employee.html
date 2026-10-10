@@ -1,0 +1,47 @@
+{% include 'base/header.html' %}
+{% include 'base/sidebar.html' %}
+<div id="content" class="content">
+    <h1 class="page-header mb-1">Nuevo trabajador y contrato</h1>
+    <p class="text-muted">Escanea el DNI con la PDA o digítalo para consultar los nombres.</p>
+    {% for message in messages %}<div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>{% endfor %}
+    <ul class="nav nav-tabs mb-4">
+        <li class="nav-item"><a class="nav-link" href="{% url 'contratos:index' %}"><i class="fa fa-file-contract mr-1"></i> Contratos</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'contratos:index' %}?tab=templates"><i class="fa fa-file-word mr-1"></i> Plantillas</a></li>
+        <li class="nav-item"><a class="nav-link active" href="#"><i class="fa fa-user-plus mr-1"></i> Nuevo trabajador</a></li>
+    </ul>
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white"><strong>1. Consultar identidad</strong></div>
+        <div class="card-body">
+            <form method="get" class="form-inline" autocomplete="off">
+                <label class="mr-2" for="dni-scanner">DNI</label>
+                <input id="dni-scanner" class="form-control form-control-lg mr-2" name="dni" inputmode="numeric" pattern="\d{8}" maxlength="8" value="{{ request.GET.dni }}" placeholder="Escanee o digite" autofocus required>
+                <button class="btn btn-primary btn-lg"><i class="fa fa-search mr-1"></i> Consultar</button>
+            </form>
+        </div>
+    </div>
+    <form method="post" novalidate>
+        {% csrf_token %}{{ form.worker_id }}
+        {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white"><strong>2. Datos personales</strong></div>
+            <div class="card-body"><div class="form-row">
+                {% for field in form %}{% if field.name != 'worker_id' and field.name != 'contract_type' and field.name != 'start_date' and field.name != 'end_date' and field.name != 'basic' and field.name != 'trial_days' and field.name != 'signature_date' and field.name != 'payroll' and field.name != 'position' and field.name != 'employment_start' %}
+                <div class="form-group col-lg-4 col-md-6"><label>{{ field.label }}</label>{{ field }}{% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>
+                {% endif %}{% endfor %}
+            </div></div>
+        </div>
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white"><strong>3. Datos laborales y contrato</strong></div>
+            <div class="card-body"><div class="form-row">
+                {% for field in form %}{% if field.name == 'payroll' or field.name == 'position' or field.name == 'employment_start' or field.name == 'contract_type' or field.name == 'start_date' or field.name == 'end_date' or field.name == 'basic' or field.name == 'trial_days' or field.name == 'signature_date' %}
+                <div class="form-group col-lg-4 col-md-6"><label>{{ field.label }}</label>{{ field }}{% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>
+                {% endif %}{% endfor %}
+            </div>
+            <div class="alert alert-warning"><i class="fa fa-exclamation-triangle mr-1"></i> Verifique toda la información. Al confirmar se crearán el trabajador, su vínculo laboral y el contrato en NISIRA.</div>
+            <div class="text-right"><a class="btn btn-light" href="{% url 'contratos:index' %}">Cancelar</a> <button class="btn btn-success btn-lg" type="submit"><i class="fa fa-user-plus mr-1"></i> Registrar y generar contrato</button></div>
+            </div>
+        </div>
+    </form>
+</div>
+{% include 'base/footer.html' %}
+<script>$(document).ready(function(){ App.init(); $('#dni-scanner').on('input',function(){ if(this.value.length===8){ this.form.submit(); } }); });</script>
