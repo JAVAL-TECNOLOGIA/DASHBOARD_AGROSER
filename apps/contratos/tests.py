@@ -26,6 +26,7 @@ class ContractGenerationFormTests(SimpleTestCase):
                 "end_date": "2026-07-26",
                 "basic": "1200.00",
                 "trial_days": "0",
+                "signature_date": "2026-07-27",
             },
             contract_types=self.choices,
         )
@@ -41,11 +42,13 @@ class ContractGenerationFormTests(SimpleTestCase):
                 "end_date": "2026-09-30",
                 "basic": "1200.00",
                 "trial_days": "0",
+                "signature_date": "2026-07-27",
             },
             contract_types=self.choices,
         )
         self.assertTrue(form.is_valid())
         self.assertEqual(form.cleaned_data["start_date"], date(2026, 7, 27))
+        self.assertEqual(form.cleaned_data["duration_days"], 66)
 
 
 class ContractExpirationDashboardTests(TestCase):

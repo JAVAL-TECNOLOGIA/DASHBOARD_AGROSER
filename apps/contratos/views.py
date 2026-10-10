@@ -246,6 +246,7 @@ class ContractGenerateView(ContractPermissionMixin, View):
             "worker_id": worker_id,
             "start_date": person.get("fecha_ingreso"),
             "trial_days": 0,
+            "signature_date": date.today(),
         }
         renewal_id = request.GET.get("renew", "").strip()
         if renewal_id:
@@ -255,6 +256,7 @@ class ContractGenerateView(ContractPermissionMixin, View):
                     "contract_type": renewal.get("idtipocontrato"),
                     "start_date": renewal["final_contrato"] + timedelta(days=1),
                     "basic": renewal.get("basico"),
+                    "signature_date": date.today(),
                 })
         form = ContractGenerationForm(
             contract_types=choices,

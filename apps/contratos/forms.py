@@ -53,6 +53,10 @@ class ContractGenerationForm(forms.Form):
         initial=0,
         widget=forms.NumberInput(attrs={"class": "form-control"}),
     )
+    signature_date = forms.DateField(
+        label="Fecha de firma del contrato",
+        widget=forms.DateInput(attrs={"type": "date", "class": "form-control"}),
+    )
 
     def __init__(self, *args, contract_types=(), **kwargs):
         super().__init__(*args, **kwargs)
@@ -65,4 +69,6 @@ class ContractGenerationForm(forms.Form):
         end = cleaned.get("end_date")
         if start and end and end < start:
             self.add_error("end_date", "La fecha final no puede ser anterior al inicio.")
+        if start and end:
+            cleaned["duration_days"] = (end - start).days + 1
         return cleaned

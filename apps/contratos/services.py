@@ -282,10 +282,11 @@ class ContractService:
                         idempresa, idcodigogeneral, idcontrato, estado, apoderado,
                         apoderado_direcc, apoderado_docident, basico, duracion,
                         final_contrato, inicio_contrato, periodo_prueba, sincroniza,
-                        fechacreacion, idtipocontrato, firma_fisica, idplanilla
+                        fechacreacion, idtipocontrato, firma_fisica, idplanilla,
+                        firma_contrato
                     ) VALUES (
                         %s, %s, %s, 1, '', '', '', %s, %s, %s, %s, %s,
-                        'N', GETDATE(), %s, 0, %s
+                        'N', GETDATE(), %s, 0, %s, %s
                     )
                     """,
                     [
@@ -299,6 +300,7 @@ class ContractService:
                         data["trial_days"],
                         data["contract_type"],
                         worker["payroll_id"],
+                        data["signature_date"],
                     ],
                 )
         return contract_id
