@@ -191,7 +191,7 @@ PAYSLIP_COMPANY_ID = os.getenv('PAYSLIP_COMPANY_ID', '001')
 PAYSLIP_CURRENCY = os.getenv('PAYSLIP_CURRENCY', 'N')
 APIPERU_DNI_URL = os.getenv('APIPERU_DNI_URL', 'https://api.apiperu.dev/dni')
 APIPERU_TOKEN_FILE = os.getenv(
-    'APIPERU_TOKEN_FILE', r'C:\ProgramData\Agroservice\apiperu.token'
+    'APIPERU_TOKEN_FILE', str(BASE_DIR / 'runtime_secrets' / 'apiperu.token')
 )
 
 

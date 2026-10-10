@@ -12,7 +12,7 @@ from django.urls import reverse
 from apps.user.models import User
 
 from .forms import ContractGenerationForm
-from .identity import IdentityLookupError, lookup_dni
+from .identity import IdentityLookupError, _api_token, lookup_dni
 
 
 class ContractGenerationFormTests(SimpleTestCase):
@@ -53,6 +53,15 @@ class ContractGenerationFormTests(SimpleTestCase):
 
 
 class IdentityLookupTests(SimpleTestCase):
+    def test_reads_token_from_runtime_file(self):
+        with tempfile.TemporaryDirectory() as directory:
+            token_file = Path(directory) / "apiperu.token"
+            token_file.write_text("file-secret\n", encoding="utf-8")
+            with patch.dict("os.environ", {"APIPERU_TOKEN": ""}), override_settings(
+                APIPERU_TOKEN_FILE=str(token_file)
+            ):
+                self.assertEqual(_api_token(), "file-secret")
+
     @patch("apps.contratos.identity._api_token", return_value="secret")
     @patch("apps.contratos.identity.requests.post")
     def test_maps_api_peru_dni_response(self, post, unused_token):
