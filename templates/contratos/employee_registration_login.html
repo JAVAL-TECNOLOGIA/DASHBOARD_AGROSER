@@ -1,0 +1,40 @@
+{% load static %}
+<!doctype html>
+<html lang="es">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+    <title>Acceso | Registro de personal</title>
+    <link rel="icon" href="{% static 'assets/img/logo/agroservice-corporativo.png' %}">
+    <link href="{% static 'assets/plugins/bootstrap/4.0.0/css/bootstrap.min.css' %}" rel="stylesheet">
+    <link href="{% static 'assets/plugins/font-awesome/5.0/css/fontawesome-all.min.css' %}" rel="stylesheet">
+    <style>
+        :root{--green:#087443;--deep:#073d32;--mint:#eaf6f0;--ink:#102b25}
+        *{box-sizing:border-box}body{margin:0;min-height:100vh;background:linear-gradient(155deg,var(--deep),var(--green));font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;display:flex;align-items:center;justify-content:center;padding:18px;color:var(--ink)}
+        .access-card{width:100%;max-width:430px;background:#fff;border-radius:24px;padding:26px 22px;box-shadow:0 22px 55px rgba(0,0,0,.28)}
+        .brand{text-align:center;margin-bottom:24px}.brand img{width:190px;max-width:80%;height:auto}.app-icon{width:68px;height:68px;border-radius:20px;background:var(--mint);color:var(--green);display:flex;align-items:center;justify-content:center;font-size:30px;margin:18px auto 12px}
+        h1{font-size:22px;font-weight:900;margin:0}.subtitle{font-size:14px;color:#667c74;margin-top:5px}.form-control{height:56px;border-radius:13px;font-size:17px;padding:0 16px;border:1px solid #c8d8d1}.form-group{margin-bottom:14px}
+        .enter{height:58px;border:0;border-radius:13px;background:var(--green);font-size:17px;font-weight:800;box-shadow:0 8px 20px rgba(8,116,67,.25)}.back{display:block;text-align:center;margin-top:18px;color:#527067;font-weight:600}
+        .security{background:var(--mint);border-radius:12px;padding:10px 12px;font-size:12px;color:#48665c;margin-bottom:16px}.alert{border-radius:12px}
+    </style>
+</head>
+<body>
+<main class="access-card">
+    <div class="brand">
+        <img src="{% static 'assets/img/logo/agroservice-corporativo.png' %}" alt="Agroservice">
+        <div class="app-icon"><i class="fa fa-id-card"></i></div>
+        <h1>REGISTRO DE PERSONAL</h1>
+        <div class="subtitle">Acceso para el operador de la PDA</div>
+    </div>
+    <div class="security"><i class="fa fa-shield-alt mr-1"></i>Ingrese con un usuario autorizado para registrar personal en NISIRA.</div>
+    <form method="post" autocomplete="off">
+        {% csrf_token %}
+        <div class="form-group">{{ form.username }}</div>
+        <div class="form-group">{{ form.password }}</div>
+        {% if form.errors %}<div class="alert alert-danger">Usuario o contraseña incorrectos.</div>{% endif %}
+        <button class="btn btn-success btn-block enter" type="submit"><i class="fa fa-sign-in-alt mr-2"></i>INGRESAR AL REGISTRO</button>
+    </form>
+    <a class="back" href="{% url 'login' %}"><i class="fa fa-arrow-left mr-1"></i>Volver al acceso principal</a>
+</main>
+</body>
+</html>

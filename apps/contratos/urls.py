@@ -10,6 +10,7 @@ from .views import (
     ContractTemplateUploadView,
     NewEmployeeContractView,
     PdaEmployeeRegistrationView,
+    PdaRegistrationLoginView,
 )
 
 
@@ -17,6 +18,7 @@ app_name = "contratos"
 
 urlpatterns = [
     path("", ContractListView.as_view(), name="index"),
+    path("registro-personal/acceso/", PdaRegistrationLoginView.as_view(), name="employee_registration_login"),
     path("nuevo-trabajador/", NewEmployeeContractView.as_view(), name="new_employee"),
     path("registro-personal/", PdaEmployeeRegistrationView.as_view(), name="employee_registration"),
     path("pdf/generar-lote/", ContractBulkPdfView.as_view(), name="bulk_pdf"),

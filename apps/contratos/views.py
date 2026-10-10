@@ -14,6 +14,10 @@ from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.views import View
 from django.utils import timezone
+from django.urls import reverse_lazy
+
+from apps.login.forms import LoginForm
+from apps.login.views import LoginView
 
 from .forms import (
     ContractGenerationForm,
@@ -30,6 +34,12 @@ from .services import ContractService, dashboard_template_path
 
 
 logger = logging.getLogger(__name__)
+
+
+class PdaRegistrationLoginView(LoginView):
+    template_name = "contratos/employee_registration_login.html"
+    form_class = LoginForm
+    success_url = reverse_lazy("contratos:employee_registration")
 
 
 def _contract_pdf_path(worker_id, contract_id):
