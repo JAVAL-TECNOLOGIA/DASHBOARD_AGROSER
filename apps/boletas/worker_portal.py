@@ -158,6 +158,33 @@ def payslip_fingerprint(slip, period):
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 
+def payslip_acknowledgement(slip, period, user=None, requested_hash=""):
+    """Find confirmation by hash, then by its immutable business identity.
+
+    Totals and presentation data can legitimately be corrected after a worker
+    confirms. The confirmation must remain attached to the worker, payroll and
+    period instead of disappearing when the calculated fingerprint changes.
+    """
+    current_hash = payslip_fingerprint(slip, period)
+    queryset = PayslipAcknowledgement.objects.all()
+    if user is not None:
+        queryset = queryset.filter(user=user)
+    hashes = [value for value in (requested_hash, current_hash) if value]
+    acknowledgement = queryset.filter(payslip_hash__in=hashes).order_by("confirmed_at").first()
+    if acknowledgement:
+        return acknowledgement
+    document = str(slip.get("nrodocumento") or "").strip()
+    payroll_code = str(slip.get("codigoplanilla") or "").strip()[:20]
+    structural = queryset.filter(
+        worker_document=document,
+        period_start=period.start,
+        period_end=period.end,
+    )
+    if payroll_code:
+        structural = structural.filter(payroll_code=payroll_code)
+    return structural.order_by("confirmed_at").first()
+
+
 def record_worker_pdf_access(request, user, period, fingerprint):
     """Conserva el primer acceso al PDF y actualiza la última visita."""
     forwarded = request.META.get("HTTP_X_FORWARDED_FOR", "")
@@ -456,14 +483,10 @@ class WorkerDashboardView(WorkerPortalMixin, View):
             fingerprint = payslip_fingerprint(slip, period)
             slip["fingerprint"] = fingerprint
             fingerprints.append(fingerprint)
-        acknowledgements = {
-            item.payslip_hash: item
-            for item in PayslipAcknowledgement.objects.filter(
-                user=request.user, payslip_hash__in=fingerprints
-            )
-        }
         for slip in slips:
-            slip["acknowledgement"] = acknowledgements.get(slip["fingerprint"])
+            slip["acknowledgement"] = payslip_acknowledgement(
+                slip, period, user=request.user
+            )
 
         params = {
             "mode": mode,
@@ -525,9 +548,9 @@ class WorkerPayslipPdfView(WorkerPortalMixin, View):
             released_at__isnull=False,
         ).exists():
             raise Http404("La boleta todavía no fue autorizada.")
-        acknowledgement = PayslipAcknowledgement.objects.filter(
-            user=request.user, payslip_hash=requested_hash
-        ).first()
+        acknowledgement = payslip_acknowledgement(
+            slip, period, user=request.user, requested_hash=requested_hash
+        )
         if not acknowledgement:
             messages.error(request, "Debes dar tu conformidad antes de visualizar la boleta.")
             return redirect("boletas:worker_dashboard")
@@ -583,9 +606,7 @@ class WorkerPayslipConfirmView(WorkerPortalMixin, View):
 
     def get(self, request):
         period, slip, fingerprint = self.get_slip(request)
-        if PayslipAcknowledgement.objects.filter(
-            user=request.user, payslip_hash=fingerprint
-        ).exists():
+        if payslip_acknowledgement(slip, period, user=request.user, requested_hash=fingerprint):
             messages.info(request, "Esta boleta ya fue confirmada.")
             return redirect("boletas:worker_dashboard")
         return render(
@@ -621,21 +642,23 @@ class WorkerPayslipConfirmView(WorkerPortalMixin, View):
             )
         forwarded = request.META.get("HTTP_X_FORWARDED_FOR", "")
         ip_address = forwarded.split(",")[0].strip() if forwarded else request.META.get("REMOTE_ADDR")
-        PayslipAcknowledgement.objects.get_or_create(
-            payslip_hash=fingerprint,
-            defaults={
-                "user": request.user,
-                "worker_document": request.user.username,
-                "period_start": period.start,
-                "period_end": period.end,
-                "payroll_code": str(slip.get("codigoplanilla") or "")[:20],
-                "signer_name": "{} {}".format(
+        acknowledgement = payslip_acknowledgement(
+            slip, period, user=request.user, requested_hash=fingerprint
+        )
+        if acknowledgement is None:
+            PayslipAcknowledgement.objects.create(
+                payslip_hash=fingerprint,
+                user=request.user,
+                worker_document=request.user.username,
+                period_start=period.start,
+                period_end=period.end,
+                payroll_code=str(slip.get("codigoplanilla") or "")[:20],
+                signer_name="{} {}".format(
                     request.user.first_name, request.user.last_name
                 ).strip(),
-                "ip_address": ip_address,
-                "user_agent": request.META.get("HTTP_USER_AGENT", "")[:300],
-            },
-        )
+                ip_address=ip_address,
+                user_agent=request.META.get("HTTP_USER_AGENT", "")[:300],
+            )
         messages.success(request, "Tu conformidad electrónica fue registrada.")
         pdf_query = urlencode({
             "mode": request.POST.get("mode", "custom"),

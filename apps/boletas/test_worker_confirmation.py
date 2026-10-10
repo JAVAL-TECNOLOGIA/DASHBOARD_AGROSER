@@ -127,6 +127,20 @@ class WorkerConfirmationTests(TestCase):
         )
         self.assertEqual(acknowledgement.worker_document, '01234567')
 
+    def test_existing_period_confirmation_is_reused_after_fingerprint_changes(self):
+        PayslipAcknowledgement.objects.create(
+            user=self.user,
+            worker_document=self.user.username,
+            period_start=self.period.start,
+            period_end=self.period.end,
+            payroll_code='ERG',
+            payslip_hash='a' * 64,
+            signer_name='Trabajador Prueba',
+        )
+        response = self.client.post(reverse('boletas:worker_confirm'), self.params)
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(PayslipAcknowledgement.objects.count(), 1)
+
     @patch('apps.boletas.worker_portal.PaySlipPdfView._build_pdf', return_value=b'%PDF-test')
     def test_missing_local_signature_file_does_not_break_confirmed_pdf(self, build_pdf):
         acknowledgement = PayslipAcknowledgement.objects.create(

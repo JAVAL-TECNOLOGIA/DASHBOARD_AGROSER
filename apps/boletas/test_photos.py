@@ -166,7 +166,9 @@ class PayslipPhotoTests(TestCase):
             period_start=pending.context['period'].start,
             period_end=pending.context['period'].end,
             payroll_code='ERG',
-            payslip_hash=slip['fingerprint'],
+            # A prior fingerprint must remain confirmed after totals or the
+            # PDF presentation are corrected.
+            payslip_hash='a' * 64,
             signer_name='Trabajador Prueba',
         )
         self.profile.signature = SimpleUploadedFile('signature.png', image_bytes(), content_type='image/png')

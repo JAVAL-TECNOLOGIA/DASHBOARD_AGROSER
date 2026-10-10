@@ -326,12 +326,9 @@ self.addEventListener('fetch', event => {
 
 def _confirmed_signature(slip, period):
     """Return signature metadata only after this exact payslip was confirmed."""
-    from .worker_portal import payslip_fingerprint
+    from .worker_portal import payslip_acknowledgement
 
-    fingerprint = payslip_fingerprint(slip, period)
-    acknowledgement = PayslipAcknowledgement.objects.filter(
-        payslip_hash=fingerprint,
-    ).first()
+    acknowledgement = payslip_acknowledgement(slip, period)
     if not acknowledgement:
         return {}
     profile = WorkerIdentityProfile.objects.filter(
@@ -486,7 +483,7 @@ class WorkerBadgeView(PaySlipPermissionMixin, View):
             return HttpResponse('No se pudo consultar al trabajador. Vuelve a intentarlo.', status=503)
         if not slips:
             raise Http404('No se encontraron datos del trabajador en el mes seleccionado.')
-        from .worker_portal import payslip_fingerprint
+        from .worker_portal import payslip_acknowledgement, payslip_fingerprint
         fingerprints = [payslip_fingerprint(slip, period) for slip in slips]
         if not PayslipAcknowledgement.objects.filter(
             worker_document=document,
@@ -510,7 +507,7 @@ class WorkerBadgeSheetView(PaySlipPermissionMixin, View):
 
     def get(self, request):
         from .badge import build_worker_badge_sheet
-        from .worker_portal import payslip_fingerprint
+        from .worker_portal import payslip_acknowledgement, payslip_fingerprint
 
         payroll_type = request.GET.get('payroll_type', '').strip().upper()
         try:
@@ -768,20 +765,14 @@ class PaySlipListView(PaySlipPermissionMixin, View):
             slip["pdf_url"] = "{}?{}".format(
                 reverse("boletas:pdf"), urlencode(pdf_params)
             )
-        from .worker_portal import payslip_fingerprint
+        from .worker_portal import payslip_acknowledgement, payslip_fingerprint
 
         fingerprints = []
         for slip in slips:
             slip["fingerprint"] = payslip_fingerprint(slip, date_range)
             fingerprints.append(slip["fingerprint"])
-        acknowledgements = {
-            item.payslip_hash: item
-            for item in PayslipAcknowledgement.objects.filter(
-                payslip_hash__in=fingerprints
-            )
-        }
         for slip in slips:
-            slip["acknowledgement"] = acknowledgements.get(slip["fingerprint"])
+            slip["acknowledgement"] = payslip_acknowledgement(slip, date_range)
         confirmed_documents = {
             str(slip.get('nrodocumento') or '').strip()
             for slip in slips if slip.get('acknowledgement')
@@ -1510,7 +1501,7 @@ class PaySlipPdfView(PaySlipPermissionMixin, View):
 
     @staticmethod
     def _delivery_data(slip, period):
-        from .worker_portal import payslip_fingerprint
+        from .worker_portal import payslip_acknowledgement
 
         payroll_type = str(slip.get('payroll_type') or 'ERG').strip().upper()
         release = PayrollRelease.objects.filter(
@@ -1518,8 +1509,7 @@ class PaySlipPdfView(PaySlipPermissionMixin, View):
             period_start=period.start,
             period_end=period.end,
         ).first()
-        fingerprint = payslip_fingerprint(slip, period)
-        acknowledgement = PayslipAcknowledgement.objects.filter(payslip_hash=fingerprint).first()
+        acknowledgement = payslip_acknowledgement(slip, period)
 
         def date(value):
             return timezone.localtime(value).strftime('%d/%m/%Y') if value else ''
