@@ -99,7 +99,9 @@ def _official_payroll_period(service, payroll_type, month_value, week_number="")
                 if required.issubset(available):
                     filtered.append(row)
             weeks = filtered
-    selected = str(week_number or "").strip()
+    # Query strings decode ``+`` as a space. Combined payroll weeks are
+    # represented as e.g. ``42+43``, so restore that separator before matching.
+    selected = re.sub(r"\s+", "+", str(week_number or "").strip())
     if weeks and selected not in {item["number"] for item in weeks}:
         selected = weeks[-1]["number"]
     row = next((item for item in weeks if item["number"] == selected), None)

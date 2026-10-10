@@ -218,7 +218,8 @@ def worker_slips(document, period):
 
 
 def resolve_worker_period(document, mode, **values):
-    week_value = str(values.get('week_value') or '')
+    week_value = "+".join(str(values.get('week_value') or '').split())
+    values['week_value'] = week_value
     period = month_range(values.get('month_value') or timezone.localdate().strftime('%Y-%m')) if mode == 'week' and '-W' not in week_value else resolve_date_range(mode, **values)
     month = month_range(period.end.strftime('%Y-%m'))
     monthly = worker_slips(document, month)
@@ -230,7 +231,7 @@ def resolve_worker_period(document, mode, **values):
     weekly_type = next((str(item.get('payroll_type', '')).upper() for item in monthly if str(item.get('payroll_type', '')).upper() in WEEKLY_PAYROLL_TYPES), '')
     if weekly_type:
         official, unused_weeks, unused_selected = _official_payroll_period(
-            PaySlipService(), weekly_type, month.start.strftime('%Y-%m'), values.get('week_value', '')
+            PaySlipService(), weekly_type, month.start.strftime('%Y-%m'), week_value
         )
         return 'week', official, False
     monthly_only = any(str(item.get('payroll_type', '')).upper() in ('ERG', 'ERA') for item in monthly)
@@ -513,7 +514,7 @@ class WorkerPayslipPdfView(WorkerPortalMixin, View):
         )
         if slip is None:
             raise Http404("La boleta solicitada no existe.")
-        slip['_payroll_week'] = request.GET.get('week', '').strip()
+        slip['_payroll_week'] = "+".join(request.GET.get('week', '').split())
         if not PayrollRelease.objects.filter(
             payroll_type=str(slip.get("payroll_type") or "").strip().upper(),
             period_start=period.start,
@@ -634,7 +635,9 @@ class WorkerPayslipConfirmView(WorkerPortalMixin, View):
         )
         messages.success(request, "Tu conformidad electrónica fue registrada.")
         pdf_query = urlencode({
-            "mode": "custom",
+            "mode": request.POST.get("mode", "custom"),
+            "month": request.POST.get("month", ""),
+            "week": "+".join(request.POST.get("week", "").split()),
             "start": period.start.isoformat(),
             "end": period.end.isoformat(),
             "hash": fingerprint,

@@ -34,6 +34,20 @@ class PeriodPolicyTests(SimpleTestCase):
         self.assertEqual(weeks[0]['number'], '42+43')
         self.assertEqual((period.start, period.end), (date(2026,8,31), date(2026,9,6)))
 
+    def test_combined_week_survives_query_string_plus_decoding(self):
+        service = PaySlipService()
+        calendars = {
+            '2026-07': [],
+            '2026-08': [{'number':'42','start':date(2026,8,31),'end':date(2026,8,31),'equivalent':'42'}],
+            '2026-09': [{'number':'43','start':date(2026,9,1),'end':date(2026,9,6),'equivalent':'43'}],
+        }
+        service.payroll_weeks = lambda month, payroll: calendars[month]
+        period, unused_weeks, selected = _official_payroll_period(
+            service, 'OBP', '2026-08', '42 43'
+        )
+        self.assertEqual(selected, '42+43')
+        self.assertEqual((period.start, period.end), (date(2026,8,31), date(2026,9,6)))
+
     def test_week_filter_only_includes_existing_txt_folders(self):
         service = PaySlipService()
         calendars = {
@@ -73,11 +87,15 @@ class PeriodPolicyTests(SimpleTestCase):
         from django.template.loader import render_to_string
         html = render_to_string('boletas/worker/dashboard.html', {
             'weekly_payroll': True, 'mode': 'week', 'payroll_week': '42+43',
+            'week_value': '42+43',
             'payroll_weeks': [{'number':'42+43','start':date(2026,8,31),'end':date(2026,9,6)}],
-            'document_tabs': [], 'slips': [],
+            'document_type': 'payment',
+            'document_tabs': [{'code': 'payment', 'label': 'Boletas', 'count': 1}],
+            'slips': [],
         })
         self.assertIn('name="week"', html)
         self.assertIn('Semana 42+43', html)
+        self.assertIn('week=42%2B43', html)
 
     def test_before_august_is_not_queried(self):
         with patch.object(PaySlipService, '_execute') as execute:
