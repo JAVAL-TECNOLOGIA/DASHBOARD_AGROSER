@@ -124,7 +124,10 @@ class ContractExpirationDashboardTests(TestCase):
                     ),
                 },
             )
-            self.assertRedirects(response, reverse("contratos:index"), fetch_redirect_response=False)
+            self.assertRedirects(
+                response, reverse("contratos:index") + "?tab=templates",
+                fetch_redirect_response=False,
+            )
             template = dashboard_template_path("01")
             self.assertTrue(template.is_file())
             service = ContractService()

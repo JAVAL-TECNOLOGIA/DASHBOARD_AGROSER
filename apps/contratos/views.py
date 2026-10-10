@@ -67,6 +67,44 @@ class ContractListView(ContractPermissionMixin, View):
 
     def get(self, request):
         today = date.today()
+        active_tab = "templates" if request.GET.get("tab") == "templates" else "contracts"
+        service = ContractService()
+        if active_tab == "templates":
+            try:
+                contract_types = service.contract_types()
+            except DatabaseError:
+                logger.exception("No se pudieron consultar los tipos de contrato.")
+                messages.error(request, "No fue posible consultar los tipos de contrato.")
+                contract_types = []
+            template_choices = [
+                (str(item["idtipocontrato"]), item["descripcion"])
+                for item in contract_types
+            ]
+            template_rows = []
+            for code, description in template_choices:
+                local_template = dashboard_template_path(code)
+                template_rows.append({
+                    "contract_type": code,
+                    "description": description,
+                    "record": {
+                        "path": local_template,
+                        "updated_at": datetime.fromtimestamp(
+                            local_template.stat().st_mtime,
+                            tz=timezone.get_current_timezone(),
+                        ),
+                    } if local_template else None,
+                })
+            return render(
+                request,
+                self.template_name,
+                {
+                    "active_tab": active_tab,
+                    "template_rows": template_rows,
+                    "template_form": ContractTemplateUploadForm(
+                        contract_types=template_choices
+                    ),
+                },
+            )
         minimum_start = date(2023, 1, 1)
         start_value = request.GET.get("start") or minimum_start.isoformat()
         end_value = request.GET.get("end") or today.isoformat()
@@ -101,7 +139,6 @@ class ContractListView(ContractPermissionMixin, View):
             )
 
         try:
-            service = ContractService()
             personnel = service.list_personnel(start_date, end_date)
             expiring_contracts = service.list_expiring_contracts(expiry_start, expiry_end)
         except DatabaseError:
@@ -109,31 +146,6 @@ class ContractListView(ContractPermissionMixin, View):
             messages.error(request, "No fue posible consultar los contratos.")
             personnel = []
             expiring_contracts = []
-        try:
-            contract_types = service.contract_types()
-        except DatabaseError:
-            logger.exception("No se pudieron consultar los tipos de contrato.")
-            contract_types = []
-
-        template_choices = [
-            (str(item["idtipocontrato"]), item["descripcion"])
-            for item in contract_types
-        ]
-        template_rows = []
-        for code, description in template_choices:
-            local_template = dashboard_template_path(code)
-            template_rows.append({
-                "contract_type": code,
-                "description": description,
-                "record": {
-                    "path": local_template,
-                    "updated_at": datetime.fromtimestamp(
-                        local_template.stat().st_mtime,
-                        tz=timezone.get_current_timezone(),
-                    ),
-                } if local_template else None,
-            })
-
         for person in personnel:
             if not person.get("contract_id"):
                 person["contract_status"] = "pending"
@@ -197,6 +209,7 @@ class ContractListView(ContractPermissionMixin, View):
             self.template_name,
             {
                 "personnel": personnel,
+                "active_tab": active_tab,
                 "counts": counts,
                 "start_value": start_value,
                 "end_value": end_value,
@@ -210,8 +223,6 @@ class ContractListView(ContractPermissionMixin, View):
                 "expiring_contracts": expiring_contracts,
                 "expiring_count": len(expiring_contracts),
                 "show_expiring": request.GET.get("show_expiring") == "1",
-                "template_rows": template_rows,
-                "template_form": ContractTemplateUploadForm(contract_types=template_choices),
             },
         )
 
@@ -302,7 +313,7 @@ class ContractTemplateUploadView(ContractPermissionMixin, View):
             ]
         except DatabaseError:
             messages.error(request, "No fue posible consultar los tipos de contrato.")
-            return redirect("contratos:index")
+            return redirect(reverse("contratos:index") + "?tab=templates")
         contract_type = str(request.POST.get("contract_type") or "").strip()
         form = ContractTemplateUploadForm(
             request.POST,
@@ -316,7 +327,7 @@ class ContractTemplateUploadView(ContractPermissionMixin, View):
                     " ".join(error for errors in form.errors.values() for error in errors)
                 ),
             )
-            return redirect("contratos:index")
+            return redirect(reverse("contratos:index") + "?tab=templates")
         uploaded = form.cleaned_data["file"]
         suffix = Path(uploaded.name).suffix.lower()
         destination = dashboard_template_path(contract_type, suffix)
@@ -334,7 +345,7 @@ class ContractTemplateUploadView(ContractPermissionMixin, View):
             if other != destination and other.is_file():
                 other.unlink()
         messages.success(request, "Plantilla guardada y disponible para la generación inmediata.")
-        return redirect("contratos:index")
+        return redirect(reverse("contratos:index") + "?tab=templates")
 
 
 class ContractPdfView(ContractPermissionMixin, View):
