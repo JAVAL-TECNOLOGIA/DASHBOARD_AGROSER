@@ -1,4 +1,5 @@
 import json
+from decimal import Decimal
 from io import BytesIO
 from unittest.mock import patch
 
@@ -12,9 +13,40 @@ from .documents import valid_worker_document
 from .badge import build_worker_badge
 from reportlab.graphics.barcode import createBarcodeDrawing
 from .worker_forms import WorkerLoginForm
+from .periods import custom_range
+from .services import PaySlipService
+from .worker_portal import worker_slips
 
 
 class WorkerDocumentValidationTests(SimpleTestCase):
+    @patch.object(PaySlipService, 'list')
+    def test_combined_plant_week_sums_both_payroll_segments(self, payroll_list):
+        payroll_list.return_value = [{
+            'nrodocumento': '75522713',
+            'payroll_type': 'OBP',
+            'basico': Decimal('41.00'),
+            'income_total': Decimal('200.79'),
+            'deduction_total': Decimal('37.87'),
+            'net_total': Decimal('162.92'),
+            'concepts': [
+                {'codigo_equiv': 'IN0001', 'importe': Decimal('56.46')},
+                {'codigo_equiv': 'IN0001', 'importe': Decimal('82.00')},
+                {'codigo_equiv': 'TOT_IN', 'importe': Decimal('124.08')},
+                {'codigo_equiv': 'TOT_IN', 'importe': Decimal('200.79')},
+                {'codigo_equiv': 'TOT_DE', 'importe': Decimal('16.16')},
+                {'codigo_equiv': 'TOT_DE', 'importe': Decimal('37.87')},
+                {'codigo_equiv': 'TO0002', 'importe': Decimal('107.92')},
+                {'codigo_equiv': 'TO0002', 'importe': Decimal('162.92')},
+            ],
+        }]
+        slip = worker_slips(
+            '75522713', custom_range('2026-09-28', '2026-10-04')
+        )[0]
+        self.assertEqual(slip['basico'], Decimal('138.46'))
+        self.assertEqual(slip['income_total'], Decimal('324.87'))
+        self.assertEqual(slip['deduction_total'], Decimal('54.03'))
+        self.assertEqual(slip['net_total'], Decimal('270.84'))
+
     def test_preserves_foreign_worker_code_and_leading_zeroes(self):
         form = WorkerLoginForm(data={'document': '002598724', 'password': '002598724'})
         self.assertTrue(form.is_valid())

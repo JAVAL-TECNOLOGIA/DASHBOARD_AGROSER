@@ -2,6 +2,7 @@ import hashlib
 import json
 import logging
 import unicodedata
+from decimal import Decimal
 from urllib.parse import urlencode
 from collections import OrderedDict
 
@@ -201,15 +202,17 @@ def worker_slips(document, period):
             slip["document_type"] = "payment"
             slip["document_type_label"] = DOCUMENT_TYPES["payment"]
             slip["document_title"] = "BOLETA DE REMUNERACIONES"
-            totals = {
-                str(item.get("codigo_equiv") or "").strip().upper(): PaySlipService._amount(item)
-                for item in slip.get("concepts", [])
-            }
+            # A week crossing two payroll periods contains one set of total
+            # concepts per segment. Sum repeated codes instead of keeping only
+            # the last row so the dashboard matches the merged TXT/PDF.
+            totals = {}
+            for item in slip.get("concepts", []):
+                code = str(item.get("codigo_equiv") or "").strip().upper()
+                totals[code] = totals.get(code, Decimal("0")) + PaySlipService._amount(item)
+            slip["basico"] = totals.get("IN0001", slip.get("basico", 0))
             slip["income_total"] = totals.get("TOT_IN", slip.get("income_total", 0))
             slip["deduction_total"] = totals.get("TOT_DE", slip.get("deduction_total", 0))
-            slip["net_total"] = totals.get(
-                "TO0002", slip["income_total"] - slip["deduction_total"]
-            )
+            slip["net_total"] = totals.get("TO0002", slip["income_total"] - slip["deduction_total"])
             documents.append(slip)
         else:
             documents.extend(split_worker_documents([slip]))
