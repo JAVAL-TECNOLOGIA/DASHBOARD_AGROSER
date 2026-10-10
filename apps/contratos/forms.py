@@ -10,9 +10,7 @@ class ContractTemplateUploadForm(forms.Form):
     )
 
     def __init__(self, *args, contract_types=(), **kwargs):
-        super().__init__(
-            *args, contract_types=catalogs.get("contract_type", ()), **kwargs
-        )
+        super().__init__(*args, **kwargs)
         self.contract_types = tuple(contract_types)
         self.fields["contract_type"].choices = self.contract_types
 

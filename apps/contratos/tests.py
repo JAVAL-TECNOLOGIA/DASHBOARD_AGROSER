@@ -11,7 +11,11 @@ from django.urls import reverse
 
 from apps.user.models import User
 
-from .forms import ContractGenerationForm, NewEmployeeContractForm
+from .forms import (
+    ContractGenerationForm,
+    ContractTemplateUploadForm,
+    NewEmployeeContractForm,
+)
 from .identity import IdentityLookupError, _api_token, lookup_dni
 
 
@@ -54,6 +58,15 @@ class ContractGenerationFormTests(SimpleTestCase):
     def test_new_employee_form_loads_contract_type_catalog(self):
         form = NewEmployeeContractForm(
             catalogs={"contract_type": (("01", "PLAZO FIJO"),)}
+        )
+        self.assertEqual(
+            list(form.fields["contract_type"].choices),
+            [("01", "PLAZO FIJO")],
+        )
+
+    def test_template_form_loads_contract_types_without_extra_arguments(self):
+        form = ContractTemplateUploadForm(
+            contract_types=(("01", "PLAZO FIJO"),)
         )
         self.assertEqual(
             list(form.fields["contract_type"].choices),
