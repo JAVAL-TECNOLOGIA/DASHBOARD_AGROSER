@@ -16,7 +16,11 @@ from django.views import View
 from django.utils import timezone
 
 from .forms import ContractGenerationForm, ContractTemplateUploadForm
-from .pdf import build_contract_pdf, build_contract_pdfs_batch
+from .pdf import (
+    build_contract_pdf,
+    build_contract_pdfs_batch,
+    warm_contract_pdf_converter,
+)
 from .services import ContractService, dashboard_template_path
 
 
@@ -105,6 +109,7 @@ class ContractListView(ContractPermissionMixin, View):
                     ),
                 },
             )
+        warm_contract_pdf_converter()
         minimum_start = date(2023, 1, 1)
         start_value = request.GET.get("start") or minimum_start.isoformat()
         end_value = request.GET.get("end") or today.isoformat()

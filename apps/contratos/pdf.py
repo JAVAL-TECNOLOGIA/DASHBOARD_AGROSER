@@ -8,6 +8,9 @@ import tempfile
 import threading
 import time
 import json
+import queue
+import atexit
+import sys
 from decimal import Decimal
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
@@ -18,6 +21,111 @@ from django.conf import settings
 logger = logging.getLogger(__name__)
 _template_cache_lock = threading.Lock()
 _word_conversion_lock = threading.Lock()
+
+
+class _WordConversionWorker:
+    """Own one Word COM instance in a dedicated thread and reuse it."""
+
+    def __init__(self):
+        self._queue = queue.Queue()
+        self._start_lock = threading.Lock()
+        self._thread = None
+
+    def warm(self):
+        with self._start_lock:
+            if self._thread is None or not self._thread.is_alive():
+                self._thread = threading.Thread(
+                    target=self._run,
+                    name="contract-word-converter",
+                    daemon=True,
+                )
+                self._thread.start()
+
+    def convert_many(self, pairs, timeout=300):
+        self.warm()
+        response = queue.Queue(maxsize=1)
+        self._queue.put(("convert", list(pairs), response))
+        try:
+            error = response.get(timeout=timeout)
+        except queue.Empty:
+            raise RuntimeError("Microsoft Word excedió el tiempo de generación del contrato.")
+        if error is not None:
+            raise error
+
+    def stop(self):
+        thread = self._thread
+        if thread is not None and thread.is_alive():
+            self._queue.put(("stop", (), None))
+            thread.join(timeout=5)
+
+    def _run(self):
+        try:
+            import pythoncom
+            import win32com.client
+        except ImportError:
+            # The public conversion methods retain the PowerShell fallback.
+            return
+
+        pythoncom.CoInitialize()
+        word = None
+        startup_error = None
+        try:
+            try:
+                word = win32com.client.DispatchEx("Word.Application")
+                word.Visible = False
+                word.DisplayAlerts = 0
+            except Exception as exc:
+                startup_error = exc
+                logger.exception("No se pudo precargar Microsoft Word.")
+
+            while True:
+                action, pairs, response = self._queue.get()
+                if action == "stop":
+                    break
+                error = startup_error
+                if error is None:
+                    try:
+                        for source, destination, file_format in pairs:
+                            document = word.Documents.Open(
+                                str(Path(source).resolve()), ReadOnly=True
+                            )
+                            try:
+                                document.SaveAs(
+                                    str(Path(destination).resolve()),
+                                    FileFormat=file_format,
+                                )
+                            finally:
+                                document.Close(False)
+                    except Exception as exc:
+                        logger.exception("Microsoft Word no pudo convertir el contrato.")
+                        error = exc
+                response.put(error)
+        finally:
+            if word is not None:
+                try:
+                    word.Quit()
+                except Exception:
+                    logger.exception("No se pudo cerrar Microsoft Word correctamente.")
+            pythoncom.CoUninitialize()
+
+
+_word_worker = _WordConversionWorker()
+atexit.register(_word_worker.stop)
+
+
+def warm_contract_pdf_converter():
+    """Start Word asynchronously while the user reviews the dashboard."""
+    if "test" in sys.argv:
+        return False
+    if platform.system() == "Windows":
+        try:
+            import pythoncom  # noqa: F401
+            import win32com.client  # noqa: F401
+        except ImportError:
+            return False
+        _word_worker.warm()
+        return True
+    return False
 
 
 MONTHS = (
@@ -127,6 +235,16 @@ def _word_convert_unlocked(source, destination, pdf=False):
 
 
 def _word_convert(source, destination, pdf=False):
+    try:
+        import pythoncom  # noqa: F401
+        import win32com.client  # noqa: F401
+    except ImportError:
+        with _word_conversion_lock:
+            return _word_convert_unlocked(source, destination, pdf=pdf)
+    _word_worker.convert_many([(source, destination, 17 if pdf else 16)])
+
+
+def _word_convert_legacy(source, destination, pdf=False):
     with _word_conversion_lock:
         return _word_convert_unlocked(source, destination, pdf=pdf)
 
@@ -145,6 +263,16 @@ def _libreoffice_convert(source, destination_dir):
 
 def _word_convert_many(pairs):
     """Convert several DOCX files with a single Microsoft Word process."""
+    try:
+        import pythoncom  # noqa: F401
+        import win32com.client  # noqa: F401
+    except ImportError:
+        with _word_conversion_lock:
+            return _word_convert_many_unlocked(pairs)
+    _word_worker.convert_many([(source, destination, 17) for source, destination in pairs])
+
+
+def _word_convert_many_legacy(pairs):
     with _word_conversion_lock:
         return _word_convert_many_unlocked(pairs)
 
