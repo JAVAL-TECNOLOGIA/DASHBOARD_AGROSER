@@ -361,6 +361,10 @@ class NewEmployeeContractView(ContractPermissionMixin, View):
         return redirect("contratos:pdf", worker_id=worker_id, contract_id=contract_id)
 
 
+class PdaEmployeeRegistrationView(NewEmployeeContractView):
+    template_name = "contratos/employee_registration_pda.html"
+
+
 class ContractTemplateView(ContractPermissionMixin, View):
     def get(self, request, contract_type):
         try:
