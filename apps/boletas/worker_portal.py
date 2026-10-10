@@ -579,7 +579,9 @@ class WorkerPayslipConfirmView(WorkerPortalMixin, View):
 
     def get(self, request):
         period, slip, fingerprint = self.get_slip(request)
-        if PayslipAcknowledgement.objects.filter(payslip_hash=fingerprint).exists():
+        if PayslipAcknowledgement.objects.filter(
+            user=request.user, payslip_hash=fingerprint
+        ).exists():
             messages.info(request, "Esta boleta ya fue confirmada.")
             return redirect("boletas:worker_dashboard")
         return render(

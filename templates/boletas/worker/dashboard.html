@@ -41,12 +41,16 @@
                 <div class="col-md-7">
                     <span class="badge badge-info mb-2">{{ slip.document_type_label }}</span><h4>{{ slip.payroll_type_label }}</h4>
                     <div class="text-muted mb-3">{{ slip.cargo_personal }} · {{ slip.dias_trabajados }} días trabajados</div>
+                    {% if slip.acknowledgement %}
                     <div class="row">
                         <div class="col-6 col-md-3 mb-2"><small class="text-muted d-block">Básico</small><strong>S/ {{ slip.basico|floatformat:2 }}</strong></div>
                         <div class="col-6 col-md-3 mb-2"><small class="text-muted d-block">Ingresos</small><strong>S/ {{ slip.income_total|floatformat:2 }}</strong></div>
                         <div class="col-6 col-md-3 mb-2"><small class="text-muted d-block">Descuentos</small><strong>S/ {{ slip.deduction_total|floatformat:2 }}</strong></div>
                         <div class="col-6 col-md-3 mb-2"><small class="text-muted d-block">Neto</small><span class="amount">S/ {{ slip.net_total|floatformat:2 }}</span></div>
                     </div>
+                    {% else %}
+                    <div class="alert alert-secondary mb-0"><i class="fa fa-lock mr-1"></i> Los importes y conceptos se mostrarán después de confirmar la boleta.</div>
+                    {% endif %}
                 </div>
                 <div class="col-md-5 text-md-right payslip-actions mt-3 mt-md-0">
                     {% if slip.acknowledgement %}

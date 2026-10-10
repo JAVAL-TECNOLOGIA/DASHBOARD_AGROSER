@@ -43,6 +43,7 @@ class WorkerConfirmationTests(TestCase):
             'codigoplanilla': 'ERG',
             'document_type': 'payment',
             'document_type_label': 'Boleta de pago',
+            'basico': 80,
             'income_total': 100,
             'deduction_total': 10,
             'net_total': 90,
@@ -72,6 +73,49 @@ class WorkerConfirmationTests(TestCase):
         self.assertNotContains(response, 'Contraseña actual')
         self.assertNotContains(response, 'type="password"')
         self.assertNotContains(response, 'type="checkbox"')
+        self.assertNotContains(response, 'Neto a pagar')
+        self.assertNotContains(response, 'S/ 90')
+
+    def test_dashboard_hides_amounts_until_confirmation(self):
+        response = self.client.get(reverse('boletas:worker_dashboard'), self.params)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Los importes y conceptos se mostrarán')
+        self.assertNotContains(response, 'Básico')
+        self.assertNotContains(response, 'S/ 90')
+
+        PayslipAcknowledgement.objects.create(
+            user=self.user,
+            worker_document=self.user.username,
+            period_start=self.period.start,
+            period_end=self.period.end,
+            payslip_hash=self.fingerprint,
+            signer_name='Trabajador Prueba',
+        )
+        response = self.client.get(reverse('boletas:worker_dashboard'), self.params)
+        self.assertContains(response, 'Básico')
+        self.assertContains(response, 'Visualizar y descargar PDF')
+
+    def test_worker_api_redacts_amounts_until_confirmation(self):
+        from .api import _slip_json
+
+        hidden = _slip_json(self.slip, self.period, user=self.user)
+        self.assertFalse(hidden['confirmed'])
+        self.assertIsNone(hidden['basic'])
+        self.assertIsNone(hidden['income'])
+        self.assertIsNone(hidden['deductions'])
+        self.assertIsNone(hidden['net'])
+
+        PayslipAcknowledgement.objects.create(
+            user=self.user,
+            worker_document=self.user.username,
+            period_start=self.period.start,
+            period_end=self.period.end,
+            payslip_hash=self.fingerprint,
+            signer_name='Trabajador Prueba',
+        )
+        visible = _slip_json(self.slip, self.period, user=self.user)
+        self.assertTrue(visible['confirmed'])
+        self.assertIsNotNone(visible['net'])
 
     def test_one_click_records_confirmation_and_opens_pdf(self):
         response = self.client.post(reverse('boletas:worker_confirm'), self.params)

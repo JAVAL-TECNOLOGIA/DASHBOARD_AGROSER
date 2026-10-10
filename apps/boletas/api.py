@@ -155,8 +155,12 @@ def _decode_image(value, label):
     return ContentFile(content, name="{}.{}".format(uuid.uuid4().hex, extension))
 
 
-def _slip_json(slip, period, week_number=""):
+def _slip_json(slip, period, week_number="", user=None):
     fingerprint = payslip_fingerprint(slip, period)
+    acknowledgement = PayslipAcknowledgement.objects.filter(payslip_hash=fingerprint)
+    if user is not None:
+        acknowledgement = acknowledgement.filter(user=user)
+    confirmed = acknowledgement.exists()
     return {
         "hash": fingerprint,
         "type": slip.get("document_type", "payment"),
@@ -164,11 +168,11 @@ def _slip_json(slip, period, week_number=""):
         "payroll": slip.get("payroll_type_label") or "",
         "period": period.label,
         "week": week_number,
-        "basic": _amount(slip.get("basico")),
-        "income": _amount(slip.get("income_total")),
-        "deductions": _amount(slip.get("deduction_total")),
-        "net": _amount(slip.get("net_total")),
-        "confirmed": PayslipAcknowledgement.objects.filter(payslip_hash=fingerprint).exists(),
+        "basic": _amount(slip.get("basico")) if confirmed else None,
+        "income": _amount(slip.get("income_total")) if confirmed else None,
+        "deductions": _amount(slip.get("deduction_total")) if confirmed else None,
+        "net": _amount(slip.get("net_total")) if confirmed else None,
+        "confirmed": confirmed,
     }
 
 
@@ -430,7 +434,7 @@ def worker_payslips_api(request):
             for item in weeks
         ],
         "slips": [
-            _slip_json(slip, slip_period, week_number)
+            _slip_json(slip, slip_period, week_number, user=user)
             for slip, slip_period, week_number in slips_with_period
         ],
     })
