@@ -44,4 +44,4 @@
     </form>
 </div>
 {% include 'base/footer.html' %}
-<script>$(document).ready(function(){ App.init(); $('#dni-scanner').on('input',function(){ if(this.value.length===8){ this.form.submit(); } }); });</script>
+<script>$(document).ready(function(){ App.init(); var busy=false,timer=null,input=$('#dni-scanner'); function consult(){var dni=input.val().replace(/\D/g,'').slice(0,8);input.val(dni);if(dni.length===8&&!busy){busy=true;input[0].form.requestSubmit?input[0].form.requestSubmit():input[0].form.submit();}} input.on('input paste change',function(){clearTimeout(timer);this.value=this.value.replace(/\D/g,'').slice(0,8);if(this.value.length===8){timer=setTimeout(consult,120);}}).on('keydown',function(e){if(e.key==='Enter'){e.preventDefault();consult();}}); });</script>
