@@ -111,7 +111,10 @@ class NewEmployeeContractForm(ContractGenerationForm):
         for name in self.fields:
             if not isinstance(self.fields[name].widget, forms.HiddenInput):
                 self.fields[name].widget.attrs.setdefault("class", "form-control")
-        for name in ("marital_status", "nationality", "issuing_country", "birth_place", "payroll", "position"):
+        for name in (
+            "contract_type", "marital_status", "nationality", "issuing_country",
+            "birth_place", "payroll", "position",
+        ):
             self.fields[name].choices = catalogs.get(name, ())
 
     def clean(self):

@@ -11,7 +11,7 @@ from django.urls import reverse
 
 from apps.user.models import User
 
-from .forms import ContractGenerationForm
+from .forms import ContractGenerationForm, NewEmployeeContractForm
 from .identity import IdentityLookupError, _api_token, lookup_dni
 
 
@@ -50,6 +50,15 @@ class ContractGenerationFormTests(SimpleTestCase):
         self.assertTrue(form.is_valid())
         self.assertEqual(form.cleaned_data["start_date"], date(2026, 7, 27))
         self.assertEqual(form.cleaned_data["duration_days"], 66)
+
+    def test_new_employee_form_loads_contract_type_catalog(self):
+        form = NewEmployeeContractForm(
+            catalogs={"contract_type": (("01", "PLAZO FIJO"),)}
+        )
+        self.assertEqual(
+            list(form.fields["contract_type"].choices),
+            [("01", "PLAZO FIJO")],
+        )
 
 
 class IdentityLookupTests(SimpleTestCase):
