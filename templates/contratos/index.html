@@ -158,9 +158,12 @@
                 {% csrf_token %}
                 <button id="bulk-contract-button" class="btn btn-success" type="submit" disabled>
                     <i class="fa fa-layer-group mr-1"></i> Generar contratos seleccionados
-                    <span id="bulk-contract-count" class="badge badge-light ml-1">0</span>
+                    <span id="bulk-contract-count" class="badge badge-light ml-1">0 / 100</span>
                 </button>
             </form>
+        </div>
+        <div id="bulk-contract-limit" class="alert alert-info rounded-0 mb-0 py-2 d-none">
+            <i class="fa fa-info-circle mr-1"></i> Se alcanzó el máximo de 100 contratos por lote. Genera este lote para poder seleccionar los siguientes.
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -213,18 +216,35 @@
 $(document).ready(function () {
     App.init();
     $('#expiring-contracts-card').on('dblclick', function () { window.location.href = this.href; });
+    var maxBulkContracts = 100;
     var $selectors = $('.contract-selector');
     function updateBulkSelection() {
         var selected = $selectors.filter(':checked').length;
-        $('#bulk-contract-count').text(selected);
+        var limitReached = selected >= maxBulkContracts;
+        $('#bulk-contract-count').text(selected + ' / ' + maxBulkContracts);
         $('#bulk-contract-button').prop('disabled', selected === 0);
-        $('#select-all-contracts').prop('checked', $selectors.length > 0 && selected === $selectors.length);
+        $selectors.filter(':not(:checked)').prop('disabled', limitReached);
+        $selectors.filter(':checked').prop('disabled', false);
+        $('#bulk-contract-limit').toggleClass('d-none', !limitReached);
+        var selectableTotal = Math.min($selectors.length, maxBulkContracts);
+        $('#select-all-contracts')
+            .prop('checked', selectableTotal > 0 && selected === selectableTotal)
+            .prop('indeterminate', selected > 0 && selected < selectableTotal);
     }
     $('#select-all-contracts').on('change', function () {
-        $selectors.prop('checked', this.checked);
+        $selectors.prop('checked', false).prop('disabled', false);
+        if (this.checked) {
+            $selectors.slice(0, maxBulkContracts).prop('checked', true);
+        }
         updateBulkSelection();
     });
-    $selectors.on('change', updateBulkSelection);
+    $selectors.on('change', function () {
+        if (this.checked && $selectors.filter(':checked').length > maxBulkContracts) {
+            this.checked = false;
+        }
+        updateBulkSelection();
+    });
+    updateBulkSelection();
     $('#bulk-contract-form').on('submit', function () {
         $('#bulk-contract-button').prop('disabled', true).html('<i class="fa fa-spinner fa-spin mr-1"></i> Generando lote...');
     });
