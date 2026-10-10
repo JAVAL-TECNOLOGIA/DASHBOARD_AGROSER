@@ -5,6 +5,8 @@ from unittest.mock import patch
 from io import BytesIO
 
 from django.test import SimpleTestCase, TestCase
+from django.test import override_settings
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 
 from apps.user.models import User
@@ -57,7 +59,8 @@ class ContractExpirationDashboardTests(TestCase):
 
     @patch("apps.contratos.views.ContractService.list_expiring_contracts")
     @patch("apps.contratos.views.ContractService.list_personnel", return_value=[])
-    def test_selected_month_card_and_expiration_list(self, unused_personnel, expiring):
+    @patch("apps.contratos.views.ContractService.contract_types", return_value=[])
+    def test_selected_month_card_and_expiration_list(self, unused_types, unused_personnel, expiring):
         expiring.return_value = [{
             "idcodigogeneral": "W001",
             "document": "12345678",
@@ -103,6 +106,31 @@ class ContractExpirationDashboardTests(TestCase):
         self.assertEqual(response.context["form"].initial["start_date"], date(2026, 11, 1))
         self.assertEqual(response.context["form"].initial["contract_type"], "01")
         self.assertContains(response, "Renovación del contrato")
+
+    @patch("apps.contratos.views.ContractService.contract_types")
+    def test_template_can_be_uploaded_and_reused_from_dashboard(self, contract_types):
+        from .services import ContractService, dashboard_template_path
+
+        contract_types.return_value = [{"idtipocontrato": "01", "descripcion": "PLAZO FIJO"}]
+        with tempfile.TemporaryDirectory() as directory, override_settings(MEDIA_ROOT=directory):
+            response = self.client.post(
+                reverse("contratos:template_upload"),
+                {
+                    "contract_type": "01",
+                    "file": SimpleUploadedFile(
+                        "plantilla.docx",
+                        b"plantilla-local",
+                        content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    ),
+                },
+            )
+            self.assertRedirects(response, reverse("contratos:index"), fetch_redirect_response=False)
+            template = dashboard_template_path("01")
+            self.assertTrue(template.is_file())
+            service = ContractService()
+            with patch.object(service, "_rows") as rows:
+                self.assertEqual(service.template_path("01"), template)
+                rows.assert_not_called()
 
     @patch("apps.contratos.views.build_contract_pdf", return_value=BytesIO(b"%PDF-1.4\n"))
     @patch("apps.contratos.views.ContractService.template_path")

@@ -1,6 +1,4 @@
 from django.db import models
-
-
 class ContratoPermission(models.Model):
     class Meta:
         managed = False

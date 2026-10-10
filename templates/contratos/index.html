@@ -73,6 +73,36 @@
         </div>
     </div>
 
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-white d-flex flex-column flex-lg-row justify-content-between align-items-lg-center">
+            <div>
+                <strong><i class="fa fa-file-word mr-2 text-primary"></i>Plantillas de contrato</strong>
+                <div class="small text-muted">Las plantillas cargadas aquí se guardan en el servidor y se reutilizan sin consultar la carpeta de red.</div>
+            </div>
+            <form method="post" enctype="multipart/form-data" action="{% url 'contratos:template_upload' %}" class="form-inline mt-3 mt-lg-0">
+                {% csrf_token %}
+                <div class="mr-2 mb-2 mb-lg-0">{{ template_form.contract_type }}</div>
+                <div class="mr-2 mb-2 mb-lg-0">{{ template_form.file }}</div>
+                <button class="btn btn-primary" type="submit"><i class="fa fa-upload mr-1"></i> Guardar plantilla</button>
+            </form>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+                <thead class="thead-light"><tr><th>Tipo de contrato</th><th>Fuente activa</th><th>Última actualización</th><th class="text-right">Acción</th></tr></thead>
+                <tbody>
+                    {% for item in template_rows %}
+                    <tr>
+                        <td><strong>{{ item.description }}</strong><div class="small text-muted">{{ item.contract_type }}</div></td>
+                        <td>{% if item.record %}<span class="badge badge-success">Guardada en el dashboard</span>{% else %}<span class="badge badge-secondary">Ruta interna de respaldo</span>{% endif %}</td>
+                        <td>{% if item.record %}{{ item.record.updated_at|date:"d/m/Y H:i" }}{% else %}—{% endif %}</td>
+                        <td class="text-right"><a class="btn btn-sm btn-outline-primary" href="{% url 'contratos:template' item.contract_type %}"><i class="fa fa-download mr-1"></i> Descargar</a></td>
+                    </tr>
+                    {% empty %}<tr><td colspan="4" class="text-center text-muted py-3">No hay tipos de contrato configurados.</td></tr>{% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     {% if show_expiring %}
     <div class="card shadow-sm mb-4 border-danger" id="expiring-contracts">
         <div class="card-header bg-white d-flex justify-content-between align-items-center">

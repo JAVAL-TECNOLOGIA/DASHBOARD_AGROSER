@@ -1,5 +1,33 @@
 from django import forms
 
+class ContractTemplateUploadForm(forms.Form):
+    contract_type = forms.ChoiceField(widget=forms.Select(attrs={"class": "form-control"}))
+    file = forms.FileField(
+        widget=forms.ClearableFileInput(
+            attrs={"class": "form-control-file", "accept": ".doc,.docx"}
+        )
+    )
+
+    def __init__(self, *args, contract_types=(), **kwargs):
+        super().__init__(*args, **kwargs)
+        self.contract_types = tuple(contract_types)
+        self.fields["contract_type"].choices = self.contract_types
+
+    def clean_contract_type(self):
+        value = self.cleaned_data["contract_type"]
+        allowed = {str(code) for code, unused_label in self.contract_types}
+        if value not in allowed:
+            raise forms.ValidationError("Selecciona un tipo de contrato válido.")
+        return value
+
+    def clean_file(self):
+        uploaded = self.cleaned_data["file"]
+        if not uploaded.name.lower().endswith((".doc", ".docx")):
+            raise forms.ValidationError("La plantilla debe estar en formato DOC o DOCX.")
+        if uploaded.size > 15 * 1024 * 1024:
+            raise forms.ValidationError("La plantilla no puede superar 15 MB.")
+        return uploaded
+
 
 class ContractGenerationForm(forms.Form):
     worker_id = forms.CharField(widget=forms.HiddenInput)

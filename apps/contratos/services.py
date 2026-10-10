@@ -1,7 +1,20 @@
+import re
 from pathlib import Path
 
 from django.conf import settings
 from django.db import connections, transaction
+
+
+def dashboard_template_path(contract_type, extension=None):
+    safe_type = re.sub(r"[^A-Za-z0-9_-]+", "_", str(contract_type)).strip("_")
+    root = Path(settings.MEDIA_ROOT) / "contratos" / "plantillas" / "dashboard"
+    if extension:
+        return root / "{}{}".format(safe_type, extension.lower())
+    for suffix in (".docx", ".doc"):
+        candidate = root / "{}{}".format(safe_type, suffix)
+        if candidate.is_file():
+            return candidate
+    return None
 
 
 class ContractService:
@@ -305,6 +318,9 @@ class ContractService:
                 raise ValueError("No se encontró el contrato.")
 
     def template_path(self, contract_type):
+        local_path = dashboard_template_path(contract_type)
+        if local_path:
+            return local_path
         rows = self._rows(
             """
             SELECT TOP 1 ruta FROM tipo_contrato WITH (NOLOCK)

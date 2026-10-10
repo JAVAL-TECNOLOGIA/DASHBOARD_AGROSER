@@ -2,7 +2,7 @@ import logging
 import calendar
 import re
 import tempfile
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 from django.conf import settings
@@ -13,10 +13,11 @@ from django.http import FileResponse, Http404
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.views import View
+from django.utils import timezone
 
-from .forms import ContractGenerationForm
+from .forms import ContractGenerationForm, ContractTemplateUploadForm
 from .pdf import build_contract_pdf, build_contract_pdfs_batch
-from .services import ContractService
+from .services import ContractService, dashboard_template_path
 
 
 logger = logging.getLogger(__name__)
@@ -108,6 +109,30 @@ class ContractListView(ContractPermissionMixin, View):
             messages.error(request, "No fue posible consultar los contratos.")
             personnel = []
             expiring_contracts = []
+        try:
+            contract_types = service.contract_types()
+        except DatabaseError:
+            logger.exception("No se pudieron consultar los tipos de contrato.")
+            contract_types = []
+
+        template_choices = [
+            (str(item["idtipocontrato"]), item["descripcion"])
+            for item in contract_types
+        ]
+        template_rows = []
+        for code, description in template_choices:
+            local_template = dashboard_template_path(code)
+            template_rows.append({
+                "contract_type": code,
+                "description": description,
+                "record": {
+                    "path": local_template,
+                    "updated_at": datetime.fromtimestamp(
+                        local_template.stat().st_mtime,
+                        tz=timezone.get_current_timezone(),
+                    ),
+                } if local_template else None,
+            })
 
         for person in personnel:
             if not person.get("contract_id"):
@@ -185,6 +210,8 @@ class ContractListView(ContractPermissionMixin, View):
                 "expiring_contracts": expiring_contracts,
                 "expiring_count": len(expiring_contracts),
                 "show_expiring": request.GET.get("show_expiring") == "1",
+                "template_rows": template_rows,
+                "template_form": ContractTemplateUploadForm(contract_types=template_choices),
             },
         )
 
@@ -263,6 +290,51 @@ class ContractTemplateView(ContractPermissionMixin, View):
             as_attachment=True,
             filename=path.name,
         )
+
+
+class ContractTemplateUploadView(ContractPermissionMixin, View):
+    def post(self, request):
+        service = ContractService()
+        try:
+            choices = [
+                (str(item["idtipocontrato"]), item["descripcion"])
+                for item in service.contract_types()
+            ]
+        except DatabaseError:
+            messages.error(request, "No fue posible consultar los tipos de contrato.")
+            return redirect("contratos:index")
+        contract_type = str(request.POST.get("contract_type") or "").strip()
+        form = ContractTemplateUploadForm(
+            request.POST,
+            request.FILES,
+            contract_types=choices,
+        )
+        if not form.is_valid():
+            messages.error(
+                request,
+                "No se pudo guardar la plantilla: {}".format(
+                    " ".join(error for errors in form.errors.values() for error in errors)
+                ),
+            )
+            return redirect("contratos:index")
+        uploaded = form.cleaned_data["file"]
+        suffix = Path(uploaded.name).suffix.lower()
+        destination = dashboard_template_path(contract_type, suffix)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        with tempfile.NamedTemporaryFile(
+            mode="wb", suffix=suffix, prefix="contract_template_",
+            dir=str(destination.parent), delete=False,
+        ) as temporary:
+            for chunk in uploaded.chunks():
+                temporary.write(chunk)
+            temporary_path = Path(temporary.name)
+        temporary_path.replace(destination)
+        for other_suffix in (".doc", ".docx"):
+            other = dashboard_template_path(contract_type, other_suffix)
+            if other != destination and other.is_file():
+                other.unlink()
+        messages.success(request, "Plantilla guardada y disponible para la generación inmediata.")
+        return redirect("contratos:index")
 
 
 class ContractPdfView(ContractPermissionMixin, View):
