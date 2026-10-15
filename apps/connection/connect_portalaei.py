@@ -17,6 +17,7 @@ name = 'PORTAL_AEI'
 user = 'sa'
 password = '@eisac2020'
 
+connection_portalaei = None
 try:
     connection_portalaei = open_connection(
         build_pyodbc_connection_string(host, name, user, password, mars=True)
