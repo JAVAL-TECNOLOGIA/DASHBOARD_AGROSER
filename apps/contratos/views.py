@@ -366,13 +366,29 @@ class NewEmployeeContractView(ContractPermissionMixin, View):
                 request,
                 "Trabajador y contrato registrados en NISIRA. Genera el PDF desde la lista.",
             )
-            return redirect("contratos:index")
+            return self.registration_pdf_failure_response()
         messages.success(request, "Trabajador y contrato registrados correctamente en NISIRA.")
+        return self.registration_success_response(worker_id, contract_id)
+
+    def registration_success_response(self, worker_id, contract_id):
         return redirect("contratos:pdf", worker_id=worker_id, contract_id=contract_id)
+
+    def registration_pdf_failure_response(self):
+        return redirect("contratos:index")
 
 
 class PdaEmployeeRegistrationView(NewEmployeeContractView):
     template_name = "contratos/employee_registration_pda.html"
+
+    def registration_success_response(self, worker_id, contract_id):
+        messages.success(
+            self.request,
+            "Contrato generado. El formulario quedó listo para registrar a otro trabajador.",
+        )
+        return redirect("contratos:employee_registration")
+
+    def registration_pdf_failure_response(self):
+        return redirect("contratos:employee_registration")
 
 
 class ContractTemplateView(ContractPermissionMixin, View):

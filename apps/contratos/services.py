@@ -266,16 +266,17 @@ class ContractService:
                 cursor.execute(
                     """INSERT INTO personal_general
                     (idcodigogeneral,estado,a_materno,a_paterno,nombres,sexo,sincroniza,
-                     fecha_nacimiento,nrodocumento,telefono,telefono2,celular,email,
+                     fecha_nacimiento,nrodocumento,telefono,telefono2,celular,email,descripcion_zona,
                      idnacionalidad,idlugarnac,iddocidentidad,idestadocivil,procedencia,
                      idpaisemisor,regimenlaboral,idregimenlaboral,idregimen,idcategoria,
                      jornada_maxima,smedico,idperiodicidad,idpagopla,
                      categoria_ocupacional,sespecial,idnivelestudio,fechacreacion)
-                    VALUES (%s,1,%s,%s,%s,%s,'N',%s,%s,%s,%s,%s,%s,%s,%s,'01',%s,'',%s,
+                    VALUES (%s,1,%s,%s,%s,%s,'N',%s,%s,%s,%s,%s,%s,%s,%s,%s,'01',%s,'',%s,
                             %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,GETDATE())""",
                     [worker_id, data["maternal_surname"], data["paternal_surname"],
                      data["first_names"], data["sex"], data["birth_date"], worker_id,
                      data.get("phone"), data.get("phone2"), data.get("mobile"), data.get("email"),
+                     data["zone"],
                      data["nationality"], data.get("birth_place") or None,
                      data["marital_status"], data["issuing_country"],
                      data["employment_regime_type"], data["labor_regime"],

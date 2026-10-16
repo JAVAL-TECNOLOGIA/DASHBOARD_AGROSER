@@ -100,6 +100,11 @@ class NewEmployeeContractForm(ContractGenerationForm):
     phone2 = forms.CharField(label="Teléfono 2", max_length=12, required=False)
     mobile = forms.CharField(label="Celular", max_length=15, required=False)
     email = forms.EmailField(label="Correo", max_length=100, required=False)
+    zone = forms.CharField(
+        label="Zona",
+        max_length=50,
+        widget=forms.TextInput(attrs={"placeholder": "Ingrese la zona"}),
+    )
     nationality = forms.ChoiceField(label="Nacionalidad")
     issuing_country = forms.ChoiceField(label="País emisor")
     birth_place = forms.ChoiceField(label="Lugar de nacimiento", required=False)

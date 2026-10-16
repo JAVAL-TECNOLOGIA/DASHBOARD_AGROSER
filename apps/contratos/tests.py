@@ -88,6 +88,8 @@ class ContractGenerationFormTests(SimpleTestCase):
         self.assertEqual(form.fields["sex"].choices[0], ("", "Seleccione..."))
         self.assertEqual(form.fields["payroll"].choices[0], ("", "Seleccione..."))
         self.assertEqual(form.fields["position"].choices[0], ("", "Seleccione..."))
+        self.assertEqual(form.fields["zone"].max_length, 50)
+        self.assertTrue(form.fields["zone"].required)
         today = timezone.localdate().isoformat()
         self.assertIn('value="{}"'.format(today), str(form["employment_start"]))
         self.assertIn('value="{}"'.format(today), str(form["start_date"]))
