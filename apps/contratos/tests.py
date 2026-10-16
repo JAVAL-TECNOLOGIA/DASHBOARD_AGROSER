@@ -90,6 +90,15 @@ class ContractGenerationFormTests(SimpleTestCase):
         today = timezone.localdate().isoformat()
         self.assertIn('value="{}"'.format(today), str(form["employment_start"]))
         self.assertIn('value="{}"'.format(today), str(form["start_date"]))
+        for field_name in (
+            "employment_start", "start_date", "signature_date", "nationality",
+            "issuing_country", "employment_regime_type", "labor_regime",
+            "pension_regime", "worker_category", "maximum_workday",
+            "medical_service", "income_periodicity", "payment_type",
+            "occupational_category", "educational_level",
+        ):
+            self.assertTrue(form.fields[field_name].disabled)
+            self.assertIn("default-locked", form.fields[field_name].widget.attrs["class"])
 
     def test_template_form_loads_contract_types_without_extra_arguments(self):
         form = ContractTemplateUploadForm(

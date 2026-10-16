@@ -169,6 +169,20 @@ class NewEmployeeContractForm(ContractGenerationForm):
             self.fields[name].choices = [("", "Seleccione...")] + list(
                 self.fields[name].choices
             )
+        locked_defaults = (
+            "employment_start", "start_date", "signature_date", "nationality",
+            "issuing_country", "employment_regime_type", "labor_regime",
+            "pension_regime", "worker_category", "maximum_workday",
+            "medical_service", "income_periodicity", "payment_type",
+            "occupational_category", "educational_level",
+        )
+        for name in locked_defaults:
+            field = self.fields[name]
+            field.disabled = True
+            field.widget.attrs["class"] = (
+                field.widget.attrs.get("class", "") + " default-locked"
+            ).strip()
+            field.widget.attrs["title"] = "Valor definido por defecto"
 
     def clean(self):
         cleaned = super().clean()
