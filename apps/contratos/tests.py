@@ -61,6 +61,7 @@ class ContractGenerationFormTests(SimpleTestCase):
             catalogs={
                 "contract_type": (("01", "PLAZO FIJO"),),
                 "labor_regime": (("26", "RÉGIMEN LABORAL AGRARIO"),),
+                "address_ubigeo": (("", "Seleccione..."), ("110101", "ICA")),
                 "pension_regime": (("02", "ONP"),),
                 "income_periodicity": (("3", "SEMANAL"),),
                 "payment_type": (("2", "DEPÓSITO EN CUENTA"),),
@@ -90,12 +91,18 @@ class ContractGenerationFormTests(SimpleTestCase):
         self.assertEqual(form.fields["position"].choices[0], ("", "Seleccione..."))
         self.assertEqual(form.fields["zone"].max_length, 50)
         self.assertTrue(form.fields["zone"].required)
+        self.assertTrue(form.fields["address_reference"].required)
+        self.assertTrue(form.fields["address_ubigeo"].required)
+        self.assertFalse(form.fields["nationality"].disabled)
+        self.assertIn("searchable-select", form.fields["birth_place"].widget.attrs["class"])
+        self.assertIn("searchable-select", form.fields["nationality"].widget.attrs["class"])
+        self.assertIn("searchable-select", form.fields["address_ubigeo"].widget.attrs["class"])
         today = timezone.localdate().isoformat()
         self.assertIn('value="{}"'.format(today), str(form["employment_start"]))
         self.assertIn('value="{}"'.format(today), str(form["start_date"]))
         for field_name in (
-            "employment_start", "start_date", "signature_date", "nationality",
-            "issuing_country", "employment_regime_type", "labor_regime",
+            "employment_start", "start_date", "signature_date", "issuing_country",
+            "employment_regime_type", "labor_regime",
             "pension_regime", "worker_category", "maximum_workday",
             "medical_service", "income_periodicity", "payment_type",
             "occupational_category", "special_situation", "educational_level",

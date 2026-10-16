@@ -240,11 +240,13 @@ class ContractService:
     def employee_catalogs(self):
         def choices(sql, params=()):
             return [(str(row[0]).strip(), str(row[1]).strip()) for row in self._tuples(sql, params)]
+        ubigeos = choices("SELECT IDUBIGEO, DESCRIPCION FROM UBIGEO WITH (NOLOCK) ORDER BY DESCRIPCION")
         return {
             "marital_status": choices("SELECT IDESTADOCIVIL, DESCRIPCION FROM ESTADO_CIVIL WITH (NOLOCK) WHERE ESTADO=1 ORDER BY DESCRIPCION"),
             "nationality": choices("SELECT IDNACIONALIDAD, DESCRIPCION FROM NACIONALIDAD WITH (NOLOCK) WHERE ESTADO=1 ORDER BY DESCRIPCION"),
             "issuing_country": choices("SELECT CODIGO, DESCRIPCION FROM RTPS_PAISEMISOR WITH (NOLOCK) WHERE ESTADO=1 ORDER BY DESCRIPCION"),
-            "birth_place": [("", "Seleccione...")] + choices("SELECT IDUBIGEO, DESCRIPCION FROM UBIGEO WITH (NOLOCK) ORDER BY DESCRIPCION"),
+            "birth_place": [("", "Seleccione...")] + ubigeos,
+            "address_ubigeo": [("", "Seleccione...")] + ubigeos,
             "payroll": choices("SELECT IDPLANILLA, DESCRIPCION FROM planilla WITH (NOLOCK) WHERE IDEMPRESA=%s AND ISNULL(ESTADO,1)=1 AND IDPLANILLA IN ('ERG','ERA','OBP','OBR') ORDER BY DESCRIPCION", [self.company_id]),
             "position": choices("SELECT IDCARGO, DESCRIPCION FROM cargos_personal WITH (NOLOCK) WHERE IDEMPRESA=%s AND ISNULL(estado,1)=1 ORDER BY DESCRIPCION", [self.company_id]),
             "labor_regime": choices("SELECT IDREGIMENLABORAL, DESCRIPCION FROM REGIMENLABORAL WITH (NOLOCK) WHERE ESTADO=1 ORDER BY DESCRIPCION"),
@@ -267,16 +269,17 @@ class ContractService:
                     """INSERT INTO personal_general
                     (idcodigogeneral,estado,a_materno,a_paterno,nombres,sexo,sincroniza,
                      fecha_nacimiento,nrodocumento,telefono,telefono2,celular,email,descripcion_zona,
+                     direccion_referencia,idubigeo,
                      idnacionalidad,idlugarnac,iddocidentidad,idestadocivil,procedencia,
                      idpaisemisor,regimenlaboral,idregimenlaboral,idregimen,idcategoria,
                      jornada_maxima,smedico,idperiodicidad,idpagopla,
                      categoria_ocupacional,sespecial,idnivelestudio,fechacreacion)
-                    VALUES (%s,1,%s,%s,%s,%s,'N',%s,%s,%s,%s,%s,%s,%s,%s,%s,'01',%s,'',%s,
+                    VALUES (%s,1,%s,%s,%s,%s,'N',%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,'01',%s,'',%s,
                             %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,GETDATE())""",
                     [worker_id, data["maternal_surname"], data["paternal_surname"],
                      data["first_names"], data["sex"], data["birth_date"], worker_id,
                      data.get("phone"), data.get("phone2"), data.get("mobile"), data.get("email"),
-                     data["zone"],
+                     data["zone"], data["address_reference"], data["address_ubigeo"],
                      data["nationality"], data.get("birth_place") or None,
                      data["marital_status"], data["issuing_country"],
                      data["employment_regime_type"], data["labor_regime"],

@@ -105,6 +105,12 @@ class NewEmployeeContractForm(ContractGenerationForm):
         max_length=50,
         widget=forms.TextInput(attrs={"placeholder": "Ingrese la zona"}),
     )
+    address_reference = forms.CharField(
+        label="Referencia",
+        max_length=100,
+        widget=forms.TextInput(attrs={"placeholder": "Ingrese una referencia"}),
+    )
+    address_ubigeo = forms.ChoiceField(label="Ubigeo")
     nationality = forms.ChoiceField(label="Nacionalidad")
     issuing_country = forms.ChoiceField(label="País emisor")
     birth_place = forms.ChoiceField(label="Lugar de nacimiento", required=False)
@@ -171,6 +177,7 @@ class NewEmployeeContractForm(ContractGenerationForm):
         for name in (
             "contract_type", "marital_status", "nationality", "issuing_country",
             "birth_place", "payroll", "position", "labor_regime", "pension_regime",
+            "address_ubigeo",
             "income_periodicity", "payment_type", "occupational_category",
             "educational_level",
         ):
@@ -179,9 +186,13 @@ class NewEmployeeContractForm(ContractGenerationForm):
             self.fields[name].choices = [("", "Seleccione...")] + list(
                 self.fields[name].choices
             )
+        for name in ("birth_place", "nationality", "address_ubigeo"):
+            self.fields[name].widget.attrs["class"] = (
+                self.fields[name].widget.attrs.get("class", "") + " searchable-select"
+            ).strip()
         locked_defaults = (
-            "employment_start", "start_date", "signature_date", "nationality",
-            "issuing_country", "employment_regime_type", "labor_regime",
+            "employment_start", "start_date", "signature_date", "issuing_country",
+            "employment_regime_type", "labor_regime",
             "pension_regime", "worker_category", "maximum_workday",
             "medical_service", "income_periodicity", "payment_type",
             "occupational_category", "special_situation", "educational_level",
