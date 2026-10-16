@@ -83,6 +83,7 @@ class ContractGenerationFormTests(SimpleTestCase):
         self.assertEqual(form.initial["income_periodicity"], "3")
         self.assertEqual(form.initial["payment_type"], "2")
         self.assertEqual(form.initial["occupational_category"], "02")
+        self.assertEqual(form.initial["special_situation"], "0")
         self.assertEqual(form.initial["educational_level"], "007")
         self.assertEqual(form.fields["sex"].choices[0], ("", "Seleccione..."))
         self.assertEqual(form.fields["payroll"].choices[0], ("", "Seleccione..."))
@@ -95,7 +96,7 @@ class ContractGenerationFormTests(SimpleTestCase):
             "issuing_country", "employment_regime_type", "labor_regime",
             "pension_regime", "worker_category", "maximum_workday",
             "medical_service", "income_periodicity", "payment_type",
-            "occupational_category", "educational_level",
+            "occupational_category", "special_situation", "educational_level",
         ):
             self.assertTrue(form.fields[field_name].disabled)
             self.assertIn("default-locked", form.fields[field_name].widget.attrs["class"])

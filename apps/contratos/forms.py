@@ -131,6 +131,10 @@ class NewEmployeeContractForm(ContractGenerationForm):
     income_periodicity = forms.ChoiceField(label="Periodicidad del ingreso")
     payment_type = forms.ChoiceField(label="Tipo de pago")
     occupational_category = forms.ChoiceField(label="Categoría ocupacional")
+    special_situation = forms.ChoiceField(
+        label="Situación especial",
+        choices=(("0", "NINGUNO"),),
+    )
     educational_level = forms.ChoiceField(label="Nivel educativo")
 
     def __init__(self, *args, catalogs=None, **kwargs):
@@ -150,6 +154,7 @@ class NewEmployeeContractForm(ContractGenerationForm):
         kwargs["initial"].setdefault("income_periodicity", "3")
         kwargs["initial"].setdefault("payment_type", "2")
         kwargs["initial"].setdefault("occupational_category", "02")
+        kwargs["initial"].setdefault("special_situation", "0")
         kwargs["initial"].setdefault("educational_level", "007")
         super().__init__(*args, **kwargs)
         for name in self.fields:
@@ -174,7 +179,7 @@ class NewEmployeeContractForm(ContractGenerationForm):
             "issuing_country", "employment_regime_type", "labor_regime",
             "pension_regime", "worker_category", "maximum_workday",
             "medical_service", "income_periodicity", "payment_type",
-            "occupational_category", "educational_level",
+            "occupational_category", "special_situation", "educational_level",
         )
         for name in locked_defaults:
             field = self.fields[name]

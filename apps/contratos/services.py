@@ -270,9 +270,9 @@ class ContractService:
                      idnacionalidad,idlugarnac,iddocidentidad,idestadocivil,procedencia,
                      idpaisemisor,regimenlaboral,idregimenlaboral,idregimen,idcategoria,
                      jornada_maxima,smedico,idperiodicidad,idpagopla,
-                     categoria_ocupacional,idnivelestudio,fechacreacion)
+                     categoria_ocupacional,sespecial,idnivelestudio,fechacreacion)
                     VALUES (%s,1,%s,%s,%s,%s,'N',%s,%s,%s,%s,%s,%s,%s,%s,'01',%s,'',%s,
-                            %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,GETDATE())""",
+                            %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,GETDATE())""",
                     [worker_id, data["maternal_surname"], data["paternal_surname"],
                      data["first_names"], data["sex"], data["birth_date"], worker_id,
                      data.get("phone"), data.get("phone2"), data.get("mobile"), data.get("email"),
@@ -282,7 +282,8 @@ class ContractService:
                      data["pension_regime"], data["worker_category"],
                      int(data["maximum_workday"]), data["medical_service"],
                      data["income_periodicity"], data["payment_type"],
-                     data["occupational_category"], data["educational_level"]],
+                     data["occupational_category"], int(data["special_situation"]),
+                     data["educational_level"]],
                 )
                 cursor.execute("""SELECT TOP 1 IDTIPOTRABAJADOR,IDTIPOPERSONAL,IDGRUPOTRABAJO,
                     IDSUCURSAL,idhorariotrabajo,dia_descanso FROM personal WITH (NOLOCK)
