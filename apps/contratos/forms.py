@@ -35,7 +35,10 @@ class ContractGenerationForm(forms.Form):
     contract_type = forms.ChoiceField(label="Tipo de contrato")
     start_date = forms.DateField(
         label="Fecha de inicio",
-        widget=forms.DateInput(attrs={"type": "date", "class": "form-control"}),
+        widget=forms.DateInput(
+            format="%Y-%m-%d",
+            attrs={"type": "date", "class": "form-control"},
+        ),
     )
     end_date = forms.DateField(
         label="Fecha final",
@@ -56,7 +59,10 @@ class ContractGenerationForm(forms.Form):
     )
     signature_date = forms.DateField(
         label="Fecha de firma del contrato",
-        widget=forms.DateInput(attrs={"type": "date", "class": "form-control"}),
+        widget=forms.DateInput(
+            format="%Y-%m-%d",
+            attrs={"type": "date", "class": "form-control"},
+        ),
     )
 
     def __init__(self, *args, contract_types=(), **kwargs):
@@ -85,7 +91,10 @@ class NewEmployeeContractForm(ContractGenerationForm):
     maternal_surname = forms.CharField(label="Apellido materno", max_length=50)
     first_names = forms.CharField(label="Nombres", max_length=50)
     birth_date = forms.DateField(label="Fecha de nacimiento", widget=forms.DateInput(attrs={"type": "date"}))
-    sex = forms.ChoiceField(label="Sexo", choices=(("M", "Masculino"), ("F", "Femenino")))
+    sex = forms.ChoiceField(
+        label="Sexo",
+        choices=(("", "Seleccione..."), ("M", "Masculino"), ("F", "Femenino")),
+    )
     marital_status = forms.ChoiceField(label="Estado civil")
     phone = forms.CharField(label="Teléfono", max_length=12, required=False)
     phone2 = forms.CharField(label="Teléfono 2", max_length=12, required=False)
@@ -96,24 +105,70 @@ class NewEmployeeContractForm(ContractGenerationForm):
     birth_place = forms.ChoiceField(label="Lugar de nacimiento", required=False)
     payroll = forms.ChoiceField(label="Planilla")
     position = forms.ChoiceField(label="Cargo")
-    employment_start = forms.DateField(label="Fecha de ingreso", widget=forms.DateInput(attrs={"type": "date"}))
+    employment_start = forms.DateField(
+        label="Fecha de ingreso",
+        widget=forms.DateInput(format="%Y-%m-%d", attrs={"type": "date"}),
+    )
+    employment_regime_type = forms.ChoiceField(
+        label="T. régimen",
+        choices=(("P", "Privado"), ("U", "Público")),
+    )
+    labor_regime = forms.ChoiceField(label="Régimen laboral")
+    pension_regime = forms.ChoiceField(label="Régimen pensionario")
+    worker_category = forms.ChoiceField(
+        label="Categoría trabajador",
+        choices=(("1", "TRABAJADOR"),),
+    )
+    maximum_workday = forms.BooleanField(
+        label="Jornada de trabajo máxima",
+        required=False,
+        initial=True,
+    )
+    medical_service = forms.ChoiceField(
+        label="Servicio médico",
+        choices=(("1", "EsSalud"), ("0", "Seguro privado")),
+    )
+    income_periodicity = forms.ChoiceField(label="Periodicidad del ingreso")
+    payment_type = forms.ChoiceField(label="Tipo de pago")
+    occupational_category = forms.ChoiceField(label="Categoría ocupacional")
+    educational_level = forms.ChoiceField(label="Nivel educativo")
 
     def __init__(self, *args, catalogs=None, **kwargs):
         catalogs = catalogs or {}
         kwargs.setdefault("initial", {})
         kwargs["initial"].setdefault("employment_start", timezone.localdate())
+        kwargs["initial"].setdefault("start_date", timezone.localdate())
         kwargs["initial"].setdefault("signature_date", timezone.localdate())
         kwargs["initial"].setdefault("nationality", "PER")
         kwargs["initial"].setdefault("issuing_country", "604")
+        kwargs["initial"].setdefault("employment_regime_type", "P")
+        kwargs["initial"].setdefault("labor_regime", "26")
+        kwargs["initial"].setdefault("pension_regime", "02")
+        kwargs["initial"].setdefault("worker_category", "1")
+        kwargs["initial"].setdefault("maximum_workday", True)
+        kwargs["initial"].setdefault("medical_service", "1")
+        kwargs["initial"].setdefault("income_periodicity", "3")
+        kwargs["initial"].setdefault("payment_type", "2")
+        kwargs["initial"].setdefault("occupational_category", "02")
+        kwargs["initial"].setdefault("educational_level", "007")
         super().__init__(*args, **kwargs)
         for name in self.fields:
             if not isinstance(self.fields[name].widget, forms.HiddenInput):
-                self.fields[name].widget.attrs.setdefault("class", "form-control")
+                css_class = "form-check-input" if isinstance(
+                    self.fields[name].widget, forms.CheckboxInput
+                ) else "form-control"
+                self.fields[name].widget.attrs.setdefault("class", css_class)
         for name in (
             "contract_type", "marital_status", "nationality", "issuing_country",
-            "birth_place", "payroll", "position",
+            "birth_place", "payroll", "position", "labor_regime", "pension_regime",
+            "income_periodicity", "payment_type", "occupational_category",
+            "educational_level",
         ):
             self.fields[name].choices = catalogs.get(name, ())
+        for name in ("contract_type", "marital_status", "payroll", "position"):
+            self.fields[name].choices = [("", "Seleccione...")] + list(
+                self.fields[name].choices
+            )
 
     def clean(self):
         cleaned = super().clean()

@@ -8,6 +8,7 @@ from django.test import SimpleTestCase, TestCase
 from django.test import override_settings
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.user.models import User
 
@@ -57,12 +58,38 @@ class ContractGenerationFormTests(SimpleTestCase):
 
     def test_new_employee_form_loads_contract_type_catalog(self):
         form = NewEmployeeContractForm(
-            catalogs={"contract_type": (("01", "PLAZO FIJO"),)}
+            catalogs={
+                "contract_type": (("01", "PLAZO FIJO"),),
+                "labor_regime": (("26", "RÉGIMEN LABORAL AGRARIO"),),
+                "pension_regime": (("02", "ONP"),),
+                "income_periodicity": (("3", "SEMANAL"),),
+                "payment_type": (("2", "DEPÓSITO EN CUENTA"),),
+                "occupational_category": (("02", "OBRERO"),),
+                "educational_level": (("007", "SECUNDARIA COMPLETA"),),
+            }
         )
         self.assertEqual(
             list(form.fields["contract_type"].choices),
-            [("01", "PLAZO FIJO")],
+            [("", "Seleccione..."), ("01", "PLAZO FIJO")],
         )
+        self.assertEqual(form.initial["employment_start"], timezone.localdate())
+        self.assertEqual(form.initial["start_date"], timezone.localdate())
+        self.assertEqual(form.initial["employment_regime_type"], "P")
+        self.assertEqual(form.initial["labor_regime"], "26")
+        self.assertEqual(form.initial["pension_regime"], "02")
+        self.assertEqual(form.initial["worker_category"], "1")
+        self.assertTrue(form.initial["maximum_workday"])
+        self.assertEqual(form.initial["medical_service"], "1")
+        self.assertEqual(form.initial["income_periodicity"], "3")
+        self.assertEqual(form.initial["payment_type"], "2")
+        self.assertEqual(form.initial["occupational_category"], "02")
+        self.assertEqual(form.initial["educational_level"], "007")
+        self.assertEqual(form.fields["sex"].choices[0], ("", "Seleccione..."))
+        self.assertEqual(form.fields["payroll"].choices[0], ("", "Seleccione..."))
+        self.assertEqual(form.fields["position"].choices[0], ("", "Seleccione..."))
+        today = timezone.localdate().isoformat()
+        self.assertIn('value="{}"'.format(today), str(form["employment_start"]))
+        self.assertIn('value="{}"'.format(today), str(form["start_date"]))
 
     def test_template_form_loads_contract_types_without_extra_arguments(self):
         form = ContractTemplateUploadForm(

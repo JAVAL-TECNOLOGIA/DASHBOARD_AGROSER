@@ -247,6 +247,12 @@ class ContractService:
             "birth_place": [("", "Seleccione...")] + choices("SELECT IDUBIGEO, DESCRIPCION FROM UBIGEO WITH (NOLOCK) ORDER BY DESCRIPCION"),
             "payroll": choices("SELECT IDPLANILLA, DESCRIPCION FROM planilla WITH (NOLOCK) WHERE IDEMPRESA=%s AND ISNULL(ESTADO,1)=1 AND IDPLANILLA IN ('ERG','ERA','OBP','OBR') ORDER BY DESCRIPCION", [self.company_id]),
             "position": choices("SELECT IDCARGO, DESCRIPCION FROM cargos_personal WITH (NOLOCK) WHERE IDEMPRESA=%s AND ISNULL(estado,1)=1 ORDER BY DESCRIPCION", [self.company_id]),
+            "labor_regime": choices("SELECT IDREGIMENLABORAL, DESCRIPCION FROM REGIMENLABORAL WITH (NOLOCK) WHERE ESTADO=1 ORDER BY DESCRIPCION"),
+            "pension_regime": choices("SELECT IDREGIMEN, DESCRIPCION FROM REGIMEN_PENSIONARIO WITH (NOLOCK) WHERE ESTADO=1 ORDER BY DESCRIPCION"),
+            "income_periodicity": choices("SELECT TIPO, DESCRIPCION FROM RTPS_PERIODICIDADREMUNERACION WITH (NOLOCK) WHERE ESTADO=1 ORDER BY TIPO"),
+            "payment_type": choices("SELECT TIPO, DESCRIPCION FROM RTPS_TIPOPAGO WITH (NOLOCK) WHERE ESTADO=1 ORDER BY TIPO"),
+            "occupational_category": choices("SELECT CODIGO, DESCRIPCION FROM RTPS_CATEGORIAOCUPACIONAL WITH (NOLOCK) WHERE ESTADO=1 ORDER BY CODIGO"),
+            "educational_level": choices("SELECT IDNIVELESTUDIO, DESCRIPCION FROM NIVEL_ESTUDIO WITH (NOLOCK) ORDER BY IDNIVELESTUDIO"),
         }
 
     def create_employee_and_contract(self, data):
@@ -262,13 +268,21 @@ class ContractService:
                     (idcodigogeneral,estado,a_materno,a_paterno,nombres,sexo,sincroniza,
                      fecha_nacimiento,nrodocumento,telefono,telefono2,celular,email,
                      idnacionalidad,idlugarnac,iddocidentidad,idestadocivil,procedencia,
-                     idpaisemisor,fechacreacion)
-                    VALUES (%s,1,%s,%s,%s,%s,'N',%s,%s,%s,%s,%s,%s,%s,%s,'01',%s,'',%s,GETDATE())""",
+                     idpaisemisor,regimenlaboral,idregimenlaboral,idregimen,idcategoria,
+                     jornada_maxima,smedico,idperiodicidad,idpagopla,
+                     categoria_ocupacional,idnivelestudio,fechacreacion)
+                    VALUES (%s,1,%s,%s,%s,%s,'N',%s,%s,%s,%s,%s,%s,%s,%s,'01',%s,'',%s,
+                            %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,GETDATE())""",
                     [worker_id, data["maternal_surname"], data["paternal_surname"],
                      data["first_names"], data["sex"], data["birth_date"], worker_id,
                      data.get("phone"), data.get("phone2"), data.get("mobile"), data.get("email"),
                      data["nationality"], data.get("birth_place") or None,
-                     data["marital_status"], data["issuing_country"]],
+                     data["marital_status"], data["issuing_country"],
+                     data["employment_regime_type"], data["labor_regime"],
+                     data["pension_regime"], data["worker_category"],
+                     int(data["maximum_workday"]), data["medical_service"],
+                     data["income_periodicity"], data["payment_type"],
+                     data["occupational_category"], data["educational_level"]],
                 )
                 cursor.execute("""SELECT TOP 1 IDTIPOTRABAJADOR,IDTIPOPERSONAL,IDGRUPOTRABAJO,
                     IDSUCURSAL,idhorariotrabajo,dia_descanso FROM personal WITH (NOLOCK)
@@ -281,8 +295,9 @@ class ContractService:
                 cursor.execute("""INSERT INTO personal
                     (idempresa,idcodigogeneral,idplanilla,fecha_inicioplanilla,sincroniza,
                      en_plantilla_asistencia,fechacreacion,idcargo,idtipotrabajador,
-                     idtipopersonal,idgrupotrabajo,idsucursal,estado,idhorariotrabajo,dia_descanso)
-                    VALUES (%s,%s,%s,%s,'N','S',GETDATE(),%s,%s,%s,%s,%s,1,%s,%s)""",
+                     idtipopersonal,idgrupotrabajo,idsucursal,activado_en_estaplani,
+                     estado,idhorariotrabajo,dia_descanso)
+                    VALUES (%s,%s,%s,%s,'N','S',GETDATE(),%s,%s,%s,%s,%s,1,1,%s,%s)""",
                     [self.company_id, worker_id, data["payroll"], data["employment_start"],
                      data["position"], worker_type, personnel_type, work_group, branch,
                      schedule, rest_day])

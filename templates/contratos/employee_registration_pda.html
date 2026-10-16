@@ -49,7 +49,7 @@
             <section class="step-card">
                 <div class="step-head"><span class="step-number">2</span> Datos personales</div>
                 <div class="step-body"><div class="row">
-                    {% for field in form %}{% if field.name != 'worker_id' and field.name != 'contract_type' and field.name != 'start_date' and field.name != 'end_date' and field.name != 'basic' and field.name != 'trial_days' and field.name != 'signature_date' and field.name != 'payroll' and field.name != 'position' and field.name != 'employment_start' %}
+                    {% for field in form %}{% if field.name != 'worker_id' and field.name != 'contract_type' and field.name != 'start_date' and field.name != 'end_date' and field.name != 'basic' and field.name != 'trial_days' and field.name != 'signature_date' and field.name != 'payroll' and field.name != 'position' and field.name != 'employment_start' and field.name != 'employment_regime_type' and field.name != 'labor_regime' and field.name != 'pension_regime' and field.name != 'worker_category' and field.name != 'maximum_workday' and field.name != 'medical_service' and field.name != 'income_periodicity' and field.name != 'payment_type' and field.name != 'occupational_category' and field.name != 'educational_level' %}
                     <div class="form-group col-12 col-md-6"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}</div>
                     {% endif %}{% endfor %}
                 </div></div>
@@ -57,7 +57,9 @@
             <section class="step-card">
                 <div class="step-head"><span class="step-number">3</span> Datos laborales y contrato</div>
                 <div class="step-body"><div class="row">
-                    {% for field in form %}{% if field.name == 'payroll' or field.name == 'position' or field.name == 'employment_start' or field.name == 'contract_type' or field.name == 'start_date' or field.name == 'end_date' or field.name == 'basic' or field.name == 'trial_days' or field.name == 'signature_date' %}
+                    {% for field in form %}{% if field.name == 'payroll' or field.name == 'position' or field.name == 'employment_start' or field.name == 'employment_regime_type' or field.name == 'labor_regime' or field.name == 'pension_regime' or field.name == 'worker_category' or field.name == 'maximum_workday' or field.name == 'medical_service' or field.name == 'income_periodicity' or field.name == 'payment_type' or field.name == 'occupational_category' or field.name == 'educational_level' or field.name == 'contract_type' or field.name == 'start_date' or field.name == 'end_date' or field.name == 'basic' or field.name == 'trial_days' or field.name == 'signature_date' %}
+                    {% if field.name == 'income_periodicity' %}<div class="col-12 section-label mt-3">Datos complementarios</div>{% endif %}
+                    {% if field.name == 'educational_level' %}<div class="col-12 section-label mt-3">Situación educativa</div>{% endif %}
                     <div class="form-group col-12 col-md-6"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<div class="text-danger small mt-1">{{ error }}</div>{% endfor %}</div>
                     {% endif %}{% endfor %}
                 </div><div class="alert alert-warning mb-0"><i class="fa fa-shield-alt mr-1"></i>Revise los datos antes de enviarlos a NISIRA.</div></div>

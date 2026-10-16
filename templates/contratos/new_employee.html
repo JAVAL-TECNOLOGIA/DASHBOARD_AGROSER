@@ -25,7 +25,7 @@
         <div class="card shadow-sm mb-4">
             <div class="card-header bg-white"><strong>2. Datos personales</strong></div>
             <div class="card-body"><div class="form-row">
-                {% for field in form %}{% if field.name != 'worker_id' and field.name != 'contract_type' and field.name != 'start_date' and field.name != 'end_date' and field.name != 'basic' and field.name != 'trial_days' and field.name != 'signature_date' and field.name != 'payroll' and field.name != 'position' and field.name != 'employment_start' %}
+                {% for field in form %}{% if field.name != 'worker_id' and field.name != 'contract_type' and field.name != 'start_date' and field.name != 'end_date' and field.name != 'basic' and field.name != 'trial_days' and field.name != 'signature_date' and field.name != 'payroll' and field.name != 'position' and field.name != 'employment_start' and field.name != 'employment_regime_type' and field.name != 'labor_regime' and field.name != 'pension_regime' and field.name != 'worker_category' and field.name != 'maximum_workday' and field.name != 'medical_service' and field.name != 'income_periodicity' and field.name != 'payment_type' and field.name != 'occupational_category' and field.name != 'educational_level' %}
                 <div class="form-group col-lg-4 col-md-6"><label>{{ field.label }}</label>{{ field }}{% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>
                 {% endif %}{% endfor %}
             </div></div>
@@ -33,7 +33,9 @@
         <div class="card shadow-sm mb-4">
             <div class="card-header bg-white"><strong>3. Datos laborales y contrato</strong></div>
             <div class="card-body"><div class="form-row">
-                {% for field in form %}{% if field.name == 'payroll' or field.name == 'position' or field.name == 'employment_start' or field.name == 'contract_type' or field.name == 'start_date' or field.name == 'end_date' or field.name == 'basic' or field.name == 'trial_days' or field.name == 'signature_date' %}
+                {% for field in form %}{% if field.name == 'payroll' or field.name == 'position' or field.name == 'employment_start' or field.name == 'employment_regime_type' or field.name == 'labor_regime' or field.name == 'pension_regime' or field.name == 'worker_category' or field.name == 'maximum_workday' or field.name == 'medical_service' or field.name == 'income_periodicity' or field.name == 'payment_type' or field.name == 'occupational_category' or field.name == 'educational_level' or field.name == 'contract_type' or field.name == 'start_date' or field.name == 'end_date' or field.name == 'basic' or field.name == 'trial_days' or field.name == 'signature_date' %}
+                {% if field.name == 'income_periodicity' %}<div class="col-12"><hr><h5>Datos complementarios</h5></div>{% endif %}
+                {% if field.name == 'educational_level' %}<div class="col-12"><hr><h5>Situación educativa</h5></div>{% endif %}
                 <div class="form-group col-lg-4 col-md-6"><label>{{ field.label }}</label>{{ field }}{% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>
                 {% endif %}{% endfor %}
             </div>
