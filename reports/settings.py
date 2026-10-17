@@ -67,7 +67,12 @@ SECRET_KEY = '5250i4iq)yaoh=ew$buf$-$!8(25#kgg3(vq2k5jzi9jx8p%bu'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['p5kyqq-ip-38-250-176-120.tunnelmole.net','oakstp-ip-38-250-176-120.tunnelmole.net','38.250.176.120', '192.168.10.3', '190.187.236.42', '127.0.0.1', 'localhost','192.168.100.3','38.43.135.224', 'ea2c-190-187-236-42.ngrok-free.app']
+ALLOWED_HOSTS = ['p5kyqq-ip-38-250-176-120.tunnelmole.net','oakstp-ip-38-250-176-120.tunnelmole.net','38.250.176.120', '192.168.10.3', '190.187.236.42', '127.0.0.1', 'localhost','192.168.100.3','38.43.135.224', 'agroservice.javaltecnologia.es', 'ea2c-190-187-236-42.ngrok-free.app']
+
+# Dominio público servido por el proxy HTTPS del servidor.
+CSRF_TRUSTED_ORIGINS = ['https://agroservice.javaltecnologia.es']
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
 
 ATTENDANCE_STATION_URL = os.getenv(
     'ATTENDANCE_STATION_URL',
