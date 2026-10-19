@@ -12,9 +12,9 @@ import queue
 import atexit
 import sys
 import re
+from html import unescape
 from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
-from xml.etree import ElementTree
 from zipfile import ZIP_DEFLATED, ZipFile
 
 from django.conf import settings
@@ -135,35 +135,12 @@ MONTHS = (
     "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE",
 )
 
-_WORD_NS = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
-
-
 def _money(value):
     return Decimal(value or 0).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
-def _replace_amount_in_paragraph(paragraph, pattern, replacement):
-    nodes = list(paragraph.iter(_WORD_NS + "t"))
-    text = "".join(node.text or "" for node in nodes)
-    match = re.search(pattern, text, flags=re.IGNORECASE)
-    if not match:
-        return False
-    start, end = match.span(1)
-    offset = 0
-    for node in nodes:
-        node_text = node.text or ""
-        node_end = offset + len(node_text)
-        if start >= offset and end <= node_end:
-            local_start, local_end = start - offset, end - offset
-            node.text = node_text[:local_start] + replacement + node_text[local_end:]
-            return True
-        offset = node_end
-    return False
-
-
 def _replace_calculated_amounts(xml, values):
-    """Replace legacy fixed amounts in contract clauses, preserving run styles."""
-    root = ElementTree.fromstring(xml)
+    """Replace fixed amounts without reserializing Word's namespace metadata."""
     replacements = (
         (
             r"compensaci[oó]n por tiempo de servicios.*?asciende a S/\s*(\d+(?:[.,]\d+)?)",
@@ -178,10 +155,36 @@ def _replace_calculated_amounts(xml, values):
             values["tbr_beta"],
         ),
     )
-    for paragraph in root.iter(_WORD_NS + "p"):
+
+    def replace_paragraph(match):
+        paragraph = match.group(0)
+        text_runs = re.findall(r"<w:t(?:\s[^>]*)?>(.*?)</w:t>", paragraph, re.DOTALL)
+        plain_text = unescape("".join(text_runs))
         for pattern, replacement in replacements:
-            _replace_amount_in_paragraph(paragraph, pattern, replacement)
-    return ElementTree.tostring(root, encoding="utf-8", xml_declaration=True)
+            amount_match = re.search(pattern, plain_text, flags=re.IGNORECASE)
+            if not amount_match:
+                continue
+            old_amount = amount_match.group(1)
+            text_node_amount = re.compile(
+                r"(<w:t(?:\s[^>]*)?>[^<]*?)" + re.escape(old_amount) + r"([^<]*</w:t>)"
+            )
+            paragraph, count = text_node_amount.subn(
+                lambda item: item.group(1) + replacement + item.group(2),
+                paragraph,
+                count=1,
+            )
+            if count:
+                plain_text = plain_text.replace(old_amount, replacement, 1)
+        return paragraph
+
+    xml_text = xml.decode("utf-8")
+    xml_text = re.sub(
+        r"<w:p(?:\s[^>]*)?>.*?</w:p>",
+        replace_paragraph,
+        xml_text,
+        flags=re.DOTALL,
+    )
+    return xml_text.encode("utf-8")
 
 
 def _amount_in_words(value):
