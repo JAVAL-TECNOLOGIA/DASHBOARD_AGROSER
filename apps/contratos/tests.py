@@ -18,6 +18,22 @@ from .forms import (
     NewEmployeeContractForm,
 )
 from .identity import IdentityLookupError, _api_token, lookup_dni
+from .pdf import _contract_values
+
+
+class ContractAmountTests(SimpleTestCase):
+    @override_settings(CONTRACT_MONTHLY_RMV="1130.00")
+    def test_contract_amounts_are_calculated_from_daily_basic(self):
+        values = _contract_values({
+            "inicio_contrato": date(2026, 10, 1),
+            "final_contrato": date(2027, 1, 31),
+            "basico": "41.00",
+        })
+
+        self.assertEqual(values["tbr_rem_diaria"], "41.00")
+        self.assertEqual(values["tbr_cts"], "3.99")
+        self.assertEqual(values["tbr_gratificacion"], "6.83")
+        self.assertEqual(values["tbr_beta"], "11.30")
 
 
 class ContractGenerationFormTests(SimpleTestCase):

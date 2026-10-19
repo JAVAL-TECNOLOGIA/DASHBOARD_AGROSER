@@ -34,6 +34,7 @@ from .services import ContractService, dashboard_template_path
 
 
 logger = logging.getLogger(__name__)
+CONTRACT_PDF_VERSION = "v2"
 
 
 class PdaRegistrationLoginView(LoginView):
@@ -45,8 +46,8 @@ class PdaRegistrationLoginView(LoginView):
 def _contract_pdf_path(worker_id, contract_id):
     worker = re.sub(r"[^A-Za-z0-9_-]+", "_", str(worker_id)).strip("_")
     contract = re.sub(r"[^A-Za-z0-9_-]+", "_", str(contract_id)).strip("_")
-    return Path(settings.MEDIA_ROOT) / "contratos" / "generados" / "{}_{}.pdf".format(
-        worker, contract
+    return Path(settings.MEDIA_ROOT) / "contratos" / "generados" / "{}_{}_{}.pdf".format(
+        worker, contract, CONTRACT_PDF_VERSION
     )
 
 

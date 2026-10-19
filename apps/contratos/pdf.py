@@ -11,8 +11,10 @@ import json
 import queue
 import atexit
 import sys
-from decimal import Decimal
+import re
+from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
+from xml.etree import ElementTree
 from zipfile import ZIP_DEFLATED, ZipFile
 
 from django.conf import settings
@@ -133,6 +135,54 @@ MONTHS = (
     "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE",
 )
 
+_WORD_NS = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+
+
+def _money(value):
+    return Decimal(value or 0).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+
+def _replace_amount_in_paragraph(paragraph, pattern, replacement):
+    nodes = list(paragraph.iter(_WORD_NS + "t"))
+    text = "".join(node.text or "" for node in nodes)
+    match = re.search(pattern, text, flags=re.IGNORECASE)
+    if not match:
+        return False
+    start, end = match.span(1)
+    offset = 0
+    for node in nodes:
+        node_text = node.text or ""
+        node_end = offset + len(node_text)
+        if start >= offset and end <= node_end:
+            local_start, local_end = start - offset, end - offset
+            node.text = node_text[:local_start] + replacement + node_text[local_end:]
+            return True
+        offset = node_end
+    return False
+
+
+def _replace_calculated_amounts(xml, values):
+    """Replace legacy fixed amounts in contract clauses, preserving run styles."""
+    root = ElementTree.fromstring(xml)
+    replacements = (
+        (
+            r"compensaci[oó]n por tiempo de servicios.*?asciende a S/\s*(\d+(?:[.,]\d+)?)",
+            values["tbr_cts"],
+        ),
+        (
+            r"gratificaciones.*?equivale al 16[,.]66%.*?asciende a S/\s*(\d+(?:[.,]\d+)?)",
+            values["tbr_gratificacion"],
+        ),
+        (
+            r"proporcional a los d[ií]as trabajados.*?asciende a S/\s*(\d+(?:[.,]\d+)?)",
+            values["tbr_beta"],
+        ),
+    )
+    for paragraph in root.iter(_WORD_NS + "p"):
+        for pattern, replacement in replacements:
+            _replace_amount_in_paragraph(paragraph, pattern, replacement)
+    return ElementTree.tostring(root, encoding="utf-8", xml_declaration=True)
+
 
 def _amount_in_words(value):
     amount = Decimal(value or 0).quantize(Decimal("0.01"))
@@ -185,6 +235,8 @@ def _replace_docx_fields(source, destination, values):
                 for field, value in values.items():
                     xml = xml.replace("«{}»".format(field), str(value or ""))
                 data = xml.encode("utf-8")
+                if item.filename == "word/document.xml":
+                    data = _replace_calculated_amounts(data, values)
             dst.writestr(item, data)
 
 
@@ -386,7 +438,11 @@ def _contract_values(data):
     start = data["inicio_contrato"]
     end = data["final_contrato"]
     address = ", ".join(filter(None, [data.get("address"), data.get("address_reference")]))
-    basic = Decimal(data.get("basico") or 0).quantize(Decimal("0.01"))
+    basic = _money(data.get("basico"))
+    cts = _money(basic * Decimal("0.0972"))
+    gratification = _money(basic * Decimal("0.1666"))
+    monthly_minimum_wage = Decimal(str(getattr(settings, "CONTRACT_MONTHLY_RMV", "1130.00")))
+    beta = _money((monthly_minimum_wage / Decimal("30")) * Decimal("0.30"))
     return {
         "tbr_nombre": data.get("full_name"),
         "tbr_dni": data.get("document"),
@@ -404,6 +460,9 @@ def _contract_values(data):
         "cnt_anof": end.strftime("%Y"),
         "tbr_rem_diaria": "{:,.2f}".format(basic),
         "tbr_rem_diariad": _amount_in_words(basic),
+        "tbr_cts": "{:.2f}".format(cts),
+        "tbr_gratificacion": "{:.2f}".format(gratification),
+        "tbr_beta": "{:.2f}".format(beta),
     }
 
 
