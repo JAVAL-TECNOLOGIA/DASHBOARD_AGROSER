@@ -10,6 +10,7 @@ from django.utils.decorators import method_decorator
 from apps.connection.connect_portalaei import connection_portalaei
 from decimal import Decimal
 from datetime import datetime
+from apps.contabilidad.cajas_kilos_service import get_boxes_and_kilos_report
 import json
 from pathlib import Path
 from django.db import connection
@@ -110,9 +111,25 @@ class ContabilidadReporteDetalleView(ContabilidadReportesAccessMixin, TemplateVi
             with data_path.open(encoding='utf-8') as data_file:
                 context['ventas_data'] = json.load(data_file)
         elif slug == 'detalle-cajas-kilos':
-            data_path = Path(__file__).resolve().parent / 'data' / 'cajas_kilos.json'
-            with data_path.open(encoding='utf-8') as data_file:
-                context['cajas_kilos_data'] = json.load(data_file)
+            try:
+                context['cajas_kilos_data'] = get_boxes_and_kilos_report()
+            except Exception:
+                context['cajas_kilos_data'] = {
+                    'months': [
+                        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+                        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+                    ],
+                    'years': list(range(2023, date.today().year + 1)),
+                    'clients': [],
+                    'metrics': {
+                        'cajas': {'label': 'Producción de cajas', 'unit': 'cajas', 'clients': {}},
+                        'kilos': {'label': 'Kilogramos procesados', 'unit': 'kg', 'clients': {}},
+                    },
+                    'source': 'NISIRA ERP · Producción de Cajas',
+                }
+                context['cajas_kilos_error'] = (
+                    'No fue posible consultar la producción de cajas y kilos en NISIRA.'
+                )
         elif slug == 'balance-general-agosto-2026':
             data_path = Path(__file__).resolve().parent / 'data' / 'balance_agosto_2026.json'
             with data_path.open(encoding='utf-8') as data_file:

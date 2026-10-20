@@ -2,6 +2,9 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.test import TestCase
 from django.urls import reverse
+from unittest.mock import patch
+
+from apps.contabilidad.cajas_kilos_service import build_boxes_and_kilos_report
 
 from apps.user.views import UserAdministrationMixin
 
@@ -154,7 +157,12 @@ class ContabilidadReportesViewTests(TestCase):
         self.assertAlmostEqual(sum(value or 0 for value in data['data']['2026']), 5133619.33, places=2)
         self.assertEqual(data['data']['2026'][8:], [None, None, None, None])
 
-    def test_boxes_and_kilos_report_keeps_design_without_excel_data(self):
+    @patch('apps.contabilidad.views.get_boxes_and_kilos_report')
+    def test_boxes_and_kilos_report_uses_nisira_data(self, report_mock):
+        report_mock.return_value = build_boxes_and_kilos_report([
+            (2026, 10, 'AGROEXPOR SOL', 47075, 235375),
+            (2026, 10, 'GOURMET FARMS', 4623, 23465),
+        ], current_year=2026)
         self.user.admin = True
         self.user.save(update_fields=['admin'])
         self.client.force_login(self.user)
@@ -164,14 +172,21 @@ class ContabilidadReportesViewTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Producción por cliente')
-        self.assertContains(response, 'Historial mensual por cliente')
+        self.assertContains(response, 'Producción por productor')
+        self.assertContains(response, 'Historial mensual por productor')
         self.assertNotContains(response, 'cajas y kilos.xlsx')
         data = response.context['cajas_kilos_data']
-        self.assertEqual(data['clients'], [])
+        self.assertEqual(data['clients'], ['AGROEXPOR SOL', 'GOURMET FARMS'])
         self.assertEqual(data['years'], [2023, 2024, 2025, 2026])
-        self.assertEqual(data['metrics']['cajas']['clients'], {})
-        self.assertEqual(data['metrics']['kilos']['clients'], {})
+        self.assertEqual(
+            data['metrics']['cajas']['clients']['AGROEXPOR SOL']['2026'][9],
+            47075.0,
+        )
+        self.assertEqual(
+            data['metrics']['kilos']['clients']['GOURMET FARMS']['2026'][9],
+            23465.0,
+        )
+        self.assertEqual(data['source'], 'NISIRA ERP · Producción de Cajas')
 
     def test_august_balance_report_reconciles_net_position(self):
         self.user.admin = True

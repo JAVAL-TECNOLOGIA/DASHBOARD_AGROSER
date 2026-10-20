@@ -47,7 +47,7 @@
         var leaders = data.clients.map(function (name) { return { name: name, value: sum(seriesValues(data, metric, name, latest, indexes)) }; }).sort(function (a, b) { return b.value - a.value; });
         var leader = leaders[0] || { name: '—', value: 0 };
         document.getElementById('ck-total').textContent = format(total, metric, true);
-        document.getElementById('ck-total-detail').textContent = latest + ' · ' + (client === '__all__' ? 'Todos los clientes' : client);
+        document.getElementById('ck-total-detail').textContent = latest + ' · ' + (client === '__all__' ? 'Todos los productores' : client);
         var yoy = document.getElementById('ck-yoy'); yoy.textContent = change === null ? '—' : (change >= 0 ? '+' : '') + change.toLocaleString('es-PE', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%'; yoy.className = 'ck-kpi-value ' + (change === null ? '' : change >= 0 ? 'ck-positive' : 'ck-negative');
         document.getElementById('ck-yoy-detail').textContent = prior ? latest + ' vs. ' + prior + ' · mismo periodo' : 'Selecciona al menos dos años';
         document.getElementById('ck-leader').textContent = leader.name; document.getElementById('ck-leader-detail').textContent = format(leader.value, metric, false) + ' · ' + latest;
@@ -71,13 +71,13 @@
     }
     function updateTable(data, metric, client, years, indexes) {
         var clients = client === '__all__' ? data.clients : [client];
-        document.getElementById('ck-table-head').innerHTML = '<th>Cliente</th><th>Año</th>' + indexes.map(function (index) { return '<th class="text-right">' + data.months[index] + '</th>'; }).join('') + '<th class="text-right">Total</th>';
+        document.getElementById('ck-table-head').innerHTML = '<th>Productor</th><th>Año</th>' + indexes.map(function (index) { return '<th class="text-right">' + data.months[index] + '</th>'; }).join('') + '<th class="text-right">Total</th>';
         document.getElementById('ck-table-body').innerHTML = clients.map(function (name) { return years.map(function (year) { var values = seriesValues(data, metric, name, year, indexes); var total = values.some(function (value) { return value !== null; }) ? sum(values) : null; return '<tr><td class="font-weight-bold">' + name + '</td><td><span class="badge badge-light">' + year + '</span></td>' + values.map(function (value) { return '<td class="text-right">' + format(value, metric, false) + '</td>'; }).join('') + '<td class="text-right font-weight-bold">' + format(total, metric, false) + '</td></tr>'; }).join(''); }).join('');
     }
     function refresh(data) {
         var metric = document.getElementById('ck-metric').value; var client = document.getElementById('ck-client').value; var years = selectedYears(); var indexes = monthIndexes();
         var active = years.filter(function (year) { return seriesValues(data, metric, client, year, indexes).some(function (value) { return value !== null; }); }); if (!active.length) active = years;
-        document.getElementById('ck-trend-subtitle').textContent = data.metrics[metric].label + ' · ' + (client === '__all__' ? 'Todos los clientes' : client) + ' · ' + data.months[indexes[0]] + ' a ' + data.months[indexes[indexes.length - 1]];
+        document.getElementById('ck-trend-subtitle').textContent = data.metrics[metric].label + ' · ' + (client === '__all__' ? 'Todos los productores' : client) + ' · ' + data.months[indexes[0]] + ' a ' + data.months[indexes[indexes.length - 1]];
         updateKpis(data, metric, client, active, indexes); updateMainCharts(data, metric, client, active, indexes); updateClientCharts(data, metric, active[active.length - 1], indexes); updateTable(data, metric, client, years, indexes);
     }
     window.initCajasKilosDashboard = function () {
