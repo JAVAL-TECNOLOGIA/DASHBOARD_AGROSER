@@ -57,26 +57,30 @@
         var prior = years.length > 1 ? years[years.length - 2] : null;
         var values = yearValues(data, latest, indexes);
         var available = values.filter(function (value) { return value !== null; });
-        var total = sum(values);
-        var totalUsd = sum(indexes.map(function (index) { return data.data_usd[latest][index]; }));
+        var latestTotal = sum(values);
+        var total = sum(years.reduce(function (all, year) { return all.concat(yearValues(data, year, indexes)); }, []));
+        var totalUsd = sum(years.reduce(function (all, year) {
+            return all.concat(indexes.map(function (index) { return data.data_usd[year][index]; }));
+        }, []));
+        var selectedPeriod = (years.length === 1 ? years[0] : years[0] + ' a ' + years[years.length - 1]) + ' · ' + data.months[indexes[0]] + ' a ' + data.months[indexes[indexes.length - 1]];
         var priorTotal = prior ? sum(yearValues(data, prior, indexes)) : null;
-        var change = prior ? percent(total, priorTotal) : null;
+        var change = prior ? percent(latestTotal, priorTotal) : null;
         var best = { value: null, index: null };
         indexes.forEach(function (index) {
             var value = data.data[latest][index];
             if (value !== null && (best.value === null || value > best.value)) best = { value: value, index: index };
         });
         document.getElementById('sales-total').textContent = money(total, true);
-        document.getElementById('sales-total-detail').textContent = latest + ' · ' + data.months[indexes[0]] + ' a ' + data.months[indexes[indexes.length - 1]];
+        document.getElementById('sales-total-detail').textContent = selectedPeriod;
         document.getElementById('sales-total-usd').textContent = dollars(totalUsd, true);
-        document.getElementById('sales-total-usd-detail').textContent = latest + ' · ' + data.months[indexes[0]] + ' a ' + data.months[indexes[indexes.length - 1]];
+        document.getElementById('sales-total-usd-detail').textContent = selectedPeriod;
         var yoy = document.getElementById('sales-yoy');
         yoy.textContent = change === null ? '—' : (change >= 0 ? '+' : '') + change.toLocaleString('es-PE', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%';
         yoy.className = 'sales-kpi-value ' + (change === null ? '' : change >= 0 ? 'sales-positive' : 'sales-negative');
         document.getElementById('sales-yoy-detail').textContent = prior ? latest + ' vs. ' + prior + ' · mismo periodo' : 'Selecciona al menos dos años';
         document.getElementById('sales-best').textContent = best.index === null ? '—' : data.months[best.index] + ' ' + latest;
         document.getElementById('sales-best-detail').textContent = money(best.value, false);
-        document.getElementById('sales-average').textContent = available.length ? money(total / available.length, true) : '—';
+        document.getElementById('sales-average').textContent = available.length ? money(latestTotal / available.length, true) : '—';
         document.getElementById('sales-average-detail').textContent = available.length + ' meses con información';
     }
     function updateCharts(data, years, indexes) {
