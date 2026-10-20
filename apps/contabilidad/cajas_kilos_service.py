@@ -9,7 +9,7 @@ MONTHS = [
     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
 ]
 FIRST_REPORT_YEAR = 2023
-CACHE_KEY = 'contabilidad:cajas-kilos:nisira:v1'
+CACHE_KEY = 'contabilidad:cajas-kilos:nisira:v3'
 CACHE_SECONDS = 10 * 60
 
 
@@ -17,6 +17,7 @@ PRODUCTION_SUMMARY_SQL = """
 SELECT
     YEAR(R.FECHA) AS production_year,
     MONTH(R.FECHA) AS production_month,
+    COALESCE(NULLIF(LTRIM(RTRIM(CL.NOMCORTO)), ''), 'SIN CLIENTE') AS client,
     COALESCE(NULLIF(LTRIM(RTRIM(PR.NOMCORTO)), ''), 'SIN PRODUCTOR') AS producer,
     SUM(CAST(DR.CANTIDAD AS decimal(19, 3))) AS boxes,
     SUM(CAST(PRD.KG_CAJAS * DR.CANTIDAD AS decimal(19, 3))) AS kilograms
@@ -31,6 +32,9 @@ INNER JOIN MOTIVOPALETA MP WITH (NOLOCK)
 INNER JOIN PRODUCTOS PRD WITH (NOLOCK)
     ON DR.IDPRODUCTO = PRD.IDPRODUCTO
    AND DR.IDEMPRESA = PRD.IDEMPRESA
+LEFT JOIN PROVEEDORLOTE CL WITH (NOLOCK)
+    ON R.IDCLIEPROV = CL.IDCLIEPROV
+   AND R.IDEMPRESA = CL.IDEMPRESA
 LEFT JOIN PROVEEDORLOTE PR WITH (NOLOCK)
     ON DR.IDCLIEPROV = PR.IDCLIEPROV
    AND DR.IDEMPRESA = PR.IDEMPRESA
@@ -41,8 +45,9 @@ WHERE R.IDEMPRESA = %s
 GROUP BY
     YEAR(R.FECHA),
     MONTH(R.FECHA),
+    COALESCE(NULLIF(LTRIM(RTRIM(CL.NOMCORTO)), ''), 'SIN CLIENTE'),
     COALESCE(NULLIF(LTRIM(RTRIM(PR.NOMCORTO)), ''), 'SIN PRODUCTOR')
-ORDER BY producer, production_year, production_month
+ORDER BY client, producer, production_year, production_month
 """
 
 
@@ -51,16 +56,16 @@ def _empty_report(years):
         'months': MONTHS,
         'years': years,
         'clients': [],
+        'producers': [],
+        'series': [],
         'metrics': {
             'cajas': {
                 'label': 'Producción de cajas',
                 'unit': 'cajas',
-                'clients': {},
             },
             'kilos': {
                 'label': 'Kilogramos procesados',
                 'unit': 'kg',
-                'clients': {},
             },
         },
         'source': 'NISIRA ERP · Producción de Cajas',
@@ -75,21 +80,30 @@ def build_boxes_and_kilos_report(rows, current_year=None):
     report = _empty_report(years)
 
     clients = sorted({str(row[2]).strip() for row in rows if str(row[2]).strip()})
+    producers = sorted({str(row[3]).strip() for row in rows if str(row[3]).strip()})
     report['clients'] = clients
-    for metric in ('cajas', 'kilos'):
-        report['metrics'][metric]['clients'] = {
-            client: {str(year): [None] * 12 for year in years}
-            for client in clients
-        }
+    report['producers'] = producers
+    combinations = {}
 
-    for production_year, production_month, producer, boxes, kilograms in rows:
-        client = str(producer).strip()
+    for production_year, production_month, client_name, producer_name, boxes, kilograms in rows:
+        client = str(client_name).strip()
+        producer = str(producer_name).strip()
+        key = (client, producer)
+        if key not in combinations:
+            combinations[key] = {
+                'client': client,
+                'producer': producer,
+                'cajas': {str(item): [None] * 12 for item in years},
+                'kilos': {str(item): [None] * 12 for item in years},
+            }
         year = str(int(production_year))
         month_index = int(production_month) - 1
-        if client not in report['metrics']['cajas']['clients'] or year not in report['metrics']['cajas']['clients'][client]:
+        if year not in combinations[key]['cajas']:
             continue
-        report['metrics']['cajas']['clients'][client][year][month_index] = float(boxes or 0)
-        report['metrics']['kilos']['clients'][client][year][month_index] = float(kilograms or 0)
+        combinations[key]['cajas'][year][month_index] = float(boxes or 0)
+        combinations[key]['kilos'][year][month_index] = float(kilograms or 0)
+
+    report['series'] = list(combinations.values())
 
     return report
 

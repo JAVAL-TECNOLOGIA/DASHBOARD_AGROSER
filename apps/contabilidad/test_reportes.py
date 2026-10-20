@@ -168,8 +168,9 @@ class ContabilidadReportesViewTests(TestCase):
     @patch('apps.contabilidad.views.get_boxes_and_kilos_report')
     def test_boxes_and_kilos_report_uses_nisira_data(self, report_mock):
         report_mock.return_value = build_boxes_and_kilos_report([
-            (2026, 10, 'AGROEXPOR SOL', 47075, 235375),
-            (2026, 10, 'GOURMET FARMS', 4623, 23465),
+            (2026, 10, 'AGROEXPOR SOL', 'AGROEXPOR SOL', 19588, 97940),
+            (2026, 10, 'AGROSERVICE', 'AGROEXPOR SOL', 12561, 62805),
+            (2026, 10, 'GOURMET FARMS', 'GOURMET FARMS', 4623, 23465),
         ], current_year=2026)
         self.user.admin = True
         self.user.save(update_fields=['admin'])
@@ -181,17 +182,18 @@ class ContabilidadReportesViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Producción por productor')
-        self.assertContains(response, 'Historial mensual por productor')
+        self.assertContains(response, 'Historial mensual por cliente y productor')
         self.assertNotContains(response, 'cajas y kilos.xlsx')
         data = response.context['cajas_kilos_data']
-        self.assertEqual(data['clients'], ['AGROEXPOR SOL', 'GOURMET FARMS'])
+        self.assertEqual(data['clients'], ['AGROEXPOR SOL', 'AGROSERVICE', 'GOURMET FARMS'])
+        self.assertEqual(data['producers'], ['AGROEXPOR SOL', 'GOURMET FARMS'])
         self.assertEqual(data['years'], [2023, 2024, 2025, 2026])
         self.assertEqual(
-            data['metrics']['cajas']['clients']['AGROEXPOR SOL']['2026'][9],
-            47075.0,
+            data['series'][0]['cajas']['2026'][9],
+            19588.0,
         )
         self.assertEqual(
-            data['metrics']['kilos']['clients']['GOURMET FARMS']['2026'][9],
+            data['series'][2]['kilos']['2026'][9],
             23465.0,
         )
         self.assertEqual(data['source'], 'NISIRA ERP · Producción de Cajas')
