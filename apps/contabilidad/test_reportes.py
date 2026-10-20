@@ -154,7 +154,7 @@ class ContabilidadReportesViewTests(TestCase):
         self.assertAlmostEqual(sum(value or 0 for value in data['data']['2026']), 5133619.33, places=2)
         self.assertEqual(data['data']['2026'][8:], [None, None, None, None])
 
-    def test_boxes_and_kilos_report_includes_clients_and_both_metrics(self):
+    def test_boxes_and_kilos_report_keeps_design_without_excel_data(self):
         self.user.admin = True
         self.user.save(update_fields=['admin'])
         self.client.force_login(self.user)
@@ -168,20 +168,10 @@ class ContabilidadReportesViewTests(TestCase):
         self.assertContains(response, 'Historial mensual por cliente')
         self.assertNotContains(response, 'cajas y kilos.xlsx')
         data = response.context['cajas_kilos_data']
-        self.assertEqual(len(data['clients']), 13)
+        self.assertEqual(data['clients'], [])
         self.assertEqual(data['years'], [2023, 2024, 2025, 2026])
-        boxes_2026 = sum(
-            value or 0
-            for client in data['clients']
-            for value in data['metrics']['cajas']['clients'][client]['2026']
-        )
-        kilos_2026 = sum(
-            value or 0
-            for client in data['clients']
-            for value in data['metrics']['kilos']['clients'][client]['2026']
-        )
-        self.assertAlmostEqual(boxes_2026, 491982.00, places=2)
-        self.assertAlmostEqual(kilos_2026, 3128567.40, places=2)
+        self.assertEqual(data['metrics']['cajas']['clients'], {})
+        self.assertEqual(data['metrics']['kilos']['clients'], {})
 
     def test_august_balance_report_reconciles_net_position(self):
         self.user.admin = True
