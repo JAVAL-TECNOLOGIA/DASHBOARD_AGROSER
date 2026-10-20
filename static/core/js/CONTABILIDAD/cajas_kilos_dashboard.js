@@ -72,7 +72,18 @@
     function updateTable(data, metric, client, years, indexes) {
         var clients = client === '__all__' ? data.clients : [client];
         document.getElementById('ck-table-head').innerHTML = '<th>Productor</th><th>Año</th>' + indexes.map(function (index) { return '<th class="text-right">' + data.months[index] + '</th>'; }).join('') + '<th class="text-right">Total</th>';
-        document.getElementById('ck-table-body').innerHTML = clients.map(function (name) { return years.map(function (year) { var values = seriesValues(data, metric, name, year, indexes); var total = values.some(function (value) { return value !== null; }) ? sum(values) : null; return '<tr><td class="font-weight-bold">' + name + '</td><td><span class="badge badge-light">' + year + '</span></td>' + values.map(function (value) { return '<td class="text-right">' + format(value, metric, false) + '</td>'; }).join('') + '<td class="text-right font-weight-bold">' + format(total, metric, false) + '</td></tr>'; }).join(''); }).join('');
+        var rows = [];
+        clients.forEach(function (name) {
+            years.forEach(function (year) {
+                var values = seriesValues(data, metric, name, year, indexes);
+                var total = sum(values);
+                if (total <= 0) return;
+                rows.push('<tr><td class="font-weight-bold">' + name + '</td><td><span class="badge badge-light">' + year + '</span></td>' + values.map(function (value) { return '<td class="text-right">' + format(value, metric, false) + '</td>'; }).join('') + '<td class="text-right font-weight-bold">' + format(total, metric, false) + '</td></tr>');
+            });
+        });
+        document.getElementById('ck-table-body').innerHTML = rows.length
+            ? rows.join('')
+            : '<tr><td class="text-center text-muted py-4" colspan="' + (indexes.length + 3) + '">No hay producción para los filtros seleccionados.</td></tr>';
     }
     function refresh(data) {
         var metric = document.getElementById('ck-metric').value; var client = document.getElementById('ck-client').value; var years = selectedYears(); var indexes = monthIndexes();
