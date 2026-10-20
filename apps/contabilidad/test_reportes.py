@@ -180,8 +180,8 @@ class ContabilidadReportesViewTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Producción por productor')
-        self.assertContains(response, 'Historial mensual por productor')
+        self.assertContains(response, 'Producción por cliente')
+        self.assertContains(response, 'Historial mensual por cliente')
         self.assertNotContains(response, 'cajas y kilos.xlsx')
         data = response.context['cajas_kilos_data']
         self.assertEqual(data['clients'], ['AGROEXPOR SOL', 'GOURMET FARMS'])

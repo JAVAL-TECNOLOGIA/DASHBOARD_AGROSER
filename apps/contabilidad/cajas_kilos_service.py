@@ -9,7 +9,7 @@ MONTHS = [
     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
 ]
 FIRST_REPORT_YEAR = 2023
-CACHE_KEY = 'contabilidad:cajas-kilos:nisira:v1'
+CACHE_KEY = 'contabilidad:cajas-kilos:nisira:v2'
 CACHE_SECONDS = 10 * 60
 
 
@@ -17,7 +17,7 @@ PRODUCTION_SUMMARY_SQL = """
 SELECT
     YEAR(R.FECHA) AS production_year,
     MONTH(R.FECHA) AS production_month,
-    COALESCE(NULLIF(LTRIM(RTRIM(PR.NOMCORTO)), ''), 'SIN PRODUCTOR') AS producer,
+    COALESCE(NULLIF(LTRIM(RTRIM(CL.NOMCORTO)), ''), 'SIN CLIENTE') AS client,
     SUM(CAST(DR.CANTIDAD AS decimal(19, 3))) AS boxes,
     SUM(CAST(PRD.KG_CAJAS * DR.CANTIDAD AS decimal(19, 3))) AS kilograms
 FROM REGISTROPALETA R WITH (NOLOCK)
@@ -31,9 +31,9 @@ INNER JOIN MOTIVOPALETA MP WITH (NOLOCK)
 INNER JOIN PRODUCTOS PRD WITH (NOLOCK)
     ON DR.IDPRODUCTO = PRD.IDPRODUCTO
    AND DR.IDEMPRESA = PRD.IDEMPRESA
-LEFT JOIN PROVEEDORLOTE PR WITH (NOLOCK)
-    ON DR.IDCLIEPROV = PR.IDCLIEPROV
-   AND DR.IDEMPRESA = PR.IDEMPRESA
+LEFT JOIN PROVEEDORLOTE CL WITH (NOLOCK)
+    ON R.IDCLIEPROV = CL.IDCLIEPROV
+   AND R.IDEMPRESA = CL.IDEMPRESA
 WHERE R.IDEMPRESA = %s
   AND R.IDESTADO <> 'AN'
   AND R.FECHA >= %s
@@ -41,8 +41,8 @@ WHERE R.IDEMPRESA = %s
 GROUP BY
     YEAR(R.FECHA),
     MONTH(R.FECHA),
-    COALESCE(NULLIF(LTRIM(RTRIM(PR.NOMCORTO)), ''), 'SIN PRODUCTOR')
-ORDER BY producer, production_year, production_month
+    COALESCE(NULLIF(LTRIM(RTRIM(CL.NOMCORTO)), ''), 'SIN CLIENTE')
+ORDER BY client, production_year, production_month
 """
 
 
@@ -82,8 +82,8 @@ def build_boxes_and_kilos_report(rows, current_year=None):
             for client in clients
         }
 
-    for production_year, production_month, producer, boxes, kilograms in rows:
-        client = str(producer).strip()
+    for production_year, production_month, client_name, boxes, kilograms in rows:
+        client = str(client_name).strip()
         year = str(int(production_year))
         month_index = int(production_month) - 1
         if client not in report['metrics']['cajas']['clients'] or year not in report['metrics']['cajas']['clients'][client]:
