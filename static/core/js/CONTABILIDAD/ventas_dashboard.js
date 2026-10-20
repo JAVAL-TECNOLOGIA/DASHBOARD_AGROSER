@@ -12,6 +12,12 @@
         if (compact && Math.abs(value) >= 1000) return 'S/ ' + (value / 1000).toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }) + ' mil';
         return 'S/ ' + Number(value).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
+    function dollars(value, compact) {
+        if (value === null || typeof value === 'undefined' || isNaN(value)) return '—';
+        if (compact && Math.abs(value) >= 1000000) return 'US$ ' + (value / 1000000).toLocaleString('es-PE', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' M';
+        if (compact && Math.abs(value) >= 1000) return 'US$ ' + (value / 1000).toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }) + ' mil';
+        return 'US$ ' + Number(value).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
     function sum(values) { return values.reduce(function (total, value) { return total + (value === null ? 0 : value); }, 0); }
     function percent(current, previous) { return previous ? ((current - previous) / Math.abs(previous)) * 100 : null; }
     function selectedYears() {
@@ -52,6 +58,7 @@
         var values = yearValues(data, latest, indexes);
         var available = values.filter(function (value) { return value !== null; });
         var total = sum(values);
+        var totalUsd = sum(indexes.map(function (index) { return data.data_usd[latest][index]; }));
         var priorTotal = prior ? sum(yearValues(data, prior, indexes)) : null;
         var change = prior ? percent(total, priorTotal) : null;
         var best = { value: null, index: null };
@@ -61,6 +68,8 @@
         });
         document.getElementById('sales-total').textContent = money(total, true);
         document.getElementById('sales-total-detail').textContent = latest + ' · ' + data.months[indexes[0]] + ' a ' + data.months[indexes[indexes.length - 1]];
+        document.getElementById('sales-total-usd').textContent = dollars(totalUsd, true);
+        document.getElementById('sales-total-usd-detail').textContent = latest + ' · ' + data.months[indexes[0]] + ' a ' + data.months[indexes[indexes.length - 1]];
         var yoy = document.getElementById('sales-yoy');
         yoy.textContent = change === null ? '—' : (change >= 0 ? '+' : '') + change.toLocaleString('es-PE', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%';
         yoy.className = 'sales-kpi-value ' + (change === null ? '' : change >= 0 ? 'sales-positive' : 'sales-negative');

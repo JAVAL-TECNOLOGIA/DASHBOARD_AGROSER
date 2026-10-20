@@ -1,3 +1,4 @@
+from datetime import date
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.test import TestCase
@@ -5,6 +6,7 @@ from django.urls import reverse
 from unittest.mock import patch
 
 from apps.contabilidad.cajas_kilos_service import build_boxes_and_kilos_report
+from apps.contabilidad.ventas_service import build_sales_report
 
 from apps.user.views import UserAdministrationMixin
 
@@ -138,7 +140,12 @@ class ContabilidadReportesViewTests(TestCase):
         self.assertFalse(any(row['account'] == '94636401' for row in june_2025['rows']))
         self.assertAlmostEqual(july_2026['total'], 940683.00, places=2)
 
-    def test_sales_report_keeps_design_without_excel_data(self):
+    @patch('apps.contabilidad.views.get_sales_report')
+    def test_sales_report_uses_nisira_totals_in_both_currencies(self, report_mock):
+        report_mock.return_value = build_sales_report([
+            (date(2026, 8, 5), 23368.53, 6938.40),
+            (date(2026, 8, 5), 26539.97, 7880.04),
+        ], current_year=2026)
         self.user.admin = True
         self.user.save(update_fields=['admin'])
         self.client.force_login(self.user)
@@ -150,15 +157,13 @@ class ContabilidadReportesViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Evolución mensual de ventas')
         self.assertContains(response, 'Detalle mensual y anual')
+        self.assertContains(response, 'Total en dólares')
         data = response.context['ventas_data']
         self.assertEqual(data['years'], [2023, 2024, 2025, 2026])
         self.assertEqual(len(data['months']), 12)
         self.assertNotContains(response, 'ventas.xlsx')
-        self.assertTrue(all(
-            value is None
-            for year in data['years']
-            for value in data['data'][str(year)]
-        ))
+        self.assertAlmostEqual(data['data']['2026'][7], 49908.50, places=2)
+        self.assertAlmostEqual(data['data_usd']['2026'][7], 14818.44, places=2)
 
     @patch('apps.contabilidad.views.get_boxes_and_kilos_report')
     def test_boxes_and_kilos_report_uses_nisira_data(self, report_mock):

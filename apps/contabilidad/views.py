@@ -11,6 +11,7 @@ from apps.connection.connect_portalaei import connection_portalaei
 from decimal import Decimal
 from datetime import datetime
 from apps.contabilidad.cajas_kilos_service import get_boxes_and_kilos_report
+from apps.contabilidad.ventas_service import empty_sales_report, get_sales_report
 import json
 from pathlib import Path
 from django.db import connection
@@ -107,9 +108,13 @@ class ContabilidadReporteDetalleView(ContabilidadReportesAccessMixin, TemplateVi
             with data_path.open(encoding='utf-8') as data_file:
                 context['comparacion_data'] = json.load(data_file)
         elif slug == 'ventas':
-            data_path = Path(__file__).resolve().parent / 'data' / 'ventas.json'
-            with data_path.open(encoding='utf-8') as data_file:
-                context['ventas_data'] = json.load(data_file)
+            try:
+                context['ventas_data'] = get_sales_report()
+            except Exception:
+                context['ventas_data'] = empty_sales_report()
+                context['ventas_error'] = (
+                    'No fue posible consultar el Registro de Ventas en NISIRA.'
+                )
         elif slug == 'detalle-cajas-kilos':
             try:
                 context['cajas_kilos_data'] = get_boxes_and_kilos_report()

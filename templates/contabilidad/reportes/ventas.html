@@ -1,4 +1,5 @@
 <div class="sales-dashboard">
+    {% if ventas_error %}<div class="alert alert-danger mb-4">{{ ventas_error }}</div>{% endif %}
     <div class="card sales-filter shadow-sm border-0 mb-4">
         <div class="card-body py-3">
             <div class="row align-items-end">
@@ -26,16 +27,19 @@
     </div>
 
     <div class="row">
-        <div class="col-xl-3 col-md-6 mb-4"><div class="card sales-kpi h-100 border-0 shadow-sm"><div class="card-body">
+        <div class="col-xl col-md-6 mb-4"><div class="card sales-kpi h-100 border-0 shadow-sm"><div class="card-body">
             <div class="sales-kpi-title">Ventas del periodo</div><div class="sales-kpi-value" id="sales-total">—</div><div class="sales-kpi-detail" id="sales-total-detail">—</div>
         </div></div></div>
-        <div class="col-xl-3 col-md-6 mb-4"><div class="card sales-kpi h-100 border-0 shadow-sm"><div class="card-body">
+        <div class="col-xl col-md-6 mb-4"><div class="card sales-kpi sales-kpi-usd h-100 border-0 shadow-sm"><div class="card-body">
+            <div class="sales-kpi-title">Total en dólares</div><div class="sales-kpi-value" id="sales-total-usd">—</div><div class="sales-kpi-detail" id="sales-total-usd-detail">—</div>
+        </div></div></div>
+        <div class="col-xl col-md-6 mb-4"><div class="card sales-kpi h-100 border-0 shadow-sm"><div class="card-body">
             <div class="sales-kpi-title">Variación interanual</div><div class="sales-kpi-value" id="sales-yoy">—</div><div class="sales-kpi-detail" id="sales-yoy-detail">—</div>
         </div></div></div>
-        <div class="col-xl-3 col-md-6 mb-4"><div class="card sales-kpi h-100 border-0 shadow-sm"><div class="card-body">
+        <div class="col-xl col-md-6 mb-4"><div class="card sales-kpi h-100 border-0 shadow-sm"><div class="card-body">
             <div class="sales-kpi-title">Mejor mes</div><div class="sales-kpi-value sales-kpi-text" id="sales-best">—</div><div class="sales-kpi-detail" id="sales-best-detail">—</div>
         </div></div></div>
-        <div class="col-xl-3 col-md-6 mb-4"><div class="card sales-kpi h-100 border-0 shadow-sm"><div class="card-body">
+        <div class="col-xl col-md-6 mb-4"><div class="card sales-kpi h-100 border-0 shadow-sm"><div class="card-body">
             <div class="sales-kpi-title">Promedio mensual</div><div class="sales-kpi-value" id="sales-average">—</div><div class="sales-kpi-detail" id="sales-average-detail">—</div>
         </div></div></div>
     </div>
@@ -72,7 +76,7 @@
     .sales-year-options { display: flex; flex-wrap: wrap; gap: .45rem; }.sales-year-chip { margin: 0; }.sales-year-chip input { position: absolute; opacity: 0; }
     .sales-year-chip span { background: #edf1f4; border: 1px solid #dce3e8; border-radius: 7px; color: #52606d; cursor: pointer; display: inline-block; font-weight: 700; padding: .52rem .85rem; }
     .sales-year-chip input:checked + span { background: var(--sales-navy); border-color: var(--sales-navy); color: #fff; }
-    .sales-kpi { border-top: 4px solid var(--sales-green) !important; }.sales-kpi-title { color: #768390; font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+    .sales-kpi { border-top: 4px solid var(--sales-green) !important; }.sales-kpi-usd { border-top-color: #278ba8 !important; }.sales-kpi-title { color: #768390; font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
     .sales-kpi-value { color: #172b3a; font-size: 1.75rem; font-weight: 700; line-height: 1.2; margin: .55rem 0 .4rem; }.sales-kpi-text { font-size: 1.15rem; }
     .sales-kpi-detail { color: #87929c; font-size: .82rem; }.sales-positive { color: #078447; }.sales-negative { color: #c43d32; }
     .sales-chart-card, .sales-insight-card { min-height: 390px; }.sales-chart-card h4, .sales-insight-card h4 { color: #233746; font-size: 1rem; font-weight: 700; }
