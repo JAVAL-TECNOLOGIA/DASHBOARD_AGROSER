@@ -166,6 +166,7 @@ class ContabilidadReportesViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Producción por cliente')
         self.assertContains(response, 'Historial mensual por cliente')
+        self.assertNotContains(response, 'cajas y kilos.xlsx')
         data = response.context['cajas_kilos_data']
         self.assertEqual(len(data['clients']), 13)
         self.assertEqual(data['years'], [2023, 2024, 2025, 2026])
