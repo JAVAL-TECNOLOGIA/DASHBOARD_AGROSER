@@ -57,9 +57,8 @@
             <div class="card-body px-4 pt-2"><ul class="sales-insights" id="sales-insights"></ul></div>
         </div></div>
         <div class="col-xl-8 mb-4"><div class="card border-0 shadow-sm">
-            <div class="card-header bg-white border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+            <div class="card-header bg-white border-0 pt-4 px-4">
                 <div><h4 class="mb-1">Detalle mensual y anual</h4><p class="text-muted mb-0">Ventas por año y meses seleccionados</p></div>
-                <span class="sales-source">Fuente: ventas.xlsx</span>
             </div>
             <div class="table-responsive sales-table-wrap"><table class="table sales-table mb-0"><thead><tr id="sales-table-head"></tr></thead><tbody id="sales-table-body"></tbody></table></div>
         </div></div>
@@ -82,6 +81,5 @@
     .sales-insights li:last-child { border-bottom: 0; }.sales-insights li:before { background: #dff3ea; border-radius: 50%; color: var(--sales-green); content: '\f00c'; font-family: 'Font Awesome 5 Free'; font-size: .65rem; font-weight: 900; height: 20px; left: 0; line-height: 20px; position: absolute; text-align: center; top: 1.05rem; width: 20px; }
     .sales-table thead th { background: #f6f8f9; border-top: 0; color: #64727e; font-size: .72rem; letter-spacing: .04em; position: sticky; text-transform: uppercase; top: 0; white-space: nowrap; }
     .sales-table td { color: #344553; font-size: .84rem; white-space: nowrap; }.sales-table-wrap { max-height: 480px; }
-    .sales-source { background: #eff7f3; border-radius: 20px; color: var(--sales-green); font-size: .72rem; padding: .4rem .7rem; }
-    @media (max-width: 767px) { .sales-kpi-value { font-size: 1.4rem; }.sales-chart-wrap { height: 245px; }.sales-source { display: none; } }
+    @media (max-width: 767px) { .sales-kpi-value { font-size: 1.4rem; }.sales-chart-wrap { height: 245px; } }
 </style>

@@ -138,7 +138,7 @@ class ContabilidadReportesViewTests(TestCase):
         self.assertFalse(any(row['account'] == '94636401' for row in june_2025['rows']))
         self.assertAlmostEqual(july_2026['total'], 940683.00, places=2)
 
-    def test_sales_report_includes_monthly_and_annual_data(self):
+    def test_sales_report_keeps_design_without_excel_data(self):
         self.user.admin = True
         self.user.save(update_fields=['admin'])
         self.client.force_login(self.user)
@@ -153,9 +153,12 @@ class ContabilidadReportesViewTests(TestCase):
         data = response.context['ventas_data']
         self.assertEqual(data['years'], [2023, 2024, 2025, 2026])
         self.assertEqual(len(data['months']), 12)
-        self.assertAlmostEqual(sum(value or 0 for value in data['data']['2025']), 8053253.00, places=2)
-        self.assertAlmostEqual(sum(value or 0 for value in data['data']['2026']), 5133619.33, places=2)
-        self.assertEqual(data['data']['2026'][8:], [None, None, None, None])
+        self.assertNotContains(response, 'ventas.xlsx')
+        self.assertTrue(all(
+            value is None
+            for year in data['years']
+            for value in data['data'][str(year)]
+        ))
 
     @patch('apps.contabilidad.views.get_boxes_and_kilos_report')
     def test_boxes_and_kilos_report_uses_nisira_data(self, report_mock):
