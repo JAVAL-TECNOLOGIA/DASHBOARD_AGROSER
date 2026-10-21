@@ -165,6 +165,7 @@ class ContabilidadReportesViewTests(TestCase):
         self.assertContains(response, 'Ventas por razón social')
         self.assertNotContains(response, 'Variación interanual')
         self.assertNotContains(response, 'Mejor mes')
+        self.assertNotContains(response, 'Promedio mensual')
         data = response.context['ventas_data']
         self.assertEqual(data['years'], [2023, 2024, 2025, 2026])
         self.assertEqual(len(data['months']), 12)

@@ -9,14 +9,14 @@
     function payload() { return JSON.parse(document.getElementById('ventas-data').textContent); }
     function money(value, compact) {
         if (value === null || typeof value === 'undefined' || isNaN(value)) return '—';
-        if (compact && Math.abs(value) >= 1000000) return 'S/ ' + (value / 1000000).toLocaleString('es-PE', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' M';
-        if (compact && Math.abs(value) >= 1000) return 'S/ ' + (value / 1000).toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }) + ' mil';
+        if (compact && Math.abs(value) >= 1000000) return 'S/ ' + (value / 1000000).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' M';
+        if (compact && Math.abs(value) >= 1000) return 'S/ ' + (value / 1000).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' mil';
         return 'S/ ' + Number(value).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
     function dollars(value, compact) {
         if (value === null || typeof value === 'undefined' || isNaN(value)) return '—';
-        if (compact && Math.abs(value) >= 1000000) return 'US$ ' + (value / 1000000).toLocaleString('es-PE', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + ' M';
-        if (compact && Math.abs(value) >= 1000) return 'US$ ' + (value / 1000).toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }) + ' mil';
+        if (compact && Math.abs(value) >= 1000000) return 'US$ ' + (value / 1000000).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' M';
+        if (compact && Math.abs(value) >= 1000) return 'US$ ' + (value / 1000).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' mil';
         return 'US$ ' + Number(value).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
     function sum(values) { return values.reduce(function (total, value) { return total + (value === null ? 0 : value); }, 0); }
@@ -71,10 +71,6 @@
         };
     }
     function updateKpis(data, years, indexes) {
-        var latest = years[years.length - 1];
-        var values = yearValues(data, latest, indexes);
-        var available = values.filter(function (value) { return value !== null; });
-        var latestTotal = sum(values);
         var total = sum(years.reduce(function (all, year) { return all.concat(yearValues(data, year, indexes)); }, []));
         var totalUsd = sum(years.reduce(function (all, year) {
             return all.concat(indexes.map(function (index) { return data.data_usd[year][index]; }));
@@ -94,8 +90,6 @@
         document.getElementById('sales-exported-detail').textContent = selectedPeriod;
         document.getElementById('sales-exempt').textContent = money(exempt, true);
         document.getElementById('sales-exempt-detail').textContent = selectedPeriod;
-        document.getElementById('sales-average').textContent = available.length ? money(latestTotal / available.length, true) : '—';
-        document.getElementById('sales-average-detail').textContent = available.length + ' meses con información';
     }
     function updateCustomerChart(data, years, indexes) {
         var totals = {};
