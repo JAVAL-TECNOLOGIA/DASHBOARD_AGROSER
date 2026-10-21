@@ -13,6 +13,7 @@ from datetime import datetime
 from apps.contabilidad.cajas_kilos_service import get_boxes_and_kilos_report
 from apps.contabilidad.ventas_service import empty_sales_report, get_sales_report
 from apps.contabilidad.costos_service import empty_costs_report, get_costs_report
+from apps.contabilidad.comparacion_service import empty_comparison_report, get_comparison_report
 import json
 from pathlib import Path
 from django.db import connection
@@ -112,9 +113,13 @@ class ContabilidadReporteDetalleView(ContabilidadReportesAccessMixin, TemplateVi
             raise Http404('El reporte solicitado no existe.')
         context['reporte'] = reporte
         if slug == 'comparacion':
-            data_path = Path(__file__).resolve().parent / 'data' / 'comparacion.json'
-            with data_path.open(encoding='utf-8') as data_file:
-                context['comparacion_data'] = json.load(data_file)
+            try:
+                context['comparacion_data'] = get_comparison_report()
+            except Exception:
+                context['comparacion_data'] = empty_comparison_report()
+                context['comparacion_error'] = (
+                    'No fue posible consultar la comparación contable en NISIRA.'
+                )
         elif slug == 'ventas':
             try:
                 context['ventas_data'] = get_sales_report()

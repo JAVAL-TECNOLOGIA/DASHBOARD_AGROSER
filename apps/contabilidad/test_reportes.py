@@ -6,6 +6,7 @@ from django.urls import reverse
 from unittest.mock import patch
 
 from apps.contabilidad.cajas_kilos_service import build_boxes_and_kilos_report
+from apps.contabilidad.comparacion_service import build_comparison_report
 from apps.contabilidad.costos_service import build_costs_report
 from apps.contabilidad.ventas_service import build_sales_report
 
@@ -96,7 +97,25 @@ class ContabilidadReportesViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Ventas')
 
-    def test_comparison_report_includes_dashboard_data(self):
+    @patch('apps.contabilidad.views.get_comparison_report')
+    def test_comparison_report_uses_nisira_data(self, report_mock):
+        report_mock.return_value = build_comparison_report(
+            [
+                (2026, 5, 'MAQUILA', 61880, 309400),
+                (2026, 5, 'EXPORTACION', 12561, 62805),
+            ],
+            {
+                2026: [
+                    ('202605', '70401', 0, 516573.83, 0, 0),
+                    ('202605', '70201', 0, 705059.10, 0, 0),
+                    ('202605', '69401', 398999.46, 0, 0, 0),
+                    ('202605', '69201', 695675.52, 0, 0, 0),
+                    ('202605', '75', 0, 16410.44, 0, 0),
+                    ('202605', '94', 165858.71, 0, 0, 0),
+                ],
+            },
+            current_year=2026,
+        )
         self.user.admin = True
         self.user.save(update_fields=['admin'])
         self.client.force_login(self.user)
@@ -106,13 +125,18 @@ class ContabilidadReportesViewTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Evolución mensual')
-        self.assertContains(response, 'Variación interanual')
-        self.assertEqual(set(response.context['comparacion_data']['data']), {'2023', '2024', '2025', '2026'})
-        self.assertEqual(response.context['comparacion_data']['data']['2026']['cajas'][8], None)
-        self.assertEqual(len(response.context['comparacion_data']['descriptions']), 21)
-        self.assertContains(response, 'Detalle mensual y anual por descripción')
-        self.assertContains(response, 'Costo De Ventas Exportacion')
+        self.assertContains(response, 'Comparación mensual')
+        self.assertContains(response, 'Ingresos y costos mensuales')
+        self.assertContains(response, 'Fuente: NISIRA ERP')
+        self.assertNotContains(response, 'comparacion.xlsx')
+        data = response.context['comparacion_data']
+        self.assertEqual(data['years'], [2023, 2024, 2025, 2026])
+        self.assertEqual(len(data['metrics']), 16)
+        metrics = {item['key']: item for item in data['metrics']}
+        self.assertEqual(metrics['boxes_maquila']['values']['2026'][4], 61880)
+        self.assertEqual(metrics['boxes_export']['values']['2026'][4], 12561)
+        self.assertAlmostEqual(metrics['income_maquila']['values']['2026'][4], 516573.83, places=2)
+        self.assertAlmostEqual(metrics['income_export']['values']['2026'][4], 705059.10, places=2)
 
     def test_costs_report_includes_all_four_periods_and_indicators(self):
         self.user.admin = True
