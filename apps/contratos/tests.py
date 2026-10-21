@@ -18,7 +18,7 @@ from .forms import (
     NewEmployeeContractForm,
 )
 from .identity import IdentityLookupError, _api_token, lookup_dni
-from .pdf import _contract_values
+from .pdf import _contract_values, _replace_calculated_amounts
 
 
 class ContractAmountTests(SimpleTestCase):
@@ -34,6 +34,33 @@ class ContractAmountTests(SimpleTestCase):
         self.assertEqual(values["tbr_cts"], "3.99")
         self.assertEqual(values["tbr_gratificacion"], "6.83")
         self.assertEqual(values["tbr_beta"], "11.30")
+
+    def test_replaces_legacy_fixed_amounts_with_contract_values(self):
+        xml = (
+            '<w:p><w:r><w:t>La remuneración básica no puede ser menor que la '
+            'Remuneración Mínima Vital (RMV) la misma que asciende a S/. 34.17 '
+            'diarios. La compensación por tiempo de servicios equivale al 9,72%, '
+            'de la remuneración básica (RB), que asciende a S/ 3.32 y las '
+            'gratificaciones por fiestas patrias y de navidad equivale al 16,66% '
+            'de la remuneración básica (RB), que asciende a S/ 5.69. '
+            'El pago proporcional a los días trabajados el cual asciende a '
+            'S/ 1 1 . 30 por día.</w:t></w:r></w:p>'
+        ).encode("utf-8")
+
+        replaced = _replace_calculated_amounts(
+            xml,
+            {
+                "tbr_rem_diaria": "45.00",
+                "tbr_cts": "4.37",
+                "tbr_gratificacion": "7.50",
+                "tbr_beta": "11.30",
+            },
+        ).decode("utf-8")
+
+        self.assertIn("S/. 45.00 diarios", replaced)
+        self.assertIn("asciende a S/ 4.37", replaced)
+        self.assertIn("asciende a S/ 7.50", replaced)
+        self.assertIn("asciende a S/ 11.30 por día", replaced)
 
 
 class ContractGenerationFormTests(SimpleTestCase):

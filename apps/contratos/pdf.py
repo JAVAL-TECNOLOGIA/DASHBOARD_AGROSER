@@ -141,17 +141,22 @@ def _money(value):
 
 def _replace_calculated_amounts(xml, values):
     """Replace fixed amounts without reserializing Word's namespace metadata."""
+    amount = r"(\d(?:\s*\d)*(?:\s*[.,]\s*\d(?:\s*\d)*)?)"
     replacements = (
         (
-            r"compensaci[oó]n por tiempo de servicios.*?asciende a S/\s*(\d+(?:[.,]\d+)?)",
+            r"remuneraci[oó]n b[aá]sica no puede.*?asciende a S/\s*\.?\s*" + amount,
+            values["tbr_rem_diaria"],
+        ),
+        (
+            r"compensaci[oó]n por tiempo de servicios.*?asciende a S/\s*" + amount,
             values["tbr_cts"],
         ),
         (
-            r"gratificaciones.*?equivale al 16[,.]66%.*?asciende a S/\s*(\d+(?:[.,]\d+)?)",
+            r"gratificaciones.*?equivale al 16[,.]66%.*?asciende a S/\s*" + amount,
             values["tbr_gratificacion"],
         ),
         (
-            r"proporcional a los d[ií]as trabajados.*?asciende a S/\s*(\d+(?:[.,]\d+)?)",
+            r"proporcional a los d[ií]as trabajados.*?asciende a S/\s*" + amount,
             values["tbr_beta"],
         ),
     )
