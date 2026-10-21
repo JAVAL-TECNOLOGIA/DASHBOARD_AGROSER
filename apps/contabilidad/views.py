@@ -15,7 +15,6 @@ from apps.contabilidad.ventas_service import empty_sales_report, get_sales_repor
 from apps.contabilidad.costos_service import empty_costs_report, get_costs_report
 from apps.contabilidad.comparacion_service import empty_comparison_report, get_comparison_report
 import json
-from pathlib import Path
 from django.db import connection
 from django.db import IntegrityError
 from django.db import transaction
@@ -52,20 +51,6 @@ CONTABILIDAD_REPORTES = (
         'descripcion': 'Detalle consolidado de cajas y kilos registrados.',
         'icono': 'bi-box-seam',
         'color': '#8a5a12',
-    },
-    {
-        'slug': 'consolidado-costos-gastos-junio-julio-2025-2026',
-        'nombre': 'Consolidado de Costos y Gastos Junio/Julio 2025 - 2026',
-        'descripcion': 'Consolidado comparativo de costos y gastos del periodo.',
-        'icono': 'bi-cash-stack',
-        'color': '#6f42c1',
-    },
-    {
-        'slug': 'balance-general-agosto-2026',
-        'nombre': 'Balance General Agosto 2026',
-        'descripcion': 'Consulta del balance general correspondiente a agosto de 2026.',
-        'icono': 'bi-clipboard-data',
-        'color': '#a33b20',
     },
 )
 
@@ -156,14 +141,6 @@ class ContabilidadReporteDetalleView(ContabilidadReportesAccessMixin, TemplateVi
             except Exception:
                 context['costos_data'] = empty_costs_report()
                 context['costos_error'] = 'No fue posible consultar la distribución de costos en NISIRA.'
-        elif slug == 'balance-general-agosto-2026':
-            data_path = Path(__file__).resolve().parent / 'data' / 'balance_agosto_2026.json'
-            with data_path.open(encoding='utf-8') as data_file:
-                context['balance_data'] = json.load(data_file)
-        elif slug == 'consolidado-costos-gastos-junio-julio-2025-2026':
-            data_path = Path(__file__).resolve().parent / 'data' / 'costos_gastos_junio_julio.json'
-            with data_path.open(encoding='utf-8') as data_file:
-                context['costos_gastos_data'] = json.load(data_file)
         return context
 
 
