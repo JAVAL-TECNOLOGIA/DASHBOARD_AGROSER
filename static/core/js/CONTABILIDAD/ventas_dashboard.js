@@ -35,6 +35,15 @@
         return indexes;
     }
     function yearValues(data, year, indexes) { return indexes.map(function (index) { return data.data[year][index]; }); }
+    function updateCustomerOptions(data, years, indexes) {
+        var select = document.getElementById('sales-customer');
+        var current = select.value;
+        var customers = Array.from(new Set(data.sales.filter(function (row) { return years.indexOf(String(row.year)) >= 0 && indexes.indexOf(row.month) >= 0 && row.total !== 0; }).map(function (row) { return row.customer; }))).sort();
+        select.innerHTML = '';
+        select.add(new Option('Todas las razones sociales', '__all__'));
+        customers.forEach(function (customer) { select.add(new Option(customer, customer)); });
+        select.value = customers.indexOf(current) >= 0 ? current : '__all__';
+    }
     function filteredData(data) {
         var customer = document.getElementById('sales-customer').value;
         var filtered = data.sales.filter(function (row) { return customer === '__all__' || row.customer === customer; });
@@ -134,9 +143,10 @@
         document.getElementById('sales-insights').innerHTML = insights.map(function (text) { return '<li>' + text + '</li>'; }).join('');
     }
     function refresh(data) {
-        data = filteredData(data);
         var years = selectedYears();
         var indexes = monthIndexes();
+        updateCustomerOptions(data, years, indexes);
+        data = filteredData(data);
         var dataYears = years.filter(function (year) { return yearValues(data, year, indexes).some(function (value) { return value !== null; }); });
         var activeYears = dataYears.length ? dataYears : years;
         document.getElementById('sales-trend-subtitle').textContent = data.months[indexes[0]] + ' a ' + data.months[indexes[indexes.length - 1]] + ' · importes en soles';
