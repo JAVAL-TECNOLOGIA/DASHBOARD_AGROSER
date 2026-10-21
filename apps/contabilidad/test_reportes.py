@@ -144,8 +144,8 @@ class ContabilidadReportesViewTests(TestCase):
     @patch('apps.contabilidad.views.get_sales_report')
     def test_sales_report_uses_nisira_totals_in_both_currencies(self, report_mock):
         report_mock.return_value = build_sales_report([
-            (date(2026, 8, 5), 23368.53, 6938.40),
-            (date(2026, 8, 5), 26539.97, 7880.04),
+            (date(2026, 8, 5), 23368.53, 6938.40, 'AGROEXPOR SOL', 19803.84, 0, 0),
+            (date(2026, 8, 5), 26539.97, 7880.04, 'GOURMET FARMS', 22491.50, 0, 0),
         ], current_year=2026)
         self.user.admin = True
         self.user.save(update_fields=['admin'])
@@ -159,12 +159,20 @@ class ContabilidadReportesViewTests(TestCase):
         self.assertContains(response, 'Evolución mensual de ventas')
         self.assertContains(response, 'Detalle mensual y anual')
         self.assertContains(response, 'Total en dólares')
+        self.assertContains(response, 'Venta afectada')
+        self.assertContains(response, 'Venta exportación')
+        self.assertContains(response, 'Venta exonerada')
+        self.assertContains(response, 'Ventas por razón social')
+        self.assertNotContains(response, 'Variación interanual')
+        self.assertNotContains(response, 'Mejor mes')
         data = response.context['ventas_data']
         self.assertEqual(data['years'], [2023, 2024, 2025, 2026])
         self.assertEqual(len(data['months']), 12)
         self.assertNotContains(response, 'ventas.xlsx')
         self.assertAlmostEqual(data['data']['2026'][7], 49908.50, places=2)
         self.assertAlmostEqual(data['data_usd']['2026'][7], 14818.44, places=2)
+        self.assertEqual(data['customers'], ['AGROEXPOR SOL', 'GOURMET FARMS'])
+        self.assertAlmostEqual(sum(row['affected'] for row in data['sales']), 42295.34, places=2)
 
     @patch('apps.contabilidad.views.get_boxes_and_kilos_report')
     def test_boxes_and_kilos_report_uses_nisira_data(self, report_mock):

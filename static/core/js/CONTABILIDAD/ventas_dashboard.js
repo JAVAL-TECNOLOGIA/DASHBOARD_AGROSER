@@ -4,6 +4,7 @@
     var colors = ['#0b6b45', '#278ba8', '#7c4dcc', '#e58a13'];
     var monthlyChart;
     var annualChart;
+    var customerChart;
 
     function payload() { return JSON.parse(document.getElementById('ventas-data').textContent); }
     function money(value, compact) {
@@ -34,6 +35,14 @@
         return indexes;
     }
     function yearValues(data, year, indexes) { return indexes.map(function (index) { return data.data[year][index]; }); }
+    function filteredData(data) {
+        var customer = document.getElementById('sales-customer').value;
+        var filtered = data.sales.filter(function (row) { return customer === '__all__' || row.customer === customer; });
+        var view = { months: data.months, years: data.years, sales: filtered, data: {}, data_usd: {} };
+        data.years.forEach(function (year) { view.data[String(year)] = Array(12).fill(null); view.data_usd[String(year)] = Array(12).fill(null); });
+        filtered.forEach(function (row) { var year = String(row.year); if (view.data[year][row.month] === null) { view.data[year][row.month] = 0; view.data_usd[year][row.month] = 0; } view.data[year][row.month] += row.total; view.data_usd[year][row.month] += row.total_usd; });
+        return view;
+    }
     function niceStep(maxValue) {
         if (!maxValue) return 100000;
         var raw = maxValue / 6;
@@ -54,7 +63,6 @@
     }
     function updateKpis(data, years, indexes) {
         var latest = years[years.length - 1];
-        var prior = years.length > 1 ? years[years.length - 2] : null;
         var values = yearValues(data, latest, indexes);
         var available = values.filter(function (value) { return value !== null; });
         var latestTotal = sum(values);
@@ -63,25 +71,29 @@
             return all.concat(indexes.map(function (index) { return data.data_usd[year][index]; }));
         }, []));
         var selectedPeriod = (years.length === 1 ? years[0] : years[0] + ' a ' + years[years.length - 1]) + ' · ' + data.months[indexes[0]] + ' a ' + data.months[indexes[indexes.length - 1]];
-        var priorTotal = prior ? sum(yearValues(data, prior, indexes)) : null;
-        var change = prior ? percent(latestTotal, priorTotal) : null;
-        var best = { value: null, index: null };
-        indexes.forEach(function (index) {
-            var value = data.data[latest][index];
-            if (value !== null && (best.value === null || value > best.value)) best = { value: value, index: index };
-        });
+        var selectedSales = data.sales.filter(function (row) { return years.indexOf(String(row.year)) >= 0 && indexes.indexOf(row.month) >= 0; });
+        var affected = selectedSales.reduce(function (value, row) { return value + row.affected; }, 0);
+        var exported = selectedSales.reduce(function (value, row) { return value + row.exported; }, 0);
+        var exempt = selectedSales.reduce(function (value, row) { return value + row.exempt; }, 0);
         document.getElementById('sales-total').textContent = money(total, true);
         document.getElementById('sales-total-detail').textContent = selectedPeriod;
         document.getElementById('sales-total-usd').textContent = dollars(totalUsd, true);
         document.getElementById('sales-total-usd-detail').textContent = selectedPeriod;
-        var yoy = document.getElementById('sales-yoy');
-        yoy.textContent = change === null ? '—' : (change >= 0 ? '+' : '') + change.toLocaleString('es-PE', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%';
-        yoy.className = 'sales-kpi-value ' + (change === null ? '' : change >= 0 ? 'sales-positive' : 'sales-negative');
-        document.getElementById('sales-yoy-detail').textContent = prior ? latest + ' vs. ' + prior + ' · mismo periodo' : 'Selecciona al menos dos años';
-        document.getElementById('sales-best').textContent = best.index === null ? '—' : data.months[best.index] + ' ' + latest;
-        document.getElementById('sales-best-detail').textContent = money(best.value, false);
+        document.getElementById('sales-affected').textContent = money(affected, true);
+        document.getElementById('sales-affected-detail').textContent = selectedPeriod;
+        document.getElementById('sales-exported').textContent = money(exported, true);
+        document.getElementById('sales-exported-detail').textContent = selectedPeriod;
+        document.getElementById('sales-exempt').textContent = money(exempt, true);
+        document.getElementById('sales-exempt-detail').textContent = selectedPeriod;
         document.getElementById('sales-average').textContent = available.length ? money(latestTotal / available.length, true) : '—';
         document.getElementById('sales-average-detail').textContent = available.length + ' meses con información';
+    }
+    function updateCustomerChart(data, years, indexes) {
+        var totals = {};
+        data.sales.forEach(function (row) { if (years.indexOf(String(row.year)) >= 0 && indexes.indexOf(row.month) >= 0) totals[row.customer] = (totals[row.customer] || 0) + row.total; });
+        var ranking = Object.keys(totals).map(function (customer) { return { customer: customer, total: totals[customer] }; }).sort(function (a, b) { return b.total - a.total; }).slice(0, 12);
+        if (customerChart) customerChart.destroy();
+        customerChart = new Chart(document.getElementById('sales-customer-chart'), { type: 'horizontalBar', data: { labels: ranking.map(function (item) { return item.customer; }), datasets: [{ data: ranking.map(function (item) { return item.total; }), backgroundColor: '#0b6b45' }] }, options: { maintainAspectRatio: false, responsive: true, legend: { display: false }, tooltips: { callbacks: { label: function (item) { return money(Number(item.xLabel), false); } } }, scales: { xAxes: [{ ticks: { beginAtZero: true, callback: function (value) { return money(Number(value), true); } }, gridLines: { color: '#edf1f3' } }], yAxes: [{ gridLines: { display: false } }] } } });
     }
     function updateCharts(data, years, indexes) {
         var labels = indexes.map(function (index) { return data.months[index]; });
@@ -122,12 +134,13 @@
         document.getElementById('sales-insights').innerHTML = insights.map(function (text) { return '<li>' + text + '</li>'; }).join('');
     }
     function refresh(data) {
+        data = filteredData(data);
         var years = selectedYears();
         var indexes = monthIndexes();
         var dataYears = years.filter(function (year) { return yearValues(data, year, indexes).some(function (value) { return value !== null; }); });
         var activeYears = dataYears.length ? dataYears : years;
         document.getElementById('sales-trend-subtitle').textContent = data.months[indexes[0]] + ' a ' + data.months[indexes[indexes.length - 1]] + ' · importes en soles';
-        updateKpis(data, activeYears, indexes); updateCharts(data, activeYears, indexes); updateTable(data, years, indexes); updateInsights(data, activeYears, indexes);
+        updateKpis(data, activeYears, indexes); updateCharts(data, activeYears, indexes); updateCustomerChart(data, activeYears, indexes); updateTable(data, years, indexes); updateInsights(data, activeYears, indexes);
     }
     window.initVentasDashboard = function () {
         var data = payload();
@@ -137,8 +150,8 @@
         var latestYear = String(Math.max.apply(null, data.years));
         var latestMonth = data.data[latestYear].reduce(function (last, value, index) { return value === null ? last : index; }, 0);
         from.value = 0; to.value = latestMonth;
-        document.querySelectorAll('#sales-year-options input, #sales-month-from, #sales-month-to').forEach(function (control) { control.addEventListener('change', function () { refresh(data); }); });
-        document.getElementById('reset-sales').addEventListener('click', function () { document.querySelectorAll('#sales-year-options input').forEach(function (input) { input.checked = true; }); from.value = 0; to.value = latestMonth; refresh(data); });
+        document.querySelectorAll('#sales-year-options input, #sales-customer, #sales-month-from, #sales-month-to').forEach(function (control) { control.addEventListener('change', function () { refresh(data); }); });
+        document.getElementById('reset-sales').addEventListener('click', function () { document.querySelectorAll('#sales-year-options input').forEach(function (input) { input.checked = true; }); document.getElementById('sales-customer').value='__all__'; from.value = 0; to.value = latestMonth; refresh(data); });
         refresh(data);
     };
 }());

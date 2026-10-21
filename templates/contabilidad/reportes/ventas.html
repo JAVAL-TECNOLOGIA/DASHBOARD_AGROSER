@@ -3,7 +3,7 @@
     <div class="card sales-filter shadow-sm border-0 mb-4">
         <div class="card-body py-3">
             <div class="row align-items-end">
-                <div class="col-xl-5 col-lg-6 mb-3 mb-lg-0">
+                <div class="col-xl-3 col-lg-6 mb-3 mb-xl-0">
                     <label class="sales-filter-label">Años a comparar</label>
                     <div class="sales-year-options" id="sales-year-options">
                         {% for year in ventas_data.years %}
@@ -11,11 +11,15 @@
                         {% endfor %}
                     </div>
                 </div>
-                <div class="col-xl-3 col-lg-2 col-md-5 mb-3 mb-md-0">
+                <div class="col-xl-3 col-lg-6 mb-3 mb-xl-0">
+                    <label class="sales-filter-label" for="sales-customer">Razón social</label>
+                    <select class="form-control" id="sales-customer"><option value="__all__">Todas las razones sociales</option>{% for customer in ventas_data.customers %}<option value="{{ customer }}">{{ customer }}</option>{% endfor %}</select>
+                </div>
+                <div class="col-xl-2 col-lg-5 col-md-5 mb-3 mb-xl-0">
                     <label class="sales-filter-label" for="sales-month-from">Desde</label>
                     <select class="form-control" id="sales-month-from"></select>
                 </div>
-                <div class="col-xl-3 col-lg-2 col-md-5 mb-3 mb-md-0">
+                <div class="col-xl-2 col-lg-5 col-md-5 mb-3 mb-xl-0">
                     <label class="sales-filter-label" for="sales-month-to">Hasta</label>
                     <select class="form-control" id="sales-month-to"></select>
                 </div>
@@ -34,14 +38,22 @@
             <div class="sales-kpi-title">Total en dólares</div><div class="sales-kpi-value" id="sales-total-usd">—</div><div class="sales-kpi-detail" id="sales-total-usd-detail">—</div>
         </div></div></div>
         <div class="col-xl col-md-6 mb-4"><div class="card sales-kpi h-100 border-0 shadow-sm"><div class="card-body">
-            <div class="sales-kpi-title">Variación interanual</div><div class="sales-kpi-value" id="sales-yoy">—</div><div class="sales-kpi-detail" id="sales-yoy-detail">—</div>
+            <div class="sales-kpi-title">Venta afectada</div><div class="sales-kpi-value" id="sales-affected">—</div><div class="sales-kpi-detail" id="sales-affected-detail">—</div>
         </div></div></div>
         <div class="col-xl col-md-6 mb-4"><div class="card sales-kpi h-100 border-0 shadow-sm"><div class="card-body">
-            <div class="sales-kpi-title">Mejor mes</div><div class="sales-kpi-value sales-kpi-text" id="sales-best">—</div><div class="sales-kpi-detail" id="sales-best-detail">—</div>
+            <div class="sales-kpi-title">Venta exportación</div><div class="sales-kpi-value" id="sales-exported">—</div><div class="sales-kpi-detail" id="sales-exported-detail">—</div>
+        </div></div></div>
+        <div class="col-xl col-md-6 mb-4"><div class="card sales-kpi h-100 border-0 shadow-sm"><div class="card-body">
+            <div class="sales-kpi-title">Venta exonerada</div><div class="sales-kpi-value" id="sales-exempt">—</div><div class="sales-kpi-detail" id="sales-exempt-detail">—</div>
         </div></div></div>
         <div class="col-xl col-md-6 mb-4"><div class="card sales-kpi h-100 border-0 shadow-sm"><div class="card-body">
             <div class="sales-kpi-title">Promedio mensual</div><div class="sales-kpi-value" id="sales-average">—</div><div class="sales-kpi-detail" id="sales-average-detail">—</div>
         </div></div></div>
+    </div>
+
+    <div class="card sales-chart-card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-0 pt-4 px-4"><h4 class="mb-1">Ventas por razón social</h4><p class="text-muted mb-0">Clientes con mayor venta en el periodo seleccionado</p></div>
+        <div class="card-body px-4"><div class="sales-customer-chart-wrap"><canvas id="sales-customer-chart"></canvas></div></div>
     </div>
 
     <div class="row">
@@ -80,7 +92,7 @@
     .sales-kpi-value { color: #172b3a; font-size: 1.75rem; font-weight: 700; line-height: 1.2; margin: .55rem 0 .4rem; }.sales-kpi-text { font-size: 1.15rem; }
     .sales-kpi-detail { color: #87929c; font-size: .82rem; }.sales-positive { color: #078447; }.sales-negative { color: #c43d32; }
     .sales-chart-card, .sales-insight-card { min-height: 390px; }.sales-chart-card h4, .sales-insight-card h4 { color: #233746; font-size: 1rem; font-weight: 700; }
-    .sales-chart-wrap { height: 285px; position: relative; }.sales-insights { list-style: none; margin: 0; padding: 0; }
+    .sales-chart-wrap { height: 285px; position: relative; }.sales-customer-chart-wrap { height: 340px; position: relative; }.sales-insights { list-style: none; margin: 0; padding: 0; }
     .sales-insights li { border-bottom: 1px solid #edf0f2; color: #4d5b66; line-height: 1.45; padding: 1rem 0 1rem 2rem; position: relative; }
     .sales-insights li:last-child { border-bottom: 0; }.sales-insights li:before { background: #dff3ea; border-radius: 50%; color: var(--sales-green); content: '\f00c'; font-family: 'Font Awesome 5 Free'; font-size: .65rem; font-weight: 900; height: 20px; left: 0; line-height: 20px; position: absolute; text-align: center; top: 1.05rem; width: 20px; }
     .sales-table thead th { background: #f6f8f9; border-top: 0; color: #64727e; font-size: .72rem; letter-spacing: .04em; position: sticky; text-transform: uppercase; top: 0; white-space: nowrap; }
