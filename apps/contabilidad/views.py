@@ -12,6 +12,7 @@ from decimal import Decimal
 from datetime import datetime
 from apps.contabilidad.cajas_kilos_service import get_boxes_and_kilos_report
 from apps.contabilidad.ventas_service import empty_sales_report, get_sales_report
+from apps.contabilidad.costos_service import empty_costs_report, get_costs_report
 import json
 from pathlib import Path
 from django.db import connection
@@ -36,6 +37,13 @@ CONTABILIDAD_REPORTES = (
         'descripcion': 'Consulta y análisis de la información de ventas.',
         'icono': 'bi-graph-up-arrow',
         'color': '#176b87',
+    },
+    {
+        'slug': 'costos',
+        'nombre': 'Costos',
+        'descripcion': 'Seguimiento de la distribución y asiento de costos en NISIRA.',
+        'icono': 'bi-calculator',
+        'color': '#b16b08',
     },
     {
         'slug': 'detalle-cajas-kilos',
@@ -126,15 +134,23 @@ class ContabilidadReporteDetalleView(ContabilidadReportesAccessMixin, TemplateVi
                     ],
                     'years': list(range(2023, date.today().year + 1)),
                     'clients': [],
+                    'producers': [],
+                    'series': [],
                     'metrics': {
-                        'cajas': {'label': 'Producción de cajas', 'unit': 'cajas', 'clients': {}},
-                        'kilos': {'label': 'Kilogramos procesados', 'unit': 'kg', 'clients': {}},
+                        'cajas': {'label': 'Producción de cajas', 'unit': 'cajas'},
+                        'kilos': {'label': 'Kilogramos procesados', 'unit': 'kg'},
                     },
                     'source': 'NISIRA ERP · Producción de Cajas',
                 }
                 context['cajas_kilos_error'] = (
                     'No fue posible consultar la producción de cajas y kilos en NISIRA.'
                 )
+        elif slug == 'costos':
+            try:
+                context['costos_data'] = get_costs_report()
+            except Exception:
+                context['costos_data'] = empty_costs_report()
+                context['costos_error'] = 'No fue posible consultar la distribución de costos en NISIRA.'
         elif slug == 'balance-general-agosto-2026':
             data_path = Path(__file__).resolve().parent / 'data' / 'balance_agosto_2026.json'
             with data_path.open(encoding='utf-8') as data_file:

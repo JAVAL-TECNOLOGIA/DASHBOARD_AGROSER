@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
 from django.test import TestCase
@@ -6,6 +6,7 @@ from django.urls import reverse
 from unittest.mock import patch
 
 from apps.contabilidad.cajas_kilos_service import build_boxes_and_kilos_report
+from apps.contabilidad.costos_service import build_costs_report
 from apps.contabilidad.ventas_service import build_sales_report
 
 from apps.user.views import UserAdministrationMixin
@@ -73,7 +74,7 @@ class ContabilidadReportesViewTests(TestCase):
         response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.context['reportes']), 5)
+        self.assertEqual(len(response.context['reportes']), 6)
         for title in (
             'Comparación',
             'Ventas',
@@ -197,6 +198,26 @@ class ContabilidadReportesViewTests(TestCase):
             23465.0,
         )
         self.assertEqual(data['source'], 'NISIRA ERP · Producción de Cajas')
+
+    @patch('apps.contabilidad.views.get_costs_report')
+    def test_costs_report_uses_nisira_distribution_data(self, report_mock):
+        report_mock.return_value = build_costs_report([
+            ('_7I50UO80H30616', datetime(2026, 5, 31), '202605', 'DIC', '0001', '0000235', '0001', 'ADMINISTRACION', 'PE', 1, 1, 0, 104, 73927.20),
+            ('_7I50V79VN30616', datetime(2026, 5, 31), '202605', 'DIC', '0001', '0000239', '0007', 'PRODUCCION EXPORTACION', 'PE', 1, 1, 1, 19, 670911.61),
+        ], current_year=2026)
+        self.user.admin = True
+        self.user.save(update_fields=['admin'])
+        self.client.force_login(self.user)
+
+        response = self.client.get(reverse('contabilidad_reporte_detalle', args=['costos']))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Distribución y asiento de costos')
+        data = response.context['costos_data']
+        self.assertEqual(len(data['records']), 2)
+        self.assertEqual(data['records'][0]['detail_count'], 104)
+        self.assertFalse(data['records'][0]['costed'])
+        self.assertTrue(data['records'][1]['costed'])
 
     def test_august_balance_report_reconciles_net_position(self):
         self.user.admin = True
