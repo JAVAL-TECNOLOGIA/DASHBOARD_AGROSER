@@ -6,7 +6,7 @@ from django.db import connections
 
 MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
 FIRST_REPORT_YEAR = 2023
-CACHE_KEY = 'contabilidad:costos:nisira:v2'
+CACHE_KEY = 'contabilidad:costos:nisira:v3'
 CACHE_SECONDS = 10 * 60
 
 COSTS_SQL = """
@@ -27,7 +27,7 @@ ORDER BY C.FECHA, C.NUMERO
 
 COST_DETAILS_SQL = """
 ;WITH COSTS AS (
-    SELECT CP.PERIODO, P.IDCLIEPROV,
+    SELECT CP.PERIODO, CP.IDCLASECCOSTO, P.IDCLIEPROV,
            COALESCE(NULLIF(LTRIM(RTRIM(P.NOMCORTO)), ''), LTRIM(RTRIM(CC.DESCRIPCION))) AS CLIENT_NAME,
            SUM(ISNULL(CP.CST_MES, 0)) AS MONTH_COST,
            SUM(ISNULL(CP.CST_FINA, 0)) AS FINAL_COST
@@ -36,9 +36,10 @@ COST_DETAILS_SQL = """
       ON CC.IDEMPRESA=CP.IDEMPRESA AND CC.IDCCOSTO=CP.IDCCOSTO
     LEFT JOIN PROVEEDORLOTE P WITH (NOLOCK)
       ON P.IDEMPRESA=CC.IDEMPRESA
-     AND UPPER(LTRIM(RTRIM(P.RAZON_SOCIAL)))=UPPER(LTRIM(RTRIM(CC.DESCRIPCION)))
-    WHERE CP.IDEMPRESA=%s AND CP.IDCLASECCOSTO='0008' AND CP.PERIODO BETWEEN %s AND %s
-    GROUP BY CP.PERIODO, P.IDCLIEPROV,
+     AND UPPER(REPLACE(REPLACE(LTRIM(RTRIM(P.RAZON_SOCIAL)), '.', ''), ' ', ''))=
+         UPPER(REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(CC.DESCRIPCION)), ' - VARIOS', ''), '.', ''), ' ', ''))
+    WHERE CP.IDEMPRESA=%s AND CP.IDCLASECCOSTO IN ('0007', '0008') AND CP.PERIODO BETWEEN %s AND %s
+    GROUP BY CP.PERIODO, CP.IDCLASECCOSTO, P.IDCLIEPROV,
              COALESCE(NULLIF(LTRIM(RTRIM(P.NOMCORTO)), ''), LTRIM(RTRIM(CC.DESCRIPCION)))
 ), PRODUCTION AS (
     SELECT CONVERT(CHAR(6), R.FECHA, 112) AS PERIODO, R.IDCLIEPROV,
@@ -54,7 +55,7 @@ COST_DETAILS_SQL = """
     WHERE R.IDEMPRESA=%s AND R.IDESTADO<>'AN' AND CONVERT(CHAR(6), R.FECHA, 112) BETWEEN %s AND %s
     GROUP BY CONVERT(CHAR(6), R.FECHA, 112), R.IDCLIEPROV
 )
-SELECT C.PERIODO, C.CLIENT_NAME, C.MONTH_COST, C.FINAL_COST,
+SELECT C.PERIODO, C.IDCLASECCOSTO, C.CLIENT_NAME, C.MONTH_COST, C.FINAL_COST,
        ISNULL(P.BOXES, 0), ISNULL(P.KILOGRAMS, 0)
 FROM COSTS C
 LEFT JOIN PRODUCTION P ON P.PERIODO=C.PERIODO AND P.IDCLIEPROV=C.IDCLIEPROV
@@ -88,8 +89,9 @@ def build_costs_report(rows, current_year=None, detail_rows=None):
     report['classes'] = sorted({item['class_code'] + ' ' + item['class_name'] for item in records})
     report['details'] = [{
         'period': str(row[0]).strip(), 'year': int(str(row[0])[:4]), 'month': int(str(row[0])[4:6]) - 1,
-        'client': str(row[1]).strip(), 'month_cost': float(row[2] or 0), 'final_cost': float(row[3] or 0),
-        'boxes': float(row[4] or 0), 'kilograms': float(row[5] or 0),
+        'class_code': str(row[1]).strip(), 'client': str(row[2]).strip(),
+        'month_cost': float(row[3] or 0), 'final_cost': float(row[4] or 0),
+        'boxes': float(row[5] or 0), 'kilograms': float(row[6] or 0),
     } for row in (detail_rows or [])]
     return report
 

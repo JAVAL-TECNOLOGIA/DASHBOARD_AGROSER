@@ -204,7 +204,10 @@ class ContabilidadReportesViewTests(TestCase):
         report_mock.return_value = build_costs_report([
             ('_7I50UO80H30616', datetime(2026, 5, 31), '202605', 'DIC', '0001', '0000235', '0001', 'ADMINISTRACION', 'PE', 1, 1, 0, 104, 73927.20),
             ('_7I50V79VN30616', datetime(2026, 5, 31), '202605', 'DIC', '0001', '0000239', '0007', 'PRODUCCION EXPORTACION', 'PE', 1, 1, 1, 19, 670911.61),
-        ], current_year=2026)
+        ], current_year=2026, detail_rows=[
+            ('202605', '0007', 'AGROSERVICE', 693056.81, 693056.81, 12561, 62805),
+            ('202605', '0008', 'AGROEXPOR SOL', 125155.65, 125155.65, 19588, 97940),
+        ])
         self.user.admin = True
         self.user.save(update_fields=['admin'])
         self.client.force_login(self.user)
@@ -218,6 +221,10 @@ class ContabilidadReportesViewTests(TestCase):
         self.assertEqual(data['records'][0]['detail_count'], 104)
         self.assertFalse(data['records'][0]['costed'])
         self.assertTrue(data['records'][1]['costed'])
+        self.assertEqual(data['details'][0]['class_code'], '0007')
+        self.assertEqual(data['details'][0]['client'], 'AGROSERVICE')
+        self.assertEqual(data['details'][0]['boxes'], 12561.0)
+        self.assertEqual(data['details'][0]['kilograms'], 62805.0)
 
     def test_august_balance_report_reconciles_net_position(self):
         self.user.admin = True
