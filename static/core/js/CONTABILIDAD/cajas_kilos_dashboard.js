@@ -21,12 +21,22 @@
         if (compact && Math.abs(value) >= 1000) return (value / 1000).toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }) + ' mil' + suffix;
         return Number(value).toLocaleString('es-PE', { minimumFractionDigits: metric === 'cajas' ? 0 : 2, maximumFractionDigits: metric === 'cajas' ? 0 : 2 }) + suffix;
     }
-    function filtered(data, client, producer) { return data.series.filter(function (item) { return (client === '__all__' || item.client === client) && (producer === '__all__' || item.producer === producer); }); }
+    function isInternalSelfAssociation(item, client) { return client === 'AGROSERVICE' && item.client === 'AGROSERVICE' && item.producer === 'AGROSERVICE'; }
+    function filtered(data, client, producer) { return data.series.filter(function (item) { return (client === '__all__' || item.client === client) && (producer === '__all__' || item.producer === producer) && !isInternalSelfAssociation(item, client); }); }
+    function hasMovement(item, year, indexes) { return indexes.some(function (month) { return Number(item.cajas[year][month] || 0) > 0; }); }
+    function filterPeriod() { var years = selectedYears(); return { year: years[years.length - 1], indexes: monthIndexes() }; }
+    function syncClientOptions(data) {
+        var select = document.getElementById('ck-client'), previous = select.value, period = filterPeriod();
+        var clients = data.series.filter(function (item) { return hasMovement(item, period.year, period.indexes); }).map(function (item) { return item.client; }).filter(function (name, index, items) { return items.indexOf(name) === index; }).sort();
+        select.innerHTML = ''; select.add(new Option('TODOS LOS CLIENTES', '__all__'));
+        clients.forEach(function (name) { select.add(new Option(name.toUpperCase(), name)); });
+        select.value = clients.indexOf(previous) >= 0 ? previous : '__all__';
+    }
     function syncProducerOptions(data) {
-        var client = document.getElementById('ck-client').value, select = document.getElementById('ck-producer'), previous = select.value;
-        var producers = data.series.filter(function (item) { return client === '__all__' || item.client === client; }).map(function (item) { return item.producer; }).filter(function (name, index, items) { return items.indexOf(name) === index; }).sort();
-        select.innerHTML = ''; select.add(new Option('Todos los productores', '__all__'));
-        producers.forEach(function (name) { select.add(new Option(name.replace(/\b\w/g, function (letter) { return letter.toUpperCase(); }), name)); });
+        var client = document.getElementById('ck-client').value, select = document.getElementById('ck-producer'), previous = select.value, period = filterPeriod();
+        var producers = data.series.filter(function (item) { return (client === '__all__' || item.client === client) && !isInternalSelfAssociation(item, client) && hasMovement(item, period.year, period.indexes); }).map(function (item) { return item.producer; }).filter(function (name, index, items) { return items.indexOf(name) === index; }).sort();
+        select.innerHTML = ''; select.add(new Option('TODOS LOS PRODUCTORES', '__all__'));
+        producers.forEach(function (name) { select.add(new Option(name.toUpperCase(), name)); });
         select.value = producers.indexOf(previous) >= 0 ? previous : '__all__';
     }
     function seriesValues(data, metric, client, producer, year, indexes) {
@@ -77,9 +87,10 @@
     window.initCajasKilosDashboard = function () {
         var data = payload(), from = document.getElementById('ck-from'), to = document.getElementById('ck-to'); data.months.forEach(function (month, index) { from.add(new Option(month, index)); to.add(new Option(month, index)); });
         var latest = String(Math.max.apply(null, data.years)), latestMonth = 0; for (var index = 0; index < data.months.length; index += 1) if (data.series.some(function (item) { return item.cajas[latest][index] !== null; })) latestMonth = index;
-        from.value = 0; to.value = latestMonth; syncProducerOptions(data);
+        from.value = 0; to.value = latestMonth; syncClientOptions(data); syncProducerOptions(data);
         document.getElementById('ck-client').addEventListener('change', function () { syncProducerOptions(data); refresh(data); });
-        document.querySelectorAll('#ck-metric, #ck-producer, #ck-years input, #ck-from, #ck-to').forEach(function (control) { control.addEventListener('change', function () { refresh(data); }); });
-        document.getElementById('ck-reset').addEventListener('click', function () { document.getElementById('ck-metric').value = 'cajas'; document.getElementById('ck-client').value = '__all__'; syncProducerOptions(data); document.getElementById('ck-producer').value = '__all__'; document.querySelectorAll('#ck-years input').forEach(function (input) { input.checked = true; }); from.value = 0; to.value = latestMonth; refresh(data); }); refresh(data);
+        document.querySelectorAll('#ck-years input, #ck-from, #ck-to').forEach(function (control) { control.addEventListener('change', function () { syncClientOptions(data); syncProducerOptions(data); refresh(data); }); });
+        document.querySelectorAll('#ck-metric, #ck-producer').forEach(function (control) { control.addEventListener('change', function () { refresh(data); }); });
+        document.getElementById('ck-reset').addEventListener('click', function () { document.getElementById('ck-metric').value = 'cajas'; document.querySelectorAll('#ck-years input').forEach(function (input) { input.checked = true; }); from.value = 0; to.value = latestMonth; document.getElementById('ck-client').value = '__all__'; syncClientOptions(data); syncProducerOptions(data); document.getElementById('ck-producer').value = '__all__'; refresh(data); }); refresh(data);
     };
 }());
