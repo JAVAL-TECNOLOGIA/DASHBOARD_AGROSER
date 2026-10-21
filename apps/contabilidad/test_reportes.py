@@ -212,7 +212,7 @@ class ContabilidadReportesViewTests(TestCase):
         response = self.client.get(reverse('contabilidad_reporte_detalle', args=['costos']))
 
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Distribución y asiento de costos')
+        self.assertContains(response, 'Detalle general')
         data = response.context['costos_data']
         self.assertEqual(len(data['records']), 2)
         self.assertEqual(data['records'][0]['detail_count'], 104)
