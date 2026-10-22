@@ -5,6 +5,9 @@
     var monthlyChart;
     var annualChart;
     var customerChart;
+    var currentView;
+    var currentYears = [];
+    var currentIndexes = [];
 
     function payload() { return JSON.parse(document.getElementById('ventas-data').textContent); }
     function money(value, compact) {
@@ -91,6 +94,20 @@
         document.getElementById('sales-exempt').textContent = money(exempt, true);
         document.getElementById('sales-exempt-detail').textContent = selectedPeriod;
     }
+    function showBreakdown(kind) {
+        var labels = { affected: 'Venta afectada', exported: 'Venta de exportación', exempt: 'Venta exonerada' };
+        var totals = {};
+        currentView.sales.forEach(function (row) {
+            if (currentYears.indexOf(String(row.year)) < 0 || currentIndexes.indexOf(row.month) < 0 || !row[kind]) return;
+            totals[row.customer] = (totals[row.customer] || 0) + row[kind];
+        });
+        var rows = Object.keys(totals).map(function (customer) { return { customer: customer, total: totals[customer] }; }).sort(function (a, b) { return b.total - a.total; });
+        document.getElementById('sales-breakdown-title').textContent = 'Razones sociales · ' + labels[kind];
+        document.getElementById('sales-breakdown-period').textContent = (currentYears.length === 1 ? currentYears[0] : currentYears[0] + ' a ' + currentYears[currentYears.length - 1]) + ' · ' + currentView.months[currentIndexes[0]] + ' a ' + currentView.months[currentIndexes[currentIndexes.length - 1]];
+        document.getElementById('sales-breakdown-body').innerHTML = rows.length ? rows.map(function (row) { return '<tr><td>' + row.customer + '</td><td class="text-right">' + money(row.total, false) + '</td></tr>'; }).join('') : '<tr><td colspan="2" class="text-center text-muted py-4">No hay razones sociales para esta venta en el periodo seleccionado.</td></tr>';
+        document.getElementById('sales-breakdown-total').textContent = money(rows.reduce(function (total, row) { return total + row.total; }, 0), false);
+        $('#sales-breakdown-modal').modal('show');
+    }
     function updateCustomerChart(data, years, indexes) {
         var totals = {};
         data.sales.forEach(function (row) { if (years.indexOf(String(row.year)) >= 0 && indexes.indexOf(row.month) >= 0) totals[row.customer] = (totals[row.customer] || 0) + row.total; });
@@ -143,6 +160,7 @@
         data = filteredData(data);
         var dataYears = years.filter(function (year) { return yearValues(data, year, indexes).some(function (value) { return value !== null; }); });
         var activeYears = dataYears.length ? dataYears : years;
+        currentView = data; currentYears = activeYears; currentIndexes = indexes;
         document.getElementById('sales-trend-subtitle').textContent = data.months[indexes[0]] + ' a ' + data.months[indexes[indexes.length - 1]] + ' · importes en soles';
         updateKpis(data, activeYears, indexes); updateCharts(data, activeYears, indexes); updateCustomerChart(data, activeYears, indexes); updateTable(data, years, indexes); updateInsights(data, activeYears, indexes);
     }
@@ -156,6 +174,11 @@
         from.value = 0; to.value = latestMonth;
         document.querySelectorAll('#sales-year-options input, #sales-customer, #sales-month-from, #sales-month-to').forEach(function (control) { control.addEventListener('change', function () { refresh(data); }); });
         document.getElementById('reset-sales').addEventListener('click', function () { document.querySelectorAll('#sales-year-options input').forEach(function (input) { input.checked = true; }); document.getElementById('sales-customer').value='__all__'; from.value = 0; to.value = latestMonth; refresh(data); });
+        document.querySelectorAll('.sales-kpi-breakdown').forEach(function (card) {
+            function openDetail() { showBreakdown(card.getAttribute('data-sales-kind')); }
+            card.addEventListener('click', openDetail);
+            card.addEventListener('keydown', function (event) { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openDetail(); } });
+        });
         refresh(data);
     };
 }());

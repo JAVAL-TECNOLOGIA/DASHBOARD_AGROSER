@@ -167,10 +167,11 @@ class ContabilidadReportesViewTests(TestCase):
         self.assertEqual(data['years'], [2023, 2024, 2025, 2026])
         self.assertEqual(len(data['months']), 12)
         self.assertNotContains(response, 'ventas.xlsx')
-        self.assertAlmostEqual(data['data']['2026'][7], 49908.50, places=2)
+        self.assertAlmostEqual(data['data']['2026'][7], 42295.34, places=2)
         self.assertAlmostEqual(data['data_usd']['2026'][7], 14818.44, places=2)
         self.assertEqual(data['customers'], ['AGROEXPOR SOL', 'GOURMET FARMS'])
         self.assertAlmostEqual(sum(row['affected'] for row in data['sales']), 42295.34, places=2)
+        self.assertAlmostEqual(sum(row['total'] for row in data['sales']), 42295.34, places=2)
 
     @patch('apps.contabilidad.views.get_boxes_and_kilos_report')
     def test_boxes_and_kilos_report_uses_nisira_data(self, report_mock):

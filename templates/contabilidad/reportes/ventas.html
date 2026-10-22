@@ -37,15 +37,27 @@
         <div class="col-xl col-md-6 mb-4"><div class="card sales-kpi sales-kpi-usd h-100 border-0 shadow-sm"><div class="card-body">
             <div class="sales-kpi-title">Total en dólares</div><div class="sales-kpi-value" id="sales-total-usd">—</div><div class="sales-kpi-detail" id="sales-total-usd-detail">—</div>
         </div></div></div>
-        <div class="col-xl col-md-6 mb-4"><div class="card sales-kpi h-100 border-0 shadow-sm"><div class="card-body">
+        <div class="col-xl col-md-6 mb-4"><div class="card sales-kpi sales-kpi-breakdown h-100 border-0 shadow-sm" data-sales-kind="affected" role="button" tabindex="0"><div class="card-body">
             <div class="sales-kpi-title">Venta afectada</div><div class="sales-kpi-value" id="sales-affected">—</div><div class="sales-kpi-detail" id="sales-affected-detail">—</div>
         </div></div></div>
-        <div class="col-xl col-md-6 mb-4"><div class="card sales-kpi h-100 border-0 shadow-sm"><div class="card-body">
+        <div class="col-xl col-md-6 mb-4"><div class="card sales-kpi sales-kpi-breakdown h-100 border-0 shadow-sm" data-sales-kind="exported" role="button" tabindex="0"><div class="card-body">
             <div class="sales-kpi-title">Venta exportación</div><div class="sales-kpi-value" id="sales-exported">—</div><div class="sales-kpi-detail" id="sales-exported-detail">—</div>
         </div></div></div>
-        <div class="col-xl col-md-6 mb-4"><div class="card sales-kpi h-100 border-0 shadow-sm"><div class="card-body">
+        <div class="col-xl col-md-6 mb-4"><div class="card sales-kpi sales-kpi-breakdown h-100 border-0 shadow-sm" data-sales-kind="exempt" role="button" tabindex="0"><div class="card-body">
             <div class="sales-kpi-title">Venta exonerada</div><div class="sales-kpi-value" id="sales-exempt">—</div><div class="sales-kpi-detail" id="sales-exempt-detail">—</div>
         </div></div></div>
+    </div>
+
+    <div class="modal fade" id="sales-breakdown-modal" tabindex="-1" role="dialog" aria-labelledby="sales-breakdown-title" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable" role="document">
+            <div class="modal-content sales-breakdown-content">
+                <div class="modal-header">
+                    <div><h4 class="modal-title" id="sales-breakdown-title">Razones sociales</h4><p class="text-muted mb-0" id="sales-breakdown-period"></p></div>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
+                </div>
+                <div class="modal-body p-0"><div class="table-responsive"><table class="table sales-table mb-0"><thead><tr><th>Razón social</th><th class="text-right">Importe</th></tr></thead><tbody id="sales-breakdown-body"></tbody><tfoot><tr><th>Total</th><th class="text-right" id="sales-breakdown-total">S/ 0.00</th></tr></tfoot></table></div></div>
+            </div>
+        </div>
     </div>
 
     <div class="card sales-chart-card border-0 shadow-sm mb-4">
@@ -86,6 +98,7 @@
     .sales-year-chip span { background: #edf1f4; border: 1px solid #dce3e8; border-radius: 7px; color: #52606d; cursor: pointer; display: inline-block; font-weight: 700; padding: .52rem .85rem; }
     .sales-year-chip input:checked + span { background: var(--sales-navy); border-color: var(--sales-navy); color: #fff; }
     .sales-kpi { border-top: 4px solid var(--sales-green) !important; }.sales-kpi-usd { border-top-color: #278ba8 !important; }.sales-kpi-title { color: #768390; font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+    .sales-kpi-breakdown { cursor: pointer; transition: box-shadow .2s ease, transform .2s ease; }.sales-kpi-breakdown:hover, .sales-kpi-breakdown:focus { box-shadow: 0 .65rem 1.3rem rgba(23,50,77,.16) !important; outline: 0; transform: translateY(-2px); }.sales-kpi-breakdown .sales-kpi-title:after { color: var(--sales-green); content: '  Ver razones sociales'; font-size: .62rem; }
     .sales-kpi-value { color: #172b3a; font-size: 1.75rem; font-weight: 700; line-height: 1.2; margin: .55rem 0 .4rem; }.sales-kpi-text { font-size: 1.15rem; }
     .sales-kpi-detail { color: #87929c; font-size: .82rem; }.sales-positive { color: #078447; }.sales-negative { color: #c43d32; }
     .sales-chart-card, .sales-insight-card { min-height: 390px; }.sales-chart-card h4, .sales-insight-card h4 { color: #233746; font-size: 1rem; font-weight: 700; }
@@ -94,5 +107,6 @@
     .sales-insights li:last-child { border-bottom: 0; }.sales-insights li:before { background: #dff3ea; border-radius: 50%; color: var(--sales-green); content: '\f00c'; font-family: 'Font Awesome 5 Free'; font-size: .65rem; font-weight: 900; height: 20px; left: 0; line-height: 20px; position: absolute; text-align: center; top: 1.05rem; width: 20px; }
     .sales-table thead th { background: #f6f8f9; border-top: 0; color: #64727e; font-size: .72rem; letter-spacing: .04em; position: sticky; text-transform: uppercase; top: 0; white-space: nowrap; }
     .sales-table td { color: #344553; font-size: .84rem; white-space: nowrap; }.sales-table-wrap { max-height: 480px; }
+    .sales-breakdown-content { border: 0; border-radius: 12px; overflow: hidden; }.sales-breakdown-content .modal-header { align-items: flex-start; border-bottom: 1px solid #edf0f2; }.sales-breakdown-content tfoot th { background: #f6f8f9; color: #17324d; }
     @media (max-width: 767px) { .sales-kpi-value { font-size: 1.4rem; }.sales-chart-wrap { height: 245px; } }
 </style>

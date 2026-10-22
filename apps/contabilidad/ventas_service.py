@@ -38,6 +38,10 @@ def build_sales_report(rows, current_year=None):
         affected = float(row[4] or 0) if len(row) > 4 else 0.0
         exported = float(row[5] or 0) if len(row) > 5 else 0.0
         exempt = float(row[6] or 0) if len(row) > 6 else 0.0
+        # El detalle mensual y anual debe mostrar la venta neta. El campo TOTAL
+        # de NISIRA incluye el IGV de la venta afecta, por eso acumulamos las
+        # bases imponibles que componen los cards del reporte.
+        net_total = affected + exported + exempt
         year = str(sale_date.year)
         if year not in report['data']:
             continue
@@ -45,12 +49,12 @@ def build_sales_report(rows, current_year=None):
         if report['data'][year][month_index] is None:
             report['data'][year][month_index] = 0.0
             report['data_usd'][year][month_index] = 0.0
-        report['data'][year][month_index] += float(total_pen or 0)
+        report['data'][year][month_index] += net_total
         report['data_usd'][year][month_index] += float(total_usd or 0)
         key = (int(year), month_index, customer)
         if key not in sales:
             sales[key] = {'year': int(year), 'month': month_index, 'customer': customer, 'total': 0.0, 'total_usd': 0.0, 'affected': 0.0, 'exported': 0.0, 'exempt': 0.0}
-        sales[key]['total'] += float(total_pen or 0)
+        sales[key]['total'] += net_total
         sales[key]['total_usd'] += float(total_usd or 0)
         sales[key]['affected'] += affected
         sales[key]['exported'] += exported
