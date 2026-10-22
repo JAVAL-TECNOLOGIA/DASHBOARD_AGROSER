@@ -121,7 +121,6 @@ INSTALLED_APPS = [
     'apps.SST',
     'apps.boletas',
     'apps.contratos',
-    'apps.tic_assets',
 
 ]
 

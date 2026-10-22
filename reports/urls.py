@@ -58,7 +58,6 @@ urlpatterns = [
     path('sst/', include('apps.SST.urls')),
     path('boletas/', include('apps.boletas.urls')),
     path('contratos/', include('apps.contratos.urls')),
-    path('', include('apps.tic_assets.urls')),
 
 ]
 

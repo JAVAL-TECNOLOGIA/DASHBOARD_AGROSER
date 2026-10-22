@@ -1417,13 +1417,6 @@
                             </a>
 
                             <ul class="sub-menu">
-                                {% if perms.TIC.tic_item %}
-                                <li>
-                                    <a href="{% url 'tic_assets:dashboard' %}">
-                                        <i class="bi bi-box-seam"></i> Asignaciones
-                                    </a>
-                                </li>
-                                {% endif %}
                                 
                                 {% if perms.TIC.tic_item or perms.TIC.tic_costos %}
                                 <li class="has-sub">
