@@ -21,8 +21,7 @@
         if (compact && Math.abs(value) >= 1000) return (value / 1000).toLocaleString('es-PE', { minimumFractionDigits: 0, maximumFractionDigits: 1 }) + ' mil' + suffix;
         return Number(value).toLocaleString('es-PE', { minimumFractionDigits: metric === 'cajas' ? 0 : 2, maximumFractionDigits: metric === 'cajas' ? 0 : 2 }) + suffix;
     }
-    function isInternalSelfAssociation(item, client) { return client === 'AGROSERVICE' && item.client === 'AGROSERVICE' && item.producer === 'AGROSERVICE'; }
-    function filtered(data, client, producer) { return data.series.filter(function (item) { return (client === '__all__' || item.client === client) && (producer === '__all__' || item.producer === producer) && !isInternalSelfAssociation(item, client); }); }
+    function filtered(data, client, producer) { return data.series.filter(function (item) { return (client === '__all__' || item.client === client) && (producer === '__all__' || item.producer === producer); }); }
     function hasMovement(item, year, indexes) { return indexes.some(function (month) { return Number(item.cajas[year][month] || 0) > 0; }); }
     function filterPeriod() { var years = selectedYears(); return { year: years[years.length - 1], indexes: monthIndexes() }; }
     function syncClientOptions(data) {
@@ -34,7 +33,7 @@
     }
     function syncProducerOptions(data) {
         var client = document.getElementById('ck-client').value, select = document.getElementById('ck-producer'), previous = select.value, period = filterPeriod();
-        var producers = data.series.filter(function (item) { return (client === '__all__' || item.client === client) && !isInternalSelfAssociation(item, client) && hasMovement(item, period.year, period.indexes); }).map(function (item) { return item.producer; }).filter(function (name, index, items) { return items.indexOf(name) === index; }).sort();
+        var producers = data.series.filter(function (item) { return (client === '__all__' || item.client === client) && hasMovement(item, period.year, period.indexes); }).map(function (item) { return item.producer; }).filter(function (name, index, items) { return items.indexOf(name) === index; }).sort();
         select.innerHTML = ''; select.add(new Option('TODOS LOS PRODUCTORES', '__all__'));
         producers.forEach(function (name) { select.add(new Option(name.toUpperCase(), name)); });
         select.value = producers.indexOf(previous) >= 0 ? previous : '__all__';
