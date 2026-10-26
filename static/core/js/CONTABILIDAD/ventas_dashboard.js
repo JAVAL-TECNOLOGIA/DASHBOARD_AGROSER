@@ -110,12 +110,27 @@
     }
     function updateCustomerChart(data, years, indexes) {
         var totals = {};
-        data.sales.forEach(function (row) { if (years.indexOf(String(row.year)) >= 0 && indexes.indexOf(row.month) >= 0) totals[row.customer] = (totals[row.customer] || 0) + row.total; });
-        var ranking = Object.keys(totals).map(function (customer) { return { customer: customer, total: totals[customer] }; }).sort(function (a, b) { return b.total - a.total; }).slice(0, 12);
+        var totalsByYear = {};
+        years.forEach(function (year) { totalsByYear[year] = {}; });
+        data.sales.forEach(function (row) {
+            var year = String(row.year);
+            if (years.indexOf(year) < 0 || indexes.indexOf(row.month) < 0) return;
+            totals[row.customer] = (totals[row.customer] || 0) + row.total;
+            totalsByYear[year][row.customer] = (totalsByYear[year][row.customer] || 0) + row.total;
+        });
+        var customers = Object.keys(totals).sort(function (a, b) { return totals[b] - totals[a]; }).slice(0, 12);
+        var datasets = years.map(function (year, index) {
+            return {
+                label: year,
+                data: customers.map(function (customer) { return totalsByYear[year][customer] || 0; }),
+                backgroundColor: colors[index % colors.length],
+                borderWidth: 0
+            };
+        });
         var yearLabel = years.length === 1 ? years[0] : years.join(', ');
         document.getElementById('sales-customer-chart-subtitle').textContent = 'Acumulado ' + yearLabel + ' · ' + data.months[indexes[0]] + ' a ' + data.months[indexes[indexes.length - 1]];
         if (customerChart) customerChart.destroy();
-        customerChart = new Chart(document.getElementById('sales-customer-chart'), { type: 'horizontalBar', data: { labels: ranking.map(function (item) { return item.customer; }), datasets: [{ data: ranking.map(function (item) { return item.total; }), backgroundColor: '#0b6b45' }] }, options: { maintainAspectRatio: false, responsive: true, legend: { display: false }, tooltips: { callbacks: { label: function (item) { return money(Number(item.xLabel), false); } } }, scales: { xAxes: [{ ticks: { beginAtZero: true, callback: function (value) { return money(Number(value), true); } }, gridLines: { color: '#edf1f3' } }], yAxes: [{ gridLines: { display: false } }] } } });
+        customerChart = new Chart(document.getElementById('sales-customer-chart'), { type: 'horizontalBar', data: { labels: customers, datasets: datasets }, options: { maintainAspectRatio: false, responsive: true, legend: { display: true, position: 'bottom', labels: { boxWidth: 12, padding: 18, fontColor: '#52606d' } }, tooltips: { mode: 'index', intersect: false, callbacks: { label: function (item, chart) { return chart.datasets[item.datasetIndex].label + ': ' + money(Number(item.xLabel), false); } } }, scales: { xAxes: [{ ticks: { beginAtZero: true, callback: function (value) { return money(Number(value), true); } }, gridLines: { color: '#edf1f3' } }], yAxes: [{ gridLines: { display: false } }] } } });
     }
     function updateCharts(data, years, indexes) {
         var labels = indexes.map(function (index) { return data.months[index]; });
