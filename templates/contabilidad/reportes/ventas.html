@@ -62,7 +62,7 @@
 
     <div class="card sales-chart-card border-0 shadow-sm mb-4">
         <div class="card-header bg-white border-0 pt-4 px-4"><h4 class="mb-1">Ventas por razón social</h4><p class="text-muted mb-0" id="sales-customer-chart-subtitle">Acumulado del periodo seleccionado</p></div>
-        <div class="card-body px-4"><div class="sales-customer-chart-wrap"><canvas id="sales-customer-chart"></canvas></div></div>
+        <div class="card-body px-4"><div class="sales-customer-chart-wrap"><canvas id="sales-customer-chart"></canvas><div id="sales-customer-tooltip" class="sales-customer-tooltip" role="status"></div></div></div>
     </div>
 
     <div class="row">
@@ -103,6 +103,8 @@
     .sales-kpi-detail { color: #87929c; font-size: .82rem; }.sales-positive { color: #078447; }.sales-negative { color: #c43d32; }
     .sales-chart-card, .sales-insight-card { min-height: 390px; }.sales-chart-card h4, .sales-insight-card h4 { color: #233746; font-size: 1rem; font-weight: 700; }
     .sales-chart-wrap { height: 285px; position: relative; }.sales-customer-chart-wrap { height: 340px; position: relative; }.sales-insights { list-style: none; margin: 0; padding: 0; }
+    .sales-customer-tooltip { position: absolute; z-index: 5; display: none; width: 270px; padding: 12px 14px; border-radius: 8px; background: rgba(20, 35, 48, .96); color: #fff; font-size: .78rem; line-height: 1.55; white-space: pre-line; pointer-events: none; box-shadow: 0 8px 24px rgba(0, 0, 0, .2); }
+    .sales-customer-tooltip.is-visible { display: block; }
     .sales-insights li { border-bottom: 1px solid #edf0f2; color: #4d5b66; line-height: 1.45; padding: 1rem 0 1rem 2rem; position: relative; }
     .sales-insights li:last-child { border-bottom: 0; }.sales-insights li:before { background: #dff3ea; border-radius: 50%; color: var(--sales-green); content: '\f00c'; font-family: 'Font Awesome 5 Free'; font-size: .65rem; font-weight: 900; height: 20px; left: 0; line-height: 20px; position: absolute; text-align: center; top: 1.05rem; width: 20px; }
     .sales-table thead th { background: #f6f8f9; border-top: 0; color: #64727e; font-size: .72rem; letter-spacing: .04em; position: sticky; text-transform: uppercase; top: 0; white-space: nowrap; }

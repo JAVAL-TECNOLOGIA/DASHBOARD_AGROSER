@@ -131,7 +131,9 @@
         var subtitle = document.getElementById('sales-customer-chart-subtitle');
         if (subtitle) subtitle.textContent = 'Acumulado ' + yearLabel + ' · ' + data.months[indexes[0]] + ' a ' + data.months[indexes[indexes.length - 1]];
         if (customerChart) customerChart.destroy();
-        customerChart = new Chart(document.getElementById('sales-customer-chart'), {
+        var customerCanvas = document.getElementById('sales-customer-chart');
+        var customerTooltip = document.getElementById('sales-customer-tooltip');
+        customerChart = new Chart(customerCanvas, {
             type: 'horizontalBar',
             data: { labels: customers, datasets: datasets },
             options: {
@@ -140,7 +142,7 @@
                 hover: { mode: 'index', intersect: false },
                 legend: { display: true, position: 'bottom', labels: { boxWidth: 12, padding: 18, fontColor: '#52606d' } },
                 tooltips: {
-                    enabled: true,
+                    enabled: false,
                     mode: 'index',
                     intersect: false,
                     displayColors: true,
@@ -157,6 +159,27 @@
                 scales: { xAxes: [{ ticks: { beginAtZero: true, callback: function (value) { return money(Number(value), true); } }, gridLines: { color: '#edf1f3' } }], yAxes: [{ gridLines: { display: false } }] }
             }
         });
+        customerCanvas.onmousemove = function (event) {
+            var points = customerChart.getElementsAtEvent(event);
+            if (!points.length || !customerTooltip) {
+                if (customerTooltip) customerTooltip.classList.remove('is-visible');
+                return;
+            }
+            var customerIndex = points[0]._index;
+            var lines = [customers[customerIndex]];
+            var total = 0;
+            datasets.forEach(function (dataset) {
+                var value = Number(dataset.data[customerIndex] || 0);
+                total += value;
+                lines.push('Año ' + dataset.label + ': ' + money(value, false));
+            });
+            lines.push('Total de ventas: ' + money(total, false));
+            customerTooltip.textContent = lines.join('\n');
+            customerTooltip.style.left = Math.min(event.offsetX + 18, customerCanvas.clientWidth - 285) + 'px';
+            customerTooltip.style.top = Math.max(event.offsetY - 45, 8) + 'px';
+            customerTooltip.classList.add('is-visible');
+        };
+        customerCanvas.onmouseleave = function () { if (customerTooltip) customerTooltip.classList.remove('is-visible'); };
     }
     function updateCharts(data, years, indexes) {
         var labels = indexes.map(function (index) { return data.months[index]; });
