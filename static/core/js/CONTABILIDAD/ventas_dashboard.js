@@ -131,7 +131,27 @@
         var subtitle = document.getElementById('sales-customer-chart-subtitle');
         if (subtitle) subtitle.textContent = 'Acumulado ' + yearLabel + ' · ' + data.months[indexes[0]] + ' a ' + data.months[indexes[indexes.length - 1]];
         if (customerChart) customerChart.destroy();
-        customerChart = new Chart(document.getElementById('sales-customer-chart'), { type: 'horizontalBar', data: { labels: customers, datasets: datasets }, options: { maintainAspectRatio: false, responsive: true, legend: { display: true, position: 'bottom', labels: { boxWidth: 12, padding: 18, fontColor: '#52606d' } }, tooltips: { mode: 'index', intersect: false, callbacks: { label: function (item, chart) { return chart.datasets[item.datasetIndex].label + ': ' + money(Number(item.xLabel), false); } } }, scales: { xAxes: [{ ticks: { beginAtZero: true, callback: function (value) { return money(Number(value), true); } }, gridLines: { color: '#edf1f3' } }], yAxes: [{ gridLines: { display: false } }] } } });
+        customerChart = new Chart(document.getElementById('sales-customer-chart'), {
+            type: 'horizontalBar',
+            data: { labels: customers, datasets: datasets },
+            options: {
+                maintainAspectRatio: false,
+                responsive: true,
+                hover: { mode: 'nearest', intersect: true },
+                legend: { display: true, position: 'bottom', labels: { boxWidth: 12, padding: 18, fontColor: '#52606d' } },
+                tooltips: {
+                    enabled: true,
+                    mode: 'nearest',
+                    intersect: true,
+                    displayColors: true,
+                    callbacks: {
+                        title: function (items, chart) { return chart.labels[items[0].index]; },
+                        label: function (item, chart) { return 'Año ' + chart.datasets[item.datasetIndex].label + ' · Venta: ' + money(Number(item.xLabel), false); }
+                    }
+                },
+                scales: { xAxes: [{ ticks: { beginAtZero: true, callback: function (value) { return money(Number(value), true); } }, gridLines: { color: '#edf1f3' } }], yAxes: [{ gridLines: { display: false } }] }
+            }
+        });
     }
     function updateCharts(data, years, indexes) {
         var labels = indexes.map(function (index) { return data.months[index]; });
