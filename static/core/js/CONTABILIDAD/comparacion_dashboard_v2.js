@@ -34,7 +34,7 @@
     }
     function tableForYear(data, year, monthIndexes) {
         var head = '<thead><tr><th>Descripción</th>' + monthIndexes.map(function (index) { return '<th class="text-right">' + data.months[index].slice(0, 3) + '-' + String(year).slice(2) + '</th>'; }).join('') + '<th class="text-right">Total</th></tr></thead>';
-        var body = '<tbody>' + data.metrics.map(function (metric) { var values = monthIndexes.map(function (index) { return Number(metric.values[year][index] || 0); }); var resultRow = metric.key === 'result_pen' || metric.key === 'result_usd'; return '<tr class="' + (resultRow ? 'result-row' : '') + '"><td>' + metric.label + '</td>' + values.map(function (value) { return '<td class="text-right ' + (value < 0 ? 'negative' : '') + '">' + tableValue(value, metric.format) + '</td>'; }).join('') + '<td class="text-right ' + (sum(values) < 0 ? 'negative' : '') + '">' + tableValue(sum(values), metric.format) + '</td></tr>'; }).join('') + '</tbody>';
+        var body = '<tbody>' + data.metrics.map(function (metric) { var values = monthIndexes.map(function (index) { return Number(metric.values[year][index] || 0); }); var resultRow = metric.key === 'result_pen' || metric.key === 'result_usd'; return '<tr data-metric="' + metric.key + '" class="' + (resultRow ? 'result-row' : '') + '"><td>' + metric.label + '</td>' + values.map(function (value) { return '<td class="text-right ' + (value < 0 ? 'negative' : '') + '">' + tableValue(value, metric.format) + '</td>'; }).join('') + '<td class="text-right ' + (sum(values) < 0 ? 'negative' : '') + '">' + tableValue(sum(values), metric.format) + '</td></tr>'; }).join('') + '</tbody>';
         return '<div class="table-responsive comparison-table-wrap"><table class="table comparison-table mb-0">' + head + body + '</table></div>';
     }
     function renderDetails(data, years, monthIndexes) {
@@ -42,6 +42,19 @@
         tabs.innerHTML = years.map(function (year, index) { return '<li class="nav-item"><button type="button" class="nav-link ' + (index === 0 ? 'active' : '') + '" data-year="' + year + '">Detalle ' + year + '</button></li>'; }).join('');
         content.innerHTML = years.map(function (year, index) { return '<div class="comparison-detail-pane ' + (index === 0 ? 'active' : '') + '" data-year="' + year + '">' + tableForYear(data, year, monthIndexes) + '</div>'; }).join('');
         tabs.querySelectorAll('button').forEach(function (button) { button.addEventListener('click', function () { tabs.querySelectorAll('button').forEach(function (item) { item.classList.toggle('active', item === button); }); content.querySelectorAll('.comparison-detail-pane').forEach(function (pane) { pane.classList.toggle('active', pane.getAttribute('data-year') === button.getAttribute('data-year')); }); }); });
+        var tooltip = document.getElementById('comparison-row-tooltip'), metrics = metricMap(data);
+        function positionTooltip(event) { tooltip.style.left = Math.min(event.clientX + 18, window.innerWidth - 350) + 'px'; tooltip.style.top = Math.min(Math.max(event.clientY - 35, 8), window.innerHeight - 190) + 'px'; }
+        content.querySelectorAll('tr[data-metric] td:first-child').forEach(function (cell) {
+            cell.addEventListener('mouseenter', function (event) {
+                var metric = metrics[cell.parentNode.getAttribute('data-metric')], grandTotal = 0;
+                var lines = [metric.label];
+                years.forEach(function (year) { var yearlyTotal = sum(valuesFor(metrics, metric.key, year, monthIndexes)); grandTotal += yearlyTotal; lines.push('Año ' + year + ': ' + format(yearlyTotal, metric.format, false)); });
+                lines.push('Total seleccionado: ' + format(grandTotal, metric.format, false));
+                tooltip.textContent = lines.join('\n'); tooltip.classList.add('is-visible'); positionTooltip(event);
+            });
+            cell.addEventListener('mousemove', positionTooltip);
+            cell.addEventListener('mouseleave', function () { tooltip.classList.remove('is-visible'); });
+        });
     }
     function refresh(data) {
         var metrics = metricMap(data), years = selectedYears(), monthIndexes = indexes();
