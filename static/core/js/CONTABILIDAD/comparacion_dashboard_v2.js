@@ -34,7 +34,7 @@
     }
     function tableForYear(data, year, monthIndexes) {
         var head = '<thead><tr><th>Descripción</th>' + monthIndexes.map(function (index) { return '<th class="text-right">' + data.months[index].slice(0, 3) + '-' + String(year).slice(2) + '</th>'; }).join('') + '<th class="text-right">Total</th></tr></thead>';
-        var body = '<tbody>' + data.metrics.map(function (metric) { var values = monthIndexes.map(function (index) { return Number(metric.values[year][index] || 0); }); var resultRow = metric.key === 'result_pen' || metric.key === 'result_usd'; return '<tr data-metric="' + metric.key + '" class="' + (resultRow ? 'result-row' : '') + '"><td>' + metric.label + '</td>' + values.map(function (value) { return '<td class="text-right ' + (value < 0 ? 'negative' : '') + '">' + tableValue(value, metric.format) + '</td>'; }).join('') + '<td class="text-right ' + (sum(values) < 0 ? 'negative' : '') + '">' + tableValue(sum(values), metric.format) + '</td></tr>'; }).join('') + '</tbody>';
+        var body = '<tbody>' + data.metrics.map(function (metric) { var values = monthIndexes.map(function (index) { return Number(metric.values[year][index] || 0); }); var resultRow = metric.key === 'result_pen' || metric.key === 'result_usd'; return '<tr data-metric="' + metric.key + '" class="' + (resultRow ? 'result-row' : '') + '"><td>' + metric.label + '</td>' + values.map(function (value, position) { return '<td data-month="' + monthIndexes[position] + '" class="text-right comparison-month-value ' + (value < 0 ? 'negative' : '') + '">' + tableValue(value, metric.format) + '</td>'; }).join('') + '<td class="text-right ' + (sum(values) < 0 ? 'negative' : '') + '">' + tableValue(sum(values), metric.format) + '</td></tr>'; }).join('') + '</tbody>';
         return '<div class="table-responsive comparison-table-wrap"><table class="table comparison-table mb-0">' + head + body + '</table></div>';
     }
     function renderDetails(data, years, monthIndexes) {
@@ -50,6 +50,17 @@
                 var lines = [metric.label];
                 years.forEach(function (year) { var yearlyTotal = sum(valuesFor(metrics, metric.key, year, monthIndexes)); grandTotal += yearlyTotal; lines.push('Año ' + year + ': ' + format(yearlyTotal, metric.format, false)); });
                 lines.push('Total seleccionado: ' + format(grandTotal, metric.format, false));
+                tooltip.textContent = lines.join('\n'); tooltip.classList.add('is-visible'); positionTooltip(event);
+            });
+            cell.addEventListener('mousemove', positionTooltip);
+            cell.addEventListener('mouseleave', function () { tooltip.classList.remove('is-visible'); });
+        });
+        content.querySelectorAll('tr[data-metric] td[data-month]').forEach(function (cell) {
+            cell.addEventListener('mouseenter', function (event) {
+                var metric = metrics[cell.parentNode.getAttribute('data-metric')], monthIndex = Number(cell.getAttribute('data-month')), monthTotal = 0;
+                var lines = [metric.label + ' · ' + data.months[monthIndex]];
+                years.forEach(function (year) { var value = Number(metric.values[year][monthIndex] || 0); monthTotal += value; lines.push('Año ' + year + ': ' + format(value, metric.format, false)); });
+                lines.push('Total del mes: ' + format(monthTotal, metric.format, false));
                 tooltip.textContent = lines.join('\n'); tooltip.classList.add('is-visible'); positionTooltip(event);
             });
             cell.addEventListener('mousemove', positionTooltip);
