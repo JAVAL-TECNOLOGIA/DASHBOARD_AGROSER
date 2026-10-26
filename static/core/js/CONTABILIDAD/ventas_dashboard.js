@@ -128,7 +128,8 @@
             };
         });
         var yearLabel = years.length === 1 ? years[0] : years.join(', ');
-        document.getElementById('sales-customer-chart-subtitle').textContent = 'Acumulado ' + yearLabel + ' · ' + data.months[indexes[0]] + ' a ' + data.months[indexes[indexes.length - 1]];
+        var subtitle = document.getElementById('sales-customer-chart-subtitle');
+        if (subtitle) subtitle.textContent = 'Acumulado ' + yearLabel + ' · ' + data.months[indexes[0]] + ' a ' + data.months[indexes[indexes.length - 1]];
         if (customerChart) customerChart.destroy();
         customerChart = new Chart(document.getElementById('sales-customer-chart'), { type: 'horizontalBar', data: { labels: customers, datasets: datasets }, options: { maintainAspectRatio: false, responsive: true, legend: { display: true, position: 'bottom', labels: { boxWidth: 12, padding: 18, fontColor: '#52606d' } }, tooltips: { mode: 'index', intersect: false, callbacks: { label: function (item, chart) { return chart.datasets[item.datasetIndex].label + ': ' + money(Number(item.xLabel), false); } } }, scales: { xAxes: [{ ticks: { beginAtZero: true, callback: function (value) { return money(Number(value), true); } }, gridLines: { color: '#edf1f3' } }], yAxes: [{ gridLines: { display: false } }] } } });
     }
