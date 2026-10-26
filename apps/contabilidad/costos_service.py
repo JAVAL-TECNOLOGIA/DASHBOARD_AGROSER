@@ -6,7 +6,7 @@ from django.db import connections
 
 MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
 FIRST_REPORT_YEAR = 2023
-CACHE_KEY = 'contabilidad:costos:nisira:v4'
+CACHE_KEY = 'contabilidad:costos:nisira:v5'
 CACHE_SECONDS = 10 * 60
 
 COSTS_SQL = """
@@ -50,14 +50,31 @@ COST_DETAILS_SQL = """
       AND D.IDCLASECCOSTO IN ('0007', '0008')
       AND D.PERIODO BETWEEN %s AND %s
     GROUP BY D.PERIODO, D.IDCLASECCOSTO, D.IDCCOSTO
+), OPERATIONAL_PRODUCTION AS (
+    SELECT CONVERT(CHAR(6), R.FECHA, 112) AS PERIODO, R.IDCLIEPROV,
+           SUM(CAST(PRD.KG_CAJAS * DR.CANTIDAD AS DECIMAL(19,3))) AS SUGGESTED_KILOGRAMS
+    FROM REGISTROPALETA R WITH (NOLOCK)
+    INNER JOIN DREGISTROPALETA DR WITH (NOLOCK)
+      ON DR.IDEMPRESA=R.IDEMPRESA AND DR.IDREGISTROPALETA=R.IDREGISTROPALETA
+    INNER JOIN MOTIVOPALETA MP WITH (NOLOCK)
+      ON MP.IDEMPRESA=R.IDEMPRESA AND MP.IDMOTIVOPALETA=R.IDMOTIVOPALETA AND MP.TIPO_TARJA IN (1,2)
+    INNER JOIN PRODUCTOS PRD WITH (NOLOCK)
+      ON PRD.IDEMPRESA=DR.IDEMPRESA AND PRD.IDPRODUCTO=DR.IDPRODUCTO
+    WHERE R.IDEMPRESA=%s
+      AND R.IDESTADO<>'AN'
+      AND CONVERT(CHAR(6), R.FECHA, 112) BETWEEN %s AND %s
+    GROUP BY CONVERT(CHAR(6), R.FECHA, 112), R.IDCLIEPROV
 )
 SELECT C.PERIODO, C.IDCLASECCOSTO, C.CLIENT_NAME, C.MONTH_COST, C.FINAL_COST,
-       ISNULL(P.BOXES, 0), ISNULL(P.KILOGRAMS, 0)
+       ISNULL(P.BOXES, 0), ISNULL(P.KILOGRAMS, 0), ISNULL(OP.SUGGESTED_KILOGRAMS, 0)
 FROM COSTS C
 LEFT JOIN PRODUCTION P
   ON P.PERIODO=C.PERIODO
  AND P.IDCLASECCOSTO=C.IDCLASECCOSTO
  AND P.IDCCOSTO=C.IDCCOSTO
+LEFT JOIN OPERATIONAL_PRODUCTION OP
+  ON OP.PERIODO=C.PERIODO
+ AND OP.IDCLIEPROV=C.IDCLIEPROV
 ORDER BY C.PERIODO, C.CLIENT_NAME
 """
 
@@ -91,6 +108,7 @@ def build_costs_report(rows, current_year=None, detail_rows=None):
         'class_code': str(row[1]).strip(), 'client': str(row[2]).strip(),
         'month_cost': float(row[3] or 0), 'final_cost': float(row[4] or 0),
         'boxes': float(row[5] or 0), 'kilograms': float(row[6] or 0),
+        'suggested_kilograms': float((row[7] if len(row) > 7 else row[6]) or 0),
     } for row in (detail_rows or [])]
     return report
 
@@ -105,7 +123,11 @@ def get_costs_report():
         rows = cursor.fetchall()
         first_period = str(FIRST_REPORT_YEAR) + '01'
         last_period = str(today.year) + '12'
-        cursor.execute(COST_DETAILS_SQL, ['001', first_period, last_period, '001', first_period, last_period])
+        cursor.execute(COST_DETAILS_SQL, [
+            '001', first_period, last_period,
+            '001', first_period, last_period,
+            '001', first_period, last_period,
+        ])
         detail_rows = cursor.fetchall()
     report = build_costs_report(rows, today.year, detail_rows)
     cache.set(CACHE_KEY, report, CACHE_SECONDS)
