@@ -137,16 +137,21 @@
             options: {
                 maintainAspectRatio: false,
                 responsive: true,
-                hover: { mode: 'nearest', intersect: true },
+                hover: { mode: 'index', intersect: false },
                 legend: { display: true, position: 'bottom', labels: { boxWidth: 12, padding: 18, fontColor: '#52606d' } },
                 tooltips: {
                     enabled: true,
-                    mode: 'nearest',
-                    intersect: true,
+                    mode: 'index',
+                    intersect: false,
                     displayColors: true,
                     callbacks: {
                         title: function (items, chart) { return chart.labels[items[0].index]; },
-                        label: function (item, chart) { return 'Año ' + chart.datasets[item.datasetIndex].label + ' · Venta: ' + money(Number(item.xLabel), false); }
+                        label: function (item, chart) { return 'Año ' + chart.datasets[item.datasetIndex].label + ': ' + money(Number(item.xLabel), false); },
+                        footer: function (items, chart) {
+                            var customerIndex = items[0].index;
+                            var total = chart.datasets.reduce(function (value, dataset) { return value + Number(dataset.data[customerIndex] || 0); }, 0);
+                            return 'Total de ventas: ' + money(total, false);
+                        }
                     }
                 },
                 scales: { xAxes: [{ ticks: { beginAtZero: true, callback: function (value) { return money(Number(value), true); } }, gridLines: { color: '#edf1f3' } }], yAxes: [{ gridLines: { display: false } }] }
