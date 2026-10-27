@@ -36,7 +36,7 @@ class OrdenCompraPermissionMixin(LoginRequiredMixin, PermissionRequiredMixin):
     """Restringe las órdenes de compra al permiso específico de Almacén."""
 
     permission_required = 'ALMACEN.almacen_orden_compra'
-    raise_exception = True
+    raise_exception = False
 
 
 class OrdenCompraView(OrdenCompraPermissionMixin, TemplateView):
