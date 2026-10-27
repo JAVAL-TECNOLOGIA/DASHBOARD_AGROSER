@@ -211,7 +211,24 @@ class OrdenCompraCatalogosView(OrdenCompraPermissionMixin, View):
             'pagos': "SELECT RTRIM(IDFPAGO), RTRIM(DESCRIPCION) FROM FORMA_PAGO ORDER BY DESCRIPCION",
             'sucursales': "SELECT RTRIM(IDSUCURSAL), RTRIM(DESCRIPCION) FROM SUCURSALES WHERE IDEMPRESA='001' AND ISNULL(DESCRIPCION,'')<>'' ORDER BY DESCRIPCION",
             'almacenes': "SELECT RTRIM(IDALMACEN), RTRIM(DESCRIPCION), RTRIM(IDSUCURSAL) FROM ALMACENES WHERE IDEMPRESA='001' AND ISNULL(DESCRIPCION,'')<>'' ORDER BY IDSUCURSAL,DESCRIPCION",
-            'productos': "SELECT RTRIM(IDPRODUCTO), RTRIM(DESCRIPCION), RTRIM(ISNULL(IDMEDIDA,'')) FROM PRODUCTOS WHERE ISNULL(DESCRIPCION,'')<>'' ORDER BY DESCRIPCION",
+            'productos': """
+                SELECT RTRIM(P.IDPRODUCTO), RTRIM(P.DESCRIPCION), RTRIM(ISNULL(P.IDMEDIDA,''))
+                FROM PRODUCTOS P
+                WHERE ISNULL(P.DESCRIPCION,'')<>''
+                  AND EXISTS (
+                      SELECT 1
+                      FROM DINGRESOSALIDAALM D
+                      INNER JOIN INGRESOSALIDAALM M
+                          ON M.IDEMPRESA=D.IDEMPRESA
+                         AND M.IDINGRESOSALIDAALM=D.IDINGRESOSALIDAALM
+                      WHERE D.IDEMPRESA='001'
+                        AND D.IDPRODUCTO=P.IDPRODUCTO
+                        AND M.FECHA>=DATEFROMPARTS(YEAR(GETDATE()),1,1)
+                        AND M.FECHA<DATEFROMPARTS(YEAR(GETDATE())+1,1,1)
+                        AND ISNULL(M.IDESTADO,'')<>'AN'
+                  )
+                ORDER BY P.DESCRIPCION
+            """,
             'consumidores': "SELECT TOP 500 RTRIM(IDCONSUMIDOR), RTRIM(DESCRIPCION) FROM CONSUMIDOR WHERE IDEMPRESA='001' AND ISNULL(DESCRIPCION,'')<>'' ORDER BY DESCRIPCION",
         }
         try:
@@ -308,10 +325,26 @@ class OrdenCompraCrearView(OrdenCompraPermissionMixin, View):
                     [idcompra,sucursal,almacen,numero,data['moneda'],data['proveedor'],str(data['direccion']).strip()[:250],tipo_cambio,fecha,data['forma_pago'],entrega,str(data.get('nota','')).strip()[:500],subtotal,Decimal('0'),subtotal,impuesto_total,total,periodo,data['responsable'],data['area'],proveedor[0]])
 
                     for indice, producto, consumidor, cantidad, precio, tasa, base, impuesto, linea_total in detalle:
-                        cursor.execute("SELECT RTRIM(DESCRIPCION),RTRIM(ISNULL(IDMEDIDA,'')) FROM PRODUCTOS WHERE IDPRODUCTO=?", [producto])
+                        cursor.execute("""
+                            SELECT RTRIM(P.DESCRIPCION), RTRIM(ISNULL(P.IDMEDIDA,''))
+                            FROM PRODUCTOS P
+                            WHERE P.IDPRODUCTO=?
+                              AND EXISTS (
+                                  SELECT 1
+                                  FROM DINGRESOSALIDAALM D
+                                  INNER JOIN INGRESOSALIDAALM M
+                                      ON M.IDEMPRESA=D.IDEMPRESA
+                                     AND M.IDINGRESOSALIDAALM=D.IDINGRESOSALIDAALM
+                                  WHERE D.IDEMPRESA='001'
+                                    AND D.IDPRODUCTO=P.IDPRODUCTO
+                                    AND M.FECHA>=DATEFROMPARTS(YEAR(GETDATE()),1,1)
+                                    AND M.FECHA<DATEFROMPARTS(YEAR(GETDATE())+1,1,1)
+                                    AND ISNULL(M.IDESTADO,'')<>'AN'
+                              )
+                        """, [producto])
                         prod = cursor.fetchone()
                         if not prod:
-                            raise ValueError(f'El producto de la fila {indice} ya no existe en NISIRA.')
+                            raise ValueError(f'El producto de la fila {indice} no tiene movimientos durante el año actual en NISIRA.')
                         precio_sin_igv = (precio / (Decimal('1') + tasa / Decimal('100'))).quantize(Decimal('0.000001'), ROUND_HALF_UP) if tasa else precio
                         cursor.execute("""INSERT INTO DORDENCOMPRA
                         (IDEMPRESA,IDCOMPRA,ITEM,IDPRODUCTO,IDESTADOPRODUCTO,DESCRIPCION,IDMEDIDA,ES_AFECTO,CANTIDAD,PORCENTAJEDSCTO1,PORCENTAJEDSCTO2,PORCENTAJEDSCTO3,IMPORTEDSCTO1,IMPORTEDSCTO2,IMPORTEDSCTO3,PRECIO_UNITARIO,SUBTOTALSINDSCTO,DESCUENTO_TOTAL,SUBTOTALCONDSCTO,TOTAL,FECHACREACION,SINCRONIZA,IDESTADO,IMPUESTO_I,IMPUESTO,PRECIO_UNITARIODSCTO,DESCUENTO_I,DESCUENTO,IMPORTE_ISC,EMBARCADO,SITUACION,MUESTRABOTONVEH,NDIAS,ARCHIVADO,ATENDIDO)
