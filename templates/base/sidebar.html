@@ -226,6 +226,24 @@
                 </li>
                 {% endif %}
 
+                {% if perms.ALMACEN.modulo_almacen or perms.ALMACEN.almacen_orden_compra or user.admin %}
+                <li class="has-sub {% if request.resolver_match.url_name == 'almacen_ordenes_compra' %}active{% endif %}">
+                    <a href="javascript:;">
+                        <b class="caret"></b>
+                        <i class="fa fa-warehouse"></i>
+                        <span style="font-size: 16px;">Almacén</span>
+                    </a>
+                    <ul style="font-size: 14px;" class="sub-menu">
+                        <li class="{% if request.resolver_match.url_name == 'almacen_ordenes_compra' %}active{% endif %}">
+                            <a href="{% url 'almacen_ordenes_compra' %}">
+                                <i class="fa fa-shopping-cart"></i>
+                                Orden de compra
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                {% endif %}
+
                 {% comment %} {% if perms.RRHH.modulo_rrhh %}
                 <li class="has-sub ">
 

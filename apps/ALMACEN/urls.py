@@ -4,6 +4,12 @@ from .views import *
 
 
 urlpatterns = [
+    path('ordenes-compra/', OrdenCompraView.as_view(), name='almacen_ordenes_compra'),
+    path('api/ordenes-compra/', OrdenCompraDataView.as_view(), name='api_almacen_ordenes_compra'),
+    path('api/ordenes-compra/catalogos/', OrdenCompraCatalogosView.as_view(), name='api_almacen_orden_compra_catalogos'),
+    path('api/ordenes-compra/tipo-cambio/', OrdenCompraTipoCambioView.as_view(), name='api_almacen_orden_compra_tipo_cambio'),
+    path('api/ordenes-compra/crear/', OrdenCompraCrearView.as_view(), name='api_almacen_orden_compra_crear'),
+    path('api/ordenes-compra/<str:idcompra>/', OrdenCompraDetalleView.as_view(), name='api_almacen_orden_compra_detalle'),
     
 
     path('almacen_presupuesto_dl/', presupuesto_dl.as_view(), name='almacen_presupuesto_dl'),

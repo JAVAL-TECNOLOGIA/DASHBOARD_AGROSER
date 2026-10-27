@@ -1,0 +1,230 @@
+{% load static %}
+{% include 'base/header.html' %}
+{% block page %}Órdenes de compra{% endblock %}
+{% include 'base/sidebar.html' %}
+
+<script>
+  (function () {
+    var loader = document.getElementById('page-loader');
+    if (loader) loader.remove();
+    var container = document.getElementById('page-container');
+    if (container) {
+      container.classList.add('show');
+      container.style.opacity = '1';
+    }
+  })();
+</script>
+
+<div id="content" class="content oc-page">
+  <div class="oc-heading">
+    <div class="oc-icon"><i class="fa fa-shopping-cart"></i></div>
+    <div>
+      <div class="oc-breadcrumb">Almacén / Orden de compra</div>
+      <h1>Órdenes de compra</h1>
+      <p>Seguimiento de órdenes registradas en NISIRA ERP.</p>
+    </div>
+    <div class="ml-auto oc-heading-actions">
+      <button id="oc-config" class="btn oc-config"><i class="fa fa-cogs"></i> Sucursales y almacenes</button>
+      <button id="oc-nueva" class="btn oc-new"><i class="fa fa-plus"></i> Nueva orden de compra</button>
+    </div>
+  </div>
+
+  <section class="oc-panel oc-filters">
+    <div class="oc-field"><label>Desde</label><input type="date" id="oc-desde" class="form-control"></div>
+    <div class="oc-field"><label>Hasta</label><input type="date" id="oc-hasta" class="form-control"></div>
+    <div class="oc-field"><label>Estado</label><select id="oc-estado" class="form-control"><option value="">Todos</option><option value="PE">Pendiente</option><option value="V1">Visto bueno</option><option value="AP">Aprobado</option><option value="AT">Atendido total</option><option value="TP">Atendido parcial</option><option value="AN">Anulado</option><option value="RE">Rechazado</option></select></div>
+    <div class="oc-field oc-grow"><label>Proveedor</label><input id="oc-proveedor" class="form-control" placeholder="Buscar razón social"></div>
+    <div class="oc-field oc-grow"><label>Área</label><input id="oc-area" class="form-control" placeholder="Todas las áreas"></div>
+    <button id="oc-buscar" class="btn oc-search"><i class="fa fa-search"></i> Consultar</button>
+  </section>
+
+  <div id="oc-alert" class="alert alert-danger" hidden></div>
+
+  <section class="oc-cards">
+    <article><span>Órdenes del periodo</span><strong id="oc-total-ordenes">—</strong><small>Documentos encontrados</small></article>
+    <article><span>Pendientes</span><strong id="oc-pendientes">—</strong><small>Incluye visto bueno</small></article>
+    <article><span>Aprobadas / atendidas</span><strong id="oc-aprobadas">—</strong><small>Órdenes confirmadas</small></article>
+    <article><span>Proveedores</span><strong id="oc-proveedores">—</strong><small>Con movimiento</small></article>
+    <article class="oc-money"><span>Importe acumulado</span><strong id="oc-importe">—</strong><small>Separado por moneda</small></article>
+  </section>
+
+  <section class="oc-panel oc-table-panel">
+    <div class="oc-table-title"><div><h2>Detalle de órdenes</h2><p>Haz clic en una fila para visualizar sus productos.</p></div><span id="oc-count" class="oc-chip">0 registros</span></div>
+    <div class="table-responsive">
+      <table class="table oc-table">
+        <thead><tr><th>Fecha</th><th>Documento</th><th>Proveedor</th><th>Área</th><th>Estado</th><th>Moneda</th><th class="text-right">Importe</th><th class="text-center">Ítems</th></tr></thead>
+        <tbody id="oc-body"><tr><td colspan="8" class="oc-empty">Cargando información de NISIRA…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<div class="modal fade" id="oc-new-modal" tabindex="-1" role="dialog"><div class="modal-dialog modal-xl modal-dialog-centered" role="document"><div class="modal-content">
+  <div class="modal-header"><div><small class="text-muted">NISIRA ERP</small><div class="oc-modal-title-row"><h4 class="modal-title">Nueva orden de compra</h4><span id="n-estado" class="oc-header-state">PENDIENTE</span></div></div><button type="button" class="close" data-dismiss="modal">&times;</button></div>
+  <div class="modal-body">
+    <div id="oc-new-alert" class="alert alert-info">Formulario conectado a los catálogos vigentes de NISIRA. La orden será registrada inicialmente como Pendiente.</div>
+    <div class="oc-form-grid">
+      <div class="oc-field"><label>Punto de emisión *</label><input class="form-control" value="001 · PTO. EMISIÓN" readonly></div>
+      <div class="oc-field"><label>Periodo *</label><input id="n-periodo" class="form-control" readonly></div>
+      <div class="oc-field"><label>Documento *</label><input class="form-control" value="OCO" readonly></div>
+      <div class="oc-field"><label>Serie *</label><input class="form-control" value="0001" readonly></div>
+      <div class="oc-field oc-span-2"><label>Correlativo</label><input id="n-correlativo" class="form-control" value="—" readonly></div>
+      <div class="oc-field oc-span-2"><label>Proveedor * <small>(escriba para buscar o presione F2)</small></label><div class="input-group"><input id="n-proveedor-search" list="n-proveedor-options" class="form-control oc-f2" autocomplete="off" placeholder="Código, razón social o RUC"><input id="n-proveedor" type="hidden"><datalist id="n-proveedor-options"></datalist><div class="input-group-append"><button id="n-find-provider" class="btn btn-outline-secondary" type="button" title="Buscar proveedor (F2)"><i class="fa fa-search"></i></button></div></div></div>
+      <div class="oc-field oc-span-2"><label>Fecha *</label><input id="n-fecha" type="date" class="form-control"></div>
+      <div class="oc-field oc-span-2"><label>Fecha de entrega *</label><input id="n-entrega" type="date" class="form-control"></div>
+      <div class="oc-field oc-span-4"><label>Dirección *</label><input id="n-direccion" class="form-control" maxlength="250" placeholder="Dirección del proveedor o lugar de entrega"></div>
+      <div class="oc-field"><label>Sucursal *</label><select id="n-sucursal" class="form-control"></select></div>
+      <div class="oc-field"><label>Almacén *</label><select id="n-almacen" class="form-control"></select></div>
+      <div class="oc-field"><label>Moneda *</label><select id="n-moneda" class="form-control"></select></div>
+      <div class="oc-field"><label>Tipo de cambio (TC) *</label><input id="n-tc" class="form-control" value="—" readonly></div>
+      <div class="oc-field oc-span-2"><label>Condición / forma de pago * <small>(escriba para buscar)</small></label><input id="n-pago-search" list="n-pago-options" class="form-control" autocomplete="off" placeholder="Código o condición de pago"><input id="n-pago" type="hidden"><datalist id="n-pago-options"></datalist></div>
+      <div class="oc-field oc-span-2"><label>Responsable *</label><select id="n-responsable" class="form-control"></select></div>
+      <div class="oc-field oc-span-2"><label>Área * <small>(escriba para buscar)</small></label><input id="n-area-search" list="n-area-options" class="form-control" autocomplete="off" placeholder="Código o descripción del área"><input id="n-area" type="hidden"><datalist id="n-area-options"></datalist></div>
+      <div class="oc-field oc-span-2"><label>Nota / referencia</label><textarea id="n-nota" class="form-control" rows="2"></textarea></div>
+      <div class="oc-field oc-span-4"><label class="oc-check"><input id="n-conigv" type="checkbox" checked disabled> Precios con IGV</label></div>
+    </div>
+    <div class="oc-products-head"><h5>Productos</h5><button id="n-add" class="btn btn-sm oc-add" type="button"><i class="fa fa-plus"></i> Agregar producto</button></div>
+    <datalist id="n-product-options"></datalist>
+    <div class="table-responsive oc-products-wrap"><table class="table oc-table oc-products-table"><colgroup><col class="col-code"><col class="col-product"><col class="col-unit"><col class="col-cost"><col class="col-qty"><col class="col-price"><col class="col-tax"><col class="col-total"><col class="col-action"></colgroup><thead><tr><th>Código *</th><th>Descripción del producto * <small>(escriba para buscar)</small></th><th>U.M.</th><th>Centro de costo * (F2)</th><th>Cantidad *</th><th>P. unitario *</th><th class="oc-tax-col">% Impto.</th><th>Total</th><th></th></tr></thead><tbody id="n-items"></tbody></table></div>
+    <div class="oc-totals"><span>Subtotal: <strong id="n-subtotal">S/ 0.00</strong></span><span>IGV: <strong id="n-igv-total">S/ 0.00</strong></span><span>Total: <strong id="n-total">S/ 0.00</strong></span></div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-light" data-dismiss="modal">Cerrar</button><button id="n-save" class="btn oc-new" type="button"><i class="fa fa-save"></i> Registrar en NISIRA</button></div>
+</div></div></div>
+
+<div class="modal fade" id="oc-config-modal" tabindex="-1" role="dialog"><div class="modal-dialog modal-lg modal-dialog-centered" role="document"><div class="modal-content">
+  <div class="modal-header"><div><small class="text-muted">CONFIGURACIÓN DE COMPRAS</small><h4 class="modal-title">Sucursales y almacenes habilitados</h4></div><button type="button" class="close" data-dismiss="modal">&times;</button></div>
+  <div class="modal-body">
+    <div class="alert alert-info">Seleccione las ubicaciones que podrán utilizarse al generar una orden. Por defecto solo están habilitados SUBTANJALLA y AGROSERVICE SAC.</div>
+    <div class="oc-config-grid">
+      <section><h6>Sucursales</h6><div id="config-branches" class="oc-config-list"></div></section>
+      <section><h6>Almacenes</h6><input id="config-warehouse-search" class="form-control mb-2" placeholder="Buscar código o almacén"><div id="config-warehouses" class="oc-config-list oc-config-scroll"></div></section>
+    </div>
+  </div>
+  <div class="modal-footer"><button class="btn btn-light" data-dismiss="modal">Cancelar</button><button id="config-save" class="btn oc-new" type="button"><i class="fa fa-save"></i> Guardar configuración</button></div>
+</div></div></div>
+
+<div class="modal fade oc-lookup" id="oc-lookup-modal" tabindex="-1" role="dialog"><div class="modal-dialog modal-lg modal-dialog-centered" role="document"><div class="modal-content">
+  <div class="modal-header"><div><small class="text-muted">BÚSQUEDA EN NISIRA</small><h4 id="lookup-title" class="modal-title">Buscar</h4></div><button type="button" class="close" data-dismiss="modal">&times;</button></div>
+  <div class="modal-body"><input id="lookup-search" class="form-control mb-3" autocomplete="off" placeholder="Escriba código, nombre o RUC"><div class="table-responsive lookup-results"><table class="table oc-table"><thead><tr><th>Código</th><th>Descripción</th><th id="lookup-extra-head">Dato adicional</th></tr></thead><tbody id="lookup-body"></tbody></table></div></div>
+</div></div></div>
+
+<div class="modal fade" id="oc-detail-modal" tabindex="-1" role="dialog">
+  <div class="modal-dialog modal-xl modal-dialog-centered" role="document"><div class="modal-content">
+    <div class="modal-header"><div><small class="text-muted">ORDEN DE COMPRA</small><h4 class="modal-title" id="oc-modal-title">Detalle</h4></div><button type="button" class="close" data-dismiss="modal">&times;</button></div>
+    <div class="modal-body"><div class="table-responsive"><table class="table oc-table"><thead><tr><th>Ítem</th><th>Código</th><th>Descripción</th><th>U.M.</th><th class="text-right">Cantidad</th><th class="text-right">P. unitario</th><th class="text-right">Impuesto</th><th class="text-right">Total</th></tr></thead><tbody id="oc-detail-body"></tbody></table></div></div>
+  </div></div>
+</div>
+
+<style>
+#page-loader{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important}
+#page-container{opacity:1!important}
+.oc-page{background:#e7edf2;min-height:100vh;padding:26px 30px 50px}.oc-heading{display:flex;gap:16px;align-items:center;margin-bottom:22px}.oc-icon{width:58px;height:58px;border-radius:16px;background:linear-gradient(145deg,#0b7551,#0f9b6b);color:#fff;display:grid;place-items:center;font-size:25px;box-shadow:0 10px 25px #0b755133}.oc-breadcrumb{font-size:12px;color:#637486;margin-bottom:3px}.oc-heading h1{font-size:27px;margin:0;color:#10283c}.oc-heading p,.oc-table-title p{margin:4px 0 0;color:#8a9baa}.oc-panel{background:#fff;border-radius:15px;box-shadow:0 1px 2px #1b31430c}.oc-filters{padding:18px;display:flex;gap:14px;align-items:end;flex-wrap:wrap}.oc-field{min-width:145px}.oc-field.oc-grow{flex:1;min-width:190px}.oc-field label{display:block;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#566b7d;margin-bottom:7px}.oc-field .form-control{height:42px;border:1px solid #d7e0e7;border-radius:9px}.oc-search{height:42px;border-radius:9px;background:#0c7552;color:#fff;padding:0 20px}.oc-cards{display:grid;grid-template-columns:repeat(5,minmax(150px,1fr));gap:15px;margin:20px 0}.oc-cards article{background:#fff;border-radius:14px;padding:18px 20px;border-top:4px solid #168362;min-height:126px}.oc-cards article:nth-child(2){border-color:#e5a00d}.oc-cards article:nth-child(3){border-color:#2985b1}.oc-cards article:nth-child(4){border-color:#7652c4}.oc-cards article.oc-money{border-color:#102f4d}.oc-cards span{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:#65798a}.oc-cards strong{display:block;font-size:27px;line-height:1.25;color:#112c43;margin:10px 0 4px}.oc-cards small{color:#91a0ad}.oc-table-panel{overflow:hidden}.oc-table-title{display:flex;justify-content:space-between;align-items:center;padding:20px 22px}.oc-table-title h2{font-size:18px;margin:0;color:#17334a}.oc-chip{background:#eef7f3;color:#167454;padding:6px 10px;border-radius:20px;font-size:12px}.oc-table{margin:0}.oc-table thead th{border:0;background:#f3f6f8;color:#566b7c;font-size:11px;letter-spacing:.04em;text-transform:uppercase;padding:12px 14px;white-space:nowrap}.oc-table tbody td{padding:13px 14px;border-color:#e8edf1;vertical-align:middle}.oc-row{cursor:pointer}.oc-row:hover{background:#f3faf7}.oc-empty{text-align:center!important;padding:45px!important;color:#8a9baa}.oc-status{display:inline-flex;padding:5px 9px;border-radius:20px;font-size:10px;font-weight:700;background:#eef2f5;color:#536878}.oc-status.AP{background:#e2f6ed;color:#08754d}.oc-status.PE,.oc-status.V1{background:#fff1d8;color:#9a6500}.oc-status.AN,.oc-status.RE{background:#fde7e7;color:#ad3030}@media(max-width:1200px){.oc-cards{grid-template-columns:repeat(3,1fr)}}@media(max-width:768px){.oc-page{padding:18px 12px}.oc-cards{grid-template-columns:1fr 1fr}.oc-filters{display:grid;grid-template-columns:1fr 1fr}.oc-field,.oc-field.oc-grow{min-width:0}.oc-search{width:100%}}@media(max-width:480px){.oc-cards,.oc-filters{grid-template-columns:1fr}}
+.oc-new,.oc-add{background:#087b58;color:#fff;border-radius:9px}.oc-form-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.oc-span-2{grid-column:span 2}.oc-span-4{grid-column:span 4}.oc-form-grid textarea.form-control{height:auto}.oc-products-head{display:flex;justify-content:space-between;align-items:center;margin:24px 0 10px}.oc-products-head h5{margin:0}.oc-item-select{min-width:300px}.oc-totals{display:flex;justify-content:flex-end;gap:28px;padding:18px;background:#f3f8f6}.oc-totals strong{font-size:18px;color:#0b684c}@media(max-width:768px){.oc-form-grid{grid-template-columns:1fr}.oc-span-2,.oc-span-4{grid-column:span 1}.oc-new{margin-top:12px}.oc-heading{flex-wrap:wrap}}
+.oc-heading-actions{display:flex;gap:10px;align-items:center}.oc-config{background:#fff;color:#24516d;border:1px solid #cfdbe3;border-radius:9px}.oc-config-grid{display:grid;grid-template-columns:minmax(220px,.7fr) minmax(320px,1.3fr);gap:20px}.oc-config-list{border:1px solid #dce5eb;border-radius:10px;padding:8px;background:#f8fafb}.oc-config-scroll{max-height:360px;overflow:auto}.oc-config-option{display:flex;align-items:flex-start;gap:10px;padding:9px;border-bottom:1px solid #e5ebef;margin:0;cursor:pointer}.oc-config-option:last-child{border-bottom:0}.oc-config-option input{width:17px;height:17px;margin-top:2px}.oc-config-option strong{display:block;color:#19384e}.oc-config-option small{display:block;color:#7b8d9b}@media(max-width:768px){.oc-heading-actions{width:100%;display:grid;grid-template-columns:1fr}.oc-heading-actions .btn{margin:0}.oc-config-grid{grid-template-columns:1fr}}
+.oc-check{display:flex!important;align-items:center;gap:8px;font-size:13px!important;text-transform:none!important}.oc-check input{width:18px;height:18px}
+.oc-modal-title-row{display:flex;align-items:center;gap:12px}.oc-header-state{display:inline-flex;background:#fff0cf;color:#976200;border:1px solid #f0d593;border-radius:20px;padding:5px 11px;font-size:11px;font-weight:800;letter-spacing:.05em}
+.oc-tax-col{min-width:105px}.n-tax{min-width:92px!important;padding-left:12px!important;padding-right:28px!important}
+.oc-products-wrap{border:1px solid #dce5eb;border-radius:10px}.oc-products-table{width:100%;min-width:1280px;table-layout:fixed}.oc-products-table .col-code{width:190px}.oc-products-table .col-product{width:330px}.oc-products-table .col-unit{width:85px}.oc-products-table .col-cost{width:270px}.oc-products-table .col-qty{width:110px}.oc-products-table .col-price{width:125px}.oc-products-table .col-tax{width:110px}.oc-products-table .col-total{width:115px}.oc-products-table .col-action{width:55px}.oc-products-table td,.oc-products-table th{overflow:visible}.oc-products-table .n-code{min-width:160px}.oc-products-table .n-product-search{min-width:300px}.oc-products-table .n-consumer{min-width:210px}.oc-products-table .n-um{min-width:58px;text-align:center}.oc-form-grid>.oc-field{align-self:start}.oc-form-grid .form-control{width:100%}
+.oc-lookup{z-index:1070}.oc-lookup+.modal-backdrop{z-index:1065}.lookup-results{max-height:55vh;overflow:auto}.lookup-row{cursor:pointer}.lookup-row:hover,.lookup-row:focus{background:#eaf7f2;outline:none}.oc-f2+button{height:42px}
+#oc-new-modal .modal-dialog{max-width:min(1180px,96vw);margin:1.5rem auto}#oc-new-modal .modal-content{max-height:calc(100vh - 3rem);border:0;border-radius:16px;overflow:hidden}#oc-new-modal .modal-body{overflow-y:auto;padding:22px}#oc-new-modal .modal-header,#oc-new-modal .modal-footer{flex-shrink:0;background:#fff}@media(max-width:768px){#oc-new-modal .modal-dialog{max-width:100%;margin:0;min-height:100vh}#oc-new-modal .modal-content{min-height:100vh;max-height:100vh;border-radius:0}#oc-new-modal .modal-body{padding:16px}.oc-totals{display:grid;grid-template-columns:1fr;gap:4px}.oc-item-select{min-width:230px}}
+</style>
+
+<script>
+(function(){
+  const $ = (id) => document.getElementById(id);
+  const money = new Intl.NumberFormat('es-PE',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const today = new Date(), first = new Date(today.getFullYear(),0,1);
+  const iso = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  $('oc-desde').value=iso(first); $('oc-hasta').value=iso(today);
+  const esc = v => String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+  let catalogs=null;
+  let lookupRows=[],lookupSelect=null;
+  let configDraftBranches=new Set(),configDraftWarehouses=new Set();
+  const CONFIG_BRANCHES='oc_enabled_branches',CONFIG_WAREHOUSES='oc_enabled_warehouses';
+  const readConfig=(key,fallback)=>{try{const value=JSON.parse(localStorage.getItem(key));return Array.isArray(value)&&value.length?value:fallback;}catch(e){return fallback;}};
+  const enabledBranches=()=>readConfig(CONFIG_BRANCHES,['028']);
+  const enabledWarehouses=()=>readConfig(CONFIG_WAREHOUSES,['028|030']);
+  const opts=(rows,placeholder='Seleccione')=>`<option value="">${placeholder}</option>`+rows.map(r=>`<option value="${esc(r[0])}">${esc(r[1])}${r[2]?' · '+esc(r[2]):''}</option>`).join('');
+  const codeOpts=(rows,placeholder='Seleccione')=>`<option value="">${placeholder}</option>`+rows.map(r=>`<option value="${esc(r[0])}">${esc(r[0])} · ${esc(r[1])}</option>`).join('');
+  const providerLabel=r=>`${r[0]} · ${r[1]}${r[2]?' · '+r[2]:''}`;
+  const areaLabel=r=>`${r[0]} · ${r[1]}`;
+  const paymentLabel=r=>`${r[0]} · ${r[1]}`;
+  const productLabel=r=>`${r[0]} · ${r[1]}${r[2]?' · '+r[2]:''}`;
+  async function openNew(){
+    window.jQuery('#oc-new-modal').modal('show'); $('n-fecha').value=iso(today); $('n-entrega').value=iso(today); $('n-periodo').value=today.toLocaleString('es-PE',{month:'long'}).toUpperCase()+' '+today.getFullYear();
+    if(!catalogs){
+      const r=await fetch(`{% url 'api_almacen_orden_compra_catalogos' %}`),x=await r.json(); if(!r.ok||!x.success){$('oc-new-alert').textContent=x.message||'No se pudieron cargar los catálogos.';return;} catalogs=x.data;
+      $('n-proveedor-options').innerHTML=catalogs.proveedores.map(r=>`<option value="${esc(providerLabel(r))}"></option>`).join('');$('n-area-options').innerHTML=catalogs.areas.map(r=>`<option value="${esc(areaLabel(r))}"></option>`).join('');$('n-pago-options').innerHTML=catalogs.pagos.map(r=>`<option value="${esc(paymentLabel(r))}"></option>`).join('');$('n-product-options').innerHTML=catalogs.productos.map(r=>`<option value="${esc(productLabel(r))}"></option>`).join('');$('n-moneda').innerHTML=opts(catalogs.monedas);$('n-responsable').innerHTML=opts(catalogs.responsables);
+    }
+    const branches=catalogs.sucursales.filter(r=>enabledBranches().includes(r[0]));$('n-sucursal').innerHTML=opts(branches,'Seleccione sucursal');
+    $('n-correlativo').value=catalogs.siguiente_correlativo||'—';$('n-estado').textContent=catalogs.estado_inicial?.descripcion||'PENDIENTE';$('n-moneda').value='01';$('n-responsable').value='000111';
+    $('n-sucursal').value=branches.some(r=>r[0]==='028')?'028':(branches[0]?.[0]||'');filterWarehouses();$('n-almacen').value=enabledWarehouses().includes('028|030')&&$('n-sucursal').value==='028'?'030':$('n-almacen').value;await loadExchangeRate();
+    if(!$('n-items').children.length)addItem();
+  }
+  function addItem(){const tr=document.createElement('tr');tr.innerHTML=`<td><input class="form-control n-code" readonly></td><td><input class="form-control n-product-search" list="n-product-options" autocomplete="off" placeholder="Código o descripción"><input class="n-product" type="hidden"></td><td><input class="form-control n-um" readonly></td><td><div class="input-group"><select class="form-control n-consumer oc-f2">${codeOpts(catalogs?.consumidores||[],'Seleccione centro de costo')}</select><div class="input-group-append"><button class="btn btn-outline-secondary n-find-consumer" type="button" title="Buscar centro de costo (F2)"><i class="fa fa-search"></i></button></div></div></td><td><input class="form-control n-qty" type="number" min="0.001" step="0.001" value="1"></td><td><input class="form-control n-price" type="number" min="0" step="0.01" value="0"></td><td><select class="form-control n-tax"><option value="18">18%</option><option value="0">0%</option></select></td><td class="n-line text-right">0.00</td><td><button class="btn btn-sm btn-light n-remove" type="button">×</button></td>`;$('n-items').appendChild(tr);tr.querySelector('.n-product-search').addEventListener('input',e=>resolveProduct(tr,e.target.value));tr.querySelector('.n-find-consumer').onclick=()=>openLookup('Centro de costo',catalogs.consumidores,tr.querySelector('.n-consumer'));tr.querySelector('.n-consumer').addEventListener('keydown',e=>{if(e.key==='F2'){e.preventDefault();openLookup('Centro de costo',catalogs.consumidores,e.target);}});tr.querySelectorAll('input,select').forEach(e=>e.addEventListener('change',calc));tr.querySelector('.n-remove').onclick=()=>{tr.remove();calc();};calc();}
+  function openLookup(title,rows,select){lookupRows=rows||[];lookupSelect=select;$('lookup-title').textContent='Buscar '+title;$('lookup-extra-head').textContent=title==='Proveedor'?'RUC':'Tipo';$('lookup-search').value='';renderLookup('');window.jQuery('#oc-lookup-modal').modal('show');setTimeout(()=>$('lookup-search').focus(),250);}
+  function renderLookup(term){const q=(term||'').trim().toUpperCase();const rows=lookupRows.filter(r=>!q||r.some(v=>String(v||'').toUpperCase().includes(q))).slice(0,100);$('lookup-body').innerHTML=rows.map(r=>`<tr class="lookup-row" tabindex="0" data-id="${esc(r[0])}"><td><strong>${esc(r[0])}</strong></td><td>${esc(r[1])}</td><td>${esc(r[2]||'')}</td></tr>`).join('')||'<tr><td colspan="3" class="oc-empty">No se encontraron coincidencias.</td></tr>';document.querySelectorAll('.lookup-row').forEach(row=>{const choose=()=>{lookupSelect.value=row.dataset.id;lookupSelect.dispatchEvent(new Event('change'));window.jQuery('#oc-lookup-modal').modal('hide');};row.onclick=choose;row.onkeydown=e=>{if(e.key==='Enter')choose();};});}
+  function calc(){let base=0,tax=0,total=0;document.querySelectorAll('#n-items tr').forEach(tr=>{const q=+(tr.querySelector('.n-qty').value||0),p=+(tr.querySelector('.n-price').value||0),t=+(tr.querySelector('.n-tax').value||0),line=q*p,b=line/(1+t/100);base+=b;tax+=line-b;total+=line;tr.querySelector('.n-line').textContent=money.format(line);});$('n-subtotal').textContent='S/ '+money.format(base);$('n-igv-total').textContent='S/ '+money.format(tax);$('n-total').textContent='S/ '+money.format(total);}
+  function getCookie(name){return document.cookie.split('; ').find(x=>x.startsWith(name+'='))?.split('=').slice(1).join('=')||'';}
+  function filterWarehouses(){const branch=$('n-sucursal').value,allowed=enabledWarehouses();const rows=(catalogs?.almacenes||[]).filter(r=>r[2]===branch&&allowed.includes(`${r[2]}|${r[0]}`));$('n-almacen').innerHTML='<option value="">Seleccione almacén</option>'+rows.map(r=>`<option value="${esc(r[0])}">${esc(r[0])} · ${esc(r[1])}</option>`).join('');}
+  async function openConfig(){if(!catalogs){const r=await fetch(`{% url 'api_almacen_orden_compra_catalogos' %}`),x=await r.json();if(!r.ok||!x.success){$('oc-alert').textContent=x.message||'No se pudieron cargar los catálogos.';$('oc-alert').hidden=false;return;}catalogs=x.data;}configDraftBranches=new Set(enabledBranches());configDraftWarehouses=new Set(enabledWarehouses());$('config-warehouse-search').value='';renderConfig();window.jQuery('#oc-config-modal').modal('show');}
+  function renderConfig(term=''){const q=term.trim().toUpperCase();$('config-branches').innerHTML=catalogs.sucursales.map(r=>`<label class="oc-config-option"><input type="checkbox" class="config-branch" value="${esc(r[0])}" ${configDraftBranches.has(r[0])?'checked':''}><span><strong>${esc(r[0])} · ${esc(r[1])}</strong><small>Sucursal NISIRA</small></span></label>`).join('');const visible=catalogs.almacenes.filter(r=>!q||`${r[0]} ${r[1]} ${r[2]}`.toUpperCase().includes(q));$('config-warehouses').innerHTML=visible.map(r=>`<label class="oc-config-option"><input type="checkbox" class="config-warehouse" data-branch="${esc(r[2])}" value="${esc(r[2])}|${esc(r[0])}" ${configDraftWarehouses.has(`${r[2]}|${r[0]}`)?'checked':''}><span><strong>${esc(r[0])} · ${esc(r[1])}</strong><small>Sucursal ${esc(r[2])}</small></span></label>`).join('')||'<div class="p-3 text-muted">Sin coincidencias</div>';document.querySelectorAll('.config-branch').forEach(e=>e.addEventListener('change',()=>e.checked?configDraftBranches.add(e.value):configDraftBranches.delete(e.value)));document.querySelectorAll('.config-warehouse').forEach(e=>e.addEventListener('change',()=>e.checked?configDraftWarehouses.add(e.value):configDraftWarehouses.delete(e.value)));}
+  function saveConfig(){const branches=[...configDraftBranches],warehouses=[...configDraftWarehouses].filter(v=>branches.includes(v.split('|')[0]));if(!branches.length||!warehouses.length){window.alert('Debe habilitar al menos una sucursal y un almacén relacionado.');return;}localStorage.setItem(CONFIG_BRANCHES,JSON.stringify(branches));localStorage.setItem(CONFIG_WAREHOUSES,JSON.stringify(warehouses));window.jQuery('#oc-config-modal').modal('hide');}
+  function resolveProvider(value){const text=(value||'').trim().toUpperCase();const row=(catalogs?.proveedores||[]).find(r=>providerLabel(r).toUpperCase()===text||String(r[0]).toUpperCase()===text);$('n-proveedor').value=row?row[0]:'';if(row){$('n-proveedor-search').value=providerLabel(row);$('n-direccion').value=row[3]||'';}else{$('n-direccion').value='';}}
+  function resolveArea(value){const text=(value||'').trim().toUpperCase();const row=(catalogs?.areas||[]).find(r=>areaLabel(r).toUpperCase()===text||String(r[0]).toUpperCase()===text);$('n-area').value=row?row[0]:'';if(row)$('n-area-search').value=areaLabel(row);}
+  function resolvePayment(value){const text=(value||'').trim().toUpperCase();const row=(catalogs?.pagos||[]).find(r=>paymentLabel(r).toUpperCase()===text||String(r[0]).toUpperCase()===text);$('n-pago').value=row?row[0]:'';if(row)$('n-pago-search').value=paymentLabel(row);}
+  function resolveProduct(tr,value){const text=(value||'').trim().toUpperCase();const row=(catalogs?.productos||[]).find(r=>productLabel(r).toUpperCase()===text||String(r[0]).toUpperCase()===text);tr.querySelector('.n-product').value=row?row[0]:'';tr.querySelector('.n-code').value=row?row[0]:'';tr.querySelector('.n-um').value=row?row[2]||'':'';if(row)tr.querySelector('.n-product-search').value=productLabel(row);}
+  async function loadExchangeRate(){const fecha=$('n-fecha').value;if(!fecha){$('n-tc').value='—';return;}try{const r=await fetch(`{% url 'api_almacen_orden_compra_tipo_cambio' %}?fecha=${encodeURIComponent(fecha)}`),x=await r.json();if(!r.ok||!x.success)throw new Error(x.message);$('n-tc').value=Number(x.tipo_cambio).toFixed(4);}catch(e){$('n-tc').value='Sin TC';$('oc-new-alert').className='alert alert-warning';$('oc-new-alert').textContent=e.message||'No se pudo consultar el tipo de cambio.';}}
+  async function saveOrder(){
+    const required=['n-proveedor','n-sucursal','n-almacen','n-moneda','n-pago','n-responsable','n-area','n-direccion','n-fecha','n-entrega','n-tc'];const rows=[...document.querySelectorAll('#n-items tr')];
+    if(!required.every(id=>$(id).value)||!rows.length||rows.some(tr=>!tr.querySelector('.n-product').value||!tr.querySelector('.n-consumer').value||+(tr.querySelector('.n-qty').value||0)<=0)){$('oc-new-alert').className='alert alert-danger';$('oc-new-alert').textContent='Complete todos los campos obligatorios (*) y revise producto, consumidor, cantidad y precio.';return;}
+    if(!window.confirm('¿Confirma registrar esta orden de compra como Pendiente en NISIRA?'))return;
+    const payload={proveedor:$('n-proveedor').value,fecha:$('n-fecha').value,fecha_entrega:$('n-entrega').value,direccion:$('n-direccion').value,sucursal:$('n-sucursal').value,almacen:$('n-almacen').value,moneda:$('n-moneda').value,forma_pago:$('n-pago').value,responsable:$('n-responsable').value,area:$('n-area').value,nota:$('n-nota').value,items:rows.map(tr=>({producto:tr.querySelector('.n-product').value,consumidor:tr.querySelector('.n-consumer').value,cantidad:tr.querySelector('.n-qty').value,precio:tr.querySelector('.n-price').value,igv:tr.querySelector('.n-tax').value}))};
+    const btn=$('n-save');btn.disabled=true;btn.innerHTML='<i class="fa fa-spinner fa-spin"></i> Registrando…';
+    try{const r=await fetch(`{% url 'api_almacen_orden_compra_crear' %}`,{method:'POST',headers:{'Content-Type':'application/json','X-CSRFToken':decodeURIComponent(getCookie('csrftoken'))},body:JSON.stringify(payload)});const x=await r.json();if(!r.ok||!x.success)throw new Error(x.message||'No se pudo registrar la orden.');$('oc-new-alert').className='alert alert-success';$('oc-new-alert').textContent=x.message;catalogs=null;setTimeout(()=>{window.jQuery('#oc-new-modal').modal('hide');load();},1400);}catch(e){$('oc-new-alert').className='alert alert-danger';$('oc-new-alert').textContent=e.message;}finally{btn.disabled=false;btn.innerHTML='<i class="fa fa-save"></i> Registrar en NISIRA';}
+  }
+  async function load(){
+    $('oc-alert').hidden=true; $('oc-body').innerHTML='<tr><td colspan="8" class="oc-empty">Consultando NISIRA…</td></tr>';
+    const q=new URLSearchParams({desde:$('oc-desde').value,hasta:$('oc-hasta').value,estado:$('oc-estado').value,proveedor:$('oc-proveedor').value,area:$('oc-area').value});
+    try{
+      const r=await fetch(`{% url 'api_almacen_ordenes_compra' %}?${q}`); const x=await r.json(); if(!r.ok||!x.success) throw new Error(x.message||'No se pudo completar la consulta.');
+      const s=x.summary; $('oc-total-ordenes').textContent=s.ordenes; $('oc-pendientes').textContent=s.pendientes; $('oc-aprobadas').textContent=s.aprobadas; $('oc-proveedores').textContent=s.proveedores; $('oc-importe').innerHTML=`S/ ${money.format(s.total_soles)}<small class="d-block">US$ ${money.format(s.total_dolares)}</small>`; $('oc-count').textContent=`${s.ordenes} registros recientes`;
+      $('oc-body').innerHTML=x.data.length?x.data.map(o=>`<tr class="oc-row" data-id="${esc(o.id)}" data-doc="${esc(o.documento)}"><td>${esc(o.fecha)}</td><td><strong>${esc(o.documento)}</strong></td><td>${esc(o.proveedor)}<small class="d-block text-muted">${esc(o.ruc)}</small></td><td>${esc(o.area)}</td><td><span class="oc-status ${esc(o.codigo_estado)}">${esc(o.estado)}</span></td><td>${esc(o.moneda)}</td><td class="text-right"><strong>${money.format(o.total)}</strong></td><td class="text-center">${esc(o.items)}</td></tr>`).join(''):'<tr><td colspan="8" class="oc-empty">No hay órdenes para los filtros seleccionados.</td></tr>';
+      document.querySelectorAll('.oc-row').forEach(row=>row.addEventListener('click',()=>detail(row.dataset.id,row.dataset.doc)));
+    }catch(e){$('oc-alert').textContent=e.message;$('oc-alert').hidden=false;$('oc-body').innerHTML='<tr><td colspan="8" class="oc-empty">Sin información disponible.</td></tr>';}
+  }
+  async function detail(id,doc){
+    $('oc-modal-title').textContent=doc; $('oc-detail-body').innerHTML='<tr><td colspan="8" class="oc-empty">Cargando detalle…</td></tr>'; $('#oc-detail-modal'); window.jQuery('#oc-detail-modal').modal('show');
+    try{const r=await fetch(`{% url 'api_almacen_orden_compra_detalle' 'ID_COMPRA' %}`.replace('ID_COMPRA',encodeURIComponent(id)));const x=await r.json();if(!r.ok||!x.success)throw new Error(x.message);$('oc-detail-body').innerHTML=x.data.map(d=>`<tr><td>${esc(d.item)}</td><td>${esc(d.codigo)}</td><td>${esc(d.descripcion)}</td><td>${esc(d.unidad)}</td><td class="text-right">${money.format(d.cantidad)}</td><td class="text-right">${money.format(d.precio_unitario)}</td><td class="text-right">${money.format(d.impuesto)}</td><td class="text-right"><strong>${money.format(d.total)}</strong></td></tr>`).join('')||'<tr><td colspan="8" class="oc-empty">La orden no tiene productos.</td></tr>';}catch(e){$('oc-detail-body').innerHTML=`<tr><td colspan="8" class="oc-empty">${esc(e.message||'No se pudo cargar el detalle.')}</td></tr>`;}
+  }
+  $('oc-buscar').addEventListener('click',load); $('oc-config').addEventListener('click',openConfig); $('config-save').addEventListener('click',saveConfig); $('config-warehouse-search').addEventListener('input',e=>renderConfig(e.target.value)); $('oc-nueva').addEventListener('click',openNew); $('n-add').addEventListener('click',addItem); $('n-save').addEventListener('click',saveOrder); $('n-sucursal').addEventListener('change',filterWarehouses); $('n-fecha').addEventListener('change',()=>{const d=new Date($('n-fecha').value+'T00:00:00');$('n-periodo').value=d.toLocaleString('es-PE',{month:'long'}).toUpperCase()+' '+d.getFullYear();loadExchangeRate();}); $('n-find-provider').addEventListener('click',()=>openLookup('Proveedor',catalogs?.proveedores,$('n-proveedor'))); $('n-proveedor-search').addEventListener('input',e=>resolveProvider(e.target.value)); $('n-proveedor-search').addEventListener('keydown',e=>{if(e.key==='F2'){e.preventDefault();openLookup('Proveedor',catalogs?.proveedores,$('n-proveedor'));}}); $('n-proveedor').addEventListener('change',e=>{const p=catalogs?.proveedores.find(x=>x[0]===e.target.value);if(p){$('n-proveedor-search').value=providerLabel(p);$('n-direccion').value=p[3]||'';}}); $('n-area-search').addEventListener('input',e=>resolveArea(e.target.value)); $('n-pago-search').addEventListener('input',e=>resolvePayment(e.target.value)); $('lookup-search').addEventListener('input',e=>renderLookup(e.target.value)); ['oc-proveedor','oc-area'].forEach(id=>$(id).addEventListener('keydown',e=>{if(e.key==='Enter')load();})); load();
+})();
+</script>
+{% include 'base/footer.html' %}
+<script>
+  (function () {
+    function mostrarOrdenes() {
+      var loader = document.getElementById('page-loader');
+      var container = document.getElementById('page-container');
+      if (loader) {
+        loader.classList.remove('show');
+        loader.classList.add('d-none');
+        loader.style.display = 'none';
+      }
+      if (container) {
+        container.classList.add('show');
+        container.style.opacity = '1';
+      }
+    }
+
+    $(document).ready(function () {
+      try {
+        App.init();
+      } finally {
+        mostrarOrdenes();
+      }
+    });
+    window.addEventListener('load', mostrarOrdenes);
+    setTimeout(mostrarOrdenes, 1200);
+  })();
+</script>

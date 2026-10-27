@@ -10,12 +10,16 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from apps.connection.connect_portalaei import connection_portalaei
 from decimal import Decimal
+from decimal import ROUND_HALF_UP
+import uuid
 import json
 from django.db import connection
 from django.db import IntegrityError
 from django.db import transaction
 from datetime import datetime, date
 import traceback
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.utils.dateparse import parse_date
 
 
 
@@ -26,6 +30,329 @@ import traceback
 
 
 # Create your views here.
+
+
+class OrdenCompraView(LoginRequiredMixin, TemplateView):
+    """Panel de consulta de órdenes de compra registradas en NISIRA."""
+
+    template_name = 'ALMACEN/pages/ordenes_compra.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['disable_page_loader'] = True
+        context['disable_external_assets'] = True
+        return context
+
+
+class OrdenCompraDataView(LoginRequiredMixin, View):
+    """Expone cabeceras de órdenes de compra con filtros y totales."""
+
+    ESTADOS = {
+        'PE': 'PENDIENTE',
+        'V1': 'VISTO BUENO',
+        'AP': 'APROBADO',
+        'AT': 'ATENDIDO TOTAL',
+        'TP': 'ATENDIDO PARCIAL',
+        'AN': 'ANULADO',
+        'RE': 'RECHAZADO',
+    }
+
+    def get(self, request, *args, **kwargs):
+        hoy = date.today()
+        fecha_inicio = parse_date(request.GET.get('desde', '')) or date(hoy.year, 1, 1)
+        fecha_fin = parse_date(request.GET.get('hasta', '')) or hoy
+        if fecha_inicio > fecha_fin:
+            return JsonResponse({'success': False, 'message': 'El rango de fechas no es válido.'}, status=400)
+
+        estado = request.GET.get('estado', '').strip()
+        proveedor = request.GET.get('proveedor', '').strip()
+        area = request.GET.get('area', '').strip()
+        condiciones = ['CAST(OC.FECHA AS date) BETWEEN ? AND ?']
+        parametros = [fecha_inicio, fecha_fin]
+        if estado:
+            condiciones.append('OC.IDESTADO = ?')
+            parametros.append(estado)
+        if proveedor:
+            condiciones.append('CP.RAZON_SOCIAL LIKE ?')
+            parametros.append('%' + proveedor + '%')
+        if area:
+            condiciones.append('A.DESCRIPCION LIKE ?')
+            parametros.append('%' + area + '%')
+
+        consulta = f"""
+            SELECT TOP 100
+                OC.IDCOMPRA,
+                OC.FECHA,
+                CONCAT(OC.SERIE, '-', OC.NUMERO) AS DOCUMENTO,
+                CP.RAZON_SOCIAL,
+                CP.RUC,
+                A.DESCRIPCION AS AREA,
+                M.DESCRIPCION AS MONEDA,
+                OC.TOTAL,
+                OC.IDESTADO,
+                E.DESCRIPCION AS ESTADO,
+                FP.DESCRIPCION AS FORMA_PAGO,
+                R.NOMBRE AS RESPONSABLE,
+                COUNT(DOC.ITEM) AS ITEMS
+            FROM ORDENCOMPRA OC
+            INNER JOIN DORDENCOMPRA DOC ON DOC.IDCOMPRA = OC.IDCOMPRA
+            INNER JOIN CLIEPROV CP ON CP.IDCLIEPROV = OC.IDCLIEPROV
+            INNER JOIN AREAS A ON A.IDAREA = OC.IDAREA
+            INNER JOIN MONEDAS M ON M.IDMONEDA = OC.IDMONEDA
+            INNER JOIN ESTADOS E ON E.IDESTADO = OC.IDESTADO
+            INNER JOIN FORMA_PAGO FP ON FP.IDFPAGO = OC.IDFPAGO
+            INNER JOIN RESPONSABLE R ON R.IDRESPONSABLE = OC.IDRESPONSABLE
+            WHERE {' AND '.join(condiciones)}
+            GROUP BY OC.IDCOMPRA, OC.FECHA, OC.SERIE, OC.NUMERO,
+                CP.RAZON_SOCIAL, CP.RUC, A.DESCRIPCION, M.DESCRIPCION,
+                OC.TOTAL, OC.IDESTADO, E.DESCRIPCION, FP.DESCRIPCION, R.NOMBRE
+            ORDER BY OC.FECHA DESC, OC.IDCOMPRA DESC
+        """
+        try:
+            with connection_donluis.cursor() as cursor:
+                cursor.execute(consulta, parametros)
+                filas = cursor.fetchall()
+        except Exception:
+            return JsonResponse({
+                'success': False,
+                'message': 'No fue posible consultar NISIRA. Verifique la conexión VPN e intente nuevamente.',
+            }, status=503)
+
+        ordenes = []
+        total = Decimal('0')
+        total_soles = Decimal('0')
+        total_dolares = Decimal('0')
+        pendientes = 0
+        aprobadas = 0
+        proveedores = set()
+        limpiar = lambda valor: str(valor).strip() if valor is not None else ''
+        for fila in filas:
+            codigo_estado = limpiar(fila[8])
+            importe = fila[7] or Decimal('0')
+            total += importe
+            moneda = limpiar(fila[6]).upper()
+            if 'DOL' in moneda or 'US' in moneda:
+                total_dolares += importe
+            else:
+                total_soles += importe
+            proveedores.add(limpiar(fila[3]))
+            if codigo_estado in ('PE', 'V1'):
+                pendientes += 1
+            if codigo_estado in ('AP', 'AT', 'TP'):
+                aprobadas += 1
+            ordenes.append({
+                'id': limpiar(fila[0]),
+                'fecha': fila[1].strftime('%Y-%m-%d') if fila[1] else '',
+                'documento': limpiar(fila[2]).strip(' -'),
+                'proveedor': limpiar(fila[3]),
+                'ruc': limpiar(fila[4]),
+                'area': limpiar(fila[5]),
+                'moneda': limpiar(fila[6]),
+                'total': float(importe),
+                'codigo_estado': codigo_estado,
+                'estado': self.ESTADOS.get(codigo_estado, limpiar(fila[9])),
+                'forma_pago': limpiar(fila[10]),
+                'responsable': limpiar(fila[11]),
+                'items': fila[12] or 0,
+            })
+
+        return JsonResponse({
+            'success': True,
+            'data': ordenes,
+            'summary': {
+                'ordenes': len(ordenes),
+                'pendientes': pendientes,
+                'aprobadas': aprobadas,
+                'proveedores': len(proveedores),
+                'importe_total': float(total),
+                'total_soles': float(total_soles),
+                'total_dolares': float(total_dolares),
+            },
+            'limit': 100,
+        })
+
+
+class OrdenCompraEstructuraView(LoginRequiredMixin, View):
+    """Diagnóstico autenticado de la estructura vigente de compras en NISIRA."""
+
+    def get(self, request, *args, **kwargs):
+        try:
+            with connection_donluis.cursor() as cursor:
+                resultado = {}
+                for tabla in ('ORDENCOMPRA', 'DORDENCOMPRA'):
+                    cursor.execute(f"SELECT TOP 1 * FROM {tabla} ORDER BY IDCOMPRA DESC")
+                    fila = cursor.fetchone()
+                    columnas = [col[0] for col in cursor.description]
+                    resultado[tabla] = {
+                        'columnas': columnas,
+                        'muestra': dict(zip(columnas, [str(v) if v is not None else None for v in fila])) if fila else {},
+                    }
+                return JsonResponse({'success': True, 'data': resultado})
+        except Exception as exc:
+            return JsonResponse({'success': False, 'message': str(exc)}, status=503)
+
+
+class OrdenCompraCatalogosView(LoginRequiredMixin, View):
+    """Catálogos vigentes de NISIRA usados por el formulario de compras."""
+
+    def get(self, request, *args, **kwargs):
+        consultas = {
+            'proveedores': "SELECT RTRIM(IDCLIEPROV), RTRIM(RAZON_SOCIAL), RTRIM(ISNULL(RUC,'')), RTRIM(ISNULL(DIRECCION,'')) FROM CLIEPROV WHERE ISNULL(RAZON_SOCIAL,'')<>'' ORDER BY RAZON_SOCIAL",
+            'areas': "SELECT RTRIM(IDAREA), RTRIM(DESCRIPCION) FROM AREAS WHERE ISNULL(DESCRIPCION,'')<>'' ORDER BY DESCRIPCION",
+            'responsables': "SELECT RTRIM(IDRESPONSABLE), RTRIM(NOMBRE) FROM RESPONSABLE WHERE ISNULL(NOMBRE,'')<>'' ORDER BY NOMBRE",
+            'monedas': "SELECT RTRIM(IDMONEDA), RTRIM(DESCRIPCION) FROM MONEDAS WHERE IDMONEDA IN ('01','02') ORDER BY IDMONEDA",
+            'pagos': "SELECT RTRIM(IDFPAGO), RTRIM(DESCRIPCION) FROM FORMA_PAGO ORDER BY DESCRIPCION",
+            'sucursales': "SELECT RTRIM(IDSUCURSAL), RTRIM(DESCRIPCION) FROM SUCURSALES WHERE IDEMPRESA='001' AND ISNULL(DESCRIPCION,'')<>'' ORDER BY DESCRIPCION",
+            'almacenes': "SELECT RTRIM(IDALMACEN), RTRIM(DESCRIPCION), RTRIM(IDSUCURSAL) FROM ALMACENES WHERE IDEMPRESA='001' AND ISNULL(DESCRIPCION,'')<>'' ORDER BY IDSUCURSAL,DESCRIPCION",
+            'productos': "SELECT RTRIM(IDPRODUCTO), RTRIM(DESCRIPCION), RTRIM(ISNULL(IDMEDIDA,'')) FROM PRODUCTOS WHERE ISNULL(DESCRIPCION,'')<>'' ORDER BY DESCRIPCION",
+            'consumidores': "SELECT TOP 500 RTRIM(IDCONSUMIDOR), RTRIM(DESCRIPCION) FROM CONSUMIDOR WHERE IDEMPRESA='001' AND ISNULL(DESCRIPCION,'')<>'' ORDER BY DESCRIPCION",
+        }
+        try:
+            data = {}
+            with connection_donluis.cursor() as cursor:
+                for nombre, sql in consultas.items():
+                    cursor.execute(sql)
+                    data[nombre] = [list(fila) for fila in cursor.fetchall()]
+                cursor.execute("SELECT RIGHT('0000000'+CAST(ISNULL(MAX(TRY_CAST(NUMERO AS INT)),0)+1 AS VARCHAR(7)),7) FROM ORDENCOMPRA WHERE IDEMPRESA='001' AND IDDOCUMENTO='OCO' AND SERIE='0001'")
+                data['siguiente_correlativo'] = cursor.fetchone()[0]
+                data['estado_inicial'] = {'codigo': 'PE', 'descripcion': 'PENDIENTE'}
+            return JsonResponse({'success': True, 'data': data})
+        except Exception:
+            return JsonResponse({'success': False, 'message': 'No se pudieron cargar los catálogos de NISIRA.'}, status=503)
+
+
+class OrdenCompraTipoCambioView(LoginRequiredMixin, View):
+    """Tipo de cambio de NISIRA aplicable a la fecha de emisión de la OC."""
+
+    def get(self, request, *args, **kwargs):
+        fecha = parse_date(request.GET.get('fecha', ''))
+        if not fecha:
+            return JsonResponse({'success': False, 'message': 'La fecha no es válida.'}, status=400)
+        try:
+            with connection_donluis.cursor() as cursor:
+                cursor.execute(
+                    "SELECT TOP 1 T_VENTA FROM TCAMBIO WHERE CAST(FECHA AS date)<=? AND T_VENTA>0 ORDER BY FECHA DESC",
+                    [fecha],
+                )
+                fila = cursor.fetchone()
+            if not fila:
+                return JsonResponse({'success': False, 'message': 'No existe tipo de cambio registrado en NISIRA para la fecha seleccionada.'}, status=404)
+            return JsonResponse({'success': True, 'tipo_cambio': float(fila[0])})
+        except Exception:
+            return JsonResponse({'success': False, 'message': 'No se pudo consultar el tipo de cambio de NISIRA.'}, status=503)
+
+
+class OrdenCompraCrearView(LoginRequiredMixin, View):
+    """Crea cabecera y detalle de una OC en NISIRA dentro de una transacción."""
+
+    def post(self, request, *args, **kwargs):
+        try:
+            data = json.loads(request.body or '{}')
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'message': 'La información enviada no es válida.'}, status=400)
+
+        obligatorios = ('proveedor', 'sucursal', 'almacen', 'moneda', 'forma_pago', 'responsable', 'area', 'direccion', 'fecha', 'fecha_entrega')
+        items = data.get('items') or []
+        if any(not str(data.get(k, '')).strip() for k in obligatorios) or not items:
+            return JsonResponse({'success': False, 'message': 'Complete la cabecera y agregue al menos un producto.'}, status=400)
+        try:
+            sucursal = str(data['sucursal']).strip()
+            almacen = str(data['almacen']).strip()
+            fecha = parse_date(data['fecha']); entrega = parse_date(data['fecha_entrega'])
+            if not fecha or not entrega or entrega < fecha:
+                raise ValueError('La fecha de entrega no puede ser anterior a la fecha de emisión.')
+
+            detalle = []
+            subtotal = Decimal('0'); impuesto_total = Decimal('0'); total = Decimal('0')
+            for indice, item in enumerate(items, 1):
+                cantidad = Decimal(str(item.get('cantidad') or 0))
+                precio = Decimal(str(item.get('precio') or 0))
+                tasa = Decimal(str(item.get('igv') or 0))
+                if not item.get('producto') or not item.get('consumidor') or cantidad <= 0 or precio < 0 or tasa not in (Decimal('0'), Decimal('18')):
+                    raise ValueError(f'Revise los datos del producto de la fila {indice}.')
+                linea_total = (cantidad * precio).quantize(Decimal('0.0001'), ROUND_HALF_UP)
+                linea_base = (linea_total / (Decimal('1') + tasa / Decimal('100'))).quantize(Decimal('0.0001'), ROUND_HALF_UP) if tasa else linea_total
+                linea_impuesto = linea_total - linea_base
+                detalle.append((indice, item['producto'], str(item['consumidor']).strip(), cantidad, precio, tasa, linea_base, linea_impuesto, linea_total))
+                subtotal += linea_base; impuesto_total += linea_impuesto; total += linea_total
+
+            idcompra = ('_' + uuid.uuid4().hex[:13].upper()).ljust(15)
+            periodo = fecha.strftime('%Y%m')
+            with connection_donluis.cursor() as cursor:
+                cursor.execute('BEGIN TRANSACTION')
+                try:
+                    cursor.execute("SELECT RTRIM(RUC) FROM CLIEPROV WHERE IDCLIEPROV=?", [data['proveedor']])
+                    proveedor = cursor.fetchone()
+                    if not proveedor:
+                        raise ValueError('El proveedor seleccionado ya no existe en NISIRA.')
+                    cursor.execute("SELECT COUNT(*) FROM ALMACENES WHERE IDEMPRESA='001' AND IDSUCURSAL=? AND IDALMACEN=?", [sucursal, almacen])
+                    if not cursor.fetchone()[0]:
+                        raise ValueError('La sucursal o almacén seleccionado no es válido.')
+                    cursor.execute("SELECT RIGHT('0000000'+CAST(ISNULL(MAX(TRY_CAST(NUMERO AS INT)),0)+1 AS VARCHAR(7)),7) FROM ORDENCOMPRA WITH (UPDLOCK,HOLDLOCK) WHERE IDEMPRESA='001' AND SERIE='0001'")
+                    numero = cursor.fetchone()[0]
+                    cursor.execute("SELECT TOP 1 T_VENTA FROM TCAMBIO WHERE CAST(FECHA AS date)<=? AND T_VENTA>0 ORDER BY FECHA DESC", [fecha])
+                    fila_tc = cursor.fetchone()
+                    if not fila_tc:
+                        raise ValueError('No existe tipo de cambio registrado en NISIRA para la fecha seleccionada.')
+                    tipo_cambio = fila_tc[0]
+                    cursor.execute("""INSERT INTO ORDENCOMPRA
+                    (IDEMPRESA,IDCOMPRA,IDEMISOR,IDSUCURSAL,SERIE,IDALMACEN,NUMERO,IDMONEDA,IDCLIEPROV,LUGAR_ENTREGA,TIPOCAMBIO,TCMONEDA,FECHA,FLETE_PREPAGO,IDFPAGO,FECHA_ENTREGA,IDESTADO,IMPORTACION,NOTA,SUBTOTALSINDSCTO,DESCUENTO,SUBTOTALCONDSCTO,IGV,TOTAL,FECHACREACION,CONTABILIZADO,SINCRONIZA,IDDOCUMENTO,PERIODO,CONIGV,VENTANA,IMP_PRESUPUESTO,PARA_OEMBARQUE,ES_MERCADERIA,TIPOORDEN,IDRESPONSABLE,IDAREA,IMPRESO,RUC,CONDICIONSUNAT,ESTADOSUNAT,EXONERADO,ES_ABIERTA,NUMVERSION,INI_DOCNUEVO,FIN_DOCNUEVO,IDVIA_EMBARQUE,ITEMPTOEMBARQUE,IDLINEAAEREA,IDTIPOPRECIO,IDPAISEMISOR,IDREFERENCIA,IDUNIDADNEGOCIO,PLAZODIAS,IDTIPOENTREGA,PLAZO_N,TIPOIMPORTACION)
+                    VALUES ('001',?,'001',?,'0001',?,?,?, ?,?, ?,0,?,0,?,?,'PE',0,?,?,?,?,?,?,GETDATE(),0,'N','OCO',?,1,'EDT_ORDENCOMPRAS',0,0,0,' ',?,?,0,?,'','',0,1,1,GETDATE(),GETDATE(),'   ','   ','   ','    ','    ','               ','   ',0,'   ',0,1)""",
+                    [idcompra,sucursal,almacen,numero,data['moneda'],data['proveedor'],str(data['direccion']).strip()[:250],tipo_cambio,fecha,data['forma_pago'],entrega,str(data.get('nota','')).strip()[:500],subtotal,Decimal('0'),subtotal,impuesto_total,total,periodo,data['responsable'],data['area'],proveedor[0]])
+
+                    for indice, producto, consumidor, cantidad, precio, tasa, base, impuesto, linea_total in detalle:
+                        cursor.execute("SELECT RTRIM(DESCRIPCION),RTRIM(ISNULL(IDMEDIDA,'')) FROM PRODUCTOS WHERE IDPRODUCTO=?", [producto])
+                        prod = cursor.fetchone()
+                        if not prod:
+                            raise ValueError(f'El producto de la fila {indice} ya no existe en NISIRA.')
+                        precio_sin_igv = (precio / (Decimal('1') + tasa / Decimal('100'))).quantize(Decimal('0.000001'), ROUND_HALF_UP) if tasa else precio
+                        cursor.execute("""INSERT INTO DORDENCOMPRA
+                        (IDEMPRESA,IDCOMPRA,ITEM,IDPRODUCTO,IDESTADOPRODUCTO,DESCRIPCION,IDMEDIDA,ES_AFECTO,CANTIDAD,PORCENTAJEDSCTO1,PORCENTAJEDSCTO2,PORCENTAJEDSCTO3,IMPORTEDSCTO1,IMPORTEDSCTO2,IMPORTEDSCTO3,PRECIO_UNITARIO,SUBTOTALSINDSCTO,DESCUENTO_TOTAL,SUBTOTALCONDSCTO,TOTAL,FECHACREACION,SINCRONIZA,IDESTADO,IMPUESTO_I,IMPUESTO,PRECIO_UNITARIODSCTO,DESCUENTO_I,DESCUENTO,IMPORTE_ISC,EMBARCADO,SITUACION,MUESTRABOTONVEH,NDIAS,ARCHIVADO,ATENDIDO)
+                        VALUES ('001',?,?,?,?,?,?,?,?,0,0,0,0,0,0,?,?,0,?,?,GETDATE(),'N','PE',?,?,?,0,0,0,0,'',0,0,0,0)""",
+                        [idcompra,str(indice).zfill(3),producto,'0',prod[0],prod[1],1 if tasa else 0,cantidad,precio,base,base,linea_total,tasa,impuesto,precio_sin_igv])
+                        cursor.execute("UPDATE DORDENCOMPRA SET IDCONSUMIDOR=? WHERE IDEMPRESA='001' AND IDCOMPRA=? AND ITEM=?", [consumidor, idcompra, str(indice).zfill(3)])
+                    cursor.execute('COMMIT TRANSACTION')
+                except Exception:
+                    cursor.execute('ROLLBACK TRANSACTION')
+                    raise
+            return JsonResponse({'success': True, 'message': f'Orden OCO 0001-{numero} registrada correctamente en NISIRA.', 'id': idcompra.strip()})
+        except (ValueError, ArithmeticError) as exc:
+            return JsonResponse({'success': False, 'message': str(exc)}, status=400)
+        except Exception as exc:
+            return JsonResponse({'success': False, 'message': 'NISIRA rechazó la orden. No se registró ningún dato. Detalle: ' + str(exc)}, status=500)
+
+
+class OrdenCompraDetalleView(LoginRequiredMixin, View):
+    """Detalle de productos de una orden de compra de NISIRA."""
+
+    def get(self, request, idcompra, *args, **kwargs):
+        consulta = """
+            SELECT DOC.ITEM, DOC.IDPRODUCTO, DOC.DESCRIPCION, DOC.IDMEDIDA,
+                   DOC.CANTIDAD, DOC.PRECIO_UNITARIO, DOC.IMPUESTO,
+                   DOC.SUBTOTALCONDSCTO, DOC.TOTAL
+            FROM DORDENCOMPRA DOC
+            WHERE DOC.IDCOMPRA = ?
+            ORDER BY DOC.ITEM
+        """
+        try:
+            with connection_donluis.cursor() as cursor:
+                cursor.execute(consulta, [idcompra])
+                filas = cursor.fetchall()
+        except Exception:
+            return JsonResponse({'success': False, 'message': 'No fue posible consultar el detalle en NISIRA.'}, status=503)
+
+        detalle = [{
+            'item': fila[0],
+            'codigo': str(fila[1]).strip() if fila[1] is not None else '',
+            'descripcion': str(fila[2]).strip() if fila[2] is not None else '',
+            'unidad': str(fila[3]).strip() if fila[3] is not None else '',
+            'cantidad': float(fila[4] or 0),
+            'precio_unitario': float(fila[5] or 0),
+            'impuesto': float(fila[6] or 0),
+            'subtotal': float(fila[7] or 0),
+            'total': float(fila[8] or 0),
+        } for fila in filas]
+        return JsonResponse({'success': True, 'data': detalle})
 
 #=================================================================================================================
 #MODULO PRESUPUESTOS

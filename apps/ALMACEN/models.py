@@ -22,6 +22,7 @@ class AlmacenPermission(models.Model):
             ('almacen_presupuesto','almacen_presupuesto'),
             ('almacen_evaluacion_desempeno','almacen_evaluacion_desempeno'),
             ('almacen_req_internos','almacen_req_internos'),
+            ('almacen_orden_compra','almacen_orden_compra'),
             
             #PERMISO SECCION COSTOS DE ALMACEN
             ('almacen_costos','almacen_costos'),
