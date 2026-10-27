@@ -18,7 +18,7 @@ from django.db import IntegrityError
 from django.db import transaction
 from datetime import datetime, date
 import traceback
-from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.utils.dateparse import parse_date
 
 
@@ -32,7 +32,14 @@ from django.utils.dateparse import parse_date
 # Create your views here.
 
 
-class OrdenCompraView(LoginRequiredMixin, TemplateView):
+class OrdenCompraPermissionMixin(LoginRequiredMixin, PermissionRequiredMixin):
+    """Restringe las órdenes de compra al permiso específico de Almacén."""
+
+    permission_required = 'ALMACEN.almacen_orden_compra'
+    raise_exception = True
+
+
+class OrdenCompraView(OrdenCompraPermissionMixin, TemplateView):
     """Panel de consulta de órdenes de compra registradas en NISIRA."""
 
     template_name = 'ALMACEN/pages/ordenes_compra.html'
@@ -44,7 +51,7 @@ class OrdenCompraView(LoginRequiredMixin, TemplateView):
         return context
 
 
-class OrdenCompraDataView(LoginRequiredMixin, View):
+class OrdenCompraDataView(OrdenCompraPermissionMixin, View):
     """Expone cabeceras de órdenes de compra con filtros y totales."""
 
     ESTADOS = {
@@ -172,7 +179,7 @@ class OrdenCompraDataView(LoginRequiredMixin, View):
         })
 
 
-class OrdenCompraEstructuraView(LoginRequiredMixin, View):
+class OrdenCompraEstructuraView(OrdenCompraPermissionMixin, View):
     """Diagnóstico autenticado de la estructura vigente de compras en NISIRA."""
 
     def get(self, request, *args, **kwargs):
@@ -192,7 +199,7 @@ class OrdenCompraEstructuraView(LoginRequiredMixin, View):
             return JsonResponse({'success': False, 'message': str(exc)}, status=503)
 
 
-class OrdenCompraCatalogosView(LoginRequiredMixin, View):
+class OrdenCompraCatalogosView(OrdenCompraPermissionMixin, View):
     """Catálogos vigentes de NISIRA usados por el formulario de compras."""
 
     def get(self, request, *args, **kwargs):
@@ -221,7 +228,7 @@ class OrdenCompraCatalogosView(LoginRequiredMixin, View):
             return JsonResponse({'success': False, 'message': 'No se pudieron cargar los catálogos de NISIRA.'}, status=503)
 
 
-class OrdenCompraTipoCambioView(LoginRequiredMixin, View):
+class OrdenCompraTipoCambioView(OrdenCompraPermissionMixin, View):
     """Tipo de cambio de NISIRA aplicable a la fecha de emisión de la OC."""
 
     def get(self, request, *args, **kwargs):
@@ -242,7 +249,7 @@ class OrdenCompraTipoCambioView(LoginRequiredMixin, View):
             return JsonResponse({'success': False, 'message': 'No se pudo consultar el tipo de cambio de NISIRA.'}, status=503)
 
 
-class OrdenCompraCrearView(LoginRequiredMixin, View):
+class OrdenCompraCrearView(OrdenCompraPermissionMixin, View):
     """Crea cabecera y detalle de una OC en NISIRA dentro de una transacción."""
 
     def post(self, request, *args, **kwargs):
@@ -322,7 +329,7 @@ class OrdenCompraCrearView(LoginRequiredMixin, View):
             return JsonResponse({'success': False, 'message': 'NISIRA rechazó la orden. No se registró ningún dato. Detalle: ' + str(exc)}, status=500)
 
 
-class OrdenCompraDetalleView(LoginRequiredMixin, View):
+class OrdenCompraDetalleView(OrdenCompraPermissionMixin, View):
     """Detalle de productos de una orden de compra de NISIRA."""
 
     def get(self, request, idcompra, *args, **kwargs):
