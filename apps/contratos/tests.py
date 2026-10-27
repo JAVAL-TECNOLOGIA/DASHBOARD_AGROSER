@@ -22,7 +22,6 @@ from .pdf import _contract_values, _replace_calculated_amounts
 
 
 class ContractAmountTests(SimpleTestCase):
-    @override_settings(CONTRACT_MONTHLY_RMV="1130.00")
     def test_contract_amounts_are_calculated_from_daily_basic(self):
         values = _contract_values({
             "inicio_contrato": date(2026, 10, 1),
@@ -33,7 +32,7 @@ class ContractAmountTests(SimpleTestCase):
         self.assertEqual(values["tbr_rem_diaria"], "41.00")
         self.assertEqual(values["tbr_cts"], "3.99")
         self.assertEqual(values["tbr_gratificacion"], "6.83")
-        self.assertEqual(values["tbr_beta"], "11.30")
+        self.assertEqual(values["tbr_beta"], "12.30")
 
     def test_replaces_legacy_fixed_amounts_with_contract_values(self):
         xml = (
@@ -53,14 +52,14 @@ class ContractAmountTests(SimpleTestCase):
                 "tbr_rem_diaria": "45.00",
                 "tbr_cts": "4.37",
                 "tbr_gratificacion": "7.50",
-                "tbr_beta": "11.30",
+                "tbr_beta": "12.30",
             },
         ).decode("utf-8")
 
         self.assertIn("S/. 45.00 diarios", replaced)
         self.assertIn("asciende a S/ 4.37", replaced)
         self.assertIn("asciende a S/ 7.50", replaced)
-        self.assertIn("asciende a S/ 11.30 por día", replaced)
+        self.assertIn("asciende a S/ 12.30 por día", replaced)
 
 
 class ContractGenerationFormTests(SimpleTestCase):

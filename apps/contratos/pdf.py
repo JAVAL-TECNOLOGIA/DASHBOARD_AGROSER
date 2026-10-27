@@ -134,6 +134,7 @@ MONTHS = (
     "", "ENERO", "FEBRERO", "MARZO", "ABRIL", "MAYO", "JUNIO",
     "JULIO", "AGOSTO", "SEPTIEMBRE", "OCTUBRE", "NOVIEMBRE", "DICIEMBRE",
 )
+CONTRACT_BETA_DAILY = Decimal("12.30")
 
 def _money(value):
     return Decimal(value or 0).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
@@ -449,8 +450,7 @@ def _contract_values(data):
     basic = _money(data.get("basico"))
     cts = _money(basic * Decimal("0.0972"))
     gratification = _money(basic * Decimal("0.1666"))
-    monthly_minimum_wage = Decimal(str(getattr(settings, "CONTRACT_MONTHLY_RMV", "1130.00")))
-    beta = _money((monthly_minimum_wage / Decimal("30")) * Decimal("0.30"))
+    beta = CONTRACT_BETA_DAILY
     return {
         "tbr_nombre": data.get("full_name"),
         "tbr_dni": data.get("document"),
