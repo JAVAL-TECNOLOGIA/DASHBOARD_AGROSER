@@ -29,6 +29,16 @@ class LiquidationProjectionTests(TestCase):
         self.assertFalse(row["eligible"])
         self.assertEqual(row["projected_total"], Decimal("0.00"))
 
+    def test_converts_monthly_contract_basic_to_daily_rate(self):
+        row = project_contract_liquidation({
+            "fecha_ingreso": date(2026, 3, 24),
+            "final_contrato": date(2026, 6, 24),
+            "basico": "1900.00",
+        })
+        self.assertEqual(row["basic_periodicity"], "MENSUAL")
+        self.assertEqual(row["daily_basic"], Decimal("63.33"))
+        self.assertLess(row["projected_total"], Decimal("1000.00"))
+
     def test_groups_projected_total_by_contract_end_month(self):
         summary = build_projection_summary([
             {"fecha_ingreso": date(2026, 1, 1), "final_contrato": date(2026, 4, 30), "basico": 40},

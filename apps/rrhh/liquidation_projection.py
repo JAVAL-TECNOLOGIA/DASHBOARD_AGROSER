@@ -5,6 +5,7 @@ from decimal import Decimal, ROUND_HALF_UP
 
 ZERO = Decimal("0.00")
 CENT = Decimal("0.01")
+MONTHLY_BASIC_THRESHOLD = Decimal("300.00")
 
 
 def _date(value):
@@ -22,11 +23,17 @@ def project_contract_liquidation(contract):
 
     CTS and gratification are zero because OBP/OBR do not receive them and
     ERG/ERA already include them in the monthly payslip. Vacation accrual is
-    estimated at 30 days per 360 service days using the contract daily basic.
+    estimated at 30 days per 360 service days. Contract basics above the
+    configured threshold are normalized from monthly to daily amounts.
     """
     start = _date(contract.get("fecha_ingreso") or contract.get("inicio_contrato"))
     end = _date(contract.get("final_contrato"))
-    daily_basic = _money(contract.get("basico"))
+    contract_basic = _money(contract.get("basico"))
+    is_monthly = contract_basic > MONTHLY_BASIC_THRESHOLD
+    daily_basic = (
+        (contract_basic / Decimal("30")).quantize(CENT, rounding=ROUND_HALF_UP)
+        if is_monthly else contract_basic
+    )
     service_days = max((end - start).days + 1, 0) if start and end else 0
     eligible = service_days >= 30 and daily_basic > 0
     vacation = (
@@ -40,7 +47,9 @@ def project_contract_liquidation(contract):
         **contract,
         "fecha_ingreso": start,
         "final_contrato": end,
+        "contract_basic": contract_basic,
         "daily_basic": daily_basic,
+        "basic_periodicity": "MENSUAL" if is_monthly else "DIARIA",
         "service_days": service_days,
         "projected_cts": ZERO,
         "projected_gratification": ZERO,

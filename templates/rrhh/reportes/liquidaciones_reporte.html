@@ -77,12 +77,12 @@
             {% if projection_workers %}
             <div id="projection-chart" class="liq-chart mb-4"></div>
             <div class="table-responsive liq-table-wrap"><table class="table table-hover table-sm mb-0">
-                <thead><tr><th>Trabajador</th><th>Planilla</th><th>Perfil</th><th>Ingreso</th><th>Fin de contrato</th><th class="text-right">Básico diario</th><th class="text-right">Días de servicio</th><th class="text-right">CTS</th><th class="text-right">Gratificación</th><th class="text-right">Vacaciones truncas</th><th class="text-right">Total proyectado</th></tr></thead>
+                <thead><tr><th>Trabajador</th><th>Planilla</th><th>Perfil</th><th>Ingreso</th><th>Fin de contrato</th><th class="text-right">Básico contrato</th><th>Periodicidad</th><th class="text-right">Días de servicio</th><th class="text-right">CTS</th><th class="text-right">Gratificación</th><th class="text-right">Vacaciones truncas</th><th class="text-right">Total proyectado</th></tr></thead>
                 <tbody>{% for row in projection_rows %}<tr>
                     <td class="font-weight-bold">{{ row.full_name }}</td><td>{{ row.payroll|default:row.payroll_id }}</td><td>{{ row.position }}</td><td class="text-nowrap">{{ row.fecha_ingreso|date:'d/m/Y' }}</td><td class="text-nowrap">{{ row.final_contrato|date:'d/m/Y' }}</td>
-                    <td class="text-right text-nowrap">S/ {{ row.daily_basic|floatformat:2 }}</td><td class="text-right">{{ row.service_days }}</td><td class="text-right">S/ {{ row.projected_cts|floatformat:2 }}</td><td class="text-right">S/ {{ row.projected_gratification|floatformat:2 }}</td><td class="text-right text-nowrap">S/ {{ row.projected_vacation|floatformat:2 }}</td><td class="text-right text-nowrap font-weight-bold">S/ {{ row.projected_total|floatformat:2 }}</td>
+                    <td class="text-right text-nowrap">S/ {{ row.contract_basic|floatformat:2 }}</td><td>{{ row.basic_periodicity }}</td><td class="text-right">{{ row.service_days }}</td><td class="text-right">S/ {{ row.projected_cts|floatformat:2 }}</td><td class="text-right">S/ {{ row.projected_gratification|floatformat:2 }}</td><td class="text-right text-nowrap">S/ {{ row.projected_vacation|floatformat:2 }}</td><td class="text-right text-nowrap font-weight-bold">S/ {{ row.projected_total|floatformat:2 }}</td>
                 </tr>{% endfor %}</tbody>
-                <tfoot><tr class="font-weight-bold bg-light"><td colspan="10">TOTAL PROYECTADO</td><td class="text-right text-nowrap">S/ {{ projection_total|floatformat:2 }}</td></tr></tfoot>
+                <tfoot><tr class="font-weight-bold bg-light"><td colspan="11">TOTAL PROYECTADO</td><td class="text-right text-nowrap">S/ {{ projection_total|floatformat:2 }}</td></tr></tfoot>
             </table></div>
             {% else %}<div class="text-center text-muted py-4">No hay contratos con fecha de finalización en {{ selected_year }} para los filtros seleccionados.</div>{% endif %}
         </div>
