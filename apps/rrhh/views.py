@@ -96,6 +96,9 @@ class RRHHLiquidacionesView(RRHHReportesAccessMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         service = PaySlipService()
+        active_tab = self.request.GET.get('tab', 'liquidaciones').strip().lower()
+        if active_tab not in ('liquidaciones', 'proyeccion'):
+            active_tab = 'liquidaciones'
         payroll_type = self.request.GET.get('planilla', '').strip().upper()
         if payroll_type not in dict(PAYROLL_TYPES):
             payroll_type = ''
@@ -232,6 +235,7 @@ class RRHHLiquidacionesView(RRHHReportesAccessMixin, TemplateView):
         ]
         context.update({
             'reporte': RRHH_REPORTES[0],
+            'active_tab': active_tab,
             'period': period,
             'available_years': available_years,
             'selected_year': selected_year,
@@ -263,6 +267,10 @@ class RRHHLiquidacionesView(RRHHReportesAccessMixin, TemplateView):
             ],
             'projection_chart': [
                 [MONTH_NAMES[row['month']], float(row['total'])]
+                for row in annual_projection['projection_months']
+            ],
+            'projection_workers_chart': [
+                [MONTH_NAMES[row['month']], row['workers']]
                 for row in annual_projection['projection_months']
             ],
         })
