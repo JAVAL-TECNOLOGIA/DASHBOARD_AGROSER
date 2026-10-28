@@ -201,28 +201,47 @@
                 <!--RECUSOS HUMANOS-->
                 <!--=============================================================-->
 
-                {% if perms.boletas.visualizar_boletas or perms.boletas.administrar_boletas or user.admin %}
-                <li class="{% if request.path|slice:':9' == '/boletas/' and request.path|slice:':21' != '/boletas/marcaciones/' %}active{% endif %}">
-                    <a href="{% url 'boletas:index' %}">
-                        <i class="fa fa-file-invoice-dollar"></i>
-                        <span style="font-size: 16px;">Visualización de boletas</span>
+                {% if perms.boletas.visualizar_boletas or perms.boletas.administrar_boletas or perms.boletas.ver_marcaciones or perms.contratos.gestionar_contratos or perms.MARCACIONES_RRHH.rrhh_marcaciones or user.admin %}
+                <li class="has-sub {% if request.path|slice:':9' == '/boletas/' or request.path|slice:':11' == '/contratos/' or request.resolver_match.url_name == 'marcadores' or request.resolver_match.url_name == 'administracion_marcadores' %}active{% endif %}">
+                    <a href="javascript:;">
+                        <b class="caret"></b>
+                        <i class="fa fa-users"></i>
+                        <span style="font-size: 16px;">RRHH</span>
                     </a>
-                </li>
-                {% endif %}
-                {% if perms.boletas.ver_marcaciones or perms.boletas.administrar_boletas or user.admin %}
-                <li class="{% if request.path|slice:':21' == '/boletas/marcaciones/' %}active{% endif %}">
-                    <a href="{% url 'boletas:attendance' %}">
-                        <i class="fa fa-barcode"></i>
-                        <span style="font-size: 16px;">Marcaciones</span>
-                    </a>
-                </li>
-                {% endif %}
-                {% if perms.contratos.gestionar_contratos or user.admin %}
-                <li class="{% if request.path|slice:':11' == '/contratos/' %}active{% endif %}">
-                    <a href="{% url 'contratos:index' %}">
-                        <i class="fa fa-file-signature"></i>
-                        <span style="font-size: 16px;">Generación de contratos</span>
-                    </a>
+                    <ul style="font-size: 14px;" class="sub-menu rrhh-sub-menu">
+                        {% if perms.boletas.visualizar_boletas or perms.boletas.administrar_boletas or user.admin %}
+                        <li class="{% if request.path|slice:':9' == '/boletas/' and request.path|slice:':21' != '/boletas/marcaciones/' %}active{% endif %}">
+                            <a class="rrhh-menu-link" href="{% url 'boletas:index' %}">
+                                <i class="fa fa-file-invoice-dollar rrhh-menu-icon"></i>
+                                <span>Visualización de boletas</span>
+                            </a>
+                        </li>
+                        {% endif %}
+                        {% if perms.boletas.ver_marcaciones or perms.boletas.administrar_boletas or user.admin %}
+                        <li class="{% if request.path|slice:':21' == '/boletas/marcaciones/' %}active{% endif %}">
+                            <a class="rrhh-menu-link" href="{% url 'boletas:attendance' %}">
+                                <i class="fa fa-barcode rrhh-menu-icon"></i>
+                                <span>Marcaciones</span>
+                            </a>
+                        </li>
+                        {% endif %}
+                        {% if perms.contratos.gestionar_contratos or user.admin %}
+                        <li class="{% if request.path|slice:':11' == '/contratos/' %}active{% endif %}">
+                            <a class="rrhh-menu-link" href="{% url 'contratos:index' %}">
+                                <i class="fa fa-file-signature rrhh-menu-icon"></i>
+                                <span>Generación de contratos</span>
+                            </a>
+                        </li>
+                        {% endif %}
+                        {% if perms.MARCACIONES_RRHH.rrhh_marcaciones or user.admin %}
+                        <li class="{% if request.resolver_match.url_name == 'marcadores' or request.resolver_match.url_name == 'administracion_marcadores' %}active{% endif %}">
+                            <a class="rrhh-menu-link" href="{% url 'marcadores' %}">
+                                <i class="bi bi-clock-fill rrhh-menu-icon"></i>
+                                <span>Marcadores</span>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
                 </li>
                 {% endif %}
 
@@ -1283,34 +1302,6 @@
                     </ul>
                 </li>
                 {% endif %} {% endcomment %}
-
-                <!--=============================================================-->
-                {% if perms.MARCACIONES_RRHH.rrhh_marcaciones %}
-                <li class="has-sub">
-                    <a href="javascript:;">
-                        <b class="caret"></b>
-                        <i class="bi bi-clock-fill"></i>
-                        <span style="font-size: 16px;">Marcadores<span class="label label-theme m-l-5">NEW</span></span>
-                    </a>
-                    <ul style="font-size: 14px;" class="sub-menu">
-                        {% if perms.MARCACIONES_RRHH.rrhh_marcaciones %}
-                        <li class="has-sub">
-                            <a href="{% url 'marcadores' %}">
-                                Marcadores
-                            </a>
-                        </li>
-                        {% endif %}
-                        
-                        {% if perms.MARCACIONES_RRHH.rrhh_marcaciones %}
-                        <li class="has-sub">
-                            <a href="{% url 'administracion_marcadores' %}">
-                                <i class="fa fa-cog"></i> Administración
-                            </a>
-                        </li>
-                        {% endif %}
-                    </ul>
-                </li>
-                {% endif %}
 
                 <!-- FITOSANIDAD -->
                 
@@ -3629,5 +3620,21 @@
             font-size: 10px;
             padding: 2px 6px;
             line-height: 1.2;
+        }
+        .rrhh-sub-menu .rrhh-menu-link {
+            display: flex;
+            align-items: center;
+            min-height: 38px;
+            gap: 9px;
+        }
+        .rrhh-sub-menu .rrhh-menu-icon {
+            width: 20px;
+            min-width: 20px;
+            margin: 0;
+            text-align: center;
+            font-size: 14px;
+        }
+        .rrhh-sub-menu .rrhh-menu-link span {
+            line-height: 1.25;
         }
     </style>
