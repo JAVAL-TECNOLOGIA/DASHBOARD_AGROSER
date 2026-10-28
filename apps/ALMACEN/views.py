@@ -215,7 +215,10 @@ class OrdenCompraCatalogosView(OrdenCompraPermissionMixin, View):
                 SELECT RTRIM(P.IDPRODUCTO), RTRIM(P.DESCRIPCION), RTRIM(ISNULL(P.IDMEDIDA,''))
                 FROM PRODUCTOS P
                 WHERE ISNULL(P.DESCRIPCION,'')<>''
-                  AND EXISTS (
+                  AND (
+                    (P.FECHACREACION>=DATEFROMPARTS(YEAR(GETDATE()),1,1)
+                     AND P.FECHACREACION<DATEFROMPARTS(YEAR(GETDATE())+1,1,1))
+                    OR EXISTS (
                       SELECT 1
                       FROM DINGRESOSALIDAALM D
                       INNER JOIN INGRESOSALIDAALM M
@@ -226,6 +229,7 @@ class OrdenCompraCatalogosView(OrdenCompraPermissionMixin, View):
                         AND M.FECHA>=DATEFROMPARTS(YEAR(GETDATE()),1,1)
                         AND M.FECHA<DATEFROMPARTS(YEAR(GETDATE())+1,1,1)
                         AND ISNULL(M.IDESTADO,'')<>'AN'
+                    )
                   )
                 ORDER BY P.DESCRIPCION
             """,
@@ -243,6 +247,41 @@ class OrdenCompraCatalogosView(OrdenCompraPermissionMixin, View):
             return JsonResponse({'success': True, 'data': data})
         except Exception:
             return JsonResponse({'success': False, 'message': 'No se pudieron cargar los catálogos de NISIRA.'}, status=503)
+
+
+class OrdenCompraProductosView(OrdenCompraPermissionMixin, View):
+    """Recarga productos creados o con movimiento durante el año vigente."""
+
+    def get(self, request, *args, **kwargs):
+        sql = """
+            SELECT RTRIM(P.IDPRODUCTO), RTRIM(P.DESCRIPCION), RTRIM(ISNULL(P.IDMEDIDA,''))
+            FROM PRODUCTOS P
+            WHERE ISNULL(P.DESCRIPCION,'')<>''
+              AND (
+                (P.FECHACREACION>=DATEFROMPARTS(YEAR(GETDATE()),1,1)
+                 AND P.FECHACREACION<DATEFROMPARTS(YEAR(GETDATE())+1,1,1))
+                OR EXISTS (
+                  SELECT 1
+                  FROM DINGRESOSALIDAALM D
+                  INNER JOIN INGRESOSALIDAALM M
+                      ON M.IDEMPRESA=D.IDEMPRESA
+                     AND M.IDINGRESOSALIDAALM=D.IDINGRESOSALIDAALM
+                  WHERE D.IDEMPRESA='001'
+                    AND D.IDPRODUCTO=P.IDPRODUCTO
+                    AND M.FECHA>=DATEFROMPARTS(YEAR(GETDATE()),1,1)
+                    AND M.FECHA<DATEFROMPARTS(YEAR(GETDATE())+1,1,1)
+                    AND ISNULL(M.IDESTADO,'')<>'AN'
+                )
+              )
+            ORDER BY P.DESCRIPCION
+        """
+        try:
+            with connection_donluis.cursor() as cursor:
+                cursor.execute(sql)
+                products = [list(row) for row in cursor.fetchall()]
+            return JsonResponse({'success': True, 'data': products, 'year': date.today().year, 'count': len(products)})
+        except Exception:
+            return JsonResponse({'success': False, 'message': 'No se pudo sincronizar el catálogo de productos con NISIRA.'}, status=503)
 
 
 class OrdenCompraTipoCambioView(OrdenCompraPermissionMixin, View):
@@ -329,7 +368,10 @@ class OrdenCompraCrearView(OrdenCompraPermissionMixin, View):
                             SELECT RTRIM(P.DESCRIPCION), RTRIM(ISNULL(P.IDMEDIDA,''))
                             FROM PRODUCTOS P
                             WHERE P.IDPRODUCTO=?
-                              AND EXISTS (
+                              AND (
+                                (P.FECHACREACION>=DATEFROMPARTS(YEAR(GETDATE()),1,1)
+                                 AND P.FECHACREACION<DATEFROMPARTS(YEAR(GETDATE())+1,1,1))
+                                OR EXISTS (
                                   SELECT 1
                                   FROM DINGRESOSALIDAALM D
                                   INNER JOIN INGRESOSALIDAALM M
@@ -340,11 +382,12 @@ class OrdenCompraCrearView(OrdenCompraPermissionMixin, View):
                                     AND M.FECHA>=DATEFROMPARTS(YEAR(GETDATE()),1,1)
                                     AND M.FECHA<DATEFROMPARTS(YEAR(GETDATE())+1,1,1)
                                     AND ISNULL(M.IDESTADO,'')<>'AN'
+                                )
                               )
                         """, [producto])
                         prod = cursor.fetchone()
                         if not prod:
-                            raise ValueError(f'El producto de la fila {indice} no tiene movimientos durante el año actual en NISIRA.')
+                            raise ValueError(f'El producto de la fila {indice} no fue creado ni tuvo movimientos durante el año actual en NISIRA.')
                         precio_sin_igv = (precio / (Decimal('1') + tasa / Decimal('100'))).quantize(Decimal('0.000001'), ROUND_HALF_UP) if tasa else precio
                         cursor.execute("""INSERT INTO DORDENCOMPRA
                         (IDEMPRESA,IDCOMPRA,ITEM,IDPRODUCTO,IDESTADOPRODUCTO,DESCRIPCION,IDMEDIDA,ES_AFECTO,CANTIDAD,PORCENTAJEDSCTO1,PORCENTAJEDSCTO2,PORCENTAJEDSCTO3,IMPORTEDSCTO1,IMPORTEDSCTO2,IMPORTEDSCTO3,PRECIO_UNITARIO,SUBTOTALSINDSCTO,DESCUENTO_TOTAL,SUBTOTALCONDSCTO,TOTAL,FECHACREACION,SINCRONIZA,IDESTADO,IMPUESTO_I,IMPUESTO,PRECIO_UNITARIODSCTO,DESCUENTO_I,DESCUENTO,IMPORTE_ISC,EMBARCADO,SITUACION,MUESTRABOTONVEH,NDIAS,ARCHIVADO,ATENDIDO)
@@ -481,18 +524,22 @@ class OrdenCompraEditarView(OrdenCompraPermissionMixin, View):
                         cursor.execute("""
                             SELECT RTRIM(P.DESCRIPCION), RTRIM(ISNULL(P.IDMEDIDA,''))
                             FROM PRODUCTOS P
-                            WHERE P.IDPRODUCTO=? AND EXISTS (
+                            WHERE P.IDPRODUCTO=? AND (
+                              (P.FECHACREACION>=DATEFROMPARTS(YEAR(GETDATE()),1,1)
+                               AND P.FECHACREACION<DATEFROMPARTS(YEAR(GETDATE())+1,1,1))
+                              OR EXISTS (
                                 SELECT 1 FROM DINGRESOSALIDAALM D
                                 INNER JOIN INGRESOSALIDAALM M ON M.IDEMPRESA=D.IDEMPRESA AND M.IDINGRESOSALIDAALM=D.IDINGRESOSALIDAALM
                                 WHERE D.IDEMPRESA='001' AND D.IDPRODUCTO=P.IDPRODUCTO
                                   AND M.FECHA>=DATEFROMPARTS(YEAR(GETDATE()),1,1)
                                   AND M.FECHA<DATEFROMPARTS(YEAR(GETDATE())+1,1,1)
                                   AND ISNULL(M.IDESTADO,'')<>'AN'
+                              )
                             )
                         """, [product])
                         product_data = cursor.fetchone()
                         if not product_data:
-                            raise ValueError(f'El producto de la fila {index} no tiene movimientos durante el año actual en NISIRA.')
+                            raise ValueError(f'El producto de la fila {index} no fue creado ni tuvo movimientos durante el año actual en NISIRA.')
                         cursor.execute("SELECT COUNT(*) FROM CONSUMIDOR WHERE IDEMPRESA='001' AND IDCONSUMIDOR=?", [consumer])
                         if not cursor.fetchone()[0]:
                             raise ValueError(f'El centro de costo de la fila {index} ya no existe en NISIRA.')
