@@ -390,6 +390,28 @@ class PaySlipService:
         return unique
 
     @staticmethod
+    def deduplicate_display_slips(slips):
+        """Show one worker row per payroll period, preferring the normal movement."""
+        selected = {}
+        order = []
+        for slip in slips:
+            key = (
+                str(slip.get("idcodigogeneral") or slip.get("nrodocumento") or "").strip(),
+                str(slip.get("payroll_type") or "").strip().upper(),
+                str(slip.get("grupo_planilla") or "").strip(),
+                str(slip.get("semana") or "").strip(),
+            )
+            if key not in selected:
+                selected[key] = slip
+                order.append(key)
+                continue
+            current_type = str(selected[key].get("movement_type") or "").strip().upper()
+            candidate_type = str(slip.get("movement_type") or "").strip().upper()
+            if current_type != "N" and candidate_type == "N":
+                selected[key] = slip
+        return [selected[key] for key in order]
+
+    @staticmethod
     def _slip_identity(slip):
         def normalized(name):
             return str(slip.get(name) or "").strip().upper()

@@ -138,6 +138,36 @@ class PaySlipCacheTests(SimpleTestCase):
 
         self.assertEqual(len(result), 3)
 
+    def test_display_uses_one_row_and_prefers_normal_movement(self):
+        adjustment = {
+            "idcodigogeneral": "72366911",
+            "payroll_type": "ERG",
+            "grupo_planilla": "01",
+            "movement_id": "MOV-A",
+            "movement_type": "A",
+        }
+        normal = dict(adjustment, movement_id="MOV-N", movement_type="N")
+
+        result = PaySlipService.deduplicate_display_slips([adjustment, normal])
+
+        self.assertEqual(result, [normal])
+
+    def test_display_keeps_different_workers_and_payroll_weeks(self):
+        first_week = {
+            "idcodigogeneral": "72366911",
+            "payroll_type": "OBP",
+            "grupo_planilla": "02",
+            "semana": "01",
+        }
+        second_week = dict(first_week, semana="02")
+        other_worker = dict(first_week, idcodigogeneral="76625414")
+
+        result = PaySlipService.deduplicate_display_slips(
+            [first_week, second_week, other_worker]
+        )
+
+        self.assertEqual(len(result), 3)
+
     @patch("apps.boletas.views.PaySlipPdfView._build_erg_pdf", return_value=b"pdf-data")
     def test_same_payslip_reuses_rendered_pdf(self, render_pdf):
         from .views import PaySlipPdfView

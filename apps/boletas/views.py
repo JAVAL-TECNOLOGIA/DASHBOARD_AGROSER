@@ -727,6 +727,8 @@ class PaySlipListView(PaySlipPermissionMixin, View):
                 slip for slip in slips if slip.get("payroll_type") == payroll_type
             ]
 
+        slips = service.deduplicate_display_slips(slips)
+
         if query:
             normalized = query.casefold()
             slips = [
