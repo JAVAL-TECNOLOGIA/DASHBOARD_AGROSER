@@ -68,7 +68,9 @@ class RRHHReportesAccessMixin(LoginRequiredMixin, PermissionRequiredMixin):
     def has_permission(self):
         user = self.request.user
         return user.is_authenticated and (
-            getattr(user, 'admin', False) or super().has_permission()
+            getattr(user, 'admin', False)
+            or user.has_perm('RRHH.ver_reportes_rrhh')
+            or super().has_permission()
         )
 
     def handle_no_permission(self):

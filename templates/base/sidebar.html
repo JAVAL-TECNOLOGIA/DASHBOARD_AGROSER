@@ -201,7 +201,7 @@
                 <!--RECUSOS HUMANOS-->
                 <!--=============================================================-->
 
-                {% if perms.boletas.visualizar_boletas or perms.boletas.administrar_boletas or perms.boletas.ver_marcaciones or perms.contratos.gestionar_contratos or perms.MARCACIONES_RRHH.rrhh_marcaciones or perms.rrhh.ver_reportes_rrhh or user.admin %}
+                {% if perms.boletas.visualizar_boletas or perms.boletas.administrar_boletas or perms.boletas.ver_marcaciones or perms.contratos.gestionar_contratos or perms.MARCACIONES_RRHH.rrhh_marcaciones or perms.RRHH.ver_reportes_rrhh or perms.rrhh.ver_reportes_rrhh or user.admin %}
                 <li class="has-sub {% if request.path|slice:':9' == '/boletas/' or request.path|slice:':11' == '/contratos/' or request.resolver_match.url_name == 'marcadores' or request.resolver_match.url_name == 'administracion_marcadores' or request.resolver_match.url_name == 'rrhh_reportes' or request.resolver_match.url_name == 'rrhh_reporte_liquidaciones' %}active{% endif %}">
                     <a href="javascript:;">
                         <b class="caret"></b>
@@ -241,7 +241,7 @@
                             </a>
                         </li>
                         {% endif %}
-                        {% if perms.rrhh.ver_reportes_rrhh or user.admin %}
+                        {% if perms.RRHH.ver_reportes_rrhh or perms.rrhh.ver_reportes_rrhh or user.admin %}
                         <li class="{% if request.resolver_match.url_name == 'rrhh_reportes' or request.resolver_match.url_name == 'rrhh_reporte_liquidaciones' %}active{% endif %}">
                             <a class="rrhh-menu-link" href="{% url 'rrhh_reportes' %}">
                                 <i class="bi bi-bar-chart-line rrhh-menu-icon"></i>
