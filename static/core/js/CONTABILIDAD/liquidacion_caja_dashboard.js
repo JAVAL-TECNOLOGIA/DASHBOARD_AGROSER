@@ -11,10 +11,10 @@
     }
     window.initLiquidacionCajaDashboard = function () {
         var data = JSON.parse(document.getElementById('liquidacion-caja-data').textContent);
-        document.getElementById('cash-cash-total').textContent = money(data.cash_total, true);
-        document.getElementById('cash-receivable-total').textContent = money(data.receivable_total, true);
-        document.getElementById('cash-payable-total').textContent = money(data.payable_total, true);
-        var net = document.getElementById('cash-net-total'); net.textContent = money(data.net_position, true); net.className = 'cash-kpi-value ' + (data.net_position >= 0 ? 'cash-positive' : 'cash-negative');
+        document.getElementById('cash-cash-total').textContent = money(data.cash_total, false);
+        document.getElementById('cash-receivable-total').textContent = money(data.receivable_total, false);
+        document.getElementById('cash-payable-total').textContent = money(data.payable_total, false);
+        var net = document.getElementById('cash-net-total'); net.textContent = money(data.net_position, false); net.className = 'cash-kpi-value ' + (data.net_position >= 0 ? 'cash-positive' : 'cash-negative');
         document.getElementById('cash-coverage').textContent = Number(data.coverage).toLocaleString('es-PE', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '%';
         document.getElementById('cash-receivable-body').innerHTML = rows([{account:'10', label:'Efectivo y Equivalente de Efectivo', amount:data.cash_total}].concat(data.receivables));
         document.getElementById('cash-payable-body').innerHTML = rows(data.payables);
