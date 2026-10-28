@@ -27,6 +27,7 @@ class RRHHPermission(models.Model):
                 ('RRHH_REPORTE_CAMPANA_PODA_AMARRE','RRHH_REPORTE_CAMPANA_PODA_AMARRE'),
                 ('RRHH_CV_REPORTE_UTILIDADES','RRHH_CV_REPORTE_UTILIDADES'),
                 ('RRHH_presupuesto','RRHH_presupuesto'),
+                ('ver_reportes_rrhh','Puede visualizar los reportes de RRHH'),
 
 
 

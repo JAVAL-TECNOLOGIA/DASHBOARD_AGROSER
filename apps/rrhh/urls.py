@@ -9,6 +9,9 @@ from .views import eliminar_pdf
 
 urlpatterns = [
 
+    path('reportes/', RRHHReportesView.as_view(), name='rrhh_reportes'),
+    path('reportes/liquidaciones/', RRHHLiquidacionesView.as_view(), name='rrhh_reporte_liquidaciones'),
+
 
     # REPORTE
     path('rrhh_reporte/', reporte_rrhh.as_view(), name='rrhh_reporte'),

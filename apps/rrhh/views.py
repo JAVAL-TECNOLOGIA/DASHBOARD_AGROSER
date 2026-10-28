@@ -17,6 +17,8 @@ from apps.connection.connect_portalaei import connection_portalaei
 from decimal import Decimal
 import json
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
+from django.contrib.auth.views import redirect_to_login
 from django.http import JsonResponse
 from django.db import connection
 from django.db import IntegrityError
@@ -41,6 +43,55 @@ MESES_ORDEN = [
     ("NOVIEMBRE", "Noviembre"),
     ("DICIEMBRE", "Diciembre"),
 ]
+
+
+RRHH_REPORTES = (
+    {
+        'slug': 'liquidaciones',
+        'nombre': 'Liquidaciones',
+        'descripcion': 'Consulta y seguimiento de las liquidaciones del personal.',
+        'icono': 'bi-file-earmark-text',
+        'color': '#0b7551',
+    },
+)
+
+
+class RRHHReportesAccessMixin(LoginRequiredMixin, PermissionRequiredMixin):
+    permission_required = 'rrhh.ver_reportes_rrhh'
+    raise_exception = True
+
+    def has_permission(self):
+        user = self.request.user
+        return user.is_authenticated and (
+            getattr(user, 'admin', False) or super().has_permission()
+        )
+
+    def handle_no_permission(self):
+        if not self.request.user.is_authenticated:
+            return redirect_to_login(
+                self.request.get_full_path(),
+                self.get_login_url(),
+                self.get_redirect_field_name(),
+            )
+        return super().handle_no_permission()
+
+
+class RRHHReportesView(RRHHReportesAccessMixin, TemplateView):
+    template_name = 'rrhh/reportes/index.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['reportes'] = RRHH_REPORTES
+        return context
+
+
+class RRHHLiquidacionesView(RRHHReportesAccessMixin, TemplateView):
+    template_name = 'rrhh/reportes/liquidaciones.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['reporte'] = RRHH_REPORTES[0]
+        return context
 
 @method_decorator(csrf_exempt, name='dispatch')
 class UsuariosView(View):
