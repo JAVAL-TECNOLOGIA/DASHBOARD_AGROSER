@@ -1,0 +1,103 @@
+{% load static %}
+{% include 'base/header.html' %}
+{% block page %}Liquidaciones{% endblock %}
+{% include 'base/sidebar.html' %}
+
+{% block css %}
+<style>
+    .liq-filter-card, .liq-card, .liq-panel { border: 0; border-radius: 12px; }
+    .liq-card { border-top: 4px solid #0b7551; }
+    .liq-card.is-blue { border-top-color: #238aa5; }
+    .liq-card.is-orange { border-top-color: #df8500; }
+    .liq-card.is-purple { border-top-color: #7850c7; }
+    .liq-label { color: #708090; font-size: .72rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+    .liq-value { color: #102f4d; font-size: 1.65rem; font-weight: 700; line-height: 1.15; }
+    .liq-chart { height: 330px; width: 100%; }
+    .liq-table-wrap { max-height: 580px; overflow: auto; }
+    .liq-table-wrap thead th { background: #f4f7f9; position: sticky; top: 0; z-index: 2; }
+    .flot-tooltip { pointer-events: none; }
+    @media (max-width: 767px) { .liq-value { font-size: 1.35rem; } .liq-chart { height: 285px; } }
+</style>
+{% endblock %}
+
+<div id="content" class="content">
+    <nav aria-label="breadcrumb"><ol class="breadcrumb bg-transparent px-0 pt-0 mb-2">
+        <li class="breadcrumb-item"><a href="{% url 'rrhh_reportes' %}">Reportes de RRHH</a></li>
+        <li class="breadcrumb-item active" aria-current="page">Liquidaciones</li>
+    </ol></nav>
+
+    <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between mb-4">
+        <div class="d-flex align-items-center">
+            <div class="mr-3 text-white d-flex align-items-center justify-content-center" style="width:54px;height:54px;border-radius:12px;background:#0b7551;font-size:1.6rem;"><i class="bi bi-file-earmark-text"></i></div>
+            <div><h1 class="page-header mb-1">Liquidaciones</h1><p class="text-muted mb-0">Liquidaciones del personal por periodo, planilla y perfil de trabajo.</p></div>
+        </div>
+        <span class="badge badge-success p-2 mt-3 mt-md-0">{{ period.label }}</span>
+    </div>
+
+    <div class="card liq-filter-card shadow-sm mb-4"><div class="card-body">
+        <form method="get" id="liquidaciones-filter"><div class="form-row align-items-end">
+            <div class="form-group col-xl-2 col-md-4"><label class="liq-label" for="anio">Año</label><select class="form-control" id="anio" name="anio">
+                {% for year in available_years %}<option value="{{ year }}" {% if selected_year == year %}selected{% endif %}>{{ year }}</option>{% endfor %}
+            </select></div>
+            <div class="form-group col-xl-2 col-md-4"><label class="liq-label" for="mes">Mes</label><select class="form-control" id="mes" name="mes">
+                {% for item in month_options %}<option value="{{ item.number }}" {% if selected_month == item.number %}selected{% endif %}>{{ item.name }}</option>{% endfor %}
+            </select></div>
+            <div class="form-group col-xl-3 col-md-4"><label class="liq-label" for="planilla">Planilla</label><select class="form-control" id="planilla" name="planilla">
+                <option value="">Todas las planillas</option>{% for code, label in payroll_types %}<option value="{{ code }}" {% if payroll_type == code %}selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select></div>
+            <div class="form-group col-xl-3 col-md-8"><label class="liq-label" for="perfil">Perfil de trabajo</label><select class="form-control" id="perfil" name="perfil">
+                <option value="">Todos los perfiles</option>{% for item in available_profiles %}<option value="{{ item }}" {% if profile == item %}selected{% endif %}>{{ item }}</option>{% endfor %}
+            </select></div>
+            <div class="form-group col-xl-2 col-md-4 d-flex"><button class="btn btn-success flex-grow-1" type="submit"><i class="fa fa-search mr-1"></i> Consultar</button><a class="btn btn-light ml-2" href="{% url 'rrhh_reporte_liquidaciones' %}" title="Restablecer"><i class="fa fa-undo"></i></a></div>
+        </div></form>
+    </div></div>
+
+    {% if data_error %}<div class="alert alert-warning"><i class="fa fa-exclamation-triangle mr-2"></i>No fue posible consultar NISIRA en este momento. Intenta nuevamente.</div>{% endif %}
+
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-3 mb-xl-0"><div class="card liq-card shadow-sm h-100"><div class="card-body"><div class="liq-label mb-2">Total liquidado</div><div class="liq-value">S/ {{ total_net|floatformat:2 }}</div><small class="text-muted">Neto pagado</small></div></div></div>
+        <div class="col-xl-3 col-md-6 mb-3 mb-xl-0"><div class="card liq-card is-blue shadow-sm h-100"><div class="card-body"><div class="liq-label mb-2">Total ingresos</div><div class="liq-value">S/ {{ total_income|floatformat:2 }}</div><small class="text-muted">Conceptos remunerativos</small></div></div></div>
+        <div class="col-xl-3 col-md-6 mb-3 mb-md-0"><div class="card liq-card is-orange shadow-sm h-100"><div class="card-body"><div class="liq-label mb-2">Total descuentos</div><div class="liq-value">S/ {{ total_deductions|floatformat:2 }}</div><small class="text-muted">Retenciones y descuentos</small></div></div></div>
+        <div class="col-xl-3 col-md-6"><div class="card liq-card is-purple shadow-sm h-100"><div class="card-body"><div class="liq-label mb-2">Personal liquidado</div><div class="liq-value">{{ total_workers }}</div><small class="text-muted">Registros del periodo</small></div></div></div>
+    </div>
+
+    {% if total_workers %}
+    <div class="row mb-4">
+        <div class="col-xl-7 mb-4 mb-xl-0"><div class="card liq-panel shadow-sm h-100"><div class="card-header bg-white border-0 pt-4 px-4"><h4 class="mb-1">Evolución mensual</h4><small class="text-muted">Neto liquidado durante {{ selected_year }}</small></div><div class="card-body"><div id="monthly-chart" class="liq-chart"></div></div></div></div>
+        <div class="col-xl-5"><div class="card liq-panel shadow-sm h-100"><div class="card-header bg-white border-0 pt-4 px-4"><h4 class="mb-1">Distribución por planilla</h4><small class="text-muted">Participación del periodo seleccionado</small></div><div class="card-body"><div id="payroll-chart" class="liq-chart"></div></div></div></div>
+    </div>
+    <div class="card liq-panel shadow-sm mb-4"><div class="card-header bg-white border-0 pt-4 px-4"><h4 class="mb-1">Liquidación por perfil de trabajo</h4><small class="text-muted">Principales perfiles según el neto liquidado</small></div><div class="card-body"><div id="profile-chart" class="liq-chart"></div></div></div>
+    <div class="card liq-panel shadow-sm"><div class="card-header bg-white border-0 pt-4 px-4 d-flex justify-content-between align-items-center"><div><h4 class="mb-1">Detalle de liquidaciones</h4><small class="text-muted">Información del personal según los filtros seleccionados</small></div><span class="badge badge-light p-2">{{ total_workers }} registros</span></div>
+        <div class="card-body p-0"><div class="table-responsive liq-table-wrap"><table class="table table-hover mb-0">
+            <thead><tr><th>Trabajador</th><th>Documento</th><th>Planilla</th><th>Perfil de trabajo</th><th class="text-right">Básico</th><th class="text-right">Ingresos</th><th class="text-right">Descuentos</th><th class="text-right">Neto liquidado</th></tr></thead>
+            <tbody>{% for worker in workers %}<tr><td class="font-weight-bold">{{ worker.name }}</td><td>{{ worker.document|default:'—' }}</td><td>{{ worker.payroll }}</td><td>{{ worker.position }}</td><td class="text-right text-nowrap">S/ {{ worker.basic|floatformat:2 }}</td><td class="text-right text-nowrap">S/ {{ worker.income|floatformat:2 }}</td><td class="text-right text-nowrap">S/ {{ worker.deductions|floatformat:2 }}</td><td class="text-right text-nowrap font-weight-bold">S/ {{ worker.net|floatformat:2 }}</td></tr>{% endfor %}</tbody>
+            <tfoot><tr class="font-weight-bold bg-light"><td colspan="5">TOTAL</td><td class="text-right text-nowrap">S/ {{ total_income|floatformat:2 }}</td><td class="text-right text-nowrap">S/ {{ total_deductions|floatformat:2 }}</td><td class="text-right text-nowrap">S/ {{ total_net|floatformat:2 }}</td></tr></tfoot>
+        </table></div></div>
+    </div>
+    {% else %}<div class="card liq-panel shadow-sm"><div class="card-body text-center py-5"><i class="bi bi-inbox text-muted" style="font-size:3rem;"></i><h4 class="mt-3">Sin liquidaciones</h4><p class="text-muted mb-0">No existen registros para los filtros seleccionados.</p></div></div>{% endif %}
+</div>
+
+{{ payroll_chart|json_script:"payroll-chart-data" }}
+{{ profile_chart|json_script:"profile-chart-data" }}
+{{ monthly_chart|json_script:"monthly-chart-data" }}
+{{ profiles_by_payroll|json_script:"profiles-by-payroll-data" }}
+{% include 'base/footer.html' %}
+<script src="{% static 'assets/plugins/flot/jquery.flot.min.js' %}"></script>
+<script src="{% static 'assets/plugins/flot/jquery.flot.resize.min.js' %}"></script>
+<script src="{% static 'assets/plugins/flot/jquery.flot.pie.min.js' %}"></script>
+<script src="{% static 'assets/plugins/flot/jquery.flot.categories.min.js' %}"></script>
+<script>
+$(document).ready(function () {
+    App.init();
+    const profilesByPayroll=JSON.parse(document.getElementById('profiles-by-payroll-data').textContent), payrollFilter=$('#planilla'), profileFilter=$('#perfil'), allProfiles=[];
+    Object.keys(profilesByPayroll).forEach(function(code){profilesByPayroll[code].forEach(function(item){if(allProfiles.indexOf(item)===-1)allProfiles.push(item);});}); allProfiles.sort();
+    payrollFilter.on('change',function(){const previous=profileFilter.val(),options=payrollFilter.val()?(profilesByPayroll[payrollFilter.val()]||[]):allProfiles;profileFilter.empty().append($('<option>',{value:'',text:'Todos los perfiles'}));options.forEach(function(item){profileFilter.append($('<option>',{value:item,text:item}));});if(options.indexOf(previous)!==-1)profileFilter.val(previous);});
+    const payroll=JSON.parse(document.getElementById('payroll-chart-data').textContent),profiles=JSON.parse(document.getElementById('profile-chart-data').textContent),monthly=JSON.parse(document.getElementById('monthly-chart-data').textContent);
+    const money=function(value){return 'S/ '+Number(value).toLocaleString('es-PE',{minimumFractionDigits:2,maximumFractionDigits:2});};
+    const tooltip=$('<div class="flot-tooltip"></div>').css({position:'absolute',display:'none',padding:'7px 10px',background:'#142b3d',color:'#fff',borderRadius:'6px',zIndex:9999}).appendTo('body');
+    if(monthly.length)$.plot('#monthly-chart',[{data:monthly,color:'#0b7551',label:'Neto liquidado'}],{series:{lines:{show:true,fill:.12,lineWidth:3},points:{show:true,radius:4}},xaxis:{mode:'categories',tickLength:0},yaxis:{tickFormatter:function(v){return 'S/ '+Math.round(v).toLocaleString('es-PE');}},grid:{hoverable:true,borderColor:'#e4e9ed',borderWidth:1}});
+    if(payroll.length)$.plot('#payroll-chart',payroll,{series:{pie:{show:true,innerRadius:.48,radius:.9,label:{show:true,formatter:function(label,series){return '<div style="font-size:10px;color:#fff;text-align:center">'+Math.round(series.percent)+'%</div>';}}}},legend:{show:true,position:'se'},grid:{hoverable:true}});
+    if(profiles.length)$.plot('#profile-chart',[{data:profiles,color:'#238aa5'}],{series:{bars:{show:true,barWidth:.64,align:'center',fill:.9}},xaxis:{mode:'categories',tickLength:0},yaxis:{tickFormatter:function(v){return 'S/ '+Math.round(v).toLocaleString('es-PE');}},grid:{hoverable:true,borderColor:'#e4e9ed',borderWidth:1}});
+    $('.liq-chart').on('plothover',function(event,pos,item){if(!item)return tooltip.hide();let label=item.series.label||(item.series.data[item.dataIndex]?item.series.data[item.dataIndex][0]:'Total');let value=item.series.pie?item.series.data[0][1]:item.datapoint[1];tooltip.html('<strong>'+label+'</strong><br>'+money(value)).css({top:item.pageY+10,left:item.pageX+10}).show();});
+});
+</script>

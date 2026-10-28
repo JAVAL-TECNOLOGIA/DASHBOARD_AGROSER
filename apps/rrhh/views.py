@@ -21,13 +21,16 @@ from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMix
 from django.contrib.auth.views import redirect_to_login
 from django.http import JsonResponse
 from django.db import connection
-from django.db import IntegrityError
+from django.db import DatabaseError, IntegrityError
 from django.db import transaction
 from django.core.mail import EmailMessage
 from django.conf import settings
 from datetime import datetime
 from apps.connection.connect_donluis import get_thread_connection
 from apps.connection.connect_campoverde import get_thread_connection_cv
+from apps.boletas.analytics import build_payroll_summary
+from apps.boletas.periods import MONTH_NAMES, month_range
+from apps.boletas.services import PAYROLL_TYPES, PaySlipService
 
 MESES_ORDEN = [
     ("ENERO", "Enero"),
@@ -86,11 +89,131 @@ class RRHHReportesView(RRHHReportesAccessMixin, TemplateView):
 
 
 class RRHHLiquidacionesView(RRHHReportesAccessMixin, TemplateView):
-    template_name = 'rrhh/reportes/liquidaciones.html'
+    template_name = 'rrhh/reportes/liquidaciones_reporte.html'
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['reporte'] = RRHH_REPORTES[0]
+        service = PaySlipService()
+        payroll_type = self.request.GET.get('planilla', '').strip().upper()
+        if payroll_type not in dict(PAYROLL_TYPES):
+            payroll_type = ''
+        profile = self.request.GET.get('perfil', '').strip()
+
+        try:
+            available_periods = service.payroll_periods()
+        except DatabaseError:
+            available_periods = []
+
+        today = datetime.now()
+        fallback_period = today.strftime('%Y%m')
+        if not available_periods:
+            available_periods = [fallback_period]
+
+        available_years = sorted(
+            {value[:4] for value in available_periods if len(value) >= 6},
+            reverse=True,
+        )
+        requested_year = self.request.GET.get('anio', '').strip()
+        selected_year = requested_year if requested_year in available_years else available_years[0]
+        year_periods = [value for value in available_periods if value.startswith(selected_year)]
+        available_month_numbers = sorted(
+            {int(value[4:6]) for value in year_periods if value[4:6].isdigit()}
+        )
+        if not available_month_numbers:
+            available_month_numbers = [today.month]
+
+        try:
+            requested_month = int(self.request.GET.get('mes', ''))
+        except (TypeError, ValueError):
+            requested_month = 0
+        selected_month = (
+            requested_month
+            if requested_month in available_month_numbers
+            else available_month_numbers[-1]
+        )
+        period = month_range('{}-{:02d}'.format(selected_year, selected_month))
+
+        try:
+            slips = service.list(period)
+            data_error = False
+        except DatabaseError:
+            slips = []
+            data_error = True
+
+        profile_source = [
+            slip for slip in slips
+            if not payroll_type or slip.get('payroll_type') == payroll_type
+        ]
+        available_profiles = sorted({
+            str(slip.get('cargo_personal') or 'SIN PERFIL').strip()
+            for slip in profile_source
+        })
+        if profile not in available_profiles:
+            profile = ''
+
+        profiles_by_payroll = {
+            code: sorted({
+                str(slip.get('cargo_personal') or 'SIN PERFIL').strip()
+                for slip in slips
+                if slip.get('payroll_type') == code
+            })
+            for code, unused_label in PAYROLL_TYPES
+        }
+        filtered_slips = [
+            slip for slip in slips
+            if (not payroll_type or slip.get('payroll_type') == payroll_type)
+            and (
+                not profile
+                or str(slip.get('cargo_personal') or 'SIN PERFIL').strip() == profile
+            )
+        ]
+        summary = build_payroll_summary(filtered_slips)
+
+        try:
+            monthly_totals = service.monthly_net(
+                selected_year,
+                payroll_type=payroll_type,
+                position=profile,
+            )
+        except DatabaseError:
+            monthly_totals = [
+                {'month': '{}{:02d}'.format(selected_year, number), 'net': Decimal('0')}
+                for number in range(1, 13)
+            ]
+        monthly_totals[selected_month - 1]['net'] = summary['total_net']
+
+        month_options = [
+            {'number': number, 'name': MONTH_NAMES[number]}
+            for number in available_month_numbers
+        ]
+        context.update({
+            'reporte': RRHH_REPORTES[0],
+            'period': period,
+            'available_years': available_years,
+            'selected_year': selected_year,
+            'month_options': month_options,
+            'selected_month': selected_month,
+            'payroll_types': PAYROLL_TYPES,
+            'payroll_type': payroll_type,
+            'available_profiles': available_profiles,
+            'profiles_by_payroll': profiles_by_payroll,
+            'profile': profile,
+            'data_error': data_error,
+            **summary,
+            'payroll_chart': [
+                {'label': row['name'], 'data': float(row['net'])}
+                for row in summary['payrolls']
+            ],
+            'profile_chart': [
+                [row['name'], float(row['net'])]
+                for row in summary['positions'][:12]
+            ],
+            'monthly_chart': [
+                [MONTH_NAMES[index], float(row['net'])]
+                for index, row in enumerate(monthly_totals, start=1)
+                if index in available_month_numbers
+            ],
+        })
         return context
 
 @method_decorator(csrf_exempt, name='dispatch')
