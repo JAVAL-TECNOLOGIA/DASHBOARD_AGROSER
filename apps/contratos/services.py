@@ -248,6 +248,10 @@ class ContractService:
                      AND d.idconcepto = pl.DIAS_DESCANSO_GANADO
                     THEN ISNULL(d.calculo, 0) ELSE 0 END
                 ) AS rest_days,
+                SUM(CASE WHEN d.idconcepto = 'IN0007'
+                         THEN ISNULL(d.calculo, 0) ELSE 0 END) AS overtime_25_total,
+                SUM(CASE WHEN d.idconcepto = 'IN0008'
+                         THEN ISNULL(d.calculo, 0) ELSE 0 END) AS overtime_35_total,
                 MAX(CASE WHEN d.idconcepto = 'IN0002' AND ISNULL(d.calculo, 0) > 0
                          THEN 1 ELSE 0 END) AS has_family_allowance
             FROM movimiento_planilla m WITH (NOLOCK)

@@ -93,3 +93,22 @@ class LiquidationProjectionTests(TestCase):
         self.assertEqual(row["family_allowance"], Decimal("123.00"))
         self.assertEqual(row["computable_base"], Decimal("4215.32"))
         self.assertEqual(row["projected_total"], Decimal("2693.12"))
+
+    def test_closure_adds_six_month_overtime_averages_to_base(self):
+        row = project_closure_liquidation({
+            "fecha_ingreso": date(2026, 1, 1),
+            "basico": "41.00",
+            "performance_total": "0.00",
+            "overtime_25_total": "600.00",
+            "overtime_35_total": "300.00",
+            "rest_days": "30.00",
+            "performance_days": "0.00",
+            "has_family_allowance": False,
+            "minimum_wage": "1230.00",
+            "has_payroll_parameters": True,
+        }, date(2026, 10, 31))
+
+        self.assertEqual(row["overtime_25_average"], Decimal("100.00"))
+        self.assertEqual(row["overtime_35_average"], Decimal("50.00"))
+        self.assertEqual(row["computable_base"], Decimal("1380.00"))
+        self.assertEqual(row["projected_total"], Decimal("115.00"))

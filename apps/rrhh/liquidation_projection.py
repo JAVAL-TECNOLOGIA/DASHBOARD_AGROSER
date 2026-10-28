@@ -149,6 +149,14 @@ def project_closure_liquidation(contract, closing_date):
     performance_average = (performance_total / Decimal("6")).quantize(
         CENT, rounding=ROUND_HALF_UP
     )
+    overtime_25_total = _money(contract.get("overtime_25_total"))
+    overtime_35_total = _money(contract.get("overtime_35_total"))
+    overtime_25_average = (overtime_25_total / Decimal("6")).quantize(
+        CENT, rounding=ROUND_HALF_UP
+    )
+    overtime_35_average = (overtime_35_total / Decimal("6")).quantize(
+        CENT, rounding=ROUND_HALF_UP
+    )
     family_allowance = (
         (_money(contract.get("minimum_wage")) * Decimal("0.10")).quantize(
             CENT, rounding=ROUND_HALF_UP
@@ -162,7 +170,10 @@ def project_closure_liquidation(contract, closing_date):
         Decimal("1"), rounding=ROUND_HALF_UP
     )
     computable_days = rest_days + performance_days
-    computable_base = (basic + family_allowance + performance_average).quantize(CENT)
+    computable_base = (
+        basic + family_allowance + performance_average
+        + overtime_25_average + overtime_35_average
+    ).quantize(CENT)
     total = (computable_base * computable_days / Decimal("360")).quantize(
         CENT, rounding=ROUND_HALF_UP
     )
@@ -176,6 +187,10 @@ def project_closure_liquidation(contract, closing_date):
         "performance_months": int(contract.get("performance_months") or 0),
         "performance_total": performance_total,
         "performance_average": performance_average,
+        "overtime_25_total": overtime_25_total,
+        "overtime_35_total": overtime_35_total,
+        "overtime_25_average": overtime_25_average,
+        "overtime_35_average": overtime_35_average,
         "family_allowance": family_allowance,
         "rest_days": rest_days,
         "performance_days": performance_days,
