@@ -178,6 +178,7 @@ class ContabilidadReportesViewTests(TestCase):
     @patch('apps.contabilidad.views.get_cash_liquidation_report')
     def test_cash_liquidation_report_uses_balance_general_data(self, report_mock):
         report_mock.return_value = build_cash_liquidation_report([
+            ('10110101', 'A', '', 600, 100, 0, 0, 0, 0, 0, 0),
             ('12120101', 'A', '', 1000, 100, 0, 0, 0, 0, 0, 0),
             ('12120102', 'A', '', 2000, 0, 0, 0, 0, 0, 0, 0),
             ('42110001', 'P', '', 100, 5000, 0, 0, 0, 0, 0, 0),
@@ -200,7 +201,9 @@ class ContabilidadReportesViewTests(TestCase):
         data = response.context['liquidacion_caja_data']
         self.assertEqual(data['receivable_total'], 2900.0)
         self.assertEqual(data['payable_total'], 4900.0)
-        self.assertEqual(data['net_position'], -2000.0)
+        self.assertEqual(data['cash_total'], 500.0)
+        self.assertEqual(data['available_total'], 3400.0)
+        self.assertEqual(data['net_position'], -1500.0)
 
     @patch('apps.contabilidad.views.get_boxes_and_kilos_report')
     def test_boxes_and_kilos_report_uses_nisira_data(self, report_mock):

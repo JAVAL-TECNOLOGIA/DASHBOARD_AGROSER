@@ -58,11 +58,13 @@ def empty_cash_liquidation_report(report_date=None):
             {'account': account, 'label': label, 'amount': 0.0}
             for account, label in RECEIVABLE_GROUPS
         ],
+        'cash_total': 0.0,
         'payables': [
             {'account': account, 'label': label, 'amount': 0.0}
             for account, label in PAYABLE_GROUPS
         ],
         'receivable_total': 0.0,
+        'available_total': 0.0,
         'payable_total': 0.0,
         'net_position': 0.0,
         'coverage': 0.0,
@@ -77,13 +79,16 @@ def build_cash_liquidation_report(rows, report_date=None):
     payable_accounts = {account for account, unused_label in PAYABLE_GROUPS}
     receivable_totals = {account: Decimal('0') for account in receivable_accounts}
     payable_totals = {account: Decimal('0') for account in payable_accounts}
+    cash_total = Decimal('0')
 
     for row in rows:
         account = str(row[0] or '').strip()
         prefix = account[:2]
         debit = Decimal(str(row[3] or 0))
         credit = Decimal(str(row[4] or 0))
-        if prefix in receivable_accounts:
+        if prefix == '10':
+            cash_total += max(debit - credit, Decimal('0'))
+        elif prefix in receivable_accounts:
             receivable_totals[prefix] += max(debit - credit, Decimal('0'))
         elif prefix in payable_accounts:
             payable_totals[prefix] += max(credit - debit, Decimal('0'))
@@ -92,11 +97,13 @@ def build_cash_liquidation_report(rows, report_date=None):
         item['amount'] = float(receivable_totals[item['account']])
     for item in report['payables']:
         item['amount'] = float(payable_totals[item['account']])
+    report['cash_total'] = round(float(cash_total), 2)
     report['receivable_total'] = round(sum(item['amount'] for item in report['receivables']), 2)
+    report['available_total'] = round(report['cash_total'] + report['receivable_total'], 2)
     report['payable_total'] = round(sum(item['amount'] for item in report['payables']), 2)
-    report['net_position'] = round(report['receivable_total'] - report['payable_total'], 2)
+    report['net_position'] = round(report['available_total'] - report['payable_total'], 2)
     report['coverage'] = round(
-        report['receivable_total'] / report['payable_total'] * 100, 2
+        report['available_total'] / report['payable_total'] * 100, 2
     ) if report['payable_total'] else 0.0
     return report
 
