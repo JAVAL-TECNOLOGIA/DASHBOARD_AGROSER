@@ -100,7 +100,7 @@ class RRHHLiquidacionesView(RRHHReportesAccessMixin, TemplateView):
         profile = self.request.GET.get('perfil', '').strip()
 
         try:
-            available_periods = service.payroll_periods()
+            available_periods = service.payroll_periods(minimum_period='000000')
         except DatabaseError:
             available_periods = []
 
@@ -134,7 +134,7 @@ class RRHHLiquidacionesView(RRHHReportesAccessMixin, TemplateView):
         period = month_range('{}-{:02d}'.format(selected_year, selected_month))
 
         try:
-            slips = service.list(period)
+            slips = service.list(period, enforce_visibility=False)
             data_error = False
         except DatabaseError:
             slips = []
@@ -174,6 +174,7 @@ class RRHHLiquidacionesView(RRHHReportesAccessMixin, TemplateView):
                 selected_year,
                 payroll_type=payroll_type,
                 position=profile,
+                minimum_period='000000',
             )
         except DatabaseError:
             monthly_totals = [

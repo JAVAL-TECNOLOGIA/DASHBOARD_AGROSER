@@ -32,16 +32,18 @@ class PaySlipService:
         self.company_id = company_id or settings.PAYSLIP_COMPANY_ID
         self.currency = currency or settings.PAYSLIP_CURRENCY
 
-    def list(self, date_range):
+    def list(self, date_range, enforce_visibility=True):
         from .periods import visible_period
-        date_range = visible_period(date_range)
+        if enforce_visibility:
+            date_range = visible_period(date_range)
         if date_range is None:
             return []
-        cache_key = "boletas:slips:{}:{}:{}:{}".format(
+        cache_key = "boletas:slips:{}:{}:{}:{}:{}".format(
             self.company_id,
             date_range.start.isoformat(),
             date_range.end.isoformat(),
             self.currency,
+            'visible' if enforce_visibility else 'historical',
         )
         cached = cache.get(cache_key)
         if cached is not None:
@@ -153,9 +155,9 @@ class PaySlipService:
         cache.set(cache_key, result, getattr(settings, "PAYSLIP_WEEK_CACHE_SECONDS", 300))
         return result
 
-    def payroll_periods(self):
-        """Return processed periods from payroll movements (from January 2026)."""
-        cache_key = "boletas:periods:{}".format(self.company_id)
+    def payroll_periods(self, minimum_period="202608"):
+        """Return processed periods from payroll movements."""
+        cache_key = "boletas:periods:{}:{}".format(self.company_id, minimum_period)
         cached = cache.get(cache_key)
         if cached is not None:
             return cached
@@ -163,7 +165,7 @@ class PaySlipService:
             SELECT DISTINCT LEFT(RTRIM(m.periodo_planilla), 6)
             FROM movimiento_planilla m WITH (NOLOCK)
             WHERE RTRIM(m.idempresa) = %s
-              AND LEFT(RTRIM(m.periodo_planilla), 6) >= '202608'
+              AND LEFT(RTRIM(m.periodo_planilla), 6) >= %s
               AND LEN(LEFT(RTRIM(m.periodo_planilla), 6)) = 6
               AND RTRIM(m.idplanilla) IN ('ERG', 'ERA', 'OBP', 'OBR')
               AND EXISTS (
@@ -175,7 +177,7 @@ class PaySlipService:
             ORDER BY LEFT(RTRIM(m.periodo_planilla), 6) DESC
         """
         with connections["payroll"].cursor() as cursor:
-            cursor.execute(sql, [self.company_id])
+            cursor.execute(sql, [self.company_id, minimum_period])
             values = [str(row[0]).strip() for row in cursor.fetchall()]
             cache.set(cache_key, values, 600)
             return values
@@ -203,7 +205,7 @@ class PaySlipService:
             cursor.execute(sql, [self.company_id, document, minimum_period])
             return [str(row[0]).strip() for row in cursor.fetchall()]
 
-    def monthly_net(self, year, payroll_type="", position=""):
+    def monthly_net(self, year, payroll_type="", position="", minimum_period="202608"):
         """Return monthly net payroll totals for a calendar year."""
         sql = """
             SELECT
@@ -231,7 +233,7 @@ class PaySlipService:
                 AND cp.idcargo = p.idcargo
             WHERE m.idempresa = %s
                 AND LEFT(m.periodo_planilla, 4) = %s
-                AND LEFT(m.periodo_planilla, 6) >= '202608'
+                AND LEFT(m.periodo_planilla, 6) >= %s
                 AND RTRIM(m.idplanilla) IN ('ERG', 'ERA', 'OBP', 'OBR')
                 AND (%s = '' OR RTRIM(m.idplanilla) = %s)
                 AND (%s = '' OR RTRIM(ISNULL(cp.descripcion, 'SIN CARGO')) = %s)
@@ -242,6 +244,7 @@ class PaySlipService:
         params = [
             self.company_id,
             str(year),
+            minimum_period,
             plan_id,
             plan_id,
             position,
