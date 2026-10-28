@@ -14,6 +14,11 @@ from apps.contabilidad.cajas_kilos_service import get_boxes_and_kilos_report
 from apps.contabilidad.ventas_service import empty_sales_report, get_sales_report
 from apps.contabilidad.costos_service import empty_costs_report, get_costs_report
 from apps.contabilidad.comparacion_service import empty_comparison_report, get_comparison_report
+from apps.contabilidad.liquidacion_caja_service import (
+    empty_cash_liquidation_report,
+    get_cash_liquidation_report,
+    normalize_report_date,
+)
 import json
 from django.db import connection
 from django.db import IntegrityError
@@ -51,6 +56,13 @@ CONTABILIDAD_REPORTES = (
         'descripcion': 'Detalle consolidado de cajas y kilos registrados.',
         'icono': 'bi-box-seam',
         'color': '#8a5a12',
+    },
+    {
+        'slug': 'liquidacion-caja',
+        'nombre': 'Liquidación de Caja',
+        'descripcion': 'Control de cuentas por cobrar y por pagar según el Balance General de NISIRA.',
+        'icono': 'bi-cash-stack',
+        'color': '#126e82',
     },
 )
 
@@ -141,6 +153,23 @@ class ContabilidadReporteDetalleView(ContabilidadReportesAccessMixin, TemplateVi
             except Exception:
                 context['costos_data'] = empty_costs_report()
                 context['costos_error'] = 'No fue posible consultar la distribución de costos en NISIRA.'
+        elif slug == 'liquidacion-caja':
+            try:
+                report_date = normalize_report_date(
+                    self.request.GET.get('year'),
+                    self.request.GET.get('month'),
+                    self.request.GET.get('day'),
+                )
+            except (TypeError, ValueError):
+                report_date = normalize_report_date()
+                context['liquidacion_caja_error'] = 'El periodo seleccionado no es válido.'
+            try:
+                context['liquidacion_caja_data'] = get_cash_liquidation_report(report_date)
+            except Exception:
+                context['liquidacion_caja_data'] = empty_cash_liquidation_report(report_date)
+                context['liquidacion_caja_error'] = (
+                    'No fue posible consultar la liquidación de caja en NISIRA.'
+                )
         return context
 
 

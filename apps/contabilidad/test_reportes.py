@@ -9,6 +9,7 @@ from apps.contabilidad.cajas_kilos_service import build_boxes_and_kilos_report
 from apps.contabilidad.comparacion_service import build_comparison_report
 from apps.contabilidad.costos_service import build_costs_report
 from apps.contabilidad.ventas_service import build_sales_report
+from apps.contabilidad.liquidacion_caja_service import build_cash_liquidation_report
 
 from apps.user.views import UserAdministrationMixin
 
@@ -75,11 +76,12 @@ class ContabilidadReportesViewTests(TestCase):
         response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.context['reportes']), 4)
+        self.assertEqual(len(response.context['reportes']), 5)
         for title in (
             'Comparación',
             'Ventas',
             'Detalle Cajas y Kilos',
+            'Liquidación de Caja',
         ):
             self.assertContains(response, title)
         self.assertNotContains(response, 'Consolidado de Costos y Gastos')
@@ -172,6 +174,33 @@ class ContabilidadReportesViewTests(TestCase):
         self.assertEqual(data['customers'], ['AGROEXPOR SOL', 'GOURMET FARMS'])
         self.assertAlmostEqual(sum(row['affected'] for row in data['sales']), 42295.34, places=2)
         self.assertAlmostEqual(sum(row['total'] for row in data['sales']), 42295.34, places=2)
+
+    @patch('apps.contabilidad.views.get_cash_liquidation_report')
+    def test_cash_liquidation_report_uses_balance_general_data(self, report_mock):
+        report_mock.return_value = build_cash_liquidation_report([
+            ('12120101', 'A', '', 1000, 100, 0, 0, 0, 0, 0, 0),
+            ('12120102', 'A', '', 2000, 0, 0, 0, 0, 0, 0, 0),
+            ('42110001', 'P', '', 100, 5000, 0, 0, 0, 0, 0, 0),
+            # Un saldo deudor dentro de una cuenta por pagar no reduce la deuda.
+            ('42200018', 'P', '', 700, 200, 0, 0, 0, 0, 0, 0),
+        ], report_date=date(2026, 8, 31))
+        self.user.admin = True
+        self.user.save(update_fields=['admin'])
+        self.client.force_login(self.user)
+
+        response = self.client.get(
+            reverse('contabilidad_reporte_detalle', args=['liquidacion-caja']),
+            {'year': 2026, 'month': 8, 'day': 31},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Total por cobrar')
+        self.assertContains(response, 'Total por pagar')
+        self.assertContains(response, 'Composición de obligaciones')
+        data = response.context['liquidacion_caja_data']
+        self.assertEqual(data['receivable_total'], 2900.0)
+        self.assertEqual(data['payable_total'], 4900.0)
+        self.assertEqual(data['net_position'], -2000.0)
 
     @patch('apps.contabilidad.views.get_boxes_and_kilos_report')
     def test_boxes_and_kilos_report_uses_nisira_data(self, report_mock):

@@ -30,6 +30,8 @@
         {% include 'contabilidad/reportes/cajas_kilos.html' %}
     {% elif costos_data %}
         {% include 'contabilidad/reportes/costos.html' %}
+    {% elif liquidacion_caja_data %}
+        {% include 'contabilidad/reportes/liquidacion_caja.html' %}
     {% else %}
     <div class="card shadow-sm border-0">
         <div class="card-body text-center py-5">
@@ -48,13 +50,15 @@
 {% if ventas_data %}{{ ventas_data|json_script:"ventas-data" }}{% endif %}
 {% if cajas_kilos_data %}{{ cajas_kilos_data|json_script:"cajas-kilos-data" }}{% endif %}
 {% if costos_data %}{{ costos_data|json_script:"costos-data" }}{% endif %}
+{% if liquidacion_caja_data %}{{ liquidacion_caja_data|json_script:"liquidacion-caja-data" }}{% endif %}
 {% include 'base/footer.html' %}
 {% block js %}
-{% if comparacion_data or ventas_data or cajas_kilos_data or costos_data %}<script src="{% static 'assets/plugins/chart-js/Chart.bundle.min.js' %}"></script>{% endif %}
+{% if comparacion_data or ventas_data or cajas_kilos_data or costos_data or liquidacion_caja_data %}<script src="{% static 'assets/plugins/chart-js/Chart.bundle.min.js' %}"></script>{% endif %}
 {% if comparacion_data %}<script src="{% static 'core/js/CONTABILIDAD/comparacion_dashboard_v2.js' %}?v=20261026-3"></script>{% endif %}
 {% if ventas_data %}<script src="{% static 'core/js/CONTABILIDAD/ventas_dashboard.js' %}?v=20261026-6"></script>{% endif %}
 {% if cajas_kilos_data %}<script src="{% static 'core/js/CONTABILIDAD/cajas_kilos_dashboard.js' %}?v=20261026-6"></script>{% endif %}
 {% if costos_data %}<script src="{% static 'core/js/CONTABILIDAD/costos_dashboard.js' %}?v=20261026-6"></script>{% endif %}
+{% if liquidacion_caja_data %}<script src="{% static 'core/js/CONTABILIDAD/liquidacion_caja_dashboard.js' %}?v=20261028-1"></script>{% endif %}
 <script>
 $(document).ready(function () {
     App.init();
@@ -62,6 +66,7 @@ $(document).ready(function () {
     {% if ventas_data %}window.initVentasDashboard();{% endif %}
     {% if cajas_kilos_data %}window.initCajasKilosDashboard();{% endif %}
     {% if costos_data %}window.initCostosDashboard();{% endif %}
+    {% if liquidacion_caja_data %}window.initLiquidacionCajaDashboard();{% endif %}
 });
 </script>
 {% endblock %}
