@@ -9,6 +9,7 @@ urlpatterns = [
     path('api/ordenes-compra/catalogos/', OrdenCompraCatalogosView.as_view(), name='api_almacen_orden_compra_catalogos'),
     path('api/ordenes-compra/tipo-cambio/', OrdenCompraTipoCambioView.as_view(), name='api_almacen_orden_compra_tipo_cambio'),
     path('api/ordenes-compra/crear/', OrdenCompraCrearView.as_view(), name='api_almacen_orden_compra_crear'),
+    path('api/ordenes-compra/<str:idcompra>/editar/', OrdenCompraEditarView.as_view(), name='api_almacen_orden_compra_editar'),
     path('api/ordenes-compra/<str:idcompra>/', OrdenCompraDetalleView.as_view(), name='api_almacen_orden_compra_detalle'),
     
 
