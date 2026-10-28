@@ -61,6 +61,33 @@
         <div class="col-xl-3 col-md-6"><div class="card liq-card is-purple shadow-sm h-100"><div class="card-body"><div class="liq-label mb-2">Personal liquidado</div><div class="liq-value">{{ total_workers }}</div><small class="text-muted">Registros del periodo</small></div></div></div>
     </div>
 
+    <div class="card liq-panel shadow-sm mb-4">
+        <div class="card-header bg-white border-0 pt-4 px-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+            <div><h4 class="mb-1">Proyección de liquidaciones {{ selected_year }}</h4><small class="text-muted">Calculada desde el ingreso hasta la finalización del último contrato activo</small></div>
+            <span class="badge badge-warning p-2 mt-2 mt-md-0">Proyección referencial</span>
+        </div>
+        <div class="card-body">
+            {% if projection_error %}<div class="alert alert-warning">No fue posible consultar los contratos para generar la proyección.</div>{% endif %}
+            <div class="alert alert-light border mb-4"><i class="fa fa-info-circle text-primary mr-2"></i>Según la regla definida, no se adicionan CTS ni gratificación: OBP y OBR no las consideran, mientras que ERG y ERA ya las incluyen en la boleta mensual. La proyección corresponde a vacaciones truncas y no descuenta vacaciones previamente gozadas.</div>
+            <div class="row mb-4">
+                <div class="col-lg-4 mb-3 mb-lg-0"><div class="p-3 bg-light rounded"><div class="liq-label mb-2">Total proyectado</div><div class="liq-value">S/ {{ projection_total|floatformat:2 }}</div></div></div>
+                <div class="col-lg-4 mb-3 mb-lg-0"><div class="p-3 bg-light rounded"><div class="liq-label mb-2">Contratos que finalizan</div><div class="liq-value">{{ projection_workers }}</div></div></div>
+                <div class="col-lg-4"><div class="p-3 bg-light rounded"><div class="liq-label mb-2">Promedio por trabajador</div><div class="liq-value">S/ {{ projection_average|floatformat:2 }}</div></div></div>
+            </div>
+            {% if projection_workers %}
+            <div id="projection-chart" class="liq-chart mb-4"></div>
+            <div class="table-responsive liq-table-wrap"><table class="table table-hover table-sm mb-0">
+                <thead><tr><th>Trabajador</th><th>Planilla</th><th>Perfil</th><th>Ingreso</th><th>Fin de contrato</th><th class="text-right">Básico diario</th><th class="text-right">Días de servicio</th><th class="text-right">CTS</th><th class="text-right">Gratificación</th><th class="text-right">Vacaciones truncas</th><th class="text-right">Total proyectado</th></tr></thead>
+                <tbody>{% for row in projection_rows %}<tr>
+                    <td class="font-weight-bold">{{ row.full_name }}</td><td>{{ row.payroll|default:row.payroll_id }}</td><td>{{ row.position }}</td><td class="text-nowrap">{{ row.fecha_ingreso|date:'d/m/Y' }}</td><td class="text-nowrap">{{ row.final_contrato|date:'d/m/Y' }}</td>
+                    <td class="text-right text-nowrap">S/ {{ row.daily_basic|floatformat:2 }}</td><td class="text-right">{{ row.service_days }}</td><td class="text-right">S/ {{ row.projected_cts|floatformat:2 }}</td><td class="text-right">S/ {{ row.projected_gratification|floatformat:2 }}</td><td class="text-right text-nowrap">S/ {{ row.projected_vacation|floatformat:2 }}</td><td class="text-right text-nowrap font-weight-bold">S/ {{ row.projected_total|floatformat:2 }}</td>
+                </tr>{% endfor %}</tbody>
+                <tfoot><tr class="font-weight-bold bg-light"><td colspan="10">TOTAL PROYECTADO</td><td class="text-right text-nowrap">S/ {{ projection_total|floatformat:2 }}</td></tr></tfoot>
+            </table></div>
+            {% else %}<div class="text-center text-muted py-4">No hay contratos con fecha de finalización en {{ selected_year }} para los filtros seleccionados.</div>{% endif %}
+        </div>
+    </div>
+
     {% if total_workers %}
     <div class="row mb-4">
         <div class="col-xl-7 mb-4 mb-xl-0"><div class="card liq-panel shadow-sm h-100"><div class="card-header bg-white border-0 pt-4 px-4"><h4 class="mb-1">Evolución mensual</h4><small class="text-muted">Neto liquidado durante {{ selected_year }}</small></div><div class="card-body"><div id="monthly-chart" class="liq-chart"></div></div></div></div>
@@ -80,6 +107,7 @@
 {{ payroll_chart|json_script:"payroll-chart-data" }}
 {{ profile_chart|json_script:"profile-chart-data" }}
 {{ monthly_chart|json_script:"monthly-chart-data" }}
+{{ projection_chart|json_script:"projection-chart-data" }}
 {{ profiles_by_payroll|json_script:"profiles-by-payroll-data" }}
 {% include 'base/footer.html' %}
 <script src="{% static 'assets/plugins/flot/jquery.flot.min.js' %}"></script>
@@ -92,12 +120,13 @@ $(document).ready(function () {
     const profilesByPayroll=JSON.parse(document.getElementById('profiles-by-payroll-data').textContent), payrollFilter=$('#planilla'), profileFilter=$('#perfil'), allProfiles=[];
     Object.keys(profilesByPayroll).forEach(function(code){profilesByPayroll[code].forEach(function(item){if(allProfiles.indexOf(item)===-1)allProfiles.push(item);});}); allProfiles.sort();
     payrollFilter.on('change',function(){const previous=profileFilter.val(),options=payrollFilter.val()?(profilesByPayroll[payrollFilter.val()]||[]):allProfiles;profileFilter.empty().append($('<option>',{value:'',text:'Todos los perfiles'}));options.forEach(function(item){profileFilter.append($('<option>',{value:item,text:item}));});if(options.indexOf(previous)!==-1)profileFilter.val(previous);});
-    const payroll=JSON.parse(document.getElementById('payroll-chart-data').textContent),profiles=JSON.parse(document.getElementById('profile-chart-data').textContent),monthly=JSON.parse(document.getElementById('monthly-chart-data').textContent);
+    const payroll=JSON.parse(document.getElementById('payroll-chart-data').textContent),profiles=JSON.parse(document.getElementById('profile-chart-data').textContent),monthly=JSON.parse(document.getElementById('monthly-chart-data').textContent),projection=JSON.parse(document.getElementById('projection-chart-data').textContent);
     const money=function(value){return 'S/ '+Number(value).toLocaleString('es-PE',{minimumFractionDigits:2,maximumFractionDigits:2});};
     const tooltip=$('<div class="flot-tooltip"></div>').css({position:'absolute',display:'none',padding:'7px 10px',background:'#142b3d',color:'#fff',borderRadius:'6px',zIndex:9999}).appendTo('body');
     if(monthly.length)$.plot('#monthly-chart',[{data:monthly,color:'#0b7551',label:'Neto liquidado'}],{series:{lines:{show:true,fill:.12,lineWidth:3},points:{show:true,radius:4}},xaxis:{mode:'categories',tickLength:0},yaxis:{tickFormatter:function(v){return 'S/ '+Math.round(v).toLocaleString('es-PE');}},grid:{hoverable:true,borderColor:'#e4e9ed',borderWidth:1}});
     if(payroll.length)$.plot('#payroll-chart',payroll,{series:{pie:{show:true,innerRadius:.48,radius:.9,label:{show:true,formatter:function(label,series){return '<div style="font-size:10px;color:#fff;text-align:center">'+Math.round(series.percent)+'%</div>';}}}},legend:{show:true,position:'se'},grid:{hoverable:true}});
     if(profiles.length)$.plot('#profile-chart',[{data:profiles,color:'#238aa5'}],{series:{bars:{show:true,barWidth:.64,align:'center',fill:.9}},xaxis:{mode:'categories',tickLength:0},yaxis:{tickFormatter:function(v){return 'S/ '+Math.round(v).toLocaleString('es-PE');}},grid:{hoverable:true,borderColor:'#e4e9ed',borderWidth:1}});
+    if(projection.length)$.plot('#projection-chart',[{data:projection,color:'#7850c7',label:'Liquidación proyectada'}],{series:{bars:{show:true,barWidth:.64,align:'center',fill:.88}},xaxis:{mode:'categories',tickLength:0},yaxis:{tickFormatter:function(v){return 'S/ '+Math.round(v).toLocaleString('es-PE');}},grid:{hoverable:true,borderColor:'#e4e9ed',borderWidth:1}});
     $('.liq-chart').on('plothover',function(event,pos,item){if(!item)return tooltip.hide();let label=item.series.label||(item.series.data[item.dataIndex]?item.series.data[item.dataIndex][0]:'Total');let value=item.series.pie?item.series.data[0][1]:item.datapoint[1];tooltip.html('<strong>'+label+'</strong><br>'+money(value)).css({top:item.pageY+10,left:item.pageX+10}).show();});
 });
 </script>

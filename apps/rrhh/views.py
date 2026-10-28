@@ -25,12 +25,14 @@ from django.db import DatabaseError, IntegrityError
 from django.db import transaction
 from django.core.mail import EmailMessage
 from django.conf import settings
-from datetime import datetime
+from datetime import date, datetime
 from apps.connection.connect_donluis import get_thread_connection
 from apps.connection.connect_campoverde import get_thread_connection_cv
 from apps.boletas.analytics import build_payroll_summary
 from apps.boletas.periods import MONTH_NAMES, month_range
 from apps.boletas.services import PAYROLL_TYPES, PaySlipService
+from apps.contratos.services import ContractService
+from .liquidation_projection import build_projection_summary
 
 MESES_ORDEN = [
     ("ENERO", "Enero"),
@@ -109,8 +111,10 @@ class RRHHLiquidacionesView(RRHHReportesAccessMixin, TemplateView):
         if not available_periods:
             available_periods = [fallback_period]
 
+        projection_years = {str(today.year + offset) for offset in range(3)}
         available_years = sorted(
-            {value[:4] for value in available_periods if len(value) >= 6},
+            {value[:4] for value in available_periods if len(value) >= 6}
+            | projection_years,
             reverse=True,
         )
         requested_year = self.request.GET.get('anio', '').strip()
@@ -140,13 +144,30 @@ class RRHHLiquidacionesView(RRHHReportesAccessMixin, TemplateView):
             slips = []
             data_error = True
 
+        try:
+            projection_contracts = ContractService().list_expiring_contracts(
+                date(int(selected_year), 1, 1),
+                date(int(selected_year), 12, 31),
+            )
+            projection_error = False
+        except DatabaseError:
+            projection_contracts = []
+            projection_error = True
+
         profile_source = [
             slip for slip in slips
             if not payroll_type or slip.get('payroll_type') == payroll_type
         ]
+        projection_profile_source = [
+            contract for contract in projection_contracts
+            if not payroll_type or contract.get('payroll_id') == payroll_type
+        ]
         available_profiles = sorted({
             str(slip.get('cargo_personal') or 'SIN PERFIL').strip()
             for slip in profile_source
+        } | {
+            str(contract.get('position') or 'SIN PERFIL').strip()
+            for contract in projection_profile_source
         })
         if profile not in available_profiles:
             profile = ''
@@ -168,6 +189,18 @@ class RRHHLiquidacionesView(RRHHReportesAccessMixin, TemplateView):
             )
         ]
         summary = build_payroll_summary(filtered_slips)
+        filtered_projection_contracts = [
+            contract for contract in projection_contracts
+            if (not payroll_type or contract.get('payroll_id') == payroll_type)
+            and (
+                not profile
+                or str(contract.get('position') or 'SIN PERFIL').strip() == profile
+            )
+        ]
+        projection = build_projection_summary(
+            filtered_projection_contracts,
+            selected_year,
+        )
 
         try:
             monthly_totals = service.monthly_net(
@@ -200,7 +233,9 @@ class RRHHLiquidacionesView(RRHHReportesAccessMixin, TemplateView):
             'profiles_by_payroll': profiles_by_payroll,
             'profile': profile,
             'data_error': data_error,
+            'projection_error': projection_error,
             **summary,
+            **projection,
             'payroll_chart': [
                 {'label': row['name'], 'data': float(row['net'])}
                 for row in summary['payrolls']
@@ -213,6 +248,10 @@ class RRHHLiquidacionesView(RRHHReportesAccessMixin, TemplateView):
                 [MONTH_NAMES[index], float(row['net'])]
                 for index, row in enumerate(monthly_totals, start=1)
                 if index in available_month_numbers
+            ],
+            'projection_chart': [
+                [MONTH_NAMES[row['month']], float(row['total'])]
+                for row in projection['projection_months']
             ],
         })
         return context

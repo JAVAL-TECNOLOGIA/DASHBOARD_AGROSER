@@ -120,6 +120,7 @@ class ContractService:
                 pg.idcodigogeneral,
                 RTRIM(pg.nrodocumento) AS document,
                 LTRIM(RTRIM(CONCAT(pg.a_paterno, ' ', pg.a_materno, ' ', pg.nombres))) AS full_name,
+                pe.fecha_ingreso,
                 RTRIM(p.idplanilla) AS payroll_id,
                 RTRIM(pl.descripcion) AS payroll,
                 RTRIM(ISNULL(cp.descripcion, 'SIN CARGO')) AS position,
@@ -144,15 +145,17 @@ class ContractService:
                 ON cp.idempresa = p.idempresa AND cp.idcargo = p.idcargo
             LEFT JOIN tipo_contrato tc WITH (NOLOCK)
                 ON tc.idtipocontrato = lc.idtipocontrato
+            OUTER APPLY (
+                SELECT TOP 1 pe0.idcodigogeneral, pe0.fecha_ingreso, pe0.fecha_cese
+                FROM personal_empresa pe0 WITH (NOLOCK)
+                WHERE pe0.idempresa = lc.idempresa
+                  AND pe0.idcodigogeneral = lc.idcodigogeneral
+                ORDER BY pe0.fecha_ingreso DESC, pe0.item DESC
+            ) pe
             WHERE lc.row_number = 1
               AND lc.final_contrato BETWEEN %s AND %s
-              AND EXISTS (
-                  SELECT 1
-                  FROM personal_empresa pe WITH (NOLOCK)
-                  WHERE pe.idempresa = lc.idempresa
-                    AND pe.idcodigogeneral = lc.idcodigogeneral
-                    AND (pe.fecha_cese IS NULL OR pe.fecha_cese >= CAST(GETDATE() AS date))
-              )
+              AND pe.idcodigogeneral IS NOT NULL
+              AND (pe.fecha_cese IS NULL OR pe.fecha_cese >= CAST(GETDATE() AS date))
             ORDER BY lc.final_contrato, full_name
         """
         return self._rows(sql, [self.company_id, start_date, end_date])
