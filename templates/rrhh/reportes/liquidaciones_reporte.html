@@ -63,7 +63,7 @@
 
     <div class="card liq-panel shadow-sm mb-4">
         <div class="card-header bg-white border-0 pt-4 px-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center">
-            <div><h4 class="mb-1">Proyección de liquidaciones {{ selected_year }}</h4><small class="text-muted">Calculada desde el ingreso hasta la finalización del último contrato activo</small></div>
+            <div><h4 class="mb-1">Proyección de liquidaciones · {{ selected_month_name }} {{ selected_year }}</h4><small class="text-muted">Las tarjetas y el detalle corresponden al mes seleccionado; el gráfico muestra el año completo</small></div>
             <span class="badge badge-warning p-2 mt-2 mt-md-0">Proyección referencial</span>
         </div>
         <div class="card-body">
@@ -84,7 +84,7 @@
                 </tr>{% endfor %}</tbody>
                 <tfoot><tr class="font-weight-bold bg-light"><td colspan="11">TOTAL PROYECTADO</td><td class="text-right text-nowrap">S/ {{ projection_total|floatformat:2 }}</td></tr></tfoot>
             </table></div>
-            {% else %}<div class="text-center text-muted py-4">No hay contratos con fecha de finalización en {{ selected_year }} para los filtros seleccionados.</div>{% endif %}
+            {% else %}<div class="text-center text-muted py-4">No hay contratos con fecha de finalización en {{ selected_month_name }} {{ selected_year }} para los filtros seleccionados.</div>{% endif %}
         </div>
     </div>
 
@@ -127,6 +127,6 @@ $(document).ready(function () {
     if(payroll.length)$.plot('#payroll-chart',payroll,{series:{pie:{show:true,innerRadius:.48,radius:.9,label:{show:true,formatter:function(label,series){return '<div style="font-size:10px;color:#fff;text-align:center">'+Math.round(series.percent)+'%</div>';}}}},legend:{show:true,position:'se'},grid:{hoverable:true}});
     if(profiles.length)$.plot('#profile-chart',[{data:profiles,color:'#238aa5'}],{series:{bars:{show:true,barWidth:.64,align:'center',fill:.9}},xaxis:{mode:'categories',tickLength:0},yaxis:{tickFormatter:function(v){return 'S/ '+Math.round(v).toLocaleString('es-PE');}},grid:{hoverable:true,borderColor:'#e4e9ed',borderWidth:1}});
     if(projection.length)$.plot('#projection-chart',[{data:projection,color:'#7850c7',label:'Liquidación proyectada'}],{series:{bars:{show:true,barWidth:.64,align:'center',fill:.88}},xaxis:{mode:'categories',tickLength:0},yaxis:{tickFormatter:function(v){return 'S/ '+Math.round(v).toLocaleString('es-PE');}},grid:{hoverable:true,borderColor:'#e4e9ed',borderWidth:1}});
-    $('.liq-chart').on('plothover',function(event,pos,item){if(!item)return tooltip.hide();let label=item.series.label||(item.series.data[item.dataIndex]?item.series.data[item.dataIndex][0]:'Total');let value=item.series.pie?item.series.data[0][1]:item.datapoint[1];tooltip.html('<strong>'+label+'</strong><br>'+money(value)).css({top:item.pageY+10,left:item.pageX+10}).show();});
+    $('.liq-chart').on('plothover',function(event,pos,item){if(!item)return tooltip.hide();const source=item.series.data[item.dataIndex]||[];let label=item.series.label||(source[0]||'Total');let value=item.series.pie?item.series.data[0][1]:source[1];tooltip.html('<strong>'+label+'</strong><br>'+money(value)).css({top:item.pageY+10,left:item.pageX+10}).show();});
 });
 </script>

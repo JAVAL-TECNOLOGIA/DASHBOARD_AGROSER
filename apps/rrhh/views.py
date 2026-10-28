@@ -120,11 +120,10 @@ class RRHHLiquidacionesView(RRHHReportesAccessMixin, TemplateView):
         requested_year = self.request.GET.get('anio', '').strip()
         selected_year = requested_year if requested_year in available_years else available_years[0]
         year_periods = [value for value in available_periods if value.startswith(selected_year)]
-        available_month_numbers = sorted(
+        processed_month_numbers = sorted(
             {int(value[4:6]) for value in year_periods if value[4:6].isdigit()}
         )
-        if not available_month_numbers:
-            available_month_numbers = [today.month]
+        available_month_numbers = list(range(1, 13))
 
         try:
             requested_month = int(self.request.GET.get('mes', ''))
@@ -133,7 +132,10 @@ class RRHHLiquidacionesView(RRHHReportesAccessMixin, TemplateView):
         selected_month = (
             requested_month
             if requested_month in available_month_numbers
-            else available_month_numbers[-1]
+            else (
+                processed_month_numbers[-1]
+                if processed_month_numbers else today.month
+            )
         )
         period = month_range('{}-{:02d}'.format(selected_year, selected_month))
 
@@ -197,8 +199,16 @@ class RRHHLiquidacionesView(RRHHReportesAccessMixin, TemplateView):
                 or str(contract.get('position') or 'SIN PERFIL').strip() == profile
             )
         ]
-        projection = build_projection_summary(
+        annual_projection = build_projection_summary(
             filtered_projection_contracts,
+            selected_year,
+        )
+        projection = build_projection_summary(
+            [
+                contract for contract in filtered_projection_contracts
+                if contract.get('final_contrato')
+                and contract['final_contrato'].month == selected_month
+            ],
             selected_year,
         )
 
@@ -227,6 +237,8 @@ class RRHHLiquidacionesView(RRHHReportesAccessMixin, TemplateView):
             'selected_year': selected_year,
             'month_options': month_options,
             'selected_month': selected_month,
+            'selected_month_name': MONTH_NAMES[selected_month],
+            'processed_month_numbers': processed_month_numbers,
             'payroll_types': PAYROLL_TYPES,
             'payroll_type': payroll_type,
             'available_profiles': available_profiles,
@@ -251,7 +263,7 @@ class RRHHLiquidacionesView(RRHHReportesAccessMixin, TemplateView):
             ],
             'projection_chart': [
                 [MONTH_NAMES[row['month']], float(row['total'])]
-                for row in projection['projection_months']
+                for row in annual_projection['projection_months']
             ],
         })
         return context
