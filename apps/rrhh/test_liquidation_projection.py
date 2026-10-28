@@ -2,7 +2,9 @@ from datetime import date
 from decimal import Decimal
 from unittest import TestCase
 
-from .liquidation_projection import build_projection_summary, project_contract_liquidation
+from .liquidation_projection import (
+    build_closure_projection, build_projection_summary, project_contract_liquidation,
+)
 
 
 class LiquidationProjectionTests(TestCase):
@@ -47,3 +49,16 @@ class LiquidationProjectionTests(TestCase):
         self.assertEqual(summary["projection_workers"], 2)
         self.assertEqual(summary["projection_months"][3]["workers"], 2)
         self.assertGreater(summary["projection_months"][3]["total"], 0)
+
+    def test_closure_projection_includes_every_active_contract(self):
+        summary = build_closure_projection([
+            {"full_name": "ANA", "fecha_ingreso": date(2026, 1, 1), "basico": 40,
+             "payroll": "OBREROS", "position": "OPERARIO"},
+            {"full_name": "LUIS", "fecha_ingreso": date(2026, 2, 1), "basico": 1500,
+             "payroll": "EMPLEADOS", "position": "ASISTENTE"},
+        ], date(2026, 10, 31))
+
+        self.assertEqual(summary["closure_workers"], 2)
+        self.assertEqual(len(summary["closure_payrolls"]), 2)
+        self.assertGreater(summary["closure_total"], Decimal("0.00"))
+        self.assertEqual(summary["closure_rows"][0]["final_contrato"], date(2026, 10, 31))

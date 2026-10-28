@@ -25,6 +25,7 @@ from django.db import DatabaseError, IntegrityError
 from django.db import transaction
 from django.core.mail import EmailMessage
 from django.conf import settings
+from calendar import monthrange
 from datetime import date, datetime
 from apps.connection.connect_donluis import get_thread_connection
 from apps.connection.connect_campoverde import get_thread_connection_cv
@@ -32,7 +33,7 @@ from apps.boletas.analytics import build_payroll_summary
 from apps.boletas.periods import MONTH_NAMES, month_range
 from apps.boletas.services import PAYROLL_TYPES, PaySlipService
 from apps.contratos.services import ContractService
-from .liquidation_projection import build_projection_summary
+from .liquidation_projection import build_closure_projection, build_projection_summary
 
 MESES_ORDEN = [
     ("ENERO", "Enero"),
@@ -99,7 +100,7 @@ class RRHHLiquidacionesView(RRHHReportesAccessMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         service = PaySlipService()
         active_tab = self.request.GET.get('tab', 'liquidaciones').strip().lower()
-        if active_tab not in ('liquidaciones', 'proyeccion'):
+        if active_tab not in ('liquidaciones', 'proyeccion', 'proyeccion2'):
             active_tab = 'liquidaciones'
         payroll_type = self.request.GET.get('planilla', '').strip().upper()
         if payroll_type not in dict(PAYROLL_TYPES):
@@ -161,6 +162,17 @@ class RRHHLiquidacionesView(RRHHReportesAccessMixin, TemplateView):
             projection_contracts = []
             projection_error = True
 
+        closing_date = date(
+            int(selected_year), selected_month,
+            monthrange(int(selected_year), selected_month)[1],
+        )
+        try:
+            closure_contracts = ContractService().list_active_contracts(closing_date)
+            closure_error = False
+        except DatabaseError:
+            closure_contracts = []
+            closure_error = True
+
         profile_source = [
             slip for slip in slips
             if not payroll_type or slip.get('payroll_type') == payroll_type
@@ -169,12 +181,19 @@ class RRHHLiquidacionesView(RRHHReportesAccessMixin, TemplateView):
             contract for contract in projection_contracts
             if not payroll_type or contract.get('payroll_id') == payroll_type
         ]
+        closure_profile_source = [
+            contract for contract in closure_contracts
+            if not payroll_type or contract.get('payroll_id') == payroll_type
+        ]
         available_profiles = sorted({
             str(slip.get('cargo_personal') or 'SIN PERFIL').strip()
             for slip in profile_source
         } | {
             str(contract.get('position') or 'SIN PERFIL').strip()
             for contract in projection_profile_source
+        } | {
+            str(contract.get('position') or 'SIN PERFIL').strip()
+            for contract in closure_profile_source
         })
         if profile not in available_profiles:
             profile = ''
@@ -216,6 +235,15 @@ class RRHHLiquidacionesView(RRHHReportesAccessMixin, TemplateView):
             ],
             selected_year,
         )
+        filtered_closure_contracts = [
+            contract for contract in closure_contracts
+            if (not payroll_type or contract.get('payroll_id') == payroll_type)
+            and (
+                not profile
+                or str(contract.get('position') or 'SIN PERFIL').strip() == profile
+            )
+        ]
+        closure = build_closure_projection(filtered_closure_contracts, closing_date)
 
         try:
             monthly_totals = service.monthly_net(
@@ -252,8 +280,11 @@ class RRHHLiquidacionesView(RRHHReportesAccessMixin, TemplateView):
             'profile': profile,
             'data_error': data_error,
             'projection_error': projection_error,
+            'closure_error': closure_error,
+            'closing_date': closing_date,
             **summary,
             **projection,
+            **closure,
             'payroll_chart': [
                 {'label': row['name'], 'data': float(row['net'])}
                 for row in summary['payrolls']
@@ -274,6 +305,14 @@ class RRHHLiquidacionesView(RRHHReportesAccessMixin, TemplateView):
             'projection_workers_chart': [
                 [MONTH_NAMES[row['month']], row['workers']]
                 for row in annual_projection['projection_months']
+            ],
+            'closure_payroll_chart': [
+                [row['name'], float(row['total'])]
+                for row in closure['closure_payrolls']
+            ],
+            'closure_position_chart': [
+                [row['name'], float(row['total'])]
+                for row in closure['closure_positions'][:12]
             ],
         })
         return context

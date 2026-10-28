@@ -37,6 +37,7 @@
     <ul class="nav nav-tabs mb-4">
         <li class="nav-item"><a class="nav-link {% if active_tab == 'liquidaciones' %}active{% endif %}" href="?tab=liquidaciones&amp;anio={{ selected_year }}&amp;mes={{ selected_month }}&amp;planilla={{ payroll_type|urlencode }}&amp;perfil={{ profile|urlencode }}"><i class="fa fa-file-invoice-dollar mr-1"></i> Liquidaciones procesadas</a></li>
         <li class="nav-item"><a class="nav-link {% if active_tab == 'proyeccion' %}active{% endif %}" href="?tab=proyeccion&amp;anio={{ selected_year }}&amp;mes={{ selected_month }}&amp;planilla={{ payroll_type|urlencode }}&amp;perfil={{ profile|urlencode }}"><i class="fa fa-chart-line mr-1"></i> Proyección</a></li>
+        <li class="nav-item"><a class="nav-link {% if active_tab == 'proyeccion2' %}active{% endif %}" href="?tab=proyeccion2&amp;anio={{ selected_year }}&amp;mes={{ selected_month }}&amp;planilla={{ payroll_type|urlencode }}&amp;perfil={{ profile|urlencode }}"><i class="fa fa-building mr-1"></i> Proyección 2 · Cierre de operaciones</a></li>
     </ul>
 
     <div class="card liq-filter-card shadow-sm mb-4"><div class="card-body">
@@ -65,6 +66,37 @@
         <div class="col-xl-3 col-md-6 mb-3 mb-xl-0"><div class="card liq-card is-blue shadow-sm h-100"><div class="card-body"><div class="liq-label mb-2">Total ingresos</div><div class="liq-value">S/ {{ total_income|floatformat:2 }}</div><small class="text-muted">Conceptos remunerativos</small></div></div></div>
         <div class="col-xl-3 col-md-6 mb-3 mb-md-0"><div class="card liq-card is-orange shadow-sm h-100"><div class="card-body"><div class="liq-label mb-2">Total descuentos</div><div class="liq-value">S/ {{ total_deductions|floatformat:2 }}</div><small class="text-muted">Retenciones y descuentos</small></div></div></div>
         <div class="col-xl-3 col-md-6"><div class="card liq-card is-purple shadow-sm h-100"><div class="card-body"><div class="liq-label mb-2">Personal liquidado</div><div class="liq-value">{{ total_workers }}</div><small class="text-muted">Registros del periodo</small></div></div></div>
+    </div>
+    {% endif %}
+
+    {% if active_tab == 'proyeccion2' %}
+    <div class="card liq-panel shadow-sm mb-4">
+        <div class="card-header bg-white border-0 pt-4 px-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+            <div><h4 class="mb-1">Escenario de cierre · {{ selected_month_name }} {{ selected_year }}</h4><small class="text-muted">Estimación del dinero requerido si la empresa liquida a todo el personal vigente al {{ closing_date|date:'d/m/Y' }}</small></div>
+            <span class="badge badge-danger p-2 mt-2 mt-md-0">Escenario referencial</span>
+        </div>
+        <div class="card-body">
+            {% if closure_error %}<div class="alert alert-warning"><i class="fa fa-exclamation-triangle mr-2"></i>No fue posible consultar el personal activo en NISIRA.</div>{% endif %}
+            <div class="alert alert-light border mb-4"><i class="fa fa-info-circle text-primary mr-2"></i>Incluye a todos los trabajadores con contrato vigente al cierre del mes seleccionado. Se proyectan vacaciones truncas desde el ingreso; CTS y gratificación no se adicionan porque OBP/OBR no las consideran y ERG/ERA ya las incluyen en la boleta mensual.</div>
+            <div class="row mb-4">
+                <div class="col-lg-4 mb-3 mb-lg-0"><div class="p-3 bg-light rounded"><div class="liq-label mb-2">Personal a liquidar</div><div class="liq-value">{{ closure_workers }}</div><small class="text-muted">Trabajadores activos al cierre</small></div></div>
+                <div class="col-lg-4 mb-3 mb-lg-0"><div class="p-3 bg-light rounded"><div class="liq-label mb-2">Dinero requerido</div><div class="liq-value">S/ {{ closure_total|floatformat:2 }}</div><small class="text-muted">Total estimado del escenario</small></div></div>
+                <div class="col-lg-4"><div class="p-3 bg-light rounded"><div class="liq-label mb-2">Promedio por trabajador</div><div class="liq-value">S/ {{ closure_average|floatformat:2 }}</div><small class="text-muted">Costo promedio estimado</small></div></div>
+            </div>
+            {% if closure_workers %}
+            <div class="row mb-4">
+                <div class="col-xl-6 mb-4 mb-xl-0"><h5 class="mb-1">Costo estimado por planilla</h5><small class="text-muted">Distribución del dinero requerido</small><div id="closure-payroll-chart" class="liq-chart mt-3"></div></div>
+                <div class="col-xl-6"><h5 class="mb-1">Costo estimado por perfil</h5><small class="text-muted">Doce perfiles con mayor impacto</small><div id="closure-position-chart" class="liq-chart mt-3"></div></div>
+            </div>
+            <div class="table-responsive liq-table-wrap"><table class="table table-hover table-sm mb-0">
+                <thead><tr><th>Trabajador</th><th>Documento</th><th>Planilla</th><th>Perfil</th><th>Ingreso</th><th>Fecha del escenario</th><th class="text-right">Básico</th><th>Periodicidad</th><th class="text-right">Días de servicio</th><th class="text-right">Vacaciones truncas</th><th class="text-right">Total proyectado</th></tr></thead>
+                <tbody>{% for row in closure_rows %}<tr>
+                    <td class="font-weight-bold">{{ row.full_name }}</td><td>{{ row.document|default:'—' }}</td><td>{{ row.payroll|default:row.payroll_id }}</td><td>{{ row.position }}</td><td class="text-nowrap">{{ row.fecha_ingreso|date:'d/m/Y' }}</td><td class="text-nowrap">{{ row.final_contrato|date:'d/m/Y' }}</td><td class="text-right text-nowrap">S/ {{ row.contract_basic|floatformat:2 }}</td><td>{{ row.basic_periodicity }}</td><td class="text-right">{{ row.service_days }}</td><td class="text-right text-nowrap">S/ {{ row.projected_vacation|floatformat:2 }}</td><td class="text-right text-nowrap font-weight-bold">S/ {{ row.projected_total|floatformat:2 }}</td>
+                </tr>{% endfor %}</tbody>
+                <tfoot><tr class="font-weight-bold bg-light"><td colspan="10">TOTAL DEL ESCENARIO</td><td class="text-right text-nowrap">S/ {{ closure_total|floatformat:2 }}</td></tr></tfoot>
+            </table></div>
+            {% else %}<div class="text-center text-muted py-5"><i class="fa fa-users fa-2x mb-3"></i><p class="mb-0">No hay personal vigente para los filtros y el mes seleccionados.</p></div>{% endif %}
+        </div>
     </div>
     {% endif %}
 
@@ -123,6 +155,8 @@
 {{ monthly_chart|json_script:"monthly-chart-data" }}
 {{ projection_chart|json_script:"projection-chart-data" }}
 {{ projection_workers_chart|json_script:"projection-workers-chart-data" }}
+{{ closure_payroll_chart|json_script:"closure-payroll-chart-data" }}
+{{ closure_position_chart|json_script:"closure-position-chart-data" }}
 {{ profiles_by_payroll|json_script:"profiles-by-payroll-data" }}
 {% include 'base/footer.html' %}
 <script src="{% static 'assets/plugins/flot/jquery.flot.min.js' %}"></script>
@@ -135,7 +169,7 @@ $(document).ready(function () {
     const profilesByPayroll=JSON.parse(document.getElementById('profiles-by-payroll-data').textContent), payrollFilter=$('#planilla'), profileFilter=$('#perfil'), allProfiles=[];
     Object.keys(profilesByPayroll).forEach(function(code){profilesByPayroll[code].forEach(function(item){if(allProfiles.indexOf(item)===-1)allProfiles.push(item);});}); allProfiles.sort();
     payrollFilter.on('change',function(){const previous=profileFilter.val(),options=payrollFilter.val()?(profilesByPayroll[payrollFilter.val()]||[]):allProfiles;profileFilter.empty().append($('<option>',{value:'',text:'Todos los perfiles'}));options.forEach(function(item){profileFilter.append($('<option>',{value:item,text:item}));});if(options.indexOf(previous)!==-1)profileFilter.val(previous);});
-    const payroll=JSON.parse(document.getElementById('payroll-chart-data').textContent),profiles=JSON.parse(document.getElementById('profile-chart-data').textContent),monthly=JSON.parse(document.getElementById('monthly-chart-data').textContent),projection=JSON.parse(document.getElementById('projection-chart-data').textContent),projectionWorkers=JSON.parse(document.getElementById('projection-workers-chart-data').textContent);
+    const payroll=JSON.parse(document.getElementById('payroll-chart-data').textContent),profiles=JSON.parse(document.getElementById('profile-chart-data').textContent),monthly=JSON.parse(document.getElementById('monthly-chart-data').textContent),projection=JSON.parse(document.getElementById('projection-chart-data').textContent),projectionWorkers=JSON.parse(document.getElementById('projection-workers-chart-data').textContent),closurePayroll=JSON.parse(document.getElementById('closure-payroll-chart-data').textContent),closurePositions=JSON.parse(document.getElementById('closure-position-chart-data').textContent);
     const money=function(value){return 'S/ '+Number(value).toLocaleString('es-PE',{minimumFractionDigits:2,maximumFractionDigits:2});};
     const tooltip=$('<div class="flot-tooltip"></div>').css({position:'absolute',display:'none',padding:'7px 10px',background:'#142b3d',color:'#fff',borderRadius:'6px',zIndex:9999}).appendTo('body');
     if(monthly.length&&$('#monthly-chart').length)$.plot('#monthly-chart',[{data:monthly,color:'#0b7551',label:'Neto liquidado'}],{series:{lines:{show:true,fill:.12,lineWidth:3},points:{show:true,radius:4}},xaxis:{mode:'categories',tickLength:0},yaxis:{tickFormatter:function(v){return 'S/ '+Math.round(v).toLocaleString('es-PE');}},grid:{hoverable:true,borderColor:'#e4e9ed',borderWidth:1}});
@@ -143,6 +177,8 @@ $(document).ready(function () {
     if(profiles.length&&$('#profile-chart').length)$.plot('#profile-chart',[{data:profiles,color:'#238aa5'}],{series:{bars:{show:true,barWidth:.64,align:'center',fill:.9}},xaxis:{mode:'categories',tickLength:0},yaxis:{tickFormatter:function(v){return 'S/ '+Math.round(v).toLocaleString('es-PE');}},grid:{hoverable:true,borderColor:'#e4e9ed',borderWidth:1}});
     if(projection.length&&$('#projection-chart').length)$.plot('#projection-chart',[{data:projection,color:'#7850c7',label:'Liquidación proyectada'}],{series:{bars:{show:true,barWidth:.64,align:'center',fill:.88}},xaxis:{mode:'categories',tickLength:0},yaxis:{tickFormatter:function(v){return 'S/ '+Math.round(v).toLocaleString('es-PE');}},grid:{hoverable:true,borderColor:'#e4e9ed',borderWidth:1}});
     if(projectionWorkers.length&&$('#projection-workers-chart').length)$.plot('#projection-workers-chart',[{data:projectionWorkers,color:'#df8500',label:'Contratos'}],{series:{bars:{show:true,barWidth:.64,align:'center',fill:.88}},xaxis:{mode:'categories',tickLength:0},yaxis:{min:0,tickDecimals:0},grid:{hoverable:true,borderColor:'#e4e9ed',borderWidth:1}});
+    if(closurePayroll.length&&$('#closure-payroll-chart').length)$.plot('#closure-payroll-chart',[{data:closurePayroll,color:'#0b7551',label:'Costo proyectado'}],{series:{bars:{show:true,barWidth:.62,align:'center',fill:.9}},xaxis:{mode:'categories',tickLength:0},yaxis:{tickFormatter:function(v){return 'S/ '+Math.round(v).toLocaleString('es-PE');}},grid:{hoverable:true,borderColor:'#e4e9ed',borderWidth:1}});
+    if(closurePositions.length&&$('#closure-position-chart').length)$.plot('#closure-position-chart',[{data:closurePositions,color:'#238aa5',label:'Costo proyectado'}],{series:{bars:{show:true,barWidth:.62,align:'center',fill:.9}},xaxis:{mode:'categories',tickLength:0,rotateTicks:110},yaxis:{tickFormatter:function(v){return 'S/ '+Math.round(v).toLocaleString('es-PE');}},grid:{hoverable:true,borderColor:'#e4e9ed',borderWidth:1}});
     $('.liq-chart').on('plothover',function(event,pos,item){if(!item)return tooltip.hide();const source=item.series.data[item.dataIndex]||[];let label=item.series.label||(source[0]||'Total');let value=item.series.pie?item.series.data[0][1]:source[1];let formatted=label==='Contratos'?Number(value).toLocaleString('es-PE')+' contrato(s)':money(value);tooltip.html('<strong>'+label+'</strong><br>'+formatted).css({top:item.pageY+10,left:item.pageX+10}).show();});
 });
 </script>

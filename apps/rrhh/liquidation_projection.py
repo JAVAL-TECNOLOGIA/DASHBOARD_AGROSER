@@ -86,3 +86,46 @@ def build_projection_summary(contracts, year):
             for month in range(1, 13)
         ],
     }
+
+
+def build_closure_projection(contracts, closing_date):
+    """Estimate the cash required if all active personnel leave on closing_date."""
+    projected_contracts = [
+        {**contract, "final_contrato": closing_date}
+        for contract in contracts
+    ]
+    rows = [project_contract_liquidation(contract) for contract in projected_contracts]
+    rows.sort(key=lambda item: (item.get("payroll") or "", item.get("full_name") or ""))
+
+    by_payroll = defaultdict(lambda: {"workers": 0, "total": ZERO})
+    by_position = defaultdict(lambda: {"workers": 0, "total": ZERO})
+    for row in rows:
+        payroll = (row.get("payroll") or row.get("payroll_id") or "SIN PLANILLA").strip()
+        position = (row.get("position") or "SIN PERFIL").strip()
+        by_payroll[payroll]["workers"] += 1
+        by_payroll[payroll]["total"] += row["projected_total"]
+        by_position[position]["workers"] += 1
+        by_position[position]["total"] += row["projected_total"]
+
+    total = sum((row["projected_total"] for row in rows), ZERO).quantize(CENT)
+    return {
+        "closure_rows": rows,
+        "closure_total": total,
+        "closure_workers": len(rows),
+        "closure_average": (
+            (total / len(rows)).quantize(CENT, rounding=ROUND_HALF_UP)
+            if rows else ZERO
+        ),
+        "closure_payrolls": [
+            {"name": name, **values, "total": values["total"].quantize(CENT)}
+            for name, values in sorted(
+                by_payroll.items(), key=lambda item: item[1]["total"], reverse=True
+            )
+        ],
+        "closure_positions": [
+            {"name": name, **values, "total": values["total"].quantize(CENT)}
+            for name, values in sorted(
+                by_position.items(), key=lambda item: item[1]["total"], reverse=True
+            )
+        ],
+    }

@@ -160,6 +160,66 @@ class ContractService:
         """
         return self._rows(sql, [self.company_id, start_date, end_date])
 
+    def list_active_contracts(self, as_of_date):
+        """Return personnel whose latest contract is active on the given date."""
+        sql = """
+            WITH latest_contract AS (
+                SELECT c.*, ROW_NUMBER() OVER (
+                    PARTITION BY c.idempresa, c.idcodigogeneral
+                    ORDER BY TRY_CONVERT(int, c.idcontrato) DESC, c.fechacreacion DESC
+                ) AS row_number
+                FROM contrato c WITH (NOLOCK)
+                WHERE c.idempresa = %s AND c.estado = 1
+                  AND c.inicio_contrato <= %s
+            )
+            SELECT
+                pg.idcodigogeneral,
+                RTRIM(pg.nrodocumento) AS document,
+                LTRIM(RTRIM(CONCAT(pg.a_paterno, ' ', pg.a_materno, ' ', pg.nombres))) AS full_name,
+                pe.fecha_ingreso,
+                pe.fecha_cese,
+                RTRIM(p.idplanilla) AS payroll_id,
+                RTRIM(pl.descripcion) AS payroll,
+                RTRIM(ISNULL(cp.descripcion, 'SIN CARGO')) AS position,
+                lc.idcontrato AS contract_id,
+                lc.idtipocontrato AS contract_type_id,
+                tc.descripcion AS contract_type,
+                lc.inicio_contrato,
+                lc.final_contrato,
+                lc.basico
+            FROM latest_contract lc
+            INNER JOIN personal_general pg WITH (NOLOCK)
+                ON pg.idcodigogeneral = lc.idcodigogeneral
+            OUTER APPLY (
+                SELECT TOP 1 p0.idempresa, p0.idcodigogeneral, p0.idplanilla, p0.idcargo
+                FROM personal p0 WITH (NOLOCK)
+                WHERE p0.idempresa = lc.idempresa
+                  AND p0.idcodigogeneral = lc.idcodigogeneral
+            ) p
+            LEFT JOIN planilla pl WITH (NOLOCK)
+                ON pl.idempresa = p.idempresa AND pl.idplanilla = p.idplanilla
+            LEFT JOIN cargos_personal cp WITH (NOLOCK)
+                ON cp.idempresa = p.idempresa AND cp.idcargo = p.idcargo
+            LEFT JOIN tipo_contrato tc WITH (NOLOCK)
+                ON tc.idtipocontrato = lc.idtipocontrato
+            OUTER APPLY (
+                SELECT TOP 1 pe0.idcodigogeneral, pe0.fecha_ingreso, pe0.fecha_cese
+                FROM personal_empresa pe0 WITH (NOLOCK)
+                WHERE pe0.idempresa = lc.idempresa
+                  AND pe0.idcodigogeneral = lc.idcodigogeneral
+                  AND pe0.fecha_ingreso <= %s
+                ORDER BY pe0.fecha_ingreso DESC, pe0.item DESC
+            ) pe
+            WHERE lc.row_number = 1
+              AND (lc.final_contrato IS NULL OR lc.final_contrato >= %s)
+              AND pe.idcodigogeneral IS NOT NULL
+              AND (pe.fecha_cese IS NULL OR pe.fecha_cese >= %s)
+            ORDER BY full_name
+        """
+        return self._rows(sql, [
+            self.company_id, as_of_date, as_of_date, as_of_date, as_of_date,
+        ])
+
     def get_contract(self, worker_id, contract_id):
         rows = self._rows(
             """
