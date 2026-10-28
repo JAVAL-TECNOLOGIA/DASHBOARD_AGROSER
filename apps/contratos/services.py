@@ -220,6 +220,84 @@ class ContractService:
             self.company_id, as_of_date, as_of_date, as_of_date, as_of_date,
         ])
 
+    def closure_liquidation_parameters(self, as_of_date):
+        """Return the payroll inputs used by NISIRA's vacation liquidation report."""
+        start_period = "{}01".format(as_of_date.year)
+        end_period = "{}{:02d}".format(as_of_date.year, as_of_date.month)
+        sql = """
+            SELECT
+                RTRIM(m.idcodigogeneral) AS worker_id,
+                COUNT(DISTINCT CASE
+                    WHEN NULLIF(RTRIM(pl.INGRESO_RENDIMIENTO), '') IS NOT NULL
+                     AND d.idconcepto = pl.INGRESO_RENDIMIENTO
+                     AND ISNULL(d.calculo, 0) <> 0
+                    THEN LEFT(RTRIM(m.periodo_planilla), 6) END
+                ) AS performance_months,
+                SUM(CASE
+                    WHEN NULLIF(RTRIM(pl.INGRESO_RENDIMIENTO), '') IS NOT NULL
+                     AND d.idconcepto = pl.INGRESO_RENDIMIENTO
+                    THEN ISNULL(d.calculo, 0) ELSE 0 END
+                ) AS performance_total,
+                SUM(CASE
+                    WHEN NULLIF(RTRIM(pl.DIAS_RENDIMIENTO), '') IS NOT NULL
+                     AND d.idconcepto = pl.DIAS_RENDIMIENTO
+                    THEN ISNULL(d.calculo, 0) ELSE 0 END
+                ) AS performance_days,
+                SUM(CASE
+                    WHEN NULLIF(RTRIM(pl.DIAS_DESCANSO_GANADO), '') IS NOT NULL
+                     AND d.idconcepto = pl.DIAS_DESCANSO_GANADO
+                    THEN ISNULL(d.calculo, 0) ELSE 0 END
+                ) AS rest_days,
+                MAX(CASE WHEN d.idconcepto = 'IN0002' AND ISNULL(d.calculo, 0) > 0
+                         THEN 1 ELSE 0 END) AS has_family_allowance
+            FROM movimiento_planilla m WITH (NOLOCK)
+            OUTER APPLY (
+                SELECT TOP 1 pe.fecha_ingreso
+                FROM personal_empresa pe WITH (NOLOCK)
+                WHERE pe.idempresa = m.idempresa
+                  AND pe.idcodigogeneral = m.idcodigogeneral
+                  AND pe.fecha_ingreso <= %s
+                ORDER BY pe.fecha_ingreso DESC, pe.item DESC
+            ) current_employment
+            INNER JOIN planilla pl WITH (NOLOCK)
+                ON pl.idempresa = m.idempresa AND pl.idplanilla = m.idplanilla
+            INNER JOIN deta_movimiento_planilla d WITH (NOLOCK)
+                ON d.idempresa = m.idempresa AND d.idmovimiento = m.idmovimiento
+            WHERE m.idempresa = %s
+              AND LEFT(RTRIM(m.periodo_planilla), 6) BETWEEN %s AND %s
+              AND LEFT(RTRIM(m.periodo_planilla), 6) >=
+                  CONVERT(char(6), current_employment.fecha_ingreso, 112)
+              AND RTRIM(m.idplanilla) IN ('ERG', 'ERA', 'OBP', 'OBR')
+              AND RTRIM(ISNULL(m.tipo, '')) = 'N'
+              AND RTRIM(ISNULL(m.idestado, '')) <> 'AN'
+            GROUP BY m.idcodigogeneral
+        """
+        rows = self._rows(sql, [
+            as_of_date, self.company_id, start_period, end_period,
+        ])
+        minimum_wage_rows = self._rows(
+            """
+            SELECT TOP 1 d.valor AS minimum_wage
+            FROM variables v WITH (NOLOCK)
+            INNER JOIN deta_variables d WITH (NOLOCK)
+                ON d.idempresa = v.idempresa AND d.idvariable = v.idvariable
+            WHERE v.idempresa = %s AND RTRIM(ISNULL(v.es_variable, '')) = 'RMV'
+              AND %s BETWEEN CONVERT(char(6), d.fecha_inicio, 112)
+                         AND CONVERT(char(6), ISNULL(d.fecha_final, '99991231'), 112)
+            ORDER BY d.fecha_inicio DESC, d.item DESC
+            """,
+            [self.company_id, end_period],
+        )
+        minimum_wage = minimum_wage_rows[0]["minimum_wage"] if minimum_wage_rows else 0
+        return {
+            str(row["worker_id"]).strip(): {
+                **row,
+                "minimum_wage": minimum_wage,
+                "has_payroll_parameters": True,
+            }
+            for row in rows
+        }
+
     def get_contract(self, worker_id, contract_id):
         rows = self._rows(
             """

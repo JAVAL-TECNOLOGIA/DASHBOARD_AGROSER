@@ -168,6 +168,17 @@ class RRHHLiquidacionesView(RRHHReportesAccessMixin, TemplateView):
         )
         try:
             closure_contracts = ContractService().list_active_contracts(closing_date)
+            closure_parameters = ContractService().closure_liquidation_parameters(closing_date)
+            closure_contracts = [
+                {
+                    **contract,
+                    **closure_parameters.get(
+                        str(contract.get('idcodigogeneral') or '').strip(),
+                        {},
+                    ),
+                }
+                for contract in closure_contracts
+            ]
             closure_error = False
         except DatabaseError:
             closure_contracts = []

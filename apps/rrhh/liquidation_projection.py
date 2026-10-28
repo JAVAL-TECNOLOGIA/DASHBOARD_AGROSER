@@ -92,11 +92,7 @@ def build_projection_summary(contracts, year):
 
 def build_closure_projection(contracts, closing_date):
     """Estimate the cash required if all active personnel leave on closing_date."""
-    projected_contracts = [
-        {**contract, "final_contrato": closing_date}
-        for contract in contracts
-    ]
-    rows = [project_contract_liquidation(contract) for contract in projected_contracts]
+    rows = [project_closure_liquidation(contract, closing_date) for contract in contracts]
     rows.sort(key=lambda item: (item.get("payroll") or "", item.get("full_name") or ""))
 
     by_payroll = defaultdict(lambda: {"workers": 0, "total": ZERO})
@@ -130,4 +126,64 @@ def build_closure_projection(contracts, closing_date):
                 by_position.items(), key=lambda item: item[1]["total"], reverse=True
             )
         ],
+    }
+
+
+def project_closure_liquidation(contract, closing_date):
+    """Project the closure scenario with NISIRA's payroll parameters.
+
+    The operational report uses a six-month divisor for performance, then adds
+    the current basic salary and family allowance to obtain the computable base.
+    Vacation liquidation is base * computable days / 360.
+    """
+    if not contract.get("has_payroll_parameters"):
+        return project_contract_liquidation({**contract, "final_contrato": closing_date})
+
+    start = _date(contract.get("fecha_ingreso") or contract.get("inicio_contrato"))
+    contract_basic = _money(contract.get("basico"))
+    basic = (
+        (contract_basic * Decimal("30")).quantize(CENT)
+        if contract_basic <= MONTHLY_BASIC_THRESHOLD else contract_basic
+    )
+    performance_total = _money(contract.get("performance_total"))
+    performance_average = (performance_total / Decimal("6")).quantize(
+        CENT, rounding=ROUND_HALF_UP
+    )
+    family_allowance = (
+        (_money(contract.get("minimum_wage")) * Decimal("0.10")).quantize(
+            CENT, rounding=ROUND_HALF_UP
+        )
+        if contract.get("has_family_allowance") else ZERO
+    )
+    rest_days = Decimal(str(contract.get("rest_days") or 0)).quantize(
+        Decimal("1"), rounding=ROUND_HALF_UP
+    )
+    performance_days = Decimal(str(contract.get("performance_days") or 0)).quantize(
+        Decimal("1"), rounding=ROUND_HALF_UP
+    )
+    computable_days = rest_days + performance_days
+    computable_base = (basic + family_allowance + performance_average).quantize(CENT)
+    total = (computable_base * computable_days / Decimal("360")).quantize(
+        CENT, rounding=ROUND_HALF_UP
+    )
+    return {
+        **contract,
+        "fecha_ingreso": start,
+        "final_contrato": closing_date,
+        "contract_basic": basic,
+        "daily_basic": (basic / Decimal("30")).quantize(CENT, rounding=ROUND_HALF_UP),
+        "basic_periodicity": "MENSUAL",
+        "performance_months": int(contract.get("performance_months") or 0),
+        "performance_total": performance_total,
+        "performance_average": performance_average,
+        "family_allowance": family_allowance,
+        "rest_days": rest_days,
+        "performance_days": performance_days,
+        "service_days": int(computable_days),
+        "computable_base": computable_base,
+        "projected_cts": ZERO,
+        "projected_gratification": ZERO,
+        "projected_vacation": total,
+        "projected_total": total,
+        "eligible": computable_days > 0 and computable_base > 0,
     }

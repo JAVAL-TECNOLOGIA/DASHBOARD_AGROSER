@@ -3,7 +3,8 @@ from decimal import Decimal
 from unittest import TestCase
 
 from .liquidation_projection import (
-    build_closure_projection, build_projection_summary, project_contract_liquidation,
+    build_closure_projection, build_projection_summary, project_closure_liquidation,
+    project_contract_liquidation,
 )
 
 
@@ -72,3 +73,23 @@ class LiquidationProjectionTests(TestCase):
 
         self.assertEqual(summary["closure_workers"], 1)
         self.assertGreater(summary["closure_total"], Decimal("0.00"))
+
+    def test_closure_uses_nisira_performance_parameters(self):
+        row = project_closure_liquidation({
+            "fecha_ingreso": date(2026, 3, 24),
+            "basico": "41.00",
+            "performance_months": 8,
+            "performance_total": "17173.89",
+            "rest_days": "31.82",
+            "performance_days": "198.00",
+            "has_family_allowance": True,
+            "minimum_wage": "1230.00",
+            "has_payroll_parameters": True,
+        }, date(2026, 10, 31))
+
+        self.assertEqual(row["performance_average"], Decimal("2862.32"))
+        self.assertEqual(row["rest_days"], Decimal("32"))
+        self.assertEqual(row["service_days"], 230)
+        self.assertEqual(row["family_allowance"], Decimal("123.00"))
+        self.assertEqual(row["computable_base"], Decimal("4215.32"))
+        self.assertEqual(row["projected_total"], Decimal("2693.12"))
