@@ -9,6 +9,8 @@ MONTHLY_BASIC_THRESHOLD = Decimal("300.00")
 
 
 def _date(value):
+    if isinstance(value, datetime):
+        return value.date()
     if value is None or hasattr(value, "year"):
         return value
     return datetime.strptime(str(value)[:10], "%Y-%m-%d").date()

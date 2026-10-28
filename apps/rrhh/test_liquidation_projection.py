@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 from unittest import TestCase
 
@@ -62,3 +62,13 @@ class LiquidationProjectionTests(TestCase):
         self.assertEqual(len(summary["closure_payrolls"]), 2)
         self.assertGreater(summary["closure_total"], Decimal("0.00"))
         self.assertEqual(summary["closure_rows"][0]["final_contrato"], date(2026, 10, 31))
+
+    def test_accepts_sql_server_datetime_for_admission_date(self):
+        summary = build_closure_projection([{
+            "full_name": "ANA",
+            "fecha_ingreso": datetime(2026, 1, 1, 0, 0),
+            "basico": 40,
+        }], date(2026, 10, 31))
+
+        self.assertEqual(summary["closure_workers"], 1)
+        self.assertGreater(summary["closure_total"], Decimal("0.00"))
