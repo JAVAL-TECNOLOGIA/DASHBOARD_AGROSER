@@ -119,6 +119,7 @@ class PaySlipService:
                 slip["net_total"] = official_total("TO0002", slip["income_total"] - slip["deduction_total"])
                 slips.append(slip)
 
+        slips = self._deduplicate_slips(slips)
         cache.set(cache_key, slips, getattr(settings, "PAYSLIP_DATA_CACHE_SECONDS", 120))
         return copy.deepcopy(slips)
 
@@ -367,6 +368,43 @@ class PaySlipService:
         return (
             str(item.get("idcodigogeneral") or "").strip(),
             str(item.get("grupo_planilla") or "").strip(),
+        )
+
+    @classmethod
+    def _deduplicate_slips(cls, slips):
+        """Remove exact payroll duplicates without merging real movements or weeks."""
+        unique = []
+        seen = set()
+        for slip in slips:
+            identity = cls._slip_identity(slip)
+            if identity in seen:
+                logger.warning(
+                    "Duplicate payslip ignored for worker=%s payroll=%s movement=%s",
+                    slip.get("idcodigogeneral") or slip.get("nrodocumento"),
+                    slip.get("payroll_type"),
+                    slip.get("movement_id"),
+                )
+                continue
+            seen.add(identity)
+            unique.append(slip)
+        return unique
+
+    @staticmethod
+    def _slip_identity(slip):
+        def normalized(name):
+            return str(slip.get(name) or "").strip().upper()
+
+        return (
+            normalized("idcodigogeneral") or normalized("nrodocumento"),
+            normalized("payroll_type"),
+            normalized("grupo_planilla"),
+            normalized("periodo_planilla") or normalized("periodo"),
+            normalized("semana"),
+            normalized("movement_id"),
+            normalized("movement_type"),
+            Decimal(str(slip.get("income_total") or 0)),
+            Decimal(str(slip.get("deduction_total") or 0)),
+            Decimal(str(slip.get("net_total") or 0)),
         )
 
     @staticmethod

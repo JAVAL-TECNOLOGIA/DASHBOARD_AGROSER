@@ -100,6 +100,44 @@ class PaySlipCacheTests(SimpleTestCase):
 
         self.assertEqual(execute.call_count, 2)
 
+    def test_exact_duplicate_payslips_are_removed(self):
+        slip = {
+            "idcodigogeneral": "72366911",
+            "payroll_type": "ERG",
+            "grupo_planilla": "01",
+            "periodo_planilla": "202610",
+            "movement_id": "MOV-100",
+            "movement_type": "N",
+            "income_total": Decimal("1700"),
+            "deduction_total": Decimal("0"),
+            "net_total": Decimal("1700"),
+        }
+
+        result = PaySlipService._deduplicate_slips([slip, dict(slip)])
+
+        self.assertEqual(result, [slip])
+
+    def test_different_movements_and_weeks_are_preserved(self):
+        base = {
+            "idcodigogeneral": "72366911",
+            "payroll_type": "ERG",
+            "grupo_planilla": "01",
+            "periodo_planilla": "202610",
+            "movement_id": "MOV-100",
+            "movement_type": "N",
+            "income_total": Decimal("1700"),
+            "deduction_total": Decimal("0"),
+            "net_total": Decimal("1700"),
+        }
+        other_movement = dict(base, movement_id="MOV-101")
+        other_week = dict(base, movement_id="", semana="02")
+
+        result = PaySlipService._deduplicate_slips(
+            [base, other_movement, other_week]
+        )
+
+        self.assertEqual(len(result), 3)
+
     @patch("apps.boletas.views.PaySlipPdfView._build_erg_pdf", return_value=b"pdf-data")
     def test_same_payslip_reuses_rendered_pdf(self, render_pdf):
         from .views import PaySlipPdfView
