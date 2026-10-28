@@ -99,11 +99,13 @@ def build_cash_liquidation_report(rows, report_date=None):
         item['amount'] = float(payable_totals[item['account']])
     report['cash_total'] = round(float(cash_total), 2)
     report['receivable_total'] = round(sum(item['amount'] for item in report['receivables']), 2)
-    report['available_total'] = round(report['cash_total'] + report['receivable_total'], 2)
-    report['payable_total'] = round(sum(item['amount'] for item in report['payables']), 2)
-    report['net_position'] = round(report['available_total'] - report['payable_total'], 2)
+    report['available_total'] = report['receivable_total']
+    report['payable_total'] = round(
+        report['cash_total'] + sum(item['amount'] for item in report['payables']), 2
+    )
+    report['net_position'] = round(report['receivable_total'] - report['payable_total'], 2)
     report['coverage'] = round(
-        report['available_total'] / report['payable_total'] * 100, 2
+        report['receivable_total'] / report['payable_total'] * 100, 2
     ) if report['payable_total'] else 0.0
     return report
 

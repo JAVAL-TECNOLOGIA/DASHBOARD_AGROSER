@@ -200,10 +200,11 @@ class ContabilidadReportesViewTests(TestCase):
         self.assertContains(response, 'Composición de obligaciones')
         data = response.context['liquidacion_caja_data']
         self.assertEqual(data['receivable_total'], 2900.0)
-        self.assertEqual(data['payable_total'], 4900.0)
+        self.assertEqual(data['payable_total'], 5400.0)
         self.assertEqual(data['cash_total'], 500.0)
-        self.assertEqual(data['available_total'], 3400.0)
-        self.assertEqual(data['net_position'], -1500.0)
+        self.assertEqual(data['available_total'], 2900.0)
+        self.assertEqual(data['payable_total'], 5400.0)
+        self.assertEqual(data['net_position'], -2500.0)
 
     @patch('apps.contabilidad.views.get_boxes_and_kilos_report')
     def test_boxes_and_kilos_report_uses_nisira_data(self, report_mock):
