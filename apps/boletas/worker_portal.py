@@ -48,6 +48,27 @@ DOCUMENT_TITLES = {
 }
 
 
+def payroll_movement_titles(slip):
+    """Return a stable visible title for every NISIRA payroll movement."""
+    movement_type = str(slip.get("movement_type") or "").strip().upper()
+    concepts = " ".join(
+        str(item.get("descripcion") or "") for item in slip.get("concepts", [])
+    )
+    normalized = unicodedata.normalize("NFKD", concepts).encode("ascii", "ignore").decode().upper()
+    if movement_type == "A" or "VACACION" in normalized:
+        return "VACACIONES", "BOLETA DE VACACIONES"
+    if movement_type == "N":
+        return "REMUNERACIÓN MENSUAL", "BOLETA DE PAGO"
+    return "MOVIMIENTO DE PLANILLA", slip.get("document_title") or "BOLETA DE PAGO"
+
+
+def ensure_payroll_movement_titles(slip):
+    movement_title, document_title = payroll_movement_titles(slip)
+    slip.setdefault("movement_title", movement_title)
+    slip.setdefault("document_title", document_title)
+    return slip
+
+
 def concept_document_type(concept):
     value = "{} {}".format(
         concept.get("descripcion") or "", concept.get("codigo_equiv") or ""
@@ -75,6 +96,10 @@ def split_worker_documents(slips):
             document["document_type"] = document_type
             document["document_type_label"] = DOCUMENT_TYPES[document_type]
             document["document_title"] = DOCUMENT_TITLES[document_type]
+            movement_title, document_title = payroll_movement_titles(document)
+            document["movement_title"] = movement_title
+            if document_type == "payment":
+                document["document_title"] = document_title
             documents.append(document)
             continue
         groups = {code: [] for code in DOCUMENT_TYPES}
@@ -88,6 +113,7 @@ def split_worker_documents(slips):
             document["document_type"] = document_type
             document["document_type_label"] = DOCUMENT_TYPES[document_type]
             document["document_title"] = DOCUMENT_TITLES[document_type]
+            document["movement_title"] = DOCUMENT_TITLES[document_type]
             document["income_total"] = sum(
                 (PaySlipService._amount(item) for item in concepts if PaySlipService._is_income(item)), 0
             )
@@ -229,6 +255,7 @@ def worker_slips(document, period):
             slip["document_type"] = "payment"
             slip["document_type_label"] = DOCUMENT_TYPES["payment"]
             slip["document_title"] = "BOLETA DE REMUNERACIONES"
+            slip["movement_title"] = "REMUNERACIÓN SEMANAL"
             # A week crossing two payroll periods contains one set of total
             # concepts per segment. Sum repeated codes instead of keeping only
             # the last row so the dashboard matches the merged TXT/PDF.
@@ -480,6 +507,7 @@ class WorkerDashboardView(WorkerPortalMixin, View):
 
         fingerprints = []
         for slip in slips:
+            ensure_payroll_movement_titles(slip)
             fingerprint = payslip_fingerprint(slip, period)
             slip["fingerprint"] = fingerprint
             fingerprints.append(fingerprint)
@@ -540,6 +568,7 @@ class WorkerPayslipPdfView(WorkerPortalMixin, View):
         )
         if slip is None:
             raise Http404("La boleta solicitada no existe.")
+        ensure_payroll_movement_titles(slip)
         slip['_payroll_week'] = "+".join(request.GET.get('week', '').split())
         if not PayrollRelease.objects.filter(
             payroll_type=str(slip.get("payroll_type") or "").strip().upper(),
@@ -595,6 +624,7 @@ class WorkerPayslipConfirmView(WorkerPortalMixin, View):
         )
         if not slip:
             raise Http404("La boleta solicitada no existe.")
+        ensure_payroll_movement_titles(slip)
         if not PayrollRelease.objects.filter(
             payroll_type=str(slip.get("payroll_type") or "").strip().upper(),
             period_start=period.start,

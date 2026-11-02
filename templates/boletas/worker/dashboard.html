@@ -39,7 +39,9 @@
         <div class="card payslip-card shadow-sm mb-4"><div class="card-body p-4">
             <div class="row">
                 <div class="col-md-7">
-                    <span class="badge badge-info mb-2">{{ slip.document_type_label }}</span><h4>{{ slip.payroll_type_label }}</h4>
+                    <span class="badge badge-info mb-2">{{ slip.document_type_label }}</span>
+                    <h4 class="mb-1">{{ slip.movement_title }}</h4>
+                    <div class="font-weight-bold mb-2">{{ slip.payroll_type_label }}</div>
                     <div class="text-muted mb-3">{{ slip.cargo_personal }} · {{ slip.dias_trabajados }} días trabajados</div>
                     {% if slip.acknowledgement %}
                     <div class="row">

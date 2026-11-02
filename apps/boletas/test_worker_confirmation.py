@@ -8,7 +8,7 @@ from django.utils import timezone
 from apps.user.models import User
 from .models import PayrollRelease, PayslipAcknowledgement, PayslipView, WorkerIdentityProfile
 from .periods import custom_range
-from .worker_portal import payslip_fingerprint
+from .worker_portal import payslip_fingerprint, split_worker_documents
 
 
 class WorkerConfirmationTests(TestCase):
@@ -75,6 +75,19 @@ class WorkerConfirmationTests(TestCase):
         self.assertNotContains(response, 'type="checkbox"')
         self.assertNotContains(response, 'Neto a pagar')
         self.assertNotContains(response, 'S/ 90')
+
+    def test_vacation_movement_always_has_its_own_title(self):
+        vacation = dict(
+            self.slip,
+            movement_id="MOV-VAC",
+            movement_type="A",
+            concepts=[{"descripcion": "VACACIONES", "codigo_equiv": "IN0005"}],
+        )
+
+        document = split_worker_documents([vacation])[0]
+
+        self.assertEqual(document["movement_title"], "VACACIONES")
+        self.assertEqual(document["document_title"], "BOLETA DE VACACIONES")
 
     def test_dashboard_hides_amounts_until_confirmation(self):
         response = self.client.get(reverse('boletas:worker_dashboard'), self.params)
