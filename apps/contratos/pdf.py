@@ -12,7 +12,7 @@ import queue
 import atexit
 import sys
 import re
-from html import unescape
+from html import escape, unescape
 from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
@@ -162,6 +162,37 @@ def _replace_calculated_amounts(xml, values):
         ),
     )
 
+    def replace_span_across_runs(paragraph, start, end, replacement):
+        """Replace a plain-text span even when Word split it into several runs."""
+        text_nodes = list(re.finditer(
+            r"(<w:t(?:\s[^>]*)?>)(.*?)(</w:t>)",
+            paragraph,
+            flags=re.DOTALL,
+        ))
+        cursor = 0
+        changes = []
+        inserted = False
+        for node in text_nodes:
+            raw_text = node.group(2)
+            plain = unescape(raw_text)
+            node_start = cursor
+            node_end = cursor + len(plain)
+            cursor = node_end
+            if node_end <= start or node_start >= end:
+                continue
+            local_start = max(start - node_start, 0)
+            local_end = min(end - node_start, len(plain))
+            new_text = plain[:local_start]
+            if not inserted:
+                new_text += replacement
+                inserted = True
+            new_text += plain[local_end:]
+            changes.append((node.start(2), node.end(2), escape(new_text, quote=False)))
+
+        for change_start, change_end, new_text in reversed(changes):
+            paragraph = paragraph[:change_start] + new_text + paragraph[change_end:]
+        return paragraph
+
     def replace_paragraph(match):
         paragraph = match.group(0)
         text_runs = re.findall(r"<w:t(?:\s[^>]*)?>(.*?)</w:t>", paragraph, re.DOTALL)
@@ -170,17 +201,16 @@ def _replace_calculated_amounts(xml, values):
             amount_match = re.search(pattern, plain_text, flags=re.IGNORECASE)
             if not amount_match:
                 continue
-            old_amount = amount_match.group(1)
-            text_node_amount = re.compile(
-                r"(<w:t(?:\s[^>]*)?>[^<]*?)" + re.escape(old_amount) + r"([^<]*</w:t>)"
-            )
-            paragraph, count = text_node_amount.subn(
-                lambda item: item.group(1) + replacement + item.group(2),
+            paragraph = replace_span_across_runs(
                 paragraph,
-                count=1,
+                amount_match.start(1),
+                amount_match.end(1),
+                replacement,
             )
-            if count:
-                plain_text = plain_text.replace(old_amount, replacement, 1)
+            text_runs = re.findall(
+                r"<w:t(?:\s[^>]*)?>(.*?)</w:t>", paragraph, re.DOTALL
+            )
+            plain_text = unescape("".join(text_runs))
         return paragraph
 
     xml_text = xml.decode("utf-8")

@@ -1,5 +1,6 @@
 from datetime import date
 from pathlib import Path
+import re
 import tempfile
 from unittest.mock import patch
 from io import BytesIO
@@ -60,6 +61,29 @@ class ContractAmountTests(SimpleTestCase):
         self.assertIn("asciende a S/ 4.37", replaced)
         self.assertIn("asciende a S/ 7.50", replaced)
         self.assertIn("asciende a S/ 12.30 por día", replaced)
+
+    def test_replaces_beta_amount_split_across_word_runs(self):
+        xml = (
+            '<w:p><w:r><w:t>La BETA se pagará en forma proporcional a los días '
+            'trabajados el cual asciende a S/</w:t></w:r>'
+            '<w:r><w:t>1</w:t></w:r><w:r><w:t>1</w:t></w:r>'
+            '<w:r><w:t>.</w:t></w:r><w:r><w:t>30</w:t></w:r>'
+            '<w:r><w:t> por día.</w:t></w:r></w:p>'
+        ).encode("utf-8")
+
+        replaced = _replace_calculated_amounts(
+            xml,
+            {
+                "tbr_rem_diaria": "41.00",
+                "tbr_cts": "3.99",
+                "tbr_gratificacion": "6.83",
+                "tbr_beta": "12.30",
+            },
+        ).decode("utf-8")
+        plain = re.sub(r"<[^>]+>", "", replaced)
+
+        self.assertIn("asciende a S/12.30 por día", plain)
+        self.assertNotIn("11.30", plain)
 
 
 class ContractGenerationFormTests(SimpleTestCase):
