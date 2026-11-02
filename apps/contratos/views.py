@@ -34,7 +34,7 @@ from .services import ContractService, dashboard_template_path
 
 
 logger = logging.getLogger(__name__)
-CONTRACT_PDF_VERSION = "v3"
+CONTRACT_PDF_VERSION = "v4"
 
 
 class PdaRegistrationLoginView(LoginView):

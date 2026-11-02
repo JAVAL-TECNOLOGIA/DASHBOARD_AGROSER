@@ -19,7 +19,12 @@ from .forms import (
     NewEmployeeContractForm,
 )
 from .identity import IdentityLookupError, _api_token, lookup_dni
-from .pdf import _contract_values, _replace_calculated_amounts
+from .pdf import (
+    _contract_values,
+    _replace_calculated_amounts,
+    _replace_contract_end_year,
+    _replace_fields_across_runs,
+)
 
 
 class ContractAmountTests(SimpleTestCase):
@@ -84,6 +89,32 @@ class ContractAmountTests(SimpleTestCase):
 
         self.assertIn("asciende a S/12.30 por día", plain)
         self.assertNotIn("11.30", plain)
+
+    def test_corrects_template_that_reuses_start_year_as_end_year(self):
+        xml = (
+            '<w:p><w:r><w:t>a partir del «cnt_diai» de «cnt_mesi» del </w:t></w:r>'
+            '<w:r><w:t>«cnt_anoi» fecha en que iniciarán las labores, </w:t></w:r>'
+            '<w:r><w:t>hasta el «cnt_diaf» de «cnt_mesf» del </w:t></w:r>'
+            '<w:r><w:t>«cnt_anoi»</w:t></w:r>'
+            '<w:r><w:t>, fecha en que culminará.</w:t></w:r></w:p>'
+        ).encode("utf-8")
+
+        replaced = _replace_contract_end_year(xml, {"cnt_anof": "2027"}).decode("utf-8")
+        plain = re.sub(r"<[^>]+>", "", replaced)
+
+        self.assertIn("«cnt_anoi» fecha en que iniciarán", plain)
+        self.assertIn("hasta el «cnt_diaf» de «cnt_mesf» del 2027", plain)
+
+    def test_replaces_field_split_across_word_runs(self):
+        xml = (
+            '<w:p><w:r><w:t>hasta el 31 de ENERO del «cnt_</w:t></w:r>'
+            '<w:r><w:t>anof»</w:t></w:r></w:p>'
+        ).encode("utf-8")
+
+        replaced = _replace_fields_across_runs(xml, {"cnt_anof": "2027"}).decode("utf-8")
+        plain = re.sub(r"<[^>]+>", "", replaced)
+
+        self.assertEqual(plain, "hasta el 31 de ENERO del 2027")
 
 
 class ContractGenerationFormTests(SimpleTestCase):

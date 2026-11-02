@@ -223,6 +223,127 @@ def _replace_calculated_amounts(xml, values):
     return xml_text.encode("utf-8")
 
 
+def _replace_contract_end_year(xml, values):
+    """Correct legacy templates that reuse the start-year field at contract end."""
+    end_year = str(values.get("cnt_anof") or "")
+    if not end_year:
+        return xml
+
+    def replace_span_across_runs(paragraph, start, end, replacement):
+        text_nodes = list(re.finditer(
+            r"(<w:t(?:\s[^>]*)?>)(.*?)(</w:t>)",
+            paragraph,
+            flags=re.DOTALL,
+        ))
+        cursor = 0
+        changes = []
+        inserted = False
+        for node in text_nodes:
+            plain = unescape(node.group(2))
+            node_start = cursor
+            node_end = cursor + len(plain)
+            cursor = node_end
+            if node_end <= start or node_start >= end:
+                continue
+            local_start = max(start - node_start, 0)
+            local_end = min(end - node_start, len(plain))
+            new_text = plain[:local_start]
+            if not inserted:
+                new_text += replacement
+                inserted = True
+            new_text += plain[local_end:]
+            changes.append((node.start(2), node.end(2), escape(new_text, quote=False)))
+        for change_start, change_end, new_text in reversed(changes):
+            paragraph = paragraph[:change_start] + new_text + paragraph[change_end:]
+        return paragraph
+
+    def replace_paragraph(match):
+        paragraph = match.group(0)
+        text_runs = re.findall(r"<w:t(?:\s[^>]*)?>(.*?)</w:t>", paragraph, re.DOTALL)
+        plain_text = unescape("".join(text_runs))
+        hasta = re.search(r"\bhasta\b", plain_text, flags=re.IGNORECASE)
+        if not hasta:
+            return paragraph
+        # Some NISIRA templates incorrectly contain cnt_anoi in both dates.
+        wrong_year = re.search(r"«cnt_anoi»", plain_text[hasta.end():], flags=re.IGNORECASE)
+        if not wrong_year:
+            return paragraph
+        start = hasta.end() + wrong_year.start()
+        end = hasta.end() + wrong_year.end()
+        return replace_span_across_runs(paragraph, start, end, end_year)
+
+    xml_text = xml.decode("utf-8")
+    xml_text = re.sub(
+        r"<w:p(?:\s[^>]*)?>.*?</w:p>",
+        replace_paragraph,
+        xml_text,
+        flags=re.DOTALL,
+    )
+    return xml_text.encode("utf-8")
+
+
+def _replace_fields_across_runs(xml, values):
+    """Replace merge placeholders even when Word split them into multiple runs."""
+    replacements = {
+        "«{}»".format(field): str(value or "")
+        for field, value in values.items()
+    }
+
+    def replace_span(paragraph, start, end, replacement):
+        nodes = list(re.finditer(
+            r"(<w:t(?:\s[^>]*)?>)(.*?)(</w:t>)", paragraph, flags=re.DOTALL
+        ))
+        cursor = 0
+        changes = []
+        inserted = False
+        for node in nodes:
+            plain = unescape(node.group(2))
+            node_start = cursor
+            node_end = cursor + len(plain)
+            cursor = node_end
+            if node_end <= start or node_start >= end:
+                continue
+            local_start = max(start - node_start, 0)
+            local_end = min(end - node_start, len(plain))
+            new_text = plain[:local_start]
+            if not inserted:
+                new_text += replacement
+                inserted = True
+            new_text += plain[local_end:]
+            changes.append((node.start(2), node.end(2), escape(new_text, quote=False)))
+        for change_start, change_end, new_text in reversed(changes):
+            paragraph = paragraph[:change_start] + new_text + paragraph[change_end:]
+        return paragraph
+
+    def replace_paragraph(match):
+        paragraph = match.group(0)
+        for placeholder, replacement in replacements.items():
+            while True:
+                text_runs = re.findall(
+                    r"<w:t(?:\s[^>]*)?>(.*?)</w:t>", paragraph, re.DOTALL
+                )
+                plain_text = unescape("".join(text_runs))
+                position = plain_text.find(placeholder)
+                if position < 0:
+                    break
+                paragraph = replace_span(
+                    paragraph,
+                    position,
+                    position + len(placeholder),
+                    replacement,
+                )
+        return paragraph
+
+    xml_text = xml.decode("utf-8")
+    xml_text = re.sub(
+        r"<w:p(?:\s[^>]*)?>.*?</w:p>",
+        replace_paragraph,
+        xml_text,
+        flags=re.DOTALL,
+    )
+    return xml_text.encode("utf-8")
+
+
 def _amount_in_words(value):
     amount = Decimal(value or 0).quantize(Decimal("0.01"))
     integer = int(amount)
@@ -270,6 +391,8 @@ def _replace_docx_fields(source, destination, values):
         for item in src.infolist():
             data = src.read(item.filename)
             if item.filename.endswith(".xml"):
+                data = _replace_contract_end_year(data, values)
+                data = _replace_fields_across_runs(data, values)
                 xml = data.decode("utf-8")
                 for field, value in values.items():
                     xml = xml.replace("«{}»".format(field), str(value or ""))
