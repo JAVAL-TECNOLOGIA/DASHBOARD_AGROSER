@@ -145,6 +145,12 @@
                             <td><strong class="text-danger">{{ contract.final_contrato|date:"d/m/Y" }}</strong></td>
                             <td class="text-right text-nowrap">
                                 <a class="btn btn-sm btn-outline-danger" target="_blank" rel="noopener" href="{% url 'contratos:pdf' contract.idcodigogeneral contract.contract_id %}"><i class="fa fa-file-pdf mr-1"></i> {% if contract.contract_pdf_ready %}Abrir contrato{% else %}Generar contrato{% endif %}</a>
+                                {% if contract.contract_pdf_ready %}
+                                <form method="post" action="{% url 'contratos:regenerate_pdf' contract.idcodigogeneral contract.contract_id %}" class="d-inline contract-regenerate-form">
+                                    {% csrf_token %}
+                                    <button class="btn btn-sm btn-outline-warning" type="submit"><i class="fa fa-sync-alt mr-1"></i> Regenerar</button>
+                                </form>
+                                {% endif %}
                                 <a class="btn btn-sm btn-primary" href="{% url 'contratos:generate' contract.idcodigogeneral %}?renew={{ contract.contract_id|urlencode }}"><i class="fa fa-redo mr-1"></i> Renovar</a>
                             </td>
                         </tr>
@@ -161,9 +167,13 @@
             <strong>Personal ingresado</strong>
             <form id="bulk-contract-form" method="post" action="{% url 'contratos:bulk_pdf' %}" class="mt-2 mt-md-0">
                 {% csrf_token %}
+                <input id="bulk-contract-force" type="hidden" name="force" value="0">
                 <button id="bulk-contract-button" class="btn btn-success" type="submit" disabled>
                     <i class="fa fa-layer-group mr-1"></i> Generar contratos seleccionados
                     <span id="bulk-contract-count" class="badge badge-light ml-1">0 / 100</span>
+                </button>
+                <button id="bulk-regenerate-button" class="btn btn-outline-warning" type="submit" disabled>
+                    <i class="fa fa-sync-alt mr-1"></i> Regenerar seleccionados
                 </button>
             </form>
         </div>
@@ -180,10 +190,8 @@
                         {% for person in personnel %}
                             <tr>
                                 <td class="text-center">
-                                    {% if person.contract_id and not person.contract_pdf_ready %}
+                                    {% if person.contract_id %}
                                         <input class="contract-selector" type="checkbox" name="contracts" value="{{ person.idcodigogeneral }}::{{ person.contract_id }}" form="bulk-contract-form" aria-label="Seleccionar contrato de {{ person.full_name }}">
-                                    {% elif person.contract_pdf_ready %}
-                                        <i class="fa fa-check-circle text-success" title="Contrato ya generado"></i>
                                     {% endif %}
                                 </td>
                                 <td><strong>{{ person.full_name }}</strong><div class="small text-muted">{{ person.document }}</div></td>
@@ -202,6 +210,12 @@
                                         <a class="btn btn-sm btn-primary" href="{% url 'contratos:generate' person.idcodigogeneral %}"><i class="fa fa-file-signature mr-1"></i> Generar</a>
                                     {% else %}
                                         <a class="btn btn-sm btn-outline-danger" target="_blank" rel="noopener" href="{% url 'contratos:pdf' person.idcodigogeneral person.contract_id %}"><i class="fa fa-file-pdf mr-1"></i> {% if person.contract_pdf_ready %}Abrir contrato{% else %}Generar contrato{% endif %}</a>
+                                        {% if person.contract_pdf_ready %}
+                                        <form method="post" action="{% url 'contratos:regenerate_pdf' person.idcodigogeneral person.contract_id %}" class="d-inline contract-regenerate-form">
+                                            {% csrf_token %}
+                                            <button class="btn btn-sm btn-outline-warning" type="submit"><i class="fa fa-sync-alt mr-1"></i> Regenerar</button>
+                                        </form>
+                                        {% endif %}
                                     {% endif %}
                                 </td>
                             </tr>
@@ -228,6 +242,7 @@ $(document).ready(function () {
         var limitReached = selected >= maxBulkContracts;
         $('#bulk-contract-count').text(selected + ' / ' + maxBulkContracts);
         $('#bulk-contract-button').prop('disabled', selected === 0);
+        $('#bulk-regenerate-button').prop('disabled', selected === 0);
         $selectors.filter(':not(:checked)').prop('disabled', limitReached);
         $selectors.filter(':checked').prop('disabled', false);
         $('#bulk-contract-limit').toggleClass('d-none', !limitReached);
@@ -250,8 +265,27 @@ $(document).ready(function () {
         updateBulkSelection();
     });
     updateBulkSelection();
-    $('#bulk-contract-form').on('submit', function () {
-        $('#bulk-contract-button').prop('disabled', true).html('<i class="fa fa-spinner fa-spin mr-1"></i> Generando lote...');
+    $('.contract-regenerate-form').on('submit', function () {
+        return window.confirm('Se reemplazará el PDF actual con la plantilla y los valores vigentes. ¿Deseas continuar?');
+    });
+    $('#bulk-contract-button').on('click', function () {
+        $('#bulk-contract-force').val('0');
+    });
+    $('#bulk-regenerate-button').on('click', function (event) {
+        if (!window.confirm('Se reemplazarán los PDF seleccionados con la plantilla y los valores vigentes. ¿Deseas continuar?')) {
+            event.preventDefault();
+            return;
+        }
+        $('#bulk-contract-force').val('1');
+    });
+    $('#bulk-contract-form').on('submit', function (event) {
+        var regenerating = $('#bulk-contract-force').val() === '1';
+        $('#bulk-contract-button, #bulk-regenerate-button').prop('disabled', true);
+        if (regenerating) {
+            $('#bulk-regenerate-button').html('<i class="fa fa-spinner fa-spin mr-1"></i> Regenerando lote...');
+        } else {
+            $('#bulk-contract-button').html('<i class="fa fa-spinner fa-spin mr-1"></i> Generando lote...');
+        }
     });
 });
 </script>

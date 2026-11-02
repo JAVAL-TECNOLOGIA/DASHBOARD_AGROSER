@@ -5,6 +5,7 @@ from .views import (
     ContractGenerateView,
     ContractListView,
     ContractPdfView,
+    ContractRegeneratePdfView,
     ContractSignView,
     ContractTemplateView,
     ContractTemplateUploadView,
@@ -26,6 +27,11 @@ urlpatterns = [
     path("plantilla/cargar/", ContractTemplateUploadView.as_view(), name="template_upload"),
     path("plantilla/<str:contract_type>/", ContractTemplateView.as_view(), name="template"),
     path("pdf/<str:worker_id>/<str:contract_id>/", ContractPdfView.as_view(), name="pdf"),
+    path(
+        "pdf/regenerar/<str:worker_id>/<str:contract_id>/",
+        ContractRegeneratePdfView.as_view(),
+        name="regenerate_pdf",
+    ),
     path(
         "firmar/<str:worker_id>/<str:contract_id>/",
         ContractSignView.as_view(),

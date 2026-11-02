@@ -51,9 +51,9 @@ def _contract_pdf_path(worker_id, contract_id):
     )
 
 
-def _ensure_contract_pdf(service, worker_id, contract_id):
+def _ensure_contract_pdf(service, worker_id, contract_id, force=False):
     path = _contract_pdf_path(worker_id, contract_id)
-    if path.is_file():
+    if path.is_file() and not force:
         return path, "CONTRATO_{}_{}.pdf".format(worker_id, contract_id)
     data = service.contract_document_data(worker_id, contract_id)
     if not data:
@@ -466,11 +466,36 @@ class ContractPdfView(ContractPermissionMixin, View):
         )
 
 
+class ContractRegeneratePdfView(ContractPermissionMixin, View):
+    def post(self, request, worker_id, contract_id):
+        try:
+            _ensure_contract_pdf(
+                ContractService(), worker_id, contract_id, force=True
+            )
+        except (FileNotFoundError, RuntimeError, OSError):
+            logger.exception(
+                "No se pudo regenerar el PDF del contrato %s/%s.",
+                worker_id,
+                contract_id,
+            )
+            messages.error(
+                request,
+                "No se pudo regenerar el contrato. Verifica la plantilla y vuelve a intentarlo.",
+            )
+        else:
+            messages.success(
+                request,
+                "Contrato regenerado correctamente con la plantilla y los valores actuales.",
+            )
+        return redirect("contratos:index")
+
+
 class ContractBulkPdfView(ContractPermissionMixin, View):
     max_contracts = 100
 
     def post(self, request):
         selected = request.POST.getlist("contracts")
+        force = request.POST.get("force") == "1"
         if not selected:
             messages.warning(request, "Selecciona al menos un contrato.")
             return redirect("contratos:index")
@@ -498,7 +523,7 @@ class ContractBulkPdfView(ContractPermissionMixin, View):
                 continue
             seen.add(key)
             output_path = _contract_pdf_path(*key)
-            if output_path.is_file():
+            if output_path.is_file() and not force:
                 ready += 1
                 continue
             data = service.contract_document_data(*key)
@@ -527,9 +552,11 @@ class ContractBulkPdfView(ContractPermissionMixin, View):
 
         messages.success(
             request,
-            "Proceso masivo completado: {} generados y {} ya disponibles.".format(
-                generated, ready
-            ),
+            (
+                "Regeneración masiva completada: {} contrato(s) actualizado(s)."
+                if force
+                else "Proceso masivo completado: {} generados y {} ya disponibles."
+            ).format(generated, ready),
         )
         if invalid:
             messages.warning(

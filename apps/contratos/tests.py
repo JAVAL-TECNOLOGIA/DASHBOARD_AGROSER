@@ -284,7 +284,11 @@ class ContractExpirationDashboardTests(TestCase):
         from .services import ContractService, dashboard_template_path
 
         contract_types.return_value = [{"idtipocontrato": "01", "descripcion": "PLAZO FIJO"}]
-        with tempfile.TemporaryDirectory() as directory, override_settings(MEDIA_ROOT=directory):
+        runtime_tests = Path("runtime_tests")
+        runtime_tests.mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(
+            dir=str(runtime_tests.resolve())
+        ) as directory, override_settings(MEDIA_ROOT=directory):
             response = self.client.post(
                 reverse("contratos:template_upload"),
                 {
@@ -317,7 +321,9 @@ class ContractExpirationDashboardTests(TestCase):
         }
         template_path.return_value = "template.docx"
 
-        with tempfile.TemporaryDirectory() as directory, patch(
+        runtime_tests = Path("runtime_tests")
+        runtime_tests.mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(dir=str(runtime_tests.resolve())) as directory, patch(
             "apps.contratos.views._contract_pdf_path",
             return_value=Path(directory) / "W001_002.pdf",
         ):
@@ -330,5 +336,32 @@ class ContractExpirationDashboardTests(TestCase):
             self.assertIn("CONTRATO_TRABAJADOR_PRUEBA_002.pdf", response["Content-Disposition"])
             response.close()
             second.close()
+        document_data.assert_called_once_with("W001", "002")
+        build_pdf.assert_called_once_with("template.docx", document_data.return_value)
+
+    @patch("apps.contratos.views.build_contract_pdf", return_value=BytesIO(b"%PDF-new\n"))
+    @patch("apps.contratos.views.ContractService.template_path", return_value="template.docx")
+    @patch("apps.contratos.views.ContractService.contract_document_data")
+    def test_contract_can_be_regenerated_with_current_values(self, document_data, unused_template, build_pdf):
+        document_data.return_value = {
+            "full_name": "TRABAJADOR PRUEBA",
+            "idtipocontrato": "01",
+        }
+        runtime_tests = Path("runtime_tests")
+        runtime_tests.mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(dir=str(runtime_tests.resolve())) as directory, patch(
+            "apps.contratos.views._contract_pdf_path",
+            return_value=Path(directory) / "W001_002.pdf",
+        ) as pdf_path:
+            pdf_path.return_value.write_bytes(b"%PDF-old\n")
+
+            response = self.client.post(
+                reverse("contratos:regenerate_pdf", args=["W001", "002"])
+            )
+
+            self.assertRedirects(
+                response, reverse("contratos:index"), fetch_redirect_response=False
+            )
+            self.assertEqual(pdf_path.return_value.read_bytes(), b"%PDF-new\n")
         document_data.assert_called_once_with("W001", "002")
         build_pdf.assert_called_once_with("template.docx", document_data.return_value)
