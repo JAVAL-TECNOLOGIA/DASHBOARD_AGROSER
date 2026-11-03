@@ -147,6 +147,24 @@ class LiquidationProjectionTests(TestCase):
         self.assertEqual(row["computable_base"], Decimal("1600.00"))
         self.assertEqual(row["projected_total"], Decimal("933.33"))
 
+    def test_check_excludes_only_performance_average(self):
+        row = project_closure_liquidation({
+            "fecha_ingreso": date(2026, 3, 4),
+            "basico": "50.00",
+            "performance_total": "600.00",
+            "performance_days": "180.00",
+            "rest_days": "30.00",
+            "exclude_performance_average": True,
+            "has_payroll_parameters": True,
+        }, date(2026, 10, 31))
+
+        self.assertTrue(row["performance_excluded"])
+        self.assertEqual(row["performance_average"], Decimal("100.00"))
+        self.assertEqual(row["performance_average_for_base"], Decimal("0.00"))
+        self.assertEqual(row["service_days"], Decimal("210.00"))
+        self.assertEqual(row["computable_base"], Decimal("1500.00"))
+        self.assertEqual(row["projected_total"], Decimal("875.00"))
+
     def test_closure_adds_six_month_overtime_averages_to_base(self):
         row = project_closure_liquidation({
             "fecha_ingreso": date(2026, 1, 1),

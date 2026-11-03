@@ -150,6 +150,8 @@ def project_closure_liquidation(contract, closing_date):
     performance_average = (performance_total / Decimal("6")).quantize(
         CENT, rounding=ROUND_HALF_UP
     )
+    performance_excluded = bool(contract.get("exclude_performance_average"))
+    performance_average_for_base = ZERO if performance_excluded else performance_average
     overtime_25_total = _money(contract.get("overtime_25_total"))
     overtime_35_total = _money(contract.get("overtime_35_total"))
     normal_hours_total = _money(contract.get("normal_hours_total"))
@@ -188,7 +190,7 @@ def project_closure_liquidation(contract, closing_date):
         normal_work_days if is_journal else performance_days
     )
     computable_base = (
-        basic + family_allowance + performance_average
+        basic + family_allowance + performance_average_for_base
         + overtime_25_average + overtime_35_average
         + (productivity_bonus_total if is_journal else ZERO)
     ).quantize(CENT)
@@ -205,6 +207,8 @@ def project_closure_liquidation(contract, closing_date):
         "performance_months": int(contract.get("performance_months") or 0),
         "performance_total": performance_total,
         "performance_average": performance_average,
+        "performance_average_for_base": performance_average_for_base,
+        "performance_excluded": performance_excluded,
         "overtime_25_total": overtime_25_total,
         "overtime_35_total": overtime_35_total,
         "normal_hours_total": normal_hours_total,
