@@ -152,6 +152,8 @@ class ContabilidadReportesViewTests(TestCase):
         self.assertContains(response, 'Comparativo mensual')
         self.assertContains(response, 'Detalle de facturas')
         self.assertContains(response, 'Registro de compras')
+        self.assertContains(response, 'Precio FOB por caja')
+        self.assertContains(response, 'Precio Kg MP')
         data = response.context['ventas_exportacion_data']
         august = next(row for row in data['summary'] if row['year'] == 2026 and row['month'] == 7)
         self.assertEqual(august['sales_with_export'], 75803.84)
@@ -165,6 +167,9 @@ class ContabilidadReportesViewTests(TestCase):
         self.assertEqual(august['igv_scenario_difference'], 646.76)
         self.assertEqual(august['income_tax_difference'], -448.0)
         self.assertEqual(len(data['invoices']), 1)
+        self.assertEqual(data['invoices'][0]['boxes'], 2240.0)
+        self.assertEqual(data['invoices'][0]['price_fob_box'], 25.0)
+        self.assertEqual(data['invoices'][0]['price_kg_mp'], 2.84)
         self.assertEqual(len(data['purchases']), 1)
 
     @patch('apps.contabilidad.views.get_comparison_report')

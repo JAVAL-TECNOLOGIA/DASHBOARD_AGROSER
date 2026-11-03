@@ -124,13 +124,22 @@
         var rows = activeRows(data.invoices, state).filter(function (item) {
             return state.customer === '__all__' || item.customer === state.customer;
         });
+        var totalBoxes = rows.reduce(function (sum, item) { return sum + Number(item.boxes || 0); }, 0);
+        var totalUsd = rows.reduce(function (sum, item) { return sum + Number(item.total_usd || 0); }, 0);
+        var totalPen = rows.reduce(function (sum, item) { return sum + Number(item.total_pen || 0); }, 0);
         document.getElementById('export-invoice-body').innerHTML = rows.length ? rows.map(function (item) {
             return '<tr><td>' + dateLabel(item.date) + '</td><td>' + escapeHtml(item.document_type) + '</td>' +
                 '<td><strong>' + escapeHtml(item.document) + '</strong></td><td>' + escapeHtml(item.customer) + '</td>' +
-                '<td class="amount">' + money(item.exported) + '</td><td>' + escapeHtml(item.currency) + '</td>' +
-                '<td class="amount">' + number(item.exchange_rate, 4) + '</td><td class="amount">' + money(item.total_usd, 'USD') + '</td>' +
-                '<td class="amount">' + money(item.total_pen) + '</td></tr>';
-        }).join('') : '<tr><td colspan="9" class="text-center text-muted py-5">No hay facturas de exportación para los filtros seleccionados.</td></tr>';
+                '<td class="amount">' + (item.boxes ? number(item.boxes, 2) : '—') + '</td>' +
+                '<td class="amount">' + (item.price_fob_box ? money(item.price_fob_box, 'USD') : '—') + '</td>' +
+                '<td class="amount">' + (item.price_kg_mp ? money(item.price_kg_mp, 'USD') : '—') + '</td>' +
+                '<td class="amount">' + money(item.total_usd, 'USD') + '</td>' +
+                '<td class="amount">' + number(item.exchange_rate, 4) + '</td><td class="amount">' + money(item.total_pen) + '</td></tr>';
+        }).join('') : '<tr><td colspan="10" class="text-center text-muted py-5">No hay facturas de exportación para los filtros seleccionados.</td></tr>';
+        document.getElementById('export-invoice-foot').innerHTML = rows.length ?
+            '<tr class="font-weight-bold" style="background:#eef8f4"><td colspan="4" class="text-right">TOTALES</td>' +
+            '<td class="amount">' + number(totalBoxes, 2) + '</td><td></td><td></td>' +
+            '<td class="amount">' + money(totalUsd, 'USD') + '</td><td></td><td class="amount">' + money(totalPen) + '</td></tr>' : '';
     }
 
     function refreshPurchases(data, state) {

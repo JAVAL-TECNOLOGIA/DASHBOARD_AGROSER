@@ -1,6 +1,8 @@
 from collections import defaultdict
 from datetime import date
 from decimal import Decimal
+import json
+from pathlib import Path
 import re
 
 from django.core.cache import cache
@@ -14,6 +16,7 @@ MONTHS = [
 FIRST_REPORT_YEAR = 2025
 CACHE_KEY = 'contabilidad:ventas-exportacion:nisira:v1'
 CACHE_SECONDS = 10 * 60
+DETAIL_REFERENCE_PATH = Path(__file__).resolve().parent / 'data' / 'ventas_exportacion_detalle.json'
 
 
 def _number(value):
@@ -50,6 +53,22 @@ def _document_keys(value):
         keys.add(f'{series}{int(number)}')
     keys.discard('')
     return keys
+
+
+def _primary_document_key(value):
+    matches = re.findall(r'(F\d{3})\D*0*(\d+)', _text(value).upper())
+    if matches:
+        series, number = matches[-1]
+        return f'{series}{int(number)}'
+    return _document_key(value)
+
+
+def _load_invoice_detail_reference():
+    try:
+        with DETAIL_REFERENCE_PATH.open(encoding='utf-8') as handle:
+            return json.load(handle)
+    except (OSError, ValueError):
+        return {}
 
 
 def _is_export_purchase(detail, glosa, export_documents):
@@ -98,6 +117,7 @@ def build_export_sales_report(sales_rows, purchase_rows, current_year=None):
         'export_cost_total': 0.0,
     })
     export_documents = set()
+    invoice_detail_reference = _load_invoice_detail_reference()
 
     for row in sales_rows:
         sale_date = row['date']
@@ -108,6 +128,8 @@ def build_export_sales_report(sales_rows, purchase_rows, current_year=None):
         exempt = _number(row.get('exempt'))
         document = _text(row.get('document'))
         if exported or row.get('is_export_credit'):
+            reference_key = f'{_iso_date(sale_date)}|{_primary_document_key(document)}'
+            detail_values = invoice_detail_reference.get(reference_key, [0, 0, 0])
             export_documents.update(_document_keys(document))
             export_documents.update(_document_keys(row.get('reference')))
             report['invoices'].append({
@@ -122,6 +144,9 @@ def build_export_sales_report(sales_rows, purchase_rows, current_year=None):
                 'exchange_rate': round(_number(row.get('exchange_rate')), 4),
                 'total_usd': round(_number(row.get('total_usd')), 2),
                 'total_pen': round(_number(row.get('total_pen')), 2),
+                'boxes': round(_number(detail_values[0]), 2),
+                'price_fob_box': round(_number(detail_values[1]), 4),
+                'price_kg_mp': round(_number(detail_values[2]), 4),
                 'reference': _text(row.get('reference')),
             })
         key = (sale_date.year, sale_date.month - 1)
