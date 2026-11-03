@@ -132,8 +132,9 @@ def build_closure_projection(contracts, closing_date):
 def project_closure_liquidation(contract, closing_date):
     """Project the closure scenario with NISIRA's payroll parameters.
 
-    The operational report uses a six-month divisor for performance, then adds
-    the current basic salary and family allowance to obtain the computable base.
+    The operational report uses a six-month divisor for performance and
+    overtime. The productivity bonus is added directly to the computable base.
+    Worked days are obtained from normal hours / 8 and added to rest days.
     Vacation liquidation is base * computable days / 360.
     """
     if not contract.get("has_payroll_parameters"):
@@ -172,9 +173,14 @@ def project_closure_liquidation(contract, closing_date):
     performance_days = Decimal(str(contract.get("performance_days") or 0)).quantize(
         Decimal("1"), rounding=ROUND_HALF_UP
     )
-    computable_days = rest_days + performance_days
+    normal_work_days = (normal_hours_total / Decimal("8")).quantize(
+        CENT, rounding=ROUND_HALF_UP
+    )
+    if not normal_work_days and performance_days:
+        normal_work_days = performance_days
+    computable_days = rest_days + normal_work_days
     computable_base = (
-        basic + family_allowance + performance_average
+        basic + family_allowance + productivity_bonus_total + performance_average
         + overtime_25_average + overtime_35_average
     ).quantize(CENT)
     total = (computable_base * computable_days / Decimal("360")).quantize(
@@ -200,7 +206,8 @@ def project_closure_liquidation(contract, closing_date):
         "family_allowance": family_allowance,
         "rest_days": rest_days,
         "performance_days": performance_days,
-        "service_days": int(computable_days),
+        "normal_work_days": normal_work_days,
+        "service_days": computable_days,
         "computable_base": computable_base,
         "projected_cts": ZERO,
         "projected_gratification": ZERO,
