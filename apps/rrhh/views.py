@@ -108,11 +108,9 @@ class RRHHLiquidacionesView(RRHHReportesAccessMixin, TemplateView):
         profile = self.request.GET.get('perfil', '').strip()
         worker_query = self.request.GET.get('trabajador', '').strip()[:100]
         worker_search = worker_query.upper()
-        excluded_performance_workers = {
-            str(value).strip()[:30]
-            for value in self.request.GET.getlist('sin_rendimiento')
-            if str(value).strip()
-        }
+        exclude_all_performance = (
+            self.request.GET.get('sin_rendimiento', '').strip() == '1'
+        )
 
         def matches_worker(item, name_key, document_key):
             if not worker_search:
@@ -268,10 +266,7 @@ class RRHHLiquidacionesView(RRHHReportesAccessMixin, TemplateView):
         filtered_closure_contracts = [
             {
                 **contract,
-                'exclude_performance_average': (
-                    str(contract.get('idcodigogeneral') or '').strip()
-                    in excluded_performance_workers
-                ),
+                'exclude_performance_average': exclude_all_performance,
             }
             for contract in closure_contracts
             if (not payroll_type or contract.get('payroll_id') == payroll_type)
@@ -318,7 +313,7 @@ class RRHHLiquidacionesView(RRHHReportesAccessMixin, TemplateView):
             'profiles_by_payroll': profiles_by_payroll,
             'profile': profile,
             'worker_query': worker_query,
-            'excluded_performance_workers': sorted(excluded_performance_workers),
+            'exclude_all_performance': exclude_all_performance,
             'data_error': data_error,
             'projection_error': projection_error,
             'closure_error': closure_error,
