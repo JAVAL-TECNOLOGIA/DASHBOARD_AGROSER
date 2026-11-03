@@ -206,7 +206,10 @@ class PaySlipService:
             cursor.execute(sql, [self.company_id, document, minimum_period])
             return [str(row[0]).strip() for row in cursor.fetchall()]
 
-    def monthly_net(self, year, payroll_type="", position="", minimum_period="202608"):
+    def monthly_net(
+        self, year, payroll_type="", position="", minimum_period="202608",
+        worker_query="",
+    ):
         """Return monthly net payroll totals for a calendar year."""
         sql = """
             SELECT
@@ -229,6 +232,8 @@ class PaySlipService:
                 ON p.idempresa = m.idempresa
                 AND p.idcodigogeneral = m.idcodigogeneral
                 AND p.idplanilla = m.idplanilla
+            LEFT JOIN personal_general pg WITH (NOLOCK)
+                ON pg.idcodigogeneral = m.idcodigogeneral
             LEFT JOIN cargos_personal cp WITH (NOLOCK)
                 ON cp.idempresa = p.idempresa
                 AND cp.idcargo = p.idcargo
@@ -238,10 +243,21 @@ class PaySlipService:
                 AND RTRIM(m.idplanilla) IN ('ERG', 'ERA', 'OBP', 'OBR')
                 AND (%s = '' OR RTRIM(m.idplanilla) = %s)
                 AND (%s = '' OR RTRIM(ISNULL(cp.descripcion, 'SIN CARGO')) = %s)
+                AND (
+                    %s = ''
+                    OR UPPER(RTRIM(ISNULL(m.idcodigogeneral, ''))) LIKE %s
+                    OR UPPER(RTRIM(ISNULL(pg.nrodocumento, ''))) LIKE %s
+                    OR UPPER(LTRIM(RTRIM(CONCAT(
+                        ISNULL(pg.a_paterno, ''), ' ', ISNULL(pg.a_materno, ''),
+                        ' ', ISNULL(pg.nombres, '')
+                    )))) LIKE %s
+                )
             GROUP BY LEFT(m.periodo_planilla, 6)
             ORDER BY LEFT(m.periodo_planilla, 6)
         """
         plan_id = PAYROLL_PLAN_IDS.get(payroll_type, "")
+        worker_query = str(worker_query or "").strip().upper()
+        worker_pattern = "%{}%".format(worker_query)
         params = [
             self.company_id,
             str(year),
@@ -250,6 +266,10 @@ class PaySlipService:
             plan_id,
             position,
             position,
+            worker_query,
+            worker_pattern,
+            worker_pattern,
+            worker_pattern,
         ]
         with connections["payroll"].cursor() as cursor:
             cursor.execute(sql, params)

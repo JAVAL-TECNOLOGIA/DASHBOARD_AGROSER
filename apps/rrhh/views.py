@@ -106,6 +106,18 @@ class RRHHLiquidacionesView(RRHHReportesAccessMixin, TemplateView):
         if payroll_type not in dict(PAYROLL_TYPES):
             payroll_type = ''
         profile = self.request.GET.get('perfil', '').strip()
+        worker_query = self.request.GET.get('trabajador', '').strip()[:100]
+        worker_search = worker_query.upper()
+
+        def matches_worker(item, name_key, document_key):
+            if not worker_search:
+                return True
+            searchable = ' '.join((
+                str(item.get(name_key) or ''),
+                str(item.get(document_key) or ''),
+                str(item.get('idcodigogeneral') or ''),
+            )).upper()
+            return worker_search in searchable
 
         try:
             available_periods = service.payroll_periods(minimum_period='000000')
@@ -224,6 +236,7 @@ class RRHHLiquidacionesView(RRHHReportesAccessMixin, TemplateView):
                 not profile
                 or str(slip.get('cargo_personal') or 'SIN PERFIL').strip() == profile
             )
+            and matches_worker(slip, 'apenom', 'nrodocumento')
         ]
         summary = build_payroll_summary(filtered_slips)
         filtered_projection_contracts = [
@@ -233,6 +246,7 @@ class RRHHLiquidacionesView(RRHHReportesAccessMixin, TemplateView):
                 not profile
                 or str(contract.get('position') or 'SIN PERFIL').strip() == profile
             )
+            and matches_worker(contract, 'full_name', 'document')
         ]
         annual_projection = build_projection_summary(
             filtered_projection_contracts,
@@ -253,6 +267,7 @@ class RRHHLiquidacionesView(RRHHReportesAccessMixin, TemplateView):
                 not profile
                 or str(contract.get('position') or 'SIN PERFIL').strip() == profile
             )
+            and matches_worker(contract, 'full_name', 'document')
         ]
         closure = build_closure_projection(filtered_closure_contracts, closing_date)
 
@@ -262,6 +277,7 @@ class RRHHLiquidacionesView(RRHHReportesAccessMixin, TemplateView):
                 payroll_type=payroll_type,
                 position=profile,
                 minimum_period='000000',
+                worker_query=worker_query,
             )
         except DatabaseError:
             monthly_totals = [
@@ -289,6 +305,7 @@ class RRHHLiquidacionesView(RRHHReportesAccessMixin, TemplateView):
             'available_profiles': available_profiles,
             'profiles_by_payroll': profiles_by_payroll,
             'profile': profile,
+            'worker_query': worker_query,
             'data_error': data_error,
             'projection_error': projection_error,
             'closure_error': closure_error,
