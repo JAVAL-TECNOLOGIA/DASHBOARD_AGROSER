@@ -1,0 +1,23 @@
+{
+  "F00229": {"crop": "ESPARRAGO", "transport": "MARITIMO", "payment_exchange_rate": 3.372, "status": "ABONADA"},
+  "F00230": {"crop": "", "transport": "", "payment_exchange_rate": 0, "status": "POR SOLICITAR"},
+  "F00231": {"crop": "ESPARRAGO", "transport": "MARITIMO", "payment_exchange_rate": 3.388, "status": "ABONADA"},
+  "F00232": {"crop": "ESPARRAGO", "transport": "MARITIMO", "payment_exchange_rate": 3.408, "status": "ABONADA"},
+  "F00233": {"crop": "ESPARRAGO", "transport": "AEREO", "payment_exchange_rate": 3.408, "status": "ABONADA"},
+  "F00234": {"crop": "ESPARRAGO", "transport": "AEREO", "payment_exchange_rate": 3.408, "status": "ABONADA"},
+  "F00235": {"crop": "ESPARRAGO", "transport": "AEREO", "payment_exchange_rate": 3.351, "status": "ABONADA"},
+  "F00236": {"crop": "ESPARRAGO", "transport": "AEREO", "payment_exchange_rate": 3.351, "status": "ABONADA"},
+  "F00237": {"crop": "ESPARRAGO", "transport": "AEREO", "payment_exchange_rate": 3.351, "status": "ABONADA"},
+  "F00238": {"crop": "ESPARRAGO", "transport": "MARITIMO", "payment_exchange_rate": 3.351, "status": "ABONADA"},
+  "F00239": {"crop": "ESPARRAGO", "transport": "MARITIMO", "payment_exchange_rate": 3.351, "status": "ABONADA"},
+  "F00240": {"crop": "ESPARRAGO", "transport": "MARITIMO", "payment_exchange_rate": 3.351, "status": "ABONADA"},
+  "F00241": {"crop": "ESPARRAGO", "transport": "MARITIMO", "payment_exchange_rate": 3.452, "status": "ABONADA"},
+  "F00242": {"crop": "ESPARRAGO", "transport": "AEREO", "payment_exchange_rate": 3.452, "status": "ABONADA"},
+  "F00243": {"crop": "ESPARRAGO", "transport": "AEREO", "payment_exchange_rate": 3.452, "status": "ABONADA"},
+  "F00244": {"crop": "ESPARRAGO", "transport": "AEREO", "payment_exchange_rate": 3.452, "status": "ABONADA"},
+  "F00245": {"crop": "ESPARRAGO", "transport": "AEREO", "payment_exchange_rate": 3.452, "status": "ABONADA"},
+  "F00246": {"crop": "ESPARRAGO", "transport": "AEREO", "payment_exchange_rate": 3.452, "status": "POR SOLICITAR"},
+  "F00247": {"crop": "ESPARRAGO", "transport": "AEREO", "payment_exchange_rate": 3.452, "status": "POR SOLICITAR"},
+  "F00248": {"crop": "ESPARRAGO", "transport": "AEREO", "payment_exchange_rate": 3.452, "status": "POR SOLICITAR"},
+  "F00249": {"crop": "ESPARRAGO", "transport": "AEREO", "payment_exchange_rate": 3.452, "status": "POR SOLICITAR"}
+}

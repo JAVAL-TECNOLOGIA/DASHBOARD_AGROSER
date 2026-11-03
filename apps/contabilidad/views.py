@@ -16,6 +16,7 @@ from apps.contabilidad.ventas_exportacion_service import (
     empty_export_sales_report,
     get_export_sales_report,
 )
+from apps.contabilidad.drawback_service import empty_drawback_report, get_drawback_report
 from apps.contabilidad.costos_service import empty_costs_report, get_costs_report
 from apps.contabilidad.comparacion_service import empty_comparison_report, get_comparison_report
 from apps.contabilidad.liquidacion_caja_service import (
@@ -53,6 +54,13 @@ CONTABILIDAD_REPORTES = (
         'descripcion': 'Comparativo, facturas y compras vinculadas a las ventas de exportación.',
         'icono': 'bi-globe-americas',
         'color': '#0f766e',
+    },
+    {
+        'slug': 'control-drawback',
+        'nombre': 'Control de Drawback',
+        'descripcion': 'Seguimiento de facturas, recuperación y estado del Drawback.',
+        'icono': 'bi-cash-coin',
+        'color': '#2f8faa',
     },
     {
         'slug': 'costos',
@@ -143,6 +151,14 @@ class ContabilidadReporteDetalleView(ContabilidadReportesAccessMixin, TemplateVi
                 context['ventas_exportacion_data'] = empty_export_sales_report()
                 context['ventas_exportacion_error'] = (
                     'No fue posible consultar las ventas de exportación en NISIRA.'
+                )
+        elif slug == 'control-drawback':
+            try:
+                context['drawback_data'] = get_drawback_report()
+            except Exception:
+                context['drawback_data'] = empty_drawback_report()
+                context['drawback_error'] = (
+                    'No fue posible consultar el Control de Drawback en NISIRA.'
                 )
         elif slug == 'detalle-cajas-kilos':
             try:

@@ -10,6 +10,7 @@ from apps.contabilidad.comparacion_service import build_comparison_report
 from apps.contabilidad.costos_service import build_costs_report
 from apps.contabilidad.ventas_service import build_sales_report
 from apps.contabilidad.ventas_exportacion_service import build_export_sales_report
+from apps.contabilidad.drawback_service import build_drawback_report
 from apps.contabilidad.liquidacion_caja_service import build_cash_liquidation_report
 
 from apps.user.views import UserAdministrationMixin
@@ -77,11 +78,12 @@ class ContabilidadReportesViewTests(TestCase):
         response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.context['reportes']), 6)
+        self.assertEqual(len(response.context['reportes']), 7)
         for title in (
             'Comparación',
             'Ventas',
             'Ventas de Exportación',
+            'Control de Drawback',
             'Detalle Cajas y Kilos',
             'Liquidación de Caja',
         ):
@@ -171,6 +173,48 @@ class ContabilidadReportesViewTests(TestCase):
         self.assertEqual(data['invoices'][0]['price_fob_box'], 25.0)
         self.assertEqual(data['invoices'][0]['price_kg_mp'], 2.84)
         self.assertEqual(len(data['purchases']), 1)
+
+    @patch('apps.contabilidad.views.get_drawback_report')
+    def test_drawback_report_reconciles_invoice_credit_and_payment_status(self, report_mock):
+        report_mock.return_value = build_drawback_report(
+            [
+                {
+                    'year': 2026, 'month': 2, 'date': '2026-03-28',
+                    'document_type': 'FACTURA', 'document': 'FAC F002-0000031',
+                    'customer': 'GLOBALEX INC', 'total_usd': 70000,
+                    'exchange_rate': 3.486, 'reference': '',
+                },
+                {
+                    'year': 2026, 'month': 3, 'date': '2026-04-22',
+                    'document_type': 'N.CREDITO', 'document': 'NCR F002-0000012',
+                    'customer': 'GLOBALEX INC', 'total_usd': -1540,
+                    'exchange_rate': 3.486, 'reference': 'FAC F002-0000031',
+                },
+            ],
+            {'F00231': 'MARITIMO'},
+            current_year=2026,
+        )
+        self.user.admin = True
+        self.user.save(update_fields=['admin'])
+        self.client.force_login(self.user)
+
+        response = self.client.get(
+            reverse('contabilidad_reporte_detalle', args=['control-drawback'])
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Detalle de Control de Drawback')
+        self.assertContains(response, 'Recuperación Drawback')
+        data = response.context['drawback_data']
+        self.assertEqual(len(data['rows']), 1)
+        row = data['rows'][0]
+        self.assertEqual(row['transport'], 'MARITIMO')
+        self.assertEqual(row['adjustment'], -1540.0)
+        self.assertEqual(row['credit_note'], 'NCR F002-0000012 - 2026-04-22')
+        self.assertAlmostEqual(row['drawback_usd'], (70000 - 1540) * 0.03, places=2)
+        self.assertAlmostEqual(
+            row['drawback_pen'], row['drawback_usd'] * row['payment_exchange_rate'], places=2
+        )
 
     @patch('apps.contabilidad.views.get_comparison_report')
     def test_comparison_report_uses_nisira_data(self, report_mock):

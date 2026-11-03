@@ -1,0 +1,46 @@
+{% if drawback_error %}<div class="alert alert-danger mb-4">{{ drawback_error }}</div>{% endif %}
+
+<style>
+    .drawback-report .filter-card, .drawback-report .content-card, .drawback-report .metric-card { border-radius: 14px; }
+    .drawback-report .metric-card { border: 0; border-top: 4px solid #0f766e; min-height: 132px; }
+    .drawback-report .metric-label { color: #64748b; font-size: .74rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+    .drawback-report .metric-value { color: #0f2942; font-size: 1.55rem; font-weight: 700; }
+    .drawback-report .chart-wrap { height: 340px; position: relative; }
+    .drawback-report .status-badge { border-radius: 14px; display: inline-block; font-size: .7rem; font-weight: 700; padding: .35rem .65rem; white-space: nowrap; }
+    .drawback-report .status-paid { background: #dff5e9; color: #087443; }
+    .drawback-report .status-pending { background: #fff0d5; color: #a45c00; }
+    .drawback-report .amount { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+    .drawback-report .table-wrap { max-height: 570px; overflow: auto; }
+    .drawback-report .table thead th { background: #f4f7fa; color: #334155; font-size: .7rem; letter-spacing: .035em; text-transform: uppercase; white-space: nowrap; }
+    .drawback-report .table td { color: #334155; font-size: .8rem; vertical-align: middle; }
+    @media (max-width: 767px) { .drawback-report .chart-wrap { height: 285px; } }
+</style>
+
+<div class="drawback-report">
+    <div class="card filter-card border-0 shadow-sm mb-4"><div class="card-body px-4 py-3"><div class="row align-items-end">
+        <div class="col-xl-2 col-md-4 mb-3"><label class="metric-label" for="drawback-year">Año</label><select class="form-control" id="drawback-year">{% for year in drawback_data.years %}<option value="{{ year }}">{{ year }}</option>{% endfor %}</select></div>
+        <div class="col-xl-2 col-md-4 mb-3"><label class="metric-label" for="drawback-from">Desde</label><select class="form-control" id="drawback-from"></select></div>
+        <div class="col-xl-2 col-md-4 mb-3"><label class="metric-label" for="drawback-to">Hasta</label><select class="form-control" id="drawback-to"></select></div>
+        <div class="col-xl-2 col-md-4 mb-3"><label class="metric-label" for="drawback-customer">Cliente</label><select class="form-control" id="drawback-customer"><option value="__all__">Todos</option>{% for item in drawback_data.customers %}<option value="{{ item }}">{{ item }}</option>{% endfor %}</select></div>
+        <div class="col-xl-2 col-md-4 mb-3"><label class="metric-label" for="drawback-status">Estado</label><select class="form-control" id="drawback-status"><option value="__all__">Todos</option>{% for item in drawback_data.statuses %}<option value="{{ item }}">{{ item }}</option>{% endfor %}</select></div>
+        <div class="col-xl-2 col-md-4 mb-3"><label class="metric-label" for="drawback-transport">Transporte</label><select class="form-control" id="drawback-transport"><option value="__all__">Todos</option>{% for item in drawback_data.transports %}<option value="{{ item }}">{{ item }}</option>{% endfor %}</select></div>
+        <div class="col-12 text-right"><button class="btn btn-light" id="drawback-reset" type="button"><i class="fa fa-undo mr-1"></i> Restablecer</button></div>
+    </div></div></div>
+
+    <div class="row">
+        <div class="col-xl col-md-6 mb-4"><div class="card metric-card shadow-sm h-100"><div class="card-body"><div class="metric-label">Facturas</div><div class="metric-value mt-2" id="drawback-invoices">0</div><small class="text-muted">Documentos del periodo</small></div></div></div>
+        <div class="col-xl col-md-6 mb-4"><div class="card metric-card shadow-sm h-100" style="border-top-color:#2f8faa"><div class="card-body"><div class="metric-label">Importe neto facturado</div><div class="metric-value mt-2" id="drawback-invoiced">US$ 0.00</div><small class="text-muted">Facturas menos ajustes</small></div></div></div>
+        <div class="col-xl col-md-6 mb-4"><div class="card metric-card shadow-sm h-100" style="border-top-color:#7c4dcc"><div class="card-body"><div class="metric-label">Recuperación Drawback</div><div class="metric-value mt-2" id="drawback-usd">US$ 0.00</div><small class="text-muted">3% del importe neto</small></div></div></div>
+        <div class="col-xl col-md-6 mb-4"><div class="card metric-card shadow-sm h-100" style="border-top-color:#e78a0a"><div class="card-body"><div class="metric-label">Recuperación en soles</div><div class="metric-value mt-2" id="drawback-pen">S/ 0.00</div><small class="text-muted">Según tipo de cambio de abono</small></div></div></div>
+        <div class="col-xl col-md-6 mb-4"><div class="card metric-card shadow-sm h-100" style="border-top-color:#dc3545"><div class="card-body"><div class="metric-label">Por solicitar</div><div class="metric-value mt-2" id="drawback-pending">0</div><small class="text-muted">Documentos pendientes</small></div></div></div>
+    </div>
+
+    <div class="row">
+        <div class="col-xl-8 mb-4"><div class="card content-card border-0 shadow-sm h-100"><div class="card-header bg-white border-0 pt-4 px-4"><h4 class="mb-1">Recuperación mensual</h4><p class="text-muted mb-0" id="drawback-monthly-subtitle"></p></div><div class="card-body"><div class="chart-wrap"><canvas id="drawback-monthly-chart"></canvas></div></div></div></div>
+        <div class="col-xl-4 mb-4"><div class="card content-card border-0 shadow-sm h-100"><div class="card-header bg-white border-0 pt-4 px-4"><h4 class="mb-1">Estado del Drawback</h4><p class="text-muted mb-0">Distribución de documentos</p></div><div class="card-body"><div class="chart-wrap"><canvas id="drawback-status-chart"></canvas></div></div></div></div>
+    </div>
+
+    <div class="card content-card border-0 shadow-sm mb-4"><div class="card-header bg-white border-0 pt-4 px-4"><h4 class="mb-1">Detalle de Control de Drawback</h4><p class="text-muted mb-0">Información relacionada con facturas de exportación y cobranzas de NISIRA</p></div>
+        <div class="table-wrap"><table class="table table-hover mb-0" style="min-width:1700px"><thead class="sticky-top"><tr><th>Fecha</th><th>Cultivo</th><th>Factura</th><th>Cliente</th><th>Transporte</th><th class="amount">Importe facturado</th><th class="amount">Ajuste disminución</th><th>Nota de crédito</th><th class="amount">Drawback US$</th><th class="amount">T.C. abono</th><th class="amount">Drawback S/</th><th>Estado</th></tr></thead><tbody id="drawback-body"></tbody><tfoot id="drawback-foot"></tfoot></table></div>
+    </div>
+</div>
