@@ -202,6 +202,11 @@ class PayrollSummaryTests(SimpleTestCase):
                     "income_total": Decimal("1200"),
                     "deduction_total": Decimal("200"),
                     "net_total": Decimal("1000"),
+                    "concepts": [
+                        {"codigo_equiv": "TI0001", "importe": Decimal("48")},
+                        {"codigo_equiv": "IN0044", "importe": Decimal("70")},
+                        {"codigo_equiv": "IN0062", "importe": Decimal("108.20")},
+                    ],
                 },
                 {
                     "apenom": "TRABAJADOR DOS",
@@ -221,6 +226,9 @@ class PayrollSummaryTests(SimpleTestCase):
         self.assertEqual(summary["payrolls"][0]["workers"], 2)
         self.assertEqual(summary["positions"][0]["name"], "OPERARIO")
         self.assertEqual(summary["workers"][0]["name"], "TRABAJADOR UNO")
+        self.assertEqual(summary["workers"][0]["normal_hours"], Decimal("48"))
+        self.assertEqual(summary["workers"][0]["production_incentive"], Decimal("70"))
+        self.assertEqual(summary["workers"][0]["productivity_bonus"], Decimal("108.20"))
 
 
 class WorkerPortalTests(SimpleTestCase):

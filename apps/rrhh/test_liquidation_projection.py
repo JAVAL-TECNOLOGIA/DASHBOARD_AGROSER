@@ -80,6 +80,9 @@ class LiquidationProjectionTests(TestCase):
             "basico": "41.00",
             "performance_months": 8,
             "performance_total": "17173.89",
+            "normal_hours_total": "48.00",
+            "production_incentive_total": "70.00",
+            "productivity_bonus_total": "108.20",
             "rest_days": "31.82",
             "performance_days": "198.00",
             "has_family_allowance": True,
@@ -93,6 +96,9 @@ class LiquidationProjectionTests(TestCase):
         self.assertEqual(row["family_allowance"], Decimal("123.00"))
         self.assertEqual(row["computable_base"], Decimal("4215.32"))
         self.assertEqual(row["projected_total"], Decimal("2693.12"))
+        self.assertEqual(row["normal_hours_total"], Decimal("48.00"))
+        self.assertEqual(row["production_incentive_total"], Decimal("70.00"))
+        self.assertEqual(row["productivity_bonus_total"], Decimal("108.20"))
 
     def test_closure_adds_six_month_overtime_averages_to_base(self):
         row = project_closure_liquidation({

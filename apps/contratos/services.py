@@ -252,6 +252,12 @@ class ContractService:
                          THEN ISNULL(d.calculo, 0) ELSE 0 END) AS overtime_25_total,
                 SUM(CASE WHEN d.idconcepto = 'IN0008'
                          THEN ISNULL(d.calculo, 0) ELSE 0 END) AS overtime_35_total,
+                SUM(CASE WHEN d.idconcepto = 'TI0001'
+                         THEN ISNULL(d.calculo, 0) ELSE 0 END) AS normal_hours_total,
+                SUM(CASE WHEN d.idconcepto = 'IN0044'
+                         THEN ISNULL(d.calculo, 0) ELSE 0 END) AS production_incentive_total,
+                SUM(CASE WHEN d.idconcepto = 'IN0062'
+                         THEN ISNULL(d.calculo, 0) ELSE 0 END) AS productivity_bonus_total,
                 MAX(CASE WHEN d.idconcepto = 'IN0002' AND ISNULL(d.calculo, 0) > 0
                          THEN 1 ELSE 0 END) AS has_family_allowance
             FROM movimiento_planilla m WITH (NOLOCK)

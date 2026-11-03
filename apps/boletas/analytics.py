@@ -6,6 +6,18 @@ def _decimal(value):
     return Decimal(str(value or 0))
 
 
+def _concept_total(slip, code):
+    code = code.upper()
+    return sum(
+        (
+            _decimal(item.get("importe"))
+            for item in slip.get("concepts") or []
+            if str(item.get("codigo_equiv") or item.get("idconcepto") or "").strip().upper() == code
+        ),
+        Decimal("0"),
+    )
+
+
 def build_payroll_summary(slips):
     payrolls = defaultdict(
         lambda: {"workers": 0, "net": Decimal("0"), "income": Decimal("0")}
@@ -48,6 +60,9 @@ def build_payroll_summary(slips):
                 "position": position,
                 "payroll": payroll,
                 "basic": basic,
+                "normal_hours": _concept_total(slip, "TI0001"),
+                "production_incentive": _concept_total(slip, "IN0044"),
+                "productivity_bonus": _concept_total(slip, "IN0062"),
                 "income": income,
                 "deductions": deductions,
                 "net": net,

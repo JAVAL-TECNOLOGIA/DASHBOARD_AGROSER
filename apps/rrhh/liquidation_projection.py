@@ -151,6 +151,9 @@ def project_closure_liquidation(contract, closing_date):
     )
     overtime_25_total = _money(contract.get("overtime_25_total"))
     overtime_35_total = _money(contract.get("overtime_35_total"))
+    normal_hours_total = _money(contract.get("normal_hours_total"))
+    production_incentive_total = _money(contract.get("production_incentive_total"))
+    productivity_bonus_total = _money(contract.get("productivity_bonus_total"))
     overtime_25_average = (overtime_25_total / Decimal("6")).quantize(
         CENT, rounding=ROUND_HALF_UP
     )
@@ -189,6 +192,9 @@ def project_closure_liquidation(contract, closing_date):
         "performance_average": performance_average,
         "overtime_25_total": overtime_25_total,
         "overtime_35_total": overtime_35_total,
+        "normal_hours_total": normal_hours_total,
+        "production_incentive_total": production_incentive_total,
+        "productivity_bonus_total": productivity_bonus_total,
         "overtime_25_average": overtime_25_average,
         "overtime_35_average": overtime_35_average,
         "family_allowance": family_allowance,
