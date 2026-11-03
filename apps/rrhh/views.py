@@ -346,10 +346,6 @@ class RRHHLiquidacionesView(RRHHReportesAccessMixin, TemplateView):
                 [row['name'], float(row['total'])]
                 for row in closure['closure_payrolls']
             ],
-            'closure_position_chart': [
-                [row['name'], float(row['total'])]
-                for row in closure['closure_positions'][:12]
-            ],
         })
         return context
 

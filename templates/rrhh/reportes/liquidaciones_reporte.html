@@ -16,6 +16,7 @@
     .liq-table-wrap { max-height: 580px; overflow: auto; }
     .liq-table-wrap thead th { background: #f4f7f9; position: sticky; top: 0; z-index: 2; }
     .flot-tooltip { pointer-events: none; }
+    .bar-value-label { color: #102f4d; font-size: .75rem; font-weight: 700; pointer-events: none; position: absolute; text-align: center; transform: translateX(-50%); white-space: nowrap; z-index: 4; }
     @media (max-width: 767px) { .liq-value { font-size: 1.35rem; } .liq-chart { height: 285px; } }
 </style>
 {% endblock %}
@@ -85,10 +86,7 @@
                 <div class="col-lg-4"><div class="p-3 bg-light rounded"><div class="liq-label mb-2">Promedio por trabajador</div><div class="liq-value">S/ {{ closure_average|floatformat:2 }}</div><small class="text-muted">Costo promedio estimado</small></div></div>
             </div>
             {% if closure_workers %}
-            <div class="row mb-4">
-                <div class="col-xl-6 mb-4 mb-xl-0"><h5 class="mb-1">Costo estimado por planilla</h5><small class="text-muted">Distribución del dinero requerido</small><div id="closure-payroll-chart" class="liq-chart mt-3"></div></div>
-                <div class="col-xl-6"><h5 class="mb-1">Costo estimado por perfil</h5><small class="text-muted">Doce perfiles con mayor impacto</small><div id="closure-position-chart" class="liq-chart mt-3"></div></div>
-            </div>
+            <div class="mb-4"><h5 class="mb-1">Costo estimado por planilla</h5><small class="text-muted">Distribución exacta del dinero requerido por planilla</small><div id="closure-payroll-chart" class="liq-chart mt-3 position-relative"></div></div>
             <div class="table-responsive liq-table-wrap"><table class="table table-hover table-sm mb-0">
                 <thead><tr><th>Trabajador</th><th>Documento</th><th>Planilla</th><th>Perfil</th><th>Modalidad</th><th>Ingreso</th><th class="text-right">Horas normales</th><th class="text-right">Incentivo producción</th><th class="text-right">Bono productividad</th><th class="text-right">Meses rend.</th>{% if not exclude_all_performance %}<th class="text-right">Prom. rendimiento</th>{% endif %}<th class="text-right">Prom. H.E. 25%</th><th class="text-right">Prom. H.E. 35%</th><th class="text-right">D. descanso</th><th class="text-right">D. rendimiento</th><th class="text-right">Días H.N./8</th><th class="text-right">Básico</th><th class="text-right">Asig. familiar</th><th class="text-right">Días</th><th class="text-right">Base computable</th><th class="text-right">Liquidación</th></tr></thead>
                 <tbody>{% for row in closure_rows %}<tr>
@@ -157,7 +155,6 @@
 {{ projection_chart|json_script:"projection-chart-data" }}
 {{ projection_workers_chart|json_script:"projection-workers-chart-data" }}
 {{ closure_payroll_chart|json_script:"closure-payroll-chart-data" }}
-{{ closure_position_chart|json_script:"closure-position-chart-data" }}
 {{ profiles_by_payroll|json_script:"profiles-by-payroll-data" }}
 {% include 'base/footer.html' %}
 <script src="{% static 'assets/plugins/flot/jquery.flot.min.js' %}"></script>
@@ -176,7 +173,7 @@ $(document).ready(function () {
     const profilesByPayroll=JSON.parse(document.getElementById('profiles-by-payroll-data').textContent), payrollFilter=$('#planilla'), profileFilter=$('#perfil'), allProfiles=[];
     Object.keys(profilesByPayroll).forEach(function(code){profilesByPayroll[code].forEach(function(item){if(allProfiles.indexOf(item)===-1)allProfiles.push(item);});}); allProfiles.sort();
     payrollFilter.on('change',function(){const previous=profileFilter.val(),options=payrollFilter.val()?(profilesByPayroll[payrollFilter.val()]||[]):allProfiles;profileFilter.empty().append($('<option>',{value:'',text:'Todos los perfiles'}));options.forEach(function(item){profileFilter.append($('<option>',{value:item,text:item}));});if(options.indexOf(previous)!==-1)profileFilter.val(previous);});
-    const payroll=JSON.parse(document.getElementById('payroll-chart-data').textContent),profiles=JSON.parse(document.getElementById('profile-chart-data').textContent),monthly=JSON.parse(document.getElementById('monthly-chart-data').textContent),projection=JSON.parse(document.getElementById('projection-chart-data').textContent),projectionWorkers=JSON.parse(document.getElementById('projection-workers-chart-data').textContent),closurePayroll=JSON.parse(document.getElementById('closure-payroll-chart-data').textContent),closurePositions=JSON.parse(document.getElementById('closure-position-chart-data').textContent);
+    const payroll=JSON.parse(document.getElementById('payroll-chart-data').textContent),profiles=JSON.parse(document.getElementById('profile-chart-data').textContent),monthly=JSON.parse(document.getElementById('monthly-chart-data').textContent),projection=JSON.parse(document.getElementById('projection-chart-data').textContent),projectionWorkers=JSON.parse(document.getElementById('projection-workers-chart-data').textContent),closurePayroll=JSON.parse(document.getElementById('closure-payroll-chart-data').textContent);
     const money=function(value){return 'S/ '+Number(value).toLocaleString('es-PE',{minimumFractionDigits:2,maximumFractionDigits:2});};
     const tooltip=$('<div class="flot-tooltip"></div>').css({position:'absolute',display:'none',padding:'7px 10px',background:'#142b3d',color:'#fff',borderRadius:'6px',zIndex:9999}).appendTo('body');
     if(monthly.length&&$('#monthly-chart').length)$.plot('#monthly-chart',[{data:monthly,color:'#0b7551',label:'Neto liquidado'}],{series:{lines:{show:true,fill:.12,lineWidth:3},points:{show:true,radius:4}},xaxis:{mode:'categories',tickLength:0},yaxis:{tickFormatter:function(v){return 'S/ '+Math.round(v).toLocaleString('es-PE');}},grid:{hoverable:true,borderColor:'#e4e9ed',borderWidth:1}});
@@ -184,8 +181,11 @@ $(document).ready(function () {
     if(profiles.length&&$('#profile-chart').length)$.plot('#profile-chart',[{data:profiles,color:'#238aa5'}],{series:{bars:{show:true,barWidth:.64,align:'center',fill:.9}},xaxis:{mode:'categories',tickLength:0},yaxis:{tickFormatter:function(v){return 'S/ '+Math.round(v).toLocaleString('es-PE');}},grid:{hoverable:true,borderColor:'#e4e9ed',borderWidth:1}});
     if(projection.length&&$('#projection-chart').length)$.plot('#projection-chart',[{data:projection,color:'#7850c7',label:'Liquidación proyectada'}],{series:{bars:{show:true,barWidth:.64,align:'center',fill:.88}},xaxis:{mode:'categories',tickLength:0},yaxis:{tickFormatter:function(v){return 'S/ '+Math.round(v).toLocaleString('es-PE');}},grid:{hoverable:true,borderColor:'#e4e9ed',borderWidth:1}});
     if(projectionWorkers.length&&$('#projection-workers-chart').length)$.plot('#projection-workers-chart',[{data:projectionWorkers,color:'#df8500',label:'Contratos'}],{series:{bars:{show:true,barWidth:.64,align:'center',fill:.88}},xaxis:{mode:'categories',tickLength:0},yaxis:{min:0,tickDecimals:0},grid:{hoverable:true,borderColor:'#e4e9ed',borderWidth:1}});
-    if(closurePayroll.length&&$('#closure-payroll-chart').length)$.plot('#closure-payroll-chart',[{data:closurePayroll,color:'#0b7551',label:'Costo proyectado'}],{series:{bars:{show:true,barWidth:.62,align:'center',fill:.9}},xaxis:{mode:'categories',tickLength:0},yaxis:{tickFormatter:function(v){return 'S/ '+Math.round(v).toLocaleString('es-PE');}},grid:{hoverable:true,borderColor:'#e4e9ed',borderWidth:1}});
-    if(closurePositions.length&&$('#closure-position-chart').length)$.plot('#closure-position-chart',[{data:closurePositions,color:'#238aa5',label:'Costo proyectado'}],{series:{bars:{show:true,barWidth:.62,align:'center',fill:.9}},xaxis:{mode:'categories',tickLength:0,rotateTicks:110},yaxis:{tickFormatter:function(v){return 'S/ '+Math.round(v).toLocaleString('es-PE');}},grid:{hoverable:true,borderColor:'#e4e9ed',borderWidth:1}});
+    if(closurePayroll.length&&$('#closure-payroll-chart').length){
+        const chart=$('#closure-payroll-chart'),plot=$.plot(chart,[{data:closurePayroll,color:'#0b7551',label:'Costo proyectado'}],{series:{bars:{show:true,barWidth:.62,align:'center',fill:.9}},xaxis:{mode:'categories',tickLength:0},yaxis:{autoscaleMargin:.16,tickFormatter:function(v){return 'S/ '+Math.round(v).toLocaleString('es-PE');}},grid:{hoverable:true,borderColor:'#e4e9ed',borderWidth:1}}),series=plot.getData()[0],points=series.datapoints.points,size=series.datapoints.pointsize;
+        chart.find('.bar-value-label').remove();
+        for(let index=0;index<points.length;index+=size){const value=Number(points[index+1]||0),offset=plot.pointOffset({x:points[index],y:value});$('<div class="bar-value-label"></div>').text(money(value)).css({left:offset.left,top:Math.max(3,offset.top-22)}).appendTo(chart);}
+    }
     $('.liq-chart').on('plothover',function(event,pos,item){if(!item)return tooltip.hide();const source=item.series.data[item.dataIndex]||[];let label=item.series.label||(source[0]||'Total');let value=item.series.pie?item.series.data[0][1]:source[1];let formatted=label==='Contratos'?Number(value).toLocaleString('es-PE')+' contrato(s)':money(value);tooltip.html('<strong>'+label+'</strong><br>'+formatted).css({top:item.pageY+10,left:item.pageX+10}).show();});
 });
 </script>
