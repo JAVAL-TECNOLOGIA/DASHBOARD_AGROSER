@@ -127,14 +127,29 @@
         var totalBoxes = rows.reduce(function (sum, item) { return sum + Number(item.boxes || 0); }, 0);
         var totalUsd = rows.reduce(function (sum, item) { return sum + Number(item.total_usd || 0); }, 0);
         var totalPen = rows.reduce(function (sum, item) { return sum + Number(item.total_pen || 0); }, 0);
+        function isCreditNote(item) {
+            var type = String(item.document_type || '').toUpperCase();
+            return type.indexOf('CREDITO') !== -1 || type.indexOf('CRÉDITO') !== -1 ||
+                Number(item.total_usd || 0) < 0 || Number(item.total_pen || 0) < 0;
+        }
+        function movementValue(value, formatter, creditNote) {
+            var numericValue = Math.abs(Number(value || 0));
+            if (!numericValue) return '—';
+            var arrowClass = creditNote ? 'movement-down' : 'movement-up';
+            var arrow = creditNote ? '&#9660;' : '&#9650;';
+            return formatter(numericValue) + '<span class="movement-arrow ' + arrowClass + '" aria-label="' +
+                (creditNote ? 'Disminución' : 'Incremento') + '">' + arrow + '</span>';
+        }
         document.getElementById('export-invoice-body').innerHTML = rows.length ? rows.map(function (item) {
-            return '<tr><td>' + dateLabel(item.date) + '</td><td>' + escapeHtml(item.document_type) + '</td>' +
+            var creditNote = isCreditNote(item);
+            return '<tr class="' + (creditNote ? 'credit-note-row' : '') + '"><td>' + dateLabel(item.date) + '</td><td>' + escapeHtml(item.document_type) + '</td>' +
                 '<td><strong>' + escapeHtml(item.document) + '</strong></td><td>' + escapeHtml(item.customer) + '</td>' +
-                '<td class="amount">' + (item.boxes ? number(item.boxes, 2) : '—') + '</td>' +
-                '<td class="amount">' + (item.price_fob_box ? money(item.price_fob_box, 'USD') : '—') + '</td>' +
-                '<td class="amount">' + (item.price_kg_mp ? money(item.price_kg_mp, 'USD') : '—') + '</td>' +
-                '<td class="amount">' + money(item.total_usd, 'USD') + '</td>' +
-                '<td class="amount">' + number(item.exchange_rate, 4) + '</td><td class="amount">' + money(item.total_pen) + '</td></tr>';
+                '<td class="amount">' + movementValue(item.boxes, function (value) { return number(value, 2); }, creditNote) + '</td>' +
+                '<td class="amount">' + movementValue(item.price_fob_box, function (value) { return money(value, 'USD'); }, creditNote) + '</td>' +
+                '<td class="amount">' + movementValue(item.price_kg_mp, function (value) { return money(value, 'USD'); }, creditNote) + '</td>' +
+                '<td class="amount">' + movementValue(item.total_usd, function (value) { return money(value, 'USD'); }, creditNote) + '</td>' +
+                '<td class="amount">' + number(item.exchange_rate, 4) + '</td><td class="amount">' +
+                movementValue(item.total_pen, function (value) { return money(value); }, creditNote) + '</td></tr>';
         }).join('') : '<tr><td colspan="10" class="text-center text-muted py-5">No hay facturas de exportación para los filtros seleccionados.</td></tr>';
         document.getElementById('export-invoice-foot').innerHTML = rows.length ?
             '<tr class="font-weight-bold" style="background:#eef8f4"><td colspan="4" class="text-right">TOTALES</td>' +
