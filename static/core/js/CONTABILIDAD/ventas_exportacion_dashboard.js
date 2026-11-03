@@ -169,6 +169,12 @@
 
     function refreshPurchases(data, state) {
         var rows = activeRows(data.purchases, state);
+        var totalBase = rows.reduce(function (sum, item) { return sum + Number(item.base || 0); }, 0);
+        var totalTax = rows.reduce(function (sum, item) { return sum + Number(item.tax || 0); }, 0);
+        var totalPurchases = rows.reduce(function (sum, item) { return sum + Number(item.total || 0); }, 0);
+        document.getElementById('export-purchase-base').textContent = money(totalBase);
+        document.getElementById('export-purchase-tax').textContent = money(totalTax);
+        document.getElementById('export-purchase-total').textContent = money(totalPurchases);
         document.getElementById('export-purchase-body').innerHTML = rows.length ? rows.map(function (item) {
             return '<tr><td>' + dateLabel(item.date) + '</td><td>' + escapeHtml(item.document_type) + '</td>' +
                 '<td><strong>' + escapeHtml(item.document) + '</strong></td><td>' + escapeHtml(item.tax_id) + '</td>' +
@@ -176,6 +182,10 @@
                 '<td class="amount">' + money(item.tax) + '</td><td class="amount">' + money(item.total) + '</td>' +
                 '<td>' + escapeHtml(item.currency) + '</td><td style="min-width:280px">' + escapeHtml(item.detail) + '</td></tr>';
         }).join('') : '<tr><td colspan="10" class="text-center text-muted py-5">No hay compras vinculadas para los filtros seleccionados.</td></tr>';
+        document.getElementById('export-purchase-foot').innerHTML = rows.length ?
+            '<tr class="font-weight-bold" style="background:#eef8f4"><td colspan="5" class="text-right">TOTALES</td>' +
+            '<td class="amount">' + money(totalBase) + '</td><td class="amount">' + money(totalTax) + '</td>' +
+            '<td class="amount">' + money(totalPurchases) + '</td><td colspan="2"></td></tr>' : '';
     }
 
     function refresh(data) {
