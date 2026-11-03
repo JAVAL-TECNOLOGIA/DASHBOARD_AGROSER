@@ -127,6 +127,16 @@
         var totalBoxes = rows.reduce(function (sum, item) { return sum + Number(item.boxes || 0); }, 0);
         var totalUsd = rows.reduce(function (sum, item) { return sum + Number(item.total_usd || 0); }, 0);
         var totalPen = rows.reduce(function (sum, item) { return sum + Number(item.total_pen || 0); }, 0);
+        var weightedKgTotal = rows.reduce(function (sum, item) {
+            return sum + (Number(item.price_kg_mp || 0) * Number(item.boxes || 0));
+        }, 0);
+        var averageBoxPrice = totalBoxes ? totalUsd / totalBoxes : 0;
+        var averageKgPrice = totalBoxes ? weightedKgTotal / totalBoxes : 0;
+        document.getElementById('export-invoice-boxes').textContent = number(totalBoxes, 2);
+        document.getElementById('export-invoice-average-box').textContent = money(averageBoxPrice, 'USD');
+        document.getElementById('export-invoice-average-kg').textContent = money(averageKgPrice, 'USD');
+        document.getElementById('export-invoice-total-usd').textContent = money(totalUsd, 'USD');
+        document.getElementById('export-invoice-total-pen').textContent = money(totalPen);
         function isCreditNote(item) {
             var type = String(item.document_type || '').toUpperCase();
             return type.indexOf('CREDITO') !== -1 || type.indexOf('CRÉDITO') !== -1 ||
