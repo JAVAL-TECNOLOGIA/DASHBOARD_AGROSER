@@ -2,6 +2,7 @@
     'use strict';
 
     var chart = null;
+    var purchaseChart = null;
 
     function payload() {
         return JSON.parse(document.getElementById('ventas-exportacion-data').textContent);
@@ -175,6 +176,37 @@
         document.getElementById('export-purchase-base').textContent = money(totalBase);
         document.getElementById('export-purchase-tax').textContent = money(totalTax);
         document.getElementById('export-purchase-total').textContent = money(totalPurchases);
+        document.getElementById('export-purchase-chart-subtitle').textContent =
+            state.year + ' · ' + data.months[state.from] + ' a ' + data.months[state.to];
+        var monthlyRows = [];
+        for (var month = state.from; month <= state.to; month += 1) {
+            var monthItems = rows.filter(function (item) { return item.month === month; });
+            monthlyRows.push({
+                month: month,
+                base: monthItems.reduce(function (sum, item) { return sum + Number(item.base || 0); }, 0),
+                tax: monthItems.reduce(function (sum, item) { return sum + Number(item.tax || 0); }, 0),
+                total: monthItems.reduce(function (sum, item) { return sum + Number(item.total || 0); }, 0)
+            });
+        }
+        if (purchaseChart) purchaseChart.destroy();
+        purchaseChart = new Chart(document.getElementById('export-purchase-chart'), {
+            type: 'bar',
+            data: {
+                labels: monthlyRows.map(function (row) { return data.months[row.month]; }),
+                datasets: [
+                    {label: 'Base imponible', data: monthlyRows.map(function (row) { return row.base; }), backgroundColor: '#2f75b5'},
+                    {label: 'IGV', data: monthlyRows.map(function (row) { return row.tax; }), backgroundColor: '#f2c500'},
+                    {label: 'Total', data: monthlyRows.map(function (row) { return row.total; }), backgroundColor: '#0f766e'}
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                tooltips: {callbacks: {label: function (item, chartData) {
+                    return chartData.datasets[item.datasetIndex].label + ': ' + money(item.yLabel);
+                }}},
+                scales: {yAxes: [{ticks: {beginAtZero: true, callback: function (value) { return money(value); }}}]}
+            }
+        });
         document.getElementById('export-purchase-body').innerHTML = rows.length ? rows.map(function (item) {
             return '<tr><td>' + dateLabel(item.date) + '</td><td>' + escapeHtml(item.document_type) + '</td>' +
                 '<td><strong>' + escapeHtml(item.document) + '</strong></td><td>' + escapeHtml(item.tax_id) + '</td>' +
@@ -225,6 +257,9 @@
             to.value = String(lastMonth);
             customer.value = '__all__';
             refresh(data);
+        });
+        document.querySelector('a[href="#export-purchases"]').addEventListener('click', function () {
+            window.setTimeout(function () { if (purchaseChart) purchaseChart.resize(); }, 200);
         });
         refresh(data);
     };
