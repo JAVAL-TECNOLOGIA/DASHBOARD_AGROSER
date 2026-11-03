@@ -157,6 +157,13 @@ class ContabilidadReportesViewTests(TestCase):
         self.assertEqual(august['sales_with_export'], 75803.84)
         self.assertEqual(august['sales_without_export'], 19803.84)
         self.assertEqual(august['export_cost'], 3593.12)
+        self.assertEqual(august['income_tax_with_export'], 606.43)
+        self.assertEqual(august['income_tax_without_export'], 158.43)
+        self.assertEqual(august['drawback'], 1680.0)
+        self.assertEqual(august['igv_difference_with_export'], 2737.93)
+        self.assertEqual(august['igv_difference_without_export'], 3384.69)
+        self.assertEqual(august['igv_scenario_difference'], 646.76)
+        self.assertEqual(august['income_tax_difference'], -448.0)
         self.assertEqual(len(data['invoices']), 1)
         self.assertEqual(len(data['purchases']), 1)
 

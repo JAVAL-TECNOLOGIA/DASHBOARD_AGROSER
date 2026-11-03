@@ -32,6 +32,13 @@ def _iso_date(value):
     return value.isoformat()
 
 
+def _period_parts(value, fallback_date):
+    period = re.sub(r'\D', '', _text(value))
+    if len(period) >= 6:
+        return int(period[:4]), int(period[4:6]) - 1
+    return fallback_date.year, fallback_date.month - 1
+
+
 def _document_key(value):
     return re.sub(r'[^A-Z0-9]', '', _text(value).upper())
 
@@ -84,8 +91,11 @@ def build_export_sales_report(sales_rows, purchase_rows, current_year=None):
         'sales_tax': 0.0,
         'purchases_base': 0.0,
         'purchases_tax': 0.0,
+        'purchases_total': 0.0,
+        'purchases_non_taxed': 0.0,
         'export_cost_base': 0.0,
         'export_cost_tax': 0.0,
+        'export_cost_total': 0.0,
     })
     export_documents = set()
 
@@ -123,22 +133,43 @@ def build_export_sales_report(sales_rows, purchase_rows, current_year=None):
     export_documents.discard('')
     for row in purchase_rows:
         purchase_date = row['date']
-        if not purchase_date or purchase_date.year not in allowed_years:
+        if not purchase_date:
             continue
-        base = _number(row.get('base'))
-        tax = _number(row.get('tax'))
-        key = (purchase_date.year, purchase_date.month - 1)
+        purchase_year, purchase_month = _period_parts(row.get('period'), purchase_date)
+        if purchase_year not in allowed_years:
+            continue
+        has_nisira_breakdown = 'export_base' in row
+        if has_nisira_breakdown:
+            export_base = _number(row.get('export_base'))
+            export_tax = _number(row.get('export_tax'))
+            base = export_base + _number(row.get('general_base'))
+            tax = export_tax + _number(row.get('general_tax'))
+            non_taxed = _number(row.get('non_taxed'))
+        else:
+            export_base = 0.0
+            export_tax = 0.0
+            base = _number(row.get('base'))
+            tax = _number(row.get('tax'))
+            non_taxed = _number(row.get('total')) - base - tax
+        key = (purchase_year, purchase_month)
         monthly[key]['purchases_base'] += base
         monthly[key]['purchases_tax'] += tax
-        if not _is_export_purchase(
+        monthly[key]['purchases_total'] += _number(row.get('total'))
+        monthly[key]['purchases_non_taxed'] += non_taxed
+        is_export_purchase = bool(export_base or export_tax) or _is_export_purchase(
             row.get('detail'), row.get('glosa'), export_documents,
-        ):
+        )
+        if not is_export_purchase:
             continue
-        monthly[key]['export_cost_base'] += base
-        monthly[key]['export_cost_tax'] += tax
+        if not has_nisira_breakdown:
+            export_base = base
+            export_tax = tax
+        monthly[key]['export_cost_base'] += export_base
+        monthly[key]['export_cost_tax'] += export_tax
+        monthly[key]['export_cost_total'] += export_base + export_tax
         report['purchases'].append({
-            'year': purchase_date.year,
-            'month': purchase_date.month - 1,
+            'year': purchase_year,
+            'month': purchase_month,
             'date': _iso_date(purchase_date),
             'document_type': _text(row.get('document_type')),
             'document': _text(row.get('document')),
@@ -157,8 +188,32 @@ def build_export_sales_report(sales_rows, purchase_rows, current_year=None):
             values = monthly[(year, month)]
             sales_with_export = values['affected'] + values['exported'] + values['exempt']
             sales_without_export = values['affected'] + values['exempt']
+            sales_total_with_export = sales_with_export + values['sales_tax']
+            sales_total_without_export = sales_without_export + values['sales_tax']
             purchases_without_export = max(
                 0.0, values['purchases_base'] - values['export_cost_base']
+            )
+            purchase_tax_without_export = (
+                values['purchases_tax'] - values['export_cost_tax']
+            )
+            purchases_total_without_export = (
+                values['purchases_total'] - values['export_cost_total']
+            )
+            purchases_non_taxed = values['purchases_non_taxed']
+            export_cost_non_taxed = (
+                values['export_cost_total']
+                - values['export_cost_base']
+                - values['export_cost_tax']
+            )
+            purchases_non_taxed_without_export = (
+                purchases_non_taxed - export_cost_non_taxed
+            )
+            income_tax_with_export = sales_with_export * 0.008
+            income_tax_without_export = sales_without_export * 0.008
+            drawback = values['exported'] * 0.03
+            igv_difference_with_export = values['sales_tax'] - values['purchases_tax']
+            igv_difference_without_export = (
+                values['sales_tax'] - purchase_tax_without_export
             )
             report['summary'].append({
                 'year': year,
@@ -169,9 +224,31 @@ def build_export_sales_report(sales_rows, purchase_rows, current_year=None):
                 'export_cost': round(values['export_cost_base'], 2),
                 'purchases_with_export': round(values['purchases_base'], 2),
                 'purchases_without_export': round(purchases_without_export, 2),
+                'affected_sales': round(values['affected'], 2),
+                'exempt_sales': round(values['exempt'], 2),
+                'sales_total_with_export': round(sales_total_with_export, 2),
+                'sales_total_without_export': round(sales_total_without_export, 2),
                 'sales_tax': round(values['sales_tax'], 2),
                 'purchase_tax': round(values['purchases_tax'], 2),
                 'export_purchase_tax': round(values['export_cost_tax'], 2),
+                'purchase_tax_without_export': round(purchase_tax_without_export, 2),
+                'purchases_total_with_export': round(values['purchases_total'], 2),
+                'purchases_total_without_export': round(purchases_total_without_export, 2),
+                'purchases_non_taxed': round(purchases_non_taxed, 2),
+                'purchases_non_taxed_without_export': round(purchases_non_taxed_without_export, 2),
+                'export_cost_non_taxed': round(export_cost_non_taxed, 2),
+                'income_tax_with_export': round(income_tax_with_export, 2),
+                'income_tax_without_export': round(income_tax_without_export, 2),
+                'drawback': round(drawback, 2),
+                'igv_difference_with_export': round(igv_difference_with_export, 2),
+                'igv_difference_without_export': round(igv_difference_without_export, 2),
+                'income_tax_difference': round(
+                    income_tax_without_export - income_tax_with_export, 2
+                ),
+                'igv_scenario_difference': round(
+                    igv_difference_without_export - igv_difference_with_export, 2
+                ),
+                'drawback_difference': round(drawback, 2),
             })
 
     report['invoices'].sort(key=lambda item: (item['date'], item['document']))
@@ -234,12 +311,23 @@ def get_export_sales_report():
 
         cursor.execute(
             'EXEC CP_REGISTROCOMPRAS_2008 %s, %s, %s, %s, %s',
-            ['001', f'{FIRST_REPORT_YEAR}01', f'{today.year}12', 'N', 'S'],
+            # NISIRA usa "N" para expresar todo el registro en moneda nacional.
+            # Es la misma variante empleada por el comparativo contable del Excel.
+            ['001', f'{FIRST_REPORT_YEAR}01', f'{today.year}12', 'N', 'N'],
         )
         while cursor.description is None and cursor.nextset():
             pass
         columns, rows = _dict_rows(cursor)
         for row in rows:
+            export_base = _number(_pick(columns, row, 'AFECTO1'))
+            general_base = sum(_number(_pick(columns, row, name)) for name in (
+                'AFECTO2', 'AFECTO3',
+            ))
+            non_taxed = _number(_pick(columns, row, 'AFECTO4'))
+            export_tax = _number(_pick(columns, row, 'IMPTO1'))
+            general_tax = sum(_number(_pick(columns, row, name)) for name in (
+                'IMPTO2', 'IMPTO3', 'IMPTO4',
+            ))
             purchase_rows.append({
                 'date': _pick(columns, row, 'FECHA'),
                 'document_type': _pick(columns, row, 'IDDOCUMENTO'),
@@ -249,17 +337,17 @@ def get_export_sales_report():
                 ])).strip(),
                 'tax_id': _pick(columns, row, 'RUC'),
                 'supplier': _pick(columns, row, 'RAZON_SOCIAL'),
-                'base': sum(_number(_pick(columns, row, name)) for name in (
-                    'AFECTO1', 'AFECTO2', 'AFECTO3', 'AFECTO4',
-                )),
-                'tax': sum(_number(_pick(columns, row, name)) for name in (
-                    'IMPTO1', 'IMPTO2', 'IMPTO3', 'IMPTO4',
-                )),
+                'export_base': export_base,
+                'general_base': general_base,
+                'non_taxed': non_taxed,
+                'export_tax': export_tax,
+                'general_tax': general_tax,
                 'total': _pick(columns, row, 'TOTAL'),
                 'currency': _pick(columns, row, 'MONEDA'),
                 'exchange_rate': _pick(columns, row, 'TCAMBIO'),
                 'detail': _pick(columns, row, 'DETALLE'),
                 'glosa': _pick(columns, row, 'GLOSA'),
+                'period': _pick(columns, row, 'PERIODO'),
             })
 
     report = build_export_sales_report(

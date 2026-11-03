@@ -56,19 +56,48 @@
         document.getElementById('export-without-sales').textContent = money(total('sales_without_export'));
         document.getElementById('export-sales-total').textContent = money(total('export_sales'));
         document.getElementById('export-cost-total').textContent = money(total('export_cost'));
+        document.getElementById('export-tax-payable').textContent = money(total('igv_difference_with_export'));
+        document.getElementById('export-income-tax').textContent = money(total('income_tax_with_export'));
+        document.getElementById('export-drawback').textContent = money(total('drawback'));
+        document.getElementById('export-scenario-difference').textContent = money(
+            total('igv_scenario_difference') + total('income_tax_difference') + total('drawback_difference')
+        );
         document.getElementById('export-period-label').textContent = state.year + ' · ' + data.months[state.from] + ' a ' + data.months[state.to];
         document.getElementById('export-chart-subtitle').textContent = state.year + ' · ' + data.months[state.from] + ' a ' + data.months[state.to];
 
-        var body = document.getElementById('export-summary-body');
-        body.innerHTML = rows.map(function (row) {
-            return '<tr><td><strong>' + escapeHtml(data.months[row.month]) + '</strong></td>' +
-                '<td class="amount">' + money(row.sales_with_export) + '</td>' +
-                '<td class="amount">' + money(row.sales_without_export) + '</td>' +
-                '<td class="amount">' + money(row.export_sales) + '</td>' +
-                '<td class="amount">' + money(row.export_cost) + '</td>' +
-                '<td class="amount">' + money(row.purchases_with_export) + '</td>' +
-                '<td class="amount">' + money(row.purchases_without_export) + '</td></tr>';
+        document.getElementById('export-with-body').innerHTML = rows.map(function (row) {
+            var month = escapeHtml(data.months[row.month].slice(0, 3) + '-' + String(row.year).slice(-2));
+            return '<tr><td>' + month + '</td><td><strong>VENTAS</strong></td>' +
+                '<td class="amount">' + money(row.affected_sales) + '</td><td class="amount">' + money(row.sales_tax) + '</td>' +
+                '<td class="amount">' + money(row.export_sales) + '</td><td class="amount">' + money(row.exempt_sales) + '</td><td class="amount">—</td>' +
+                '<td class="amount"><strong>' + money(row.sales_total_with_export) + '</strong></td><td class="amount">' + money(row.sales_tax) + '</td>' +
+                '<td class="amount">' + money(row.income_tax_with_export) + '</td><td class="amount">' + money(row.drawback) + '</td>' +
+                '<td class="amount">—</td><td class="amount">—</td><td class="amount">—</td></tr>' +
+                '<tr><td>' + month + '</td><td><strong>COMPRAS</strong></td>' +
+                '<td class="amount">' + money(row.purchases_without_export) + '</td><td class="amount">' + money(row.purchase_tax_without_export) + '</td>' +
+                '<td class="amount">—</td><td class="amount">' + money(row.purchases_non_taxed) + '</td><td class="amount">' + money(row.export_cost) + '</td>' +
+                '<td class="amount"><strong>' + money(row.purchases_total_with_export) + '</strong></td><td class="amount">' + money(row.purchase_tax) + '</td>' +
+                '<td class="amount">—</td><td class="amount">—</td><td class="amount">' + money(row.igv_difference_with_export) + '</td>' +
+                '<td class="amount">' + money(row.income_tax_with_export) + '</td><td class="amount">' + money(row.drawback) + '</td></tr>';
         }).join('');
+        document.getElementById('export-without-body').innerHTML = rows.map(function (row) {
+            var month = escapeHtml(data.months[row.month].slice(0, 3) + '-' + String(row.year).slice(-2));
+            return '<tr><td>' + month + '</td><td><strong>VENTAS</strong></td>' +
+                '<td class="amount">' + money(row.affected_sales) + '</td><td class="amount">' + money(row.sales_tax) + '</td>' +
+                '<td class="amount">—</td><td class="amount">' + money(row.exempt_sales) + '</td><td class="amount">—</td>' +
+                '<td class="amount"><strong>' + money(row.sales_total_without_export) + '</strong></td><td class="amount">' + money(row.sales_tax) + '</td>' +
+                '<td class="amount">' + money(row.income_tax_without_export) + '</td><td class="amount">—</td>' +
+                '<td class="amount">—</td><td class="amount">—</td><td class="amount">—</td></tr>' +
+                '<tr><td>' + month + '</td><td><strong>COMPRAS</strong></td>' +
+                '<td class="amount">' + money(row.purchases_without_export) + '</td><td class="amount">' + money(row.purchase_tax_without_export) + '</td>' +
+                '<td class="amount">—</td><td class="amount">' + money(row.purchases_non_taxed_without_export) + '</td><td class="amount">—</td>' +
+                '<td class="amount"><strong>' + money(row.purchases_total_without_export) + '</strong></td><td class="amount">' + money(row.purchase_tax_without_export) + '</td>' +
+                '<td class="amount">—</td><td class="amount">—</td><td class="amount">' + money(row.igv_difference_without_export) + '</td>' +
+                '<td class="amount">' + money(row.income_tax_without_export) + '</td><td class="amount">—</td></tr>';
+        }).join('');
+        document.getElementById('export-with-foot').innerHTML = '<tr class="font-weight-bold"><td colspan="11" class="text-right">TOTAL DIFERENCIA</td><td class="amount">' + money(total('igv_difference_with_export')) + '</td><td class="amount">' + money(total('income_tax_with_export')) + '</td><td class="amount">' + money(total('drawback')) + '</td></tr>';
+        document.getElementById('export-without-foot').innerHTML = '<tr class="font-weight-bold"><td colspan="11" class="text-right">TOTAL DIFERENCIA</td><td class="amount">' + money(total('igv_difference_without_export')) + '</td><td class="amount">' + money(total('income_tax_without_export')) + '</td><td class="amount">S/ 0.00</td></tr>' +
+            '<tr class="font-weight-bold" style="background:#eef8f4"><td colspan="11" class="text-right">DIFERENCIA ENTRE ESCENARIOS</td><td class="amount">' + money(total('igv_scenario_difference')) + '</td><td class="amount">' + money(total('income_tax_difference')) + '</td><td class="amount">' + money(total('drawback_difference')) + '</td></tr>';
 
         if (chart) chart.destroy();
         chart = new Chart(document.getElementById('export-comparison-chart'), {
