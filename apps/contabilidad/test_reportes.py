@@ -9,6 +9,7 @@ from apps.contabilidad.cajas_kilos_service import build_boxes_and_kilos_report
 from apps.contabilidad.comparacion_service import build_comparison_report
 from apps.contabilidad.costos_service import build_costs_report
 from apps.contabilidad.ventas_service import build_sales_report
+from apps.contabilidad.ventas_exportacion_service import build_export_sales_report
 from apps.contabilidad.liquidacion_caja_service import build_cash_liquidation_report
 
 from apps.user.views import UserAdministrationMixin
@@ -76,10 +77,11 @@ class ContabilidadReportesViewTests(TestCase):
         response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(len(response.context['reportes']), 5)
+        self.assertEqual(len(response.context['reportes']), 6)
         for title in (
             'Comparación',
             'Ventas',
+            'Ventas de Exportación',
             'Detalle Cajas y Kilos',
             'Liquidación de Caja',
         ):
@@ -98,6 +100,65 @@ class ContabilidadReportesViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Ventas')
+
+    @patch('apps.contabilidad.views.get_export_sales_report')
+    def test_export_sales_report_keeps_excel_sections_as_independent_tabs(self, report_mock):
+        report_mock.return_value = build_export_sales_report(
+            [
+                {
+                    'date': date(2026, 8, 4), 'document_type': 'FACTURA',
+                    'document': 'F002-47', 'customer': 'AYCO FARMS INC',
+                    'affected': 0, 'exported': 56000, 'exempt': 0,
+                    'sales_tax': 0, 'currency': 'US$', 'exchange_rate': 3.402,
+                    'total_usd': 16460.91, 'total_pen': 56000,
+                    'reference': '', 'is_export_credit': False,
+                },
+                {
+                    'date': date(2026, 8, 5), 'document_type': 'FACTURA',
+                    'document': 'F001-1771', 'customer': 'CLIENTE LOCAL',
+                    'affected': 19803.84, 'exported': 0, 'exempt': 0,
+                    'sales_tax': 3564.69, 'currency': 'S/', 'exchange_rate': 3.4,
+                    'total_usd': 6938.40, 'total_pen': 23368.53,
+                    'reference': '', 'is_export_credit': False,
+                },
+            ],
+            [
+                {
+                    'date': date(2026, 8, 17), 'document_type': 'FAC',
+                    'document': 'F001 0035559', 'tax_id': '20344769932',
+                    'supplier': 'FRIO AEREO', 'base': 3593.12, 'tax': 646.76,
+                    'total': 4239.88, 'currency': 'US$', 'exchange_rate': 3.4,
+                    'detail': 'REFRIGERADO F002-47', 'glosa': '',
+                },
+                {
+                    'date': date(2026, 8, 18), 'document_type': 'FAC',
+                    'document': 'E001 0001', 'tax_id': '20111111111',
+                    'supplier': 'PROVEEDOR LOCAL', 'base': 1000, 'tax': 180,
+                    'total': 1180, 'currency': 'S/', 'exchange_rate': 3.4,
+                    'detail': 'COMPRA LOCAL', 'glosa': '',
+                },
+            ],
+            current_year=2026,
+        )
+        self.user.admin = True
+        self.user.save(update_fields=['admin'])
+        self.client.force_login(self.user)
+
+        response = self.client.get(
+            reverse('contabilidad_reporte_detalle', args=['ventas-exportacion'])
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Comparativo mensual')
+        self.assertContains(response, 'Detalle de facturas')
+        self.assertContains(response, 'Registro de compras')
+        data = response.context['ventas_exportacion_data']
+        august = next(row for row in data['summary'] if row['year'] == 2026 and row['month'] == 7)
+        self.assertEqual(august['sales_with_export'], 75803.84)
+        self.assertEqual(august['sales_without_export'], 19803.84)
+        self.assertEqual(august['export_cost'], 3593.12)
+        self.assertEqual(len(data['invoices']), 1)
+        self.assertEqual(len(data['purchases']), 1)
 
     @patch('apps.contabilidad.views.get_comparison_report')
     def test_comparison_report_uses_nisira_data(self, report_mock):

@@ -12,6 +12,10 @@ from decimal import Decimal
 from datetime import datetime
 from apps.contabilidad.cajas_kilos_service import get_boxes_and_kilos_report
 from apps.contabilidad.ventas_service import empty_sales_report, get_sales_report
+from apps.contabilidad.ventas_exportacion_service import (
+    empty_export_sales_report,
+    get_export_sales_report,
+)
 from apps.contabilidad.costos_service import empty_costs_report, get_costs_report
 from apps.contabilidad.comparacion_service import empty_comparison_report, get_comparison_report
 from apps.contabilidad.liquidacion_caja_service import (
@@ -42,6 +46,13 @@ CONTABILIDAD_REPORTES = (
         'descripcion': 'Consulta y análisis de la información de ventas.',
         'icono': 'bi-graph-up-arrow',
         'color': '#176b87',
+    },
+    {
+        'slug': 'ventas-exportacion',
+        'nombre': 'Ventas de Exportación',
+        'descripcion': 'Comparativo, facturas y compras vinculadas a las ventas de exportación.',
+        'icono': 'bi-globe-americas',
+        'color': '#0f766e',
     },
     {
         'slug': 'costos',
@@ -124,6 +135,14 @@ class ContabilidadReporteDetalleView(ContabilidadReportesAccessMixin, TemplateVi
                 context['ventas_data'] = empty_sales_report()
                 context['ventas_error'] = (
                     'No fue posible consultar el Registro de Ventas en NISIRA.'
+                )
+        elif slug == 'ventas-exportacion':
+            try:
+                context['ventas_exportacion_data'] = get_export_sales_report()
+            except Exception:
+                context['ventas_exportacion_data'] = empty_export_sales_report()
+                context['ventas_exportacion_error'] = (
+                    'No fue posible consultar las ventas de exportación en NISIRA.'
                 )
         elif slug == 'detalle-cajas-kilos':
             try:

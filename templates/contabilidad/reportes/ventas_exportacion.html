@@ -1,0 +1,90 @@
+{% if ventas_exportacion_error %}<div class="alert alert-danger mb-4">{{ ventas_exportacion_error }}</div>{% endif %}
+
+<style>
+    .export-report .filter-card, .export-report .content-card, .export-report .metric-card { border-radius: 14px; }
+    .export-report .metric-card { border: 0; border-top: 4px solid #0f766e; min-height: 132px; }
+    .export-report .metric-label { color: #64748b; font-size: .76rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+    .export-report .metric-value { color: #0f2942; font-size: 1.75rem; font-weight: 700; }
+    .export-report .nav-tabs { border-bottom: 0; gap: .5rem; }
+    .export-report .nav-tabs .nav-link { background: #edf2f7; border: 0; border-radius: 9px 9px 0 0; color: #475569; font-weight: 700; padding: .8rem 1.15rem; }
+    .export-report .nav-tabs .nav-link.active { background: #0f2942; color: #fff; }
+    .export-report .table thead th { background: #f4f7fa; border-bottom: 1px solid #cbd5e1; color: #334155; font-size: .72rem; letter-spacing: .04em; text-transform: uppercase; white-space: nowrap; }
+    .export-report .table td { color: #334155; font-size: .84rem; vertical-align: middle; }
+    .export-report .table-wrap { max-height: 540px; overflow: auto; }
+    .export-report .chart-wrap { height: 360px; position: relative; }
+    .export-report .source-note { background: #e8f7f3; border-radius: 20px; color: #0f766e; font-size: .75rem; font-weight: 700; padding: .45rem .75rem; }
+    .export-report .amount { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+    @media (max-width: 767px) {
+        .export-report .nav-tabs { flex-wrap: nowrap; overflow-x: auto; }
+        .export-report .nav-tabs .nav-link { white-space: nowrap; }
+        .export-report .chart-wrap { height: 300px; }
+    }
+</style>
+
+<div class="export-report">
+    <div class="card filter-card border-0 shadow-sm mb-4">
+        <div class="card-body px-4 py-3">
+            <div class="row align-items-end">
+                <div class="col-lg-3 col-md-4 mb-3 mb-md-0">
+                    <label class="metric-label" for="export-year">Año</label>
+                    <select class="form-control" id="export-year">
+                        {% for year in ventas_exportacion_data.years %}<option value="{{ year }}">{{ year }}</option>{% endfor %}
+                    </select>
+                </div>
+                <div class="col-lg-3 col-md-4 mb-3 mb-md-0">
+                    <label class="metric-label" for="export-from">Desde</label>
+                    <select class="form-control" id="export-from"></select>
+                </div>
+                <div class="col-lg-3 col-md-4">
+                    <label class="metric-label" for="export-to">Hasta</label>
+                    <select class="form-control" id="export-to"></select>
+                </div>
+                <div class="col-lg-3 text-lg-right mt-3 mt-lg-0">
+                    <button class="btn btn-light" type="button" id="export-reset"><i class="fa fa-undo mr-1"></i> Restablecer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <ul class="nav nav-tabs" id="export-tabs" role="tablist">
+        <li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#export-comparison" role="tab">Comparativo</a></li>
+        <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#export-invoices" role="tab">Detalle de facturas</a></li>
+        <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#export-purchases" role="tab">Registro de compras</a></li>
+    </ul>
+
+    <div class="tab-content">
+        <div class="tab-pane fade show active" id="export-comparison" role="tabpanel">
+            <div class="row pt-4">
+                <div class="col-xl-3 col-md-6 mb-4"><div class="card metric-card shadow-sm h-100"><div class="card-body"><div class="metric-label">Ventas con exportación</div><div class="metric-value mt-2" id="export-with-sales">S/ 0.00</div><small class="text-muted" id="export-period-label"></small></div></div></div>
+                <div class="col-xl-3 col-md-6 mb-4"><div class="card metric-card shadow-sm h-100"><div class="card-body"><div class="metric-label">Ventas sin exportación</div><div class="metric-value mt-2" id="export-without-sales">S/ 0.00</div><small class="text-muted">Escenario comparativo</small></div></div></div>
+                <div class="col-xl-3 col-md-6 mb-4"><div class="card metric-card shadow-sm h-100"><div class="card-body"><div class="metric-label">Venta de exportación</div><div class="metric-value mt-2" id="export-sales-total">S/ 0.00</div><small class="text-muted">Base imponible exportada</small></div></div></div>
+                <div class="col-xl-3 col-md-6 mb-4"><div class="card metric-card shadow-sm h-100"><div class="card-body"><div class="metric-label">Costo vinculado</div><div class="metric-value mt-2" id="export-cost-total">S/ 0.00</div><small class="text-muted">Compras relacionadas</small></div></div></div>
+            </div>
+            <div class="card content-card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+                    <div><h4 class="mb-1">Comparativo mensual</h4><p class="text-muted mb-0" id="export-chart-subtitle">Con exportación frente a sin exportación</p></div>
+                    <span class="source-note">Fuente: NISIRA ERP</span>
+                </div>
+                <div class="card-body px-4"><div class="chart-wrap"><canvas id="export-comparison-chart"></canvas></div></div>
+            </div>
+            <div class="card content-card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white border-0 pt-4 px-4"><h4 class="mb-1">Detalle del comparativo</h4><p class="text-muted mb-0">Ventas, compras y costos relacionados por mes</p></div>
+                <div class="table-responsive"><table class="table mb-0"><thead><tr><th>Mes</th><th class="amount">Ventas con exportación</th><th class="amount">Ventas sin exportación</th><th class="amount">Venta exportación</th><th class="amount">Costo exportación</th><th class="amount">Compras con exportación</th><th class="amount">Compras sin exportación</th></tr></thead><tbody id="export-summary-body"></tbody></table></div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="export-invoices" role="tabpanel">
+            <div class="card content-card border-0 shadow-sm mt-4">
+                <div class="card-header bg-white border-0 pt-4 px-4"><div class="row align-items-end"><div class="col-md-7"><h4 class="mb-1">Detalle de facturas de exportación</h4><p class="text-muted mb-0">Documentos identificados en el Registro de Ventas de NISIRA</p></div><div class="col-md-5 mt-3 mt-md-0"><label class="metric-label" for="export-customer">Razón social</label><select class="form-control" id="export-customer"><option value="__all__">Todas las razones sociales</option>{% for customer in ventas_exportacion_data.customers %}<option value="{{ customer }}">{{ customer }}</option>{% endfor %}</select></div></div></div>
+                <div class="table-wrap"><table class="table table-hover mb-0"><thead class="sticky-top"><tr><th>Fecha</th><th>Tipo</th><th>Documento</th><th>Razón social</th><th class="amount">Base exportación</th><th>Moneda</th><th class="amount">T.C.</th><th class="amount">Total US$</th><th class="amount">Total S/</th></tr></thead><tbody id="export-invoice-body"></tbody></table></div>
+            </div>
+        </div>
+
+        <div class="tab-pane fade" id="export-purchases" role="tabpanel">
+            <div class="card content-card border-0 shadow-sm mt-4">
+                <div class="card-header bg-white border-0 pt-4 px-4"><h4 class="mb-1">Registro de compras vinculadas</h4><p class="text-muted mb-0">Compras relacionadas con documentos y servicios de exportación</p></div>
+                <div class="table-wrap"><table class="table table-hover mb-0"><thead class="sticky-top"><tr><th>Fecha</th><th>Tipo</th><th>Documento</th><th>RUC</th><th>Proveedor</th><th class="amount">Base imponible</th><th class="amount">IGV</th><th class="amount">Total</th><th>Moneda</th><th>Detalle</th></tr></thead><tbody id="export-purchase-body"></tbody></table></div>
+            </div>
+        </div>
+    </div>
+</div>
