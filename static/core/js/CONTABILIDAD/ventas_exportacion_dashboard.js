@@ -2,7 +2,7 @@
     'use strict';
 
     var chart = null;
-    var purchaseChart = null;
+    var purchaseCharts = [];
 
     function payload() {
         return JSON.parse(document.getElementById('ventas-exportacion-data').textContent);
@@ -188,24 +188,38 @@
                 total: monthItems.reduce(function (sum, item) { return sum + Number(item.total || 0); }, 0)
             });
         }
-        if (purchaseChart) purchaseChart.destroy();
-        purchaseChart = new Chart(document.getElementById('export-purchase-chart'), {
-            type: 'bar',
-            data: {
-                labels: monthlyRows.map(function (row) { return data.months[row.month]; }),
-                datasets: [
-                    {label: 'Base imponible', data: monthlyRows.map(function (row) { return row.base; }), backgroundColor: '#2f75b5'},
-                    {label: 'IGV', data: monthlyRows.map(function (row) { return row.tax; }), backgroundColor: '#f2c500'},
-                    {label: 'Total', data: monthlyRows.map(function (row) { return row.total; }), backgroundColor: '#0f766e'}
-                ]
-            },
-            options: {
-                responsive: true, maintainAspectRatio: false,
-                tooltips: {callbacks: {label: function (item, chartData) {
-                    return chartData.datasets[item.datasetIndex].label + ': ' + money(item.yLabel);
-                }}},
-                scales: {yAxes: [{ticks: {beginAtZero: true, callback: function (value) { return money(value); }}}]}
-            }
+        purchaseCharts.forEach(function (monthlyChart) { monthlyChart.destroy(); });
+        purchaseCharts = [];
+        document.getElementById('export-purchase-donuts').innerHTML = monthlyRows.map(function (row) {
+            return '<div class="col-xl-3 col-lg-4 col-md-6 mb-4"><div class="purchase-donut-card">' +
+                '<div class="purchase-donut-title">' + escapeHtml(data.months[row.month]) + ' ' + state.year + '</div>' +
+                '<div class="purchase-donut-wrap"><canvas id="export-purchase-donut-' + row.month + '"></canvas></div>' +
+                '<div class="purchase-donut-total">Total: ' + money(row.total) + '</div></div></div>';
+        }).join('');
+        monthlyRows.forEach(function (row) {
+            var otherAmount = Math.max(0, Math.abs(row.total) - Math.abs(row.base) - Math.abs(row.tax));
+            var hasMovement = row.base !== 0 || row.tax !== 0 || row.total !== 0;
+            var chartLabels = hasMovement ? ['Base imponible', 'IGV', 'Otros / no gravadas'] : ['Sin movimiento'];
+            var chartValues = hasMovement ? [Math.abs(row.base), Math.abs(row.tax), otherAmount] : [1];
+            var chartColors = hasMovement ? ['#2f75b5', '#f2c500', '#0f766e'] : ['#e2e8f0'];
+            purchaseCharts.push(new Chart(document.getElementById('export-purchase-donut-' + row.month), {
+                type: 'doughnut',
+                data: {
+                    labels: chartLabels,
+                    datasets: [{
+                        data: chartValues,
+                        backgroundColor: chartColors,
+                        borderColor: '#ffffff', borderWidth: 3
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, cutoutPercentage: 68,
+                    legend: {display: hasMovement, position: 'bottom', labels: {boxWidth: 11, fontSize: 10, padding: 12}},
+                    tooltips: {enabled: hasMovement, callbacks: {label: function (item, chartData) {
+                        return chartData.labels[item.index] + ': ' + money(chartData.datasets[0].data[item.index]);
+                    }}}
+                }
+            }));
         });
         document.getElementById('export-purchase-body').innerHTML = rows.length ? rows.map(function (item) {
             return '<tr><td>' + dateLabel(item.date) + '</td><td>' + escapeHtml(item.document_type) + '</td>' +
@@ -259,7 +273,9 @@
             refresh(data);
         });
         document.querySelector('a[href="#export-purchases"]').addEventListener('click', function () {
-            window.setTimeout(function () { if (purchaseChart) purchaseChart.resize(); }, 200);
+            window.setTimeout(function () {
+                purchaseCharts.forEach(function (monthlyChart) { monthlyChart.resize(); });
+            }, 200);
         });
         refresh(data);
     };
