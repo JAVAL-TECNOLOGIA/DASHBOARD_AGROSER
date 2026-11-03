@@ -173,15 +173,24 @@ def project_closure_liquidation(contract, closing_date):
     performance_days = Decimal(str(contract.get("performance_days") or 0)).quantize(
         Decimal("1"), rounding=ROUND_HALF_UP
     )
-    normal_work_days = (normal_hours_total / Decimal("8")).quantize(
-        CENT, rounding=ROUND_HALF_UP
+    is_journal = normal_hours_total > 0
+    is_performance = performance_total > 0 or performance_days > 0
+    work_modality = (
+        "JORNALES" if is_journal
+        else "RENDIMIENTO" if is_performance
+        else "SIN CLASIFICAR"
     )
-    if not normal_work_days and performance_days:
-        normal_work_days = performance_days
-    computable_days = rest_days + normal_work_days
+    normal_work_days = (
+        (normal_hours_total / Decimal("8")).quantize(CENT, rounding=ROUND_HALF_UP)
+        if is_journal else ZERO
+    )
+    computable_days = rest_days + (
+        normal_work_days if is_journal else performance_days
+    )
     computable_base = (
-        basic + family_allowance + productivity_bonus_total + performance_average
+        basic + family_allowance + performance_average
         + overtime_25_average + overtime_35_average
+        + (productivity_bonus_total if is_journal else ZERO)
     ).quantize(CENT)
     total = (computable_base * computable_days / Decimal("360")).quantize(
         CENT, rounding=ROUND_HALF_UP
@@ -207,6 +216,7 @@ def project_closure_liquidation(contract, closing_date):
         "rest_days": rest_days,
         "performance_days": performance_days,
         "normal_work_days": normal_work_days,
+        "work_modality": work_modality,
         "service_days": computable_days,
         "computable_base": computable_base,
         "projected_cts": ZERO,
