@@ -189,6 +189,14 @@
                 total: monthItems.reduce(function (sum, item) { return sum + Number(item.total || 0); }, 0)
             });
         }
+        document.getElementById('export-purchase-monthly-body').innerHTML = monthlyRows.map(function (row) {
+            return '<tr><td><strong>' + escapeHtml(data.months[row.month].slice(0, 3) + '-' + String(state.year).slice(-2)) + '</strong></td>' +
+                '<td class="amount">' + money(row.base) + '</td><td class="amount">' + money(row.tax) + '</td>' +
+                '<td class="amount"><strong>' + money(row.total) + '</strong></td></tr>';
+        }).join('');
+        document.getElementById('export-purchase-monthly-foot').innerHTML =
+            '<tr><td>TOTAL GENERAL</td><td class="amount">' + money(totalBase) + '</td>' +
+            '<td class="amount">' + money(totalTax) + '</td><td class="amount">' + money(totalPurchases) + '</td></tr>';
         var totalOther = Math.max(0, Math.abs(totalPurchases) - Math.abs(totalBase) - Math.abs(totalTax));
         var labels = monthlyRows.map(function (row) { return data.months[row.month]; }).concat(['TOTAL GENERAL']);
         var bases = monthlyRows.map(function (row) { return Math.abs(row.base); }).concat([Math.abs(totalBase)]);

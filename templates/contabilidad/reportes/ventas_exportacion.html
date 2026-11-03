@@ -20,6 +20,8 @@
     .export-report .credit-note-row td { color: #b4232c; }
     .export-report .purchase-summary-chart { height: 430px; position: relative; }
     .export-report .purchase-general-total { background: #e8f7f3; border-radius: 10px; color: #0f766e; font-size: 1rem; font-weight: 700; padding: .65rem 1rem; }
+    .export-report .purchase-month-table th, .export-report .purchase-month-table td { font-size: .75rem; padding: .55rem .45rem; }
+    .export-report .purchase-month-table tfoot td { background: #e8f7f3; border-top: 2px solid #0f766e; color: #0f2942; font-weight: 700; }
     @media (max-width: 767px) {
         .export-report .nav-tabs { flex-wrap: nowrap; overflow-x: auto; }
         .export-report .nav-tabs .nav-link { white-space: nowrap; }
@@ -114,7 +116,10 @@
                     <div><h4 class="mb-1">Consolidado mensual de compras</h4><p class="text-muted mb-0" id="export-purchase-chart-subtitle">Base Imponible, IGV y Total por mes</p></div>
                     <div class="purchase-general-total mt-3 mt-md-0">Total general: <span id="export-purchase-chart-total">S/ 0.00</span></div>
                 </div>
-                <div class="card-body px-4"><div class="purchase-summary-chart"><canvas id="export-purchase-chart"></canvas></div></div>
+                <div class="card-body px-4"><div class="row align-items-stretch">
+                    <div class="col-xl-7 col-lg-6"><div class="purchase-summary-chart"><canvas id="export-purchase-chart"></canvas></div></div>
+                    <div class="col-xl-5 col-lg-6 mt-4 mt-lg-0"><div class="table-responsive h-100"><table class="table table-sm purchase-month-table mb-0"><thead><tr><th>Mes</th><th class="amount">Base imponible</th><th class="amount">IGV</th><th class="amount">Total</th></tr></thead><tbody id="export-purchase-monthly-body"></tbody><tfoot id="export-purchase-monthly-foot"></tfoot></table></div></div>
+                </div></div>
             </div>
             <div class="card content-card border-0 shadow-sm mt-4">
                 <div class="card-header bg-white border-0 pt-4 px-4"><h4 class="mb-1">Registro de compras vinculadas</h4><p class="text-muted mb-0">Compras relacionadas con documentos y servicios de exportación</p></div>
