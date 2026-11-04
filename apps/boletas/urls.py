@@ -7,6 +7,7 @@ from .worker_portal import (
     WorkerIdentityView,
     WorkerDashboardView,
     WorkerLoginView,
+    WorkerForgotPasswordView,
     WorkerPasswordChangeView,
     WorkerPayslipConfirmView,
     WorkerPayslipPdfView,
@@ -47,6 +48,7 @@ urlpatterns = [
     path("consolidado/", PaySlipConsolidatedView.as_view(), name="consolidated"),
     path("pdf/", PaySlipPdfView.as_view(), name="pdf"),
     path("mis-boletas/ingreso/", WorkerLoginView.as_view(), name="worker_login"),
+    path("mis-boletas/recuperar-clave/", WorkerForgotPasswordView.as_view(), name="worker_forgot_password"),
     path("mis-boletas/registrar-identidad/", WorkerIdentityView.as_view(), name="worker_identity"),
     path(
         "mis-boletas/cambiar-clave/",

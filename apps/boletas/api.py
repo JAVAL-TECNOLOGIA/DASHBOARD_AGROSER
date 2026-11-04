@@ -25,7 +25,7 @@ from .documents import valid_worker_document
 from .periods import DateRange, portal_month_range as month_range
 from .services import PaySlipService
 from .views import PaySlipPdfView, _official_payroll_period
-from .worker_portal import WorkerIdentityService, payslip_fingerprint, record_worker_pdf_access, worker_slips
+from .worker_portal import WorkerIdentityService, payslip_fingerprint, previous_unconfirmed_period, record_worker_pdf_access, worker_slips
 
 
 TOKEN_SALT = "agroservice-rrhh-api"
@@ -161,6 +161,7 @@ def _slip_json(slip, period, week_number="", user=None):
     if user is not None:
         acknowledgement = acknowledgement.filter(user=user)
     confirmed = acknowledgement.exists()
+    blocked_period = previous_unconfirmed_period(slip, period, user) if user is not None else None
     return {
         "hash": fingerprint,
         "type": slip.get("document_type", "payment"),
@@ -173,6 +174,8 @@ def _slip_json(slip, period, week_number="", user=None):
         "deductions": _amount(slip.get("deduction_total")) if confirmed else None,
         "net": _amount(slip.get("net_total")) if confirmed else None,
         "confirmed": confirmed,
+        "blocked": bool(blocked_period),
+        "blockedBy": blocked_period.label if blocked_period else "",
     }
 
 
@@ -465,6 +468,8 @@ def confirm_payslip_api(request):
         return _json({"error": "No fue posible validar la boleta."}, 503)
     if not slip:
         return _json({"error": "Boleta no encontrada."}, 404)
+    if previous_unconfirmed_period(slip, period, user):
+        return _json({"error": "Primero debes confirmar tu boleta anterior."}, 409)
     slip['_payroll_week'] = request.GET.get('week', '').strip()
     forwarded = request.META.get("HTTP_X_FORWARDED_FOR", "")
     ip_address = forwarded.split(",")[0].strip() if forwarded else request.META.get("REMOTE_ADDR")
@@ -792,6 +797,8 @@ def worker_pdf_api(request):
         return _json({"error": "No fue posible consultar la boleta."}, 503)
     if not slip:
         return _json({"error": "Boleta no encontrada."}, 404)
+    if previous_unconfirmed_period(slip, period, user):
+        return _json({"error": "Primero debes confirmar tu boleta anterior."}, 409)
     acknowledgement = PayslipAcknowledgement.objects.filter(
         user=user, payslip_hash=requested_hash
     ).first()

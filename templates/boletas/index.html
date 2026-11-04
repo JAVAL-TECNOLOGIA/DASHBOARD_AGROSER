@@ -137,10 +137,13 @@
                         <label for="q">Trabajador, documento o cargo</label>
                         <input class="form-control" id="q" name="q" value="{{ query }}" placeholder="Buscar...">
                     </div>
+                    <div class="form-group col-lg-2 col-md-4"><label for="confirmation">Confirmación</label><select class="form-control" id="confirmation" name="confirmation"><option value="">Todas</option><option value="confirmed" {% if confirmation_filter == 'confirmed' %}selected{% endif %}>Confirmadas</option><option value="pending" {% if confirmation_filter == 'pending' %}selected{% endif %}>Pendientes</option></select></div>
+                    <div class="form-group col-lg-2 col-md-4"><label for="identity">Foto y firma</label><select class="form-control" id="identity" name="identity"><option value="">Todos</option><option value="complete" {% if identity_filter == 'complete' %}selected{% endif %}>Completos</option><option value="pending" {% if identity_filter == 'pending' %}selected{% endif %}>Pendientes</option></select></div>
                     <div class="form-group col-auto">
                         <button class="btn btn-primary" type="submit">
                             <i class="fa fa-search mr-1"></i> Consultar
                         </button>
+                        <a class="btn btn-success" href="{{ export_url }}"><i class="fa fa-file-excel mr-1"></i> Exportar</a>
                     </div>
                 </div>
             </form>

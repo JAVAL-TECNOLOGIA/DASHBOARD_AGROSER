@@ -22,13 +22,14 @@ from .worker_forms import WorkerIdentityForm
 from apps.user.models import User
 
 from .models import PayslipAcknowledgement, PayslipView, PayrollRelease, WorkerIdentityProfile
-from .periods import month_range, resolve_date_range, week_value_for_date
+from .periods import DateRange, MONTH_NAMES, month_range, resolve_date_range, week_value_for_date
 from .services import PaySlipService
 from .views import PaySlipPdfView, WEEKLY_PAYROLL_TYPES, _confirmed_signature, _official_payroll_period
 from .worker_forms import (
     PayslipConfirmationForm,
     WorkerLoginForm,
     WorkerPasswordChangeForm,
+    WorkerPasswordResetRequestForm,
 )
 
 
@@ -39,12 +40,16 @@ DOCUMENT_TYPES = OrderedDict((
     ("cts", "Boleta CTS"),
     ("utilities", "Boleta de Utilidades"),
     ("gratification", "Boleta de Gratificación"),
+    ("vacation", "Boleta de Vacaciones"),
+    ("liquidation", "Liquidación"),
 ))
 DOCUMENT_TITLES = {
     "payment": "BOLETA DE PAGO",
     "cts": "BOLETA CTS",
     "utilities": "BOLETA DE UTILIDADES",
     "gratification": "BOLETA DE GRATIFICACIÓN",
+    "vacation": "BOLETA DE VACACIONES",
+    "liquidation": "LIQUIDACIÓN DE BENEFICIOS SOCIALES",
 }
 
 
@@ -74,6 +79,10 @@ def concept_document_type(concept):
         concept.get("descripcion") or "", concept.get("codigo_equiv") or ""
     )
     normalized = unicodedata.normalize("NFKD", str(value)).encode("ascii", "ignore").decode().upper()
+    if "LIQUIDACION" in normalized or "BENEFICIOS SOCIALES" in normalized:
+        return "liquidation"
+    if "VACACION" in normalized:
+        return "vacation"
     if "UTILIDAD" in normalized:
         return "utilities"
     if "GRATIFIC" in normalized:
@@ -89,7 +98,7 @@ def split_worker_documents(slips):
         if slip.get("movement_id"):
             detected = {concept_document_type(item) for item in slip.get("concepts", [])}
             document_type = next(
-                (code for code in ("utilities", "cts", "gratification") if code in detected),
+                (code for code in ("liquidation", "vacation", "utilities", "cts", "gratification") if code in detected),
                 "payment",
             )
             document = dict(slip)
@@ -135,12 +144,14 @@ class WorkerIdentityService:
                 RTRIM(pg.a_materno) AS maternal_name,
                 RTRIM(pg.nombres) AS given_names,
                 RTRIM(ISNULL(pg.email, '')) AS email
+                ,pe.fecha_cese AS cessation_date
+                ,CASE WHEN pe.fecha_cese IS NULL THEN NULL ELSE EOMONTH(DATEADD(MONTH, 1, pe.fecha_cese)) END AS access_until
             FROM personal_general pg WITH (NOLOCK)
             INNER JOIN personal_empresa pe WITH (NOLOCK)
                 ON pe.idcodigogeneral = pg.idcodigogeneral
                 AND pe.idempresa = %s
             WHERE RTRIM(pg.nrodocumento) = %s
-                AND pe.fecha_cese IS NULL
+                AND (pe.fecha_cese IS NULL OR CAST(GETDATE() AS date) <= EOMONTH(DATEADD(MONTH, 1, pe.fecha_cese)))
             ORDER BY pe.fecha_ingreso DESC
         """
         with connections["payroll"].cursor() as cursor:
@@ -155,6 +166,20 @@ class WorkerIdentityService:
                 key: value.strip() if isinstance(value, str) else value
                 for key, value in zip(columns, row)
             }
+
+    def verify_birth_date(self, document, birth_date):
+        sql = """
+            SELECT TOP 1 1
+            FROM personal_general pg WITH (NOLOCK)
+            INNER JOIN personal_empresa pe WITH (NOLOCK)
+                ON pe.idcodigogeneral = pg.idcodigogeneral AND pe.idempresa = %s
+            WHERE RTRIM(pg.nrodocumento) = %s
+              AND CAST(pg.FECHA_NACIMIENTO AS date) = %s
+              AND (pe.fecha_cese IS NULL OR CAST(GETDATE() AS date) <= EOMONTH(DATEADD(MONTH, 1, pe.fecha_cese)))
+        """
+        with connections["payroll"].cursor() as cursor:
+            cursor.execute(sql, [PaySlipService().company_id, document, birth_date])
+            return cursor.fetchone() is not None
 
 
 def payslip_fingerprint(slip, period):
@@ -252,10 +277,12 @@ def worker_slips(document, period):
         if str(slip.get("payroll_type") or "").strip().upper() in ("OBP", "OBR"):
             # Plant-worker concepts form one weekly payslip; CTS and agrarian
             # gratification lines belong inside the same legacy document.
-            slip["document_type"] = "payment"
-            slip["document_type_label"] = DOCUMENT_TYPES["payment"]
-            slip["document_title"] = "BOLETA DE REMUNERACIONES"
-            slip["movement_title"] = "REMUNERACIÓN SEMANAL"
+            detected = {concept_document_type(item) for item in slip.get("concepts", [])}
+            special_type = next((code for code in ("liquidation", "vacation") if code in detected), "payment")
+            slip["document_type"] = special_type
+            slip["document_type_label"] = DOCUMENT_TYPES[special_type]
+            slip["document_title"] = DOCUMENT_TITLES[special_type] if special_type != "payment" else "BOLETA DE REMUNERACIONES"
+            slip["movement_title"] = DOCUMENT_TITLES[special_type] if special_type != "payment" else "REMUNERACIÓN SEMANAL"
             # A week crossing two payroll periods contains one set of total
             # concepts per segment. Sum repeated codes instead of keeping only
             # the last row so the dashboard matches the merged TXT/PDF.
@@ -272,6 +299,32 @@ def worker_slips(document, period):
             documents.extend(split_worker_documents([slip]))
     cache.set(cache_key, documents, 300)
     return documents
+
+
+def previous_unconfirmed_period(slip, period, user):
+    """Return the immediately previous released period with a pending payslip."""
+    payroll_type = str(slip.get("payroll_type") or "").strip().upper()
+    releases = PayrollRelease.objects.filter(
+        payroll_type=payroll_type,
+        released_at__isnull=False,
+        period_end__lt=period.start,
+    ).order_by("-period_end")[:12]
+    for release in releases:
+        previous = DateRange(
+            release.period_start,
+            release.period_end,
+            "{} {}".format(MONTH_NAMES[release.period_end.month], release.period_end.year),
+        )
+        prior_slips = [
+            item for item in worker_slips(user.username, previous)
+            if str(item.get("payroll_type") or "").strip().upper() == payroll_type
+        ]
+        if not prior_slips:
+            continue
+        if any(not payslip_acknowledgement(item, previous, user=user) for item in prior_slips):
+            return previous
+        return None
+    return None
 
 
 def resolve_worker_period(document, mode, **values):
@@ -352,6 +405,32 @@ class WorkerLoginView(View):
         if authenticated.check_password(document):
             return redirect("boletas:worker_change_password")
         return redirect("boletas:worker_dashboard")
+
+
+class WorkerForgotPasswordView(View):
+    template_name = "boletas/worker/forgot_password.html"
+
+    def get(self, request):
+        return render(request, self.template_name, {"form": WorkerPasswordResetRequestForm()})
+
+    def post(self, request):
+        form = WorkerPasswordResetRequestForm(request.POST)
+        if not form.is_valid():
+            return render(request, self.template_name, {"form": form})
+        document = form.cleaned_data["document"]
+        try:
+            valid = WorkerIdentityService().verify_birth_date(document, form.cleaned_data["birth_date"])
+        except DatabaseError:
+            logger.exception("No se pudo validar la recuperación de clave.")
+            valid = False
+        user = User.objects.filter(username=document).first() if valid else None
+        if not user:
+            form.add_error(None, "No pudimos validar los datos ingresados o el periodo de acceso ya venció.")
+            return render(request, self.template_name, {"form": form})
+        user.set_password(document)
+        user.save(update_fields=["password"])
+        messages.success(request, "Tu clave fue restablecida. Ingresa con tu documento y crea una nueva contraseña.")
+        return redirect("boletas:worker_login")
 
 
 class WorkerPortalMixin(LoginRequiredMixin):
@@ -515,6 +594,7 @@ class WorkerDashboardView(WorkerPortalMixin, View):
             slip["acknowledgement"] = payslip_acknowledgement(
                 slip, period, user=request.user
             )
+            slip["blocked_by_previous"] = previous_unconfirmed_period(slip, period, request.user)
 
         params = {
             "mode": mode,
@@ -577,6 +657,9 @@ class WorkerPayslipPdfView(WorkerPortalMixin, View):
             released_at__isnull=False,
         ).exists():
             raise Http404("La boleta todavía no fue autorizada.")
+        if previous_unconfirmed_period(slip, period, request.user):
+            messages.error(request, "Primero debes confirmar tu boleta anterior.")
+            return redirect("boletas:worker_dashboard")
         acknowledgement = payslip_acknowledgement(
             slip, period, user=request.user, requested_hash=requested_hash
         )
@@ -632,6 +715,8 @@ class WorkerPayslipConfirmView(WorkerPortalMixin, View):
             released_at__isnull=False,
         ).exists():
             raise Http404("La boleta todavía no fue autorizada.")
+        if previous_unconfirmed_period(slip, period, request.user):
+            raise Http404("Primero debes confirmar tu boleta anterior.")
         return period, slip, requested_hash
 
     def get(self, request):

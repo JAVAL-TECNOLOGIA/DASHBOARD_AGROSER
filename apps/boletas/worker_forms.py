@@ -91,6 +91,24 @@ class WorkerLoginForm(forms.Form):
         return value
 
 
+class WorkerPasswordResetRequestForm(forms.Form):
+    document = forms.CharField(
+        label="DNI o codigo de extranjero",
+        max_length=20,
+        widget=forms.TextInput(attrs={"class": "form-control", "autocomplete": "username"}),
+    )
+    birth_date = forms.DateField(
+        label="Fecha de nacimiento",
+        widget=forms.DateInput(attrs={"class": "form-control", "type": "date"}),
+    )
+
+    def clean_document(self):
+        value = self.cleaned_data["document"].strip()
+        if not valid_worker_document(value):
+            raise forms.ValidationError("Ingresa un documento valido.")
+        return value
+
+
 class WorkerPasswordChangeForm(forms.Form):
     new_password1 = forms.CharField(
         label="Nueva contraseña",

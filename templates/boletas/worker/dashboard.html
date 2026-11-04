@@ -21,6 +21,7 @@
         <div><h2 class="mb-1">{{ request.user.first_name }} {{ request.user.last_name }}</h2><div class="text-muted">Documento {{ identity.document }}</div></div>
         <span class="badge badge-primary align-self-start p-2 mt-2">{{ period.label }}</span>
     </div>
+    {% if identity.cessation_date %}<div class="alert alert-warning"><i class="fa fa-clock mr-1"></i>Tu vínculo laboral finalizó. El portal permanecerá disponible hasta el {{ identity.access_until|date:"d/m/Y" }}.</div>{% endif %}
     <div class="nav nav-pills nav-fill document-tabs d-grid mb-4">
         {% for tab in document_tabs %}<a class="nav-link {% if document_type == tab.code %}active{% endif %}" href="?type={{ tab.code }}&mode={{ mode }}&month={{ month_value }}&week={{ week_value|urlencode }}&start={{ start_value }}&end={{ end_value }}"><span>{{ tab.label }}</span><strong class="count">{{ tab.count }}</strong></a>{% endfor %}
     </div>
@@ -43,7 +44,9 @@
                     <h4 class="mb-1">{{ slip.movement_title }}</h4>
                     <div class="font-weight-bold mb-2">{{ slip.payroll_type_label }}</div>
                     <div class="text-muted mb-3">{{ slip.cargo_personal }} · {{ slip.dias_trabajados }} días trabajados</div>
-                    {% if slip.acknowledgement %}
+                    {% if slip.blocked_by_previous %}
+                    <div class="alert alert-warning mb-0"><i class="fa fa-lock mr-1"></i>Primero confirma la boleta anterior ({{ slip.blocked_by_previous.label }}).</div>
+                    {% elif slip.acknowledgement %}
                     <div class="row">
                         <div class="col-6 col-md-3 mb-2"><small class="text-muted d-block">Básico</small><strong>S/ {{ slip.basico|floatformat:2 }}</strong></div>
                         <div class="col-6 col-md-3 mb-2"><small class="text-muted d-block">Ingresos</small><strong>S/ {{ slip.income_total|floatformat:2 }}</strong></div>
@@ -55,7 +58,9 @@
                     {% endif %}
                 </div>
                 <div class="col-md-5 text-md-right payslip-actions mt-3 mt-md-0">
-                    {% if slip.acknowledgement %}
+                    {% if slip.blocked_by_previous %}
+                        <span class="badge badge-warning p-2">Documento bloqueado</span>
+                    {% elif slip.acknowledgement %}
                         <a class="btn btn-outline-danger" target="_blank" href="{% url 'boletas:worker_pdf' %}?mode={{ mode }}&month={{ month_value }}&week={{ week_value|urlencode }}&start={{ start_value }}&end={{ end_value }}&hash={{ slip.fingerprint }}"><i class="fa fa-file-pdf mr-1"></i> Visualizar y descargar PDF</a>
                         <div class="alert alert-success mt-3 text-left"><i class="fa fa-check-circle mr-1"></i><strong>Confirmada</strong><br><small>{{ slip.acknowledgement.confirmed_at|date:"d/m/Y H:i" }} · Ref. {{ slip.fingerprint|slice:":12" }}</small></div>
                     {% else %}

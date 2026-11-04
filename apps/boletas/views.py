@@ -23,6 +23,7 @@ from django.utils.dateparse import parse_datetime
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.cache import never_cache
+from openpyxl import Workbook
 
 from apps.user.models import User
 
@@ -675,6 +676,8 @@ class PaySlipListView(PaySlipPermissionMixin, View):
         start_value = request.GET.get("start", "")
         end_value = request.GET.get("end", "")
         query = request.GET.get("q", "").strip()
+        confirmation_filter = request.GET.get("confirmation", "").strip()
+        identity_filter = request.GET.get("identity", "").strip()
         payroll_week = request.GET.get("payroll_week", "").strip()
         service = PaySlipService()
 
@@ -760,6 +763,8 @@ class PaySlipListView(PaySlipPermissionMixin, View):
             "end": end_value,
             "payroll_type": payroll_type,
             "payroll_week": payroll_week,
+            "confirmation": confirmation_filter,
+            "identity": identity_filter,
         }
         for slip in slips:
             pdf_params = dict(base_params)
@@ -775,6 +780,22 @@ class PaySlipListView(PaySlipPermissionMixin, View):
             fingerprints.append(slip["fingerprint"])
         for slip in slips:
             slip["acknowledgement"] = payslip_acknowledgement(slip, date_range)
+        profiles = {item.worker_document: item for item in WorkerIdentityProfile.objects.filter(
+            worker_document__in=all_documents).only('worker_document', 'photo', 'signature')}
+        for slip in slips:
+            document = str(slip.get('nrodocumento') or '').strip()
+            profile = profiles.get(document)
+            slip['worker_document'] = document
+            slip['has_photo'] = bool(profile and profile.photo)
+            slip['has_signature'] = bool(profile and profile.signature)
+        if confirmation_filter == "confirmed":
+            slips = [slip for slip in slips if slip.get("acknowledgement")]
+        elif confirmation_filter == "pending":
+            slips = [slip for slip in slips if not slip.get("acknowledgement")]
+        if identity_filter == "complete":
+            slips = [slip for slip in slips if slip.get("has_photo") and slip.get("has_signature")]
+        elif identity_filter == "pending":
+            slips = [slip for slip in slips if not (slip.get("has_photo") and slip.get("has_signature"))]
         confirmed_documents = {
             str(slip.get('nrodocumento') or '').strip()
             for slip in slips if slip.get('acknowledgement')
@@ -785,11 +806,32 @@ class PaySlipListView(PaySlipPermissionMixin, View):
             signature__gt='',
         ).count()
 
+        if request.GET.get("export") == "xlsx":
+            workbook = Workbook()
+            sheet = workbook.active
+            sheet.title = "Seguimiento de firmas"
+            sheet.append(["Trabajador", "Documento", "Planilla", "Periodo", "Cargo", "Dias", "Basico", "Foto", "Firma", "Confirmacion", "Fecha confirmacion"])
+            for slip in slips:
+                acknowledgement = slip.get("acknowledgement")
+                sheet.append([
+                    slip.get("apenom") or "", slip.get("worker_document") or "",
+                    slip.get("payroll_type_label") or slip.get("payroll_type") or "",
+                    date_range.label, slip.get("cargo_personal") or "", slip.get("dias_trabajados") or 0,
+                    float(slip.get("basico") or 0), "SI" if slip.get("has_photo") else "NO",
+                    "SI" if slip.get("has_signature") else "NO", "CONFIRMADA" if acknowledgement else "PENDIENTE",
+                    acknowledgement.confirmed_at.replace(tzinfo=None) if acknowledgement else "",
+                ])
+            for column in sheet.columns:
+                sheet.column_dimensions[column[0].column_letter].width = min(max(len(str(cell.value or "")) for cell in column) + 2, 45)
+            output = BytesIO()
+            workbook.save(output)
+            response = HttpResponse(output.getvalue(), content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            response["Content-Disposition"] = 'attachment; filename="seguimiento_boletas_{}.xlsx"'.format(date_range.end.strftime("%Y%m%d"))
+            return response
+
         paginator = Paginator(slips, 25)
         page = paginator.get_page(request.GET.get("page"))
         documents = {str(slip.get('nrodocumento') or '').strip() for slip in page}
-        profiles = {item.worker_document: item for item in WorkerIdentityProfile.objects.filter(
-            worker_document__in=documents).only('worker_document', 'photo', 'signature')}
         for slip in page:
             document = str(slip.get('nrodocumento') or '').strip()
             profile = profiles.get(document)
@@ -809,6 +851,8 @@ class PaySlipListView(PaySlipPermissionMixin, View):
             "start_value": start_value or date_range.start.isoformat(),
             "end_value": end_value or date_range.end.isoformat(),
             "query": query,
+            "confirmation_filter": confirmation_filter,
+            "identity_filter": identity_filter,
             "payroll_type": payroll_type,
             "payroll_week": payroll_week,
             "payroll_types": PAYROLL_TYPES,
@@ -829,6 +873,7 @@ class PaySlipListView(PaySlipPermissionMixin, View):
                 reverse("boletas:worker_badge_sheet"),
                 urlencode({**base_params, "q": query}),
             ),
+            "export_url": "?{}".format(urlencode({**base_params, "q": query, "export": "xlsx"})),
             "pagination_query": urlencode(
                 {
                     **base_params,
