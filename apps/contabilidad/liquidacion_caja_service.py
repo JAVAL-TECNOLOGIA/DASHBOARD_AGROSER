@@ -2,6 +2,7 @@ import calendar
 from datetime import date
 from decimal import Decimal
 
+from django.conf import settings
 from django.core.cache import caches
 from django.db import connections
 
@@ -13,7 +14,11 @@ MONTHS = [
 FIRST_REPORT_YEAR = 2023
 CURRENT_DATE_CACHE_SECONDS = 10 * 60
 HISTORICAL_CACHE_SECONDS = 30 * 24 * 60 * 60
-report_cache = caches['reports']
+report_cache = (
+    caches['reports']
+    if 'reports' in settings.CACHES
+    else caches['default']
+)
 
 RECEIVABLE_GROUPS = (
     ('12', 'Cuentas por Cobrar Comerciales - Terceros'),
