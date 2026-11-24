@@ -232,13 +232,21 @@
         document.getElementById('export-purchase-body').innerHTML = rows.length ? rows.map(function (item) {
             return '<tr><td>' + dateLabel(item.date) + '</td><td>' + escapeHtml(item.document_type) + '</td>' +
                 '<td><strong>' + escapeHtml(item.document) + '</strong></td><td>' + escapeHtml(item.tax_id) + '</td>' +
-                '<td>' + escapeHtml(item.supplier) + '</td><td class="amount">' + money(item.base) + '</td>' +
+                '<td>' + escapeHtml(item.supplier) + '</td><td class="amount">' + money(item.taxable_base) + '</td>' +
+                '<td class="amount">' + money(item.mixed_base) + '</td>' +
+                '<td class="amount">' + money(item.acquisitions_non_taxed) + '</td>' +
                 '<td class="amount">' + money(item.tax) + '</td><td class="amount">' + money(item.total) + '</td>' +
                 '<td>' + escapeHtml(item.currency) + '</td><td style="min-width:280px">' + escapeHtml(item.detail) + '</td></tr>';
-        }).join('') : '<tr><td colspan="10" class="text-center text-muted py-5">No hay compras vinculadas para los filtros seleccionados.</td></tr>';
+        }).join('') : '<tr><td colspan="12" class="text-center text-muted py-5">No hay compras vinculadas para los filtros seleccionados.</td></tr>';
+        var totalTaxableBase = rows.reduce(function (sum, item) { return sum + Number(item.taxable_base || 0); }, 0);
+        var totalMixedBase = rows.reduce(function (sum, item) { return sum + Number(item.mixed_base || 0); }, 0);
+        var totalNonTaxed = rows.reduce(function (sum, item) { return sum + Number(item.acquisitions_non_taxed || 0); }, 0);
         document.getElementById('export-purchase-foot').innerHTML = rows.length ?
             '<tr class="font-weight-bold" style="background:#eef8f4"><td colspan="5" class="text-right">TOTALES</td>' +
-            '<td class="amount">' + money(totalBase) + '</td><td class="amount">' + money(totalTax) + '</td>' +
+            '<td class="amount">' + money(totalTaxableBase) + '</td>' +
+            '<td class="amount">' + money(totalMixedBase) + '</td>' +
+            '<td class="amount">' + money(totalNonTaxed) + '</td>' +
+            '<td class="amount">' + money(totalTax) + '</td>' +
             '<td class="amount">' + money(totalPurchases) + '</td><td colspan="2"></td></tr>' : '';
     }
 

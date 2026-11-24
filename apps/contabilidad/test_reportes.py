@@ -128,7 +128,10 @@ class ContabilidadReportesViewTests(TestCase):
                 {
                     'date': date(2026, 8, 17), 'document_type': 'FAC',
                     'document': 'F001 0035559', 'tax_id': '20344769932',
-                    'supplier': 'FRIO AEREO', 'base': 3593.12, 'tax': 646.76,
+                    'supplier': 'FRIO AEREO', 'export_base': 2500,
+                    'mixed_base': 1000, 'non_taxed_base': 93.12,
+                    'non_taxed': 240, 'export_tax': 450,
+                    'general_tax': 196.76,
                     'total': 4239.88, 'currency': 'US$', 'exchange_rate': 3.4,
                     'detail': 'REFRIGERADO F002-47', 'glosa': '',
                 },
@@ -160,7 +163,7 @@ class ContabilidadReportesViewTests(TestCase):
         august = next(row for row in data['summary'] if row['year'] == 2026 and row['month'] == 7)
         self.assertEqual(august['sales_with_export'], 75803.84)
         self.assertEqual(august['sales_without_export'], 19803.84)
-        self.assertEqual(august['export_cost'], 3593.12)
+        self.assertEqual(august['export_cost'], 3740.0)
         self.assertEqual(august['income_tax_with_export'], 606.43)
         self.assertEqual(august['income_tax_without_export'], 158.43)
         self.assertEqual(august['drawback'], 1680.0)
@@ -173,6 +176,13 @@ class ContabilidadReportesViewTests(TestCase):
         self.assertEqual(data['invoices'][0]['price_fob_box'], 25.0)
         self.assertEqual(data['invoices'][0]['price_kg_mp'], 2.84)
         self.assertEqual(len(data['purchases']), 1)
+        self.assertEqual(data['purchases'][0]['taxable_base'], 2500.0)
+        self.assertEqual(data['purchases'][0]['mixed_base'], 1000.0)
+        self.assertEqual(data['purchases'][0]['non_taxed_base'], 93.12)
+        self.assertEqual(data['purchases'][0]['acquisitions_non_taxed'], 240.0)
+        self.assertContains(response, 'Base imponible mixto')
+        self.assertContains(response, 'Base imponible gravado')
+        self.assertContains(response, 'Adquisiciones no gravadas')
 
     @patch('apps.contabilidad.views.get_drawback_report')
     def test_drawback_report_reconciles_invoice_credit_and_payment_status(self, report_mock):

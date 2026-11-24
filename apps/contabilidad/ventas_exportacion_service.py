@@ -14,7 +14,7 @@ MONTHS = [
     'Julio', 'Agosto', 'Setiembre', 'Octubre', 'Noviembre', 'Diciembre',
 ]
 FIRST_REPORT_YEAR = 2025
-CACHE_KEY = 'contabilidad:ventas-exportacion:nisira:v1'
+CACHE_KEY = 'contabilidad:ventas-exportacion:nisira:v4'
 CACHE_SECONDS = 10 * 60
 DETAIL_REFERENCE_PATH = Path(__file__).resolve().parent / 'data' / 'ventas_exportacion_detalle.json'
 
@@ -167,21 +167,34 @@ def build_export_sales_report(sales_rows, purchase_rows, current_year=None):
         if has_nisira_breakdown:
             export_base = _number(row.get('export_base'))
             export_tax = _number(row.get('export_tax'))
-            base = export_base + _number(row.get('general_base'))
+            mixed_base = _number(row.get('mixed_base'))
+            non_taxed_base = _number(row.get('non_taxed_base'))
+            acquisitions_non_taxed = _number(row.get('non_taxed'))
+            base = export_base + mixed_base + non_taxed_base
             tax = export_tax + _number(row.get('general_tax'))
-            non_taxed = _number(row.get('non_taxed'))
+            non_taxed = acquisitions_non_taxed
         else:
             export_base = 0.0
             export_tax = 0.0
             base = _number(row.get('base'))
             tax = _number(row.get('tax'))
             non_taxed = _number(row.get('total')) - base - tax
+            mixed_base = _number(row.get('mixed_base'))
+            non_taxed_base = _number(row.get('non_taxed_base'))
+            acquisitions_non_taxed = _number(
+                row.get('acquisitions_non_taxed', non_taxed)
+            )
         key = (purchase_year, purchase_month)
         monthly[key]['purchases_base'] += base
         monthly[key]['purchases_tax'] += tax
         monthly[key]['purchases_total'] += _number(row.get('total'))
         monthly[key]['purchases_non_taxed'] += non_taxed
-        is_export_purchase = bool(export_base or export_tax) or _is_export_purchase(
+        linked_cost_base = (
+            export_base + mixed_base + acquisitions_non_taxed
+            if has_nisira_breakdown else base
+        )
+        nisira_has_linked_cost = has_nisira_breakdown and bool(linked_cost_base or tax)
+        is_export_purchase = nisira_has_linked_cost or _is_export_purchase(
             row.get('detail'), row.get('glosa'), export_documents,
         )
         if not is_export_purchase:
@@ -189,9 +202,12 @@ def build_export_sales_report(sales_rows, purchase_rows, current_year=None):
         if not has_nisira_breakdown:
             export_base = base
             export_tax = tax
-        monthly[key]['export_cost_base'] += export_base
-        monthly[key]['export_cost_tax'] += export_tax
-        monthly[key]['export_cost_total'] += export_base + export_tax
+        # Costo vinculado solicitado: base gravada (AFECTO1), base mixta
+        # (AFECTO2) y adquisiciones no gravadas (AFECTO4). AFECTO3 no forma
+        # parte de este indicador.
+        monthly[key]['export_cost_base'] += linked_cost_base
+        monthly[key]['export_cost_tax'] += tax
+        monthly[key]['export_cost_total'] += linked_cost_base + tax
         report['purchases'].append({
             'year': purchase_year,
             'month': purchase_month,
@@ -201,6 +217,10 @@ def build_export_sales_report(sales_rows, purchase_rows, current_year=None):
             'tax_id': _text(row.get('tax_id')),
             'supplier': _text(row.get('supplier'), 'SIN PROVEEDOR').upper(),
             'base': round(base, 2),
+            'taxable_base': round(export_base if has_nisira_breakdown else base, 2),
+            'mixed_base': round(mixed_base, 2),
+            'non_taxed_base': round(non_taxed_base, 2),
+            'acquisitions_non_taxed': round(acquisitions_non_taxed, 2),
             'tax': round(tax, 2),
             'total': round(_number(row.get('total')), 2),
             'currency': _text(row.get('currency')).upper(),
@@ -345,9 +365,8 @@ def get_export_sales_report():
         columns, rows = _dict_rows(cursor)
         for row in rows:
             export_base = _number(_pick(columns, row, 'AFECTO1'))
-            general_base = sum(_number(_pick(columns, row, name)) for name in (
-                'AFECTO2', 'AFECTO3',
-            ))
+            mixed_base = _number(_pick(columns, row, 'AFECTO2'))
+            non_taxed_base = _number(_pick(columns, row, 'AFECTO3'))
             non_taxed = _number(_pick(columns, row, 'AFECTO4'))
             export_tax = _number(_pick(columns, row, 'IMPTO1'))
             general_tax = sum(_number(_pick(columns, row, name)) for name in (
@@ -363,7 +382,8 @@ def get_export_sales_report():
                 'tax_id': _pick(columns, row, 'RUC'),
                 'supplier': _pick(columns, row, 'RAZON_SOCIAL'),
                 'export_base': export_base,
-                'general_base': general_base,
+                'mixed_base': mixed_base,
+                'non_taxed_base': non_taxed_base,
                 'non_taxed': non_taxed,
                 'export_tax': export_tax,
                 'general_tax': general_tax,
