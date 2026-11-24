@@ -189,7 +189,19 @@ CACHES = {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
         'LOCATION': 'agroservice-boletas-cache',
         'TIMEOUT': 300,
-    }
+    },
+    # Los reportes contables ejecutan procedimientos pesados de NISIRA. Este
+    # caché en disco se comparte entre procesos y sobrevive a los reinicios del
+    # servidor, evitando repetir la misma consulta para una fecha ya revisada.
+    'reports': {
+        'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
+        'LOCATION': os.getenv(
+            'REPORT_CACHE_DIR',
+            str(BASE_DIR / 'runtime_cache' / 'reports'),
+        ),
+        'TIMEOUT': 60 * 60 * 24,
+        'OPTIONS': {'MAX_ENTRIES': 500},
+    },
 }
 
 PAYSLIP_COMPANY_ID = os.getenv('PAYSLIP_COMPANY_ID', '001')

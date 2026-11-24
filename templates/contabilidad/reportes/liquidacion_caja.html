@@ -2,11 +2,11 @@
     {% if liquidacion_caja_error %}<div class="alert alert-warning">{{ liquidacion_caja_error }}</div>{% endif %}
     <form method="get" class="card border-0 shadow-sm cash-filter mb-4">
         <div class="card-body py-3"><div class="row align-items-end">
-            <div class="col-lg-3 col-md-4 mb-2"><label>AÑO</label><select class="form-control" name="year">{% for year in liquidacion_caja_data.years %}<option value="{{ year }}" {% if year == liquidacion_caja_data.selected.year %}selected{% endif %}>{{ year }}</option>{% endfor %}</select></div>
+            <div class="col-lg-3 col-md-4 mb-2"><label>AÑO</label><select class="form-control" id="cash-year" name="year">{% for year in liquidacion_caja_data.years %}<option value="{{ year }}" {% if year == liquidacion_caja_data.selected.year %}selected{% endif %}>{{ year }}</option>{% endfor %}</select></div>
             <div class="col-lg-3 col-md-4 mb-2"><label>MES</label><select class="form-control" id="cash-month" name="month">{% for month in liquidacion_caja_data.months %}<option value="{{ forloop.counter }}" {% if forloop.counter == liquidacion_caja_data.selected.month %}selected{% endif %}>{{ month }}</option>{% endfor %}</select></div>
-            <div class="col-lg-2 col-md-4 mb-2"><label>DÍA</label><input class="form-control" id="cash-day" type="number" name="day" min="1" max="{{ liquidacion_caja_data.selected.last_day }}" value="{{ liquidacion_caja_data.selected.day }}"></div>
+            <div class="col-lg-2 col-md-4 mb-2"><label>DÍA <small class="text-muted" id="cash-day-limit">(máx. {{ liquidacion_caja_data.selected.last_day }})</small></label><input class="form-control" id="cash-day" type="number" name="day" min="1" max="{{ liquidacion_caja_data.selected.last_day }}" value="{{ liquidacion_caja_data.selected.day }}"></div>
             <div class="col-lg-2 col-md-6 mb-2"><button class="btn btn-success btn-block" type="submit"><i class="fa fa-search mr-1"></i> Consultar</button></div>
-            <div class="col-lg-2 col-md-6 mb-2"><a class="btn btn-light btn-block" href="?year={{ liquidacion_caja_data.selected.year }}&month={{ liquidacion_caja_data.selected.month }}&day={{ liquidacion_caja_data.selected.last_day }}"><i class="fa fa-calendar-check mr-1"></i> Fin de mes</a></div>
+            <div class="col-lg-2 col-md-6 mb-2"><button class="btn btn-light btn-block" id="cash-end-of-month" type="button"><i class="fa fa-calendar-check mr-1"></i> Fin de mes</button></div>
         </div></div>
     </form>
 

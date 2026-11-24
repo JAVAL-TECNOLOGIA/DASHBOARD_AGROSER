@@ -10,6 +10,31 @@
         return items.map(function (item) { return '<tr><td><span class="cash-account">' + item.account + '</span></td><td>' + item.label + '</td><td class="text-right font-weight-bold">' + money(item.amount, false) + '</td></tr>'; }).join('');
     }
     window.initLiquidacionCajaDashboard = function () {
+        var yearInput = document.getElementById('cash-year');
+        var monthInput = document.getElementById('cash-month');
+        var dayInput = document.getElementById('cash-day');
+        var dayLimit = document.getElementById('cash-day-limit');
+        var endOfMonthButton = document.getElementById('cash-end-of-month');
+        function lastDayOfSelectedMonth() {
+            return new Date(Number(yearInput.value), Number(monthInput.value), 0).getDate();
+        }
+        function alignDayWithMonth(useEndOfMonth) {
+            var lastDay = lastDayOfSelectedMonth();
+            dayInput.max = String(lastDay);
+            dayLimit.textContent = '(máx. ' + lastDay + ')';
+            if (useEndOfMonth || Number(dayInput.value) > lastDay || Number(dayInput.value) < 1) {
+                dayInput.value = String(lastDay);
+            }
+        }
+        yearInput.addEventListener('change', function () { alignDayWithMonth(true); });
+        monthInput.addEventListener('change', function () { alignDayWithMonth(true); });
+        dayInput.addEventListener('change', function () { alignDayWithMonth(false); });
+        endOfMonthButton.addEventListener('click', function () {
+            alignDayWithMonth(true);
+            dayInput.form.submit();
+        });
+        alignDayWithMonth(false);
+
         var data = JSON.parse(document.getElementById('liquidacion-caja-data').textContent);
         document.getElementById('cash-cash-total').textContent = money(data.cash_total, false);
         document.getElementById('cash-receivable-total').textContent = money(data.receivable_total, false);
