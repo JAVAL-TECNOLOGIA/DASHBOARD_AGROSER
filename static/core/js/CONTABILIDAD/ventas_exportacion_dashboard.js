@@ -77,7 +77,7 @@
                 '<td class="amount">—</td><td class="amount">—</td><td class="amount">—</td></tr>' +
                 '<tr><td>' + month + '</td><td><strong>COMPRAS</strong></td>' +
                 '<td class="amount">' + money(row.purchases_taxable_gravada) + '</td><td class="amount">' + money(row.purchases_taxable_gravada_tax) + '</td>' +
-                '<td class="amount">' + money(row.export_cost) + '</td><td class="amount">' + money(row.export_purchase_tax) + '</td>' +
+                '<td class="amount">' + money(row.purchases_mixed_base) + '</td><td class="amount">' + money(row.purchases_mixed_tax) + '</td>' +
                 '<td class="amount">—</td><td class="amount">' + money(row.purchases_non_taxed) + '</td>' +
                 '<td class="amount"><strong>' + money(row.purchases_total_with_export) + '</strong></td><td class="amount">' + money(row.purchase_tax) + '</td>' +
                 '<td class="amount">—</td><td class="amount">—</td><td class="amount">' + money(row.igv_difference_with_export) + '</td>' +

@@ -129,7 +129,8 @@ class ContabilidadReportesViewTests(TestCase):
                     'date': date(2026, 8, 17), 'document_type': 'FAC',
                     'document': 'F001 0035559', 'tax_id': '20344769932',
                     'supplier': 'FRIO AEREO', 'export_base': 2500,
-                    'mixed_base': 1000, 'non_taxed_base': 93.12,
+                    'mixed_base': 1000, 'mixed_tax': 180,
+                    'non_taxed_base': 93.12,
                     'non_taxed': 240, 'export_tax': 450,
                     'general_tax': 196.76,
                     'total': 4239.88, 'currency': 'US$', 'exchange_rate': 3.4,
@@ -139,7 +140,8 @@ class ContabilidadReportesViewTests(TestCase):
                     'date': date(2026, 8, 18), 'document_type': 'FAC',
                     'document': 'E001 0001', 'tax_id': '20111111111',
                     'supplier': 'PROVEEDOR LOCAL', 'export_base': 0,
-                    'mixed_base': 1000, 'non_taxed_base': 0,
+                    'mixed_base': 1000, 'mixed_tax': 180,
+                    'non_taxed_base': 0,
                     'non_taxed': 0, 'export_tax': 0, 'general_tax': 180,
                     'total': 1180, 'currency': 'S/', 'exchange_rate': 3.4,
                     'detail': 'COMPRA LOCAL', 'glosa': '',
@@ -177,6 +179,8 @@ class ContabilidadReportesViewTests(TestCase):
         self.assertEqual(august['purchase_tax_without_export'], 180.0)
         self.assertEqual(august['purchases_taxable_gravada'], 2500.0)
         self.assertEqual(august['purchases_taxable_gravada_tax'], 450.0)
+        self.assertEqual(august['purchases_mixed_base'], 2000.0)
+        self.assertEqual(august['purchases_mixed_tax'], 360.0)
         self.assertEqual(len(data['invoices']), 1)
         self.assertEqual(data['invoices'][0]['boxes'], 2240.0)
         self.assertEqual(data['invoices'][0]['price_fob_box'], 25.0)
