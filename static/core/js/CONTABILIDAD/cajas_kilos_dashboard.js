@@ -47,6 +47,11 @@
     function axis(step, metric) { return { gridLines: { color: '#edf1f3', drawBorder: false }, ticks: { beginAtZero: true, fontColor: '#71808d', stepSize: step, callback: function (value) { return format(Number(value), metric, true); } } }; }
     function options(step, metric, hideLegend) { return { maintainAspectRatio: false, responsive: true, legend: { display: !hideLegend, position: 'bottom', labels: { boxWidth: 12, padding: 18, fontColor: '#52606d' } }, tooltips: { callbacks: { label: function (item, chart) { var label = chart.datasets[item.datasetIndex].label || ''; return label + ': ' + format(Number(item.yLabel), metric, false); } } }, scales: { xAxes: [{ gridLines: { display: false }, ticks: { fontColor: '#71808d' } }], yAxes: [axis(step, metric)] } }; }
     function ranking(data, metric, client, latest, indexes) { return data.producers.map(function (name) { return { name: name, value: sum(seriesValues(data, metric, client, name, latest, indexes)) }; }).filter(function (item) { return item.value !== 0; }).sort(function (a, b) { return b.value - a.value; }); }
+    function clientRanking(data, metric, client, producer, latest, indexes) {
+        return data.clients.filter(function (name) { return client === '__all__' || name === client; }).map(function (name) {
+            return { name: name, value: sum(seriesValues(data, metric, name, producer, latest, indexes)) };
+        }).filter(function (item) { return item.value !== 0; }).sort(function (a, b) { return b.value - a.value; });
+    }
     function updateKpis(data, metric, client, producer, years, indexes) {
         var latest = years[years.length - 1], prior = years.length > 1 ? years[years.length - 2] : null;
         var values = seriesValues(data, metric, client, producer, latest, indexes), available = values.filter(function (value) { return value !== null; }), total = sum(values);
@@ -65,10 +70,10 @@
         var totals = years.map(function (year) { return sum(seriesValues(data, metric, client, producer, year, indexes)); }), maxYear = Math.max.apply(null, totals.map(Math.abs).concat([0]));
         if (yearChart) yearChart.destroy(); yearChart = new Chart(document.getElementById('ck-year-chart'), { type: 'bar', data: { labels: years, datasets: [{ data: totals, backgroundColor: years.map(function (_, i) { return colors[i % colors.length]; }) }] }, options: options(niceStep(maxYear), metric, true) });
     }
-    function updateProducerCharts(data, metric, client, latest, indexes) {
-        var items = ranking(data, metric, client, latest, indexes), horizontal = items.slice().reverse(), max = Math.max.apply(null, items.map(function (item) { return item.value; }).concat([0]));
+    function updateBreakdownCharts(data, metric, client, producer, latest, indexes) {
+        var clientItems = clientRanking(data, metric, client, producer, latest, indexes), horizontal = clientItems.slice().reverse(), max = Math.max.apply(null, clientItems.map(function (item) { return item.value; }).concat([0]));
         if (clientChart) clientChart.destroy(); clientChart = new Chart(document.getElementById('ck-client-chart'), { type: 'horizontalBar', data: { labels: horizontal.map(function (item) { return item.name; }), datasets: [{ label: latest, data: horizontal.map(function (item) { return item.value; }), backgroundColor: '#278ba8' }] }, options: { maintainAspectRatio: false, responsive: true, legend: { display: false }, tooltips: { callbacks: { label: function (item) { return format(Number(item.xLabel), metric, false); } } }, scales: { xAxes: [axis(niceStep(max), metric)], yAxes: [{ gridLines: { display: false }, ticks: { fontColor: '#52606d', fontSize: 10 } }] } } });
-        var share = items.slice(0, 7); if (items.length > 7) share.push({ name: 'Otros', value: sum(items.slice(7).map(function (item) { return item.value; })) });
+        var producerItems = ranking(data, metric, client, latest, indexes), share = producerItems.slice(0, 7); if (producerItems.length > 7) share.push({ name: 'Otros', value: sum(producerItems.slice(7).map(function (item) { return item.value; })) });
         if (shareChart) shareChart.destroy(); shareChart = new Chart(document.getElementById('ck-share-chart'), { type: 'doughnut', data: { labels: share.map(function (item) { return item.name; }), datasets: [{ data: share.map(function (item) { return item.value; }), backgroundColor: colors }] }, options: { maintainAspectRatio: false, responsive: true, cutoutPercentage: 62, legend: { position: 'bottom', labels: { boxWidth: 11, padding: 11, fontSize: 9 } }, tooltips: { callbacks: { label: function (item, chart) { return chart.labels[item.index] + ': ' + format(Number(chart.datasets[0].data[item.index]), metric, false); } } } } });
         document.getElementById('ck-ranking-subtitle').textContent = latest + ' · periodo seleccionado';
     }
@@ -81,7 +86,7 @@
         var metric = document.getElementById('ck-metric').value, client = document.getElementById('ck-client').value, producer = document.getElementById('ck-producer').value, years = selectedYears(), indexes = monthIndexes();
         var active = years.filter(function (year) { return seriesValues(data, metric, client, producer, year, indexes).some(function (value) { return value !== null; }); }); if (!active.length) active = years;
         document.getElementById('ck-trend-subtitle').textContent = data.metrics[metric].label + ' · ' + filterLabel(client, producer) + ' · ' + data.months[indexes[0]] + ' a ' + data.months[indexes[indexes.length - 1]];
-        updateKpis(data, metric, client, producer, active, indexes); updateMainCharts(data, metric, client, producer, active, indexes); updateProducerCharts(data, metric, client, active[active.length - 1], indexes); updateTable(data, metric, client, producer, years, indexes);
+        updateKpis(data, metric, client, producer, active, indexes); updateMainCharts(data, metric, client, producer, active, indexes); updateBreakdownCharts(data, metric, client, producer, active[active.length - 1], indexes); updateTable(data, metric, client, producer, years, indexes);
     }
     window.initCajasKilosDashboard = function () {
         var data = payload(), from = document.getElementById('ck-from'), to = document.getElementById('ck-to'); data.months.forEach(function (month, index) { from.add(new Option(month, index)); to.add(new Option(month, index)); });
