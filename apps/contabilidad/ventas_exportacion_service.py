@@ -14,7 +14,7 @@ MONTHS = [
     'Julio', 'Agosto', 'Setiembre', 'Octubre', 'Noviembre', 'Diciembre',
 ]
 FIRST_REPORT_YEAR = 2025
-CACHE_KEY = 'contabilidad:ventas-exportacion:nisira:v4'
+CACHE_KEY = 'contabilidad:ventas-exportacion:nisira:v7'
 CACHE_SECONDS = 10 * 60
 DETAIL_REFERENCE_PATH = Path(__file__).resolve().parent / 'data' / 'ventas_exportacion_detalle.json'
 
@@ -112,9 +112,14 @@ def build_export_sales_report(sales_rows, purchase_rows, current_year=None):
         'purchases_tax': 0.0,
         'purchases_total': 0.0,
         'purchases_non_taxed': 0.0,
+        'purchases_taxable_gravada': 0.0,
+        'purchases_taxable_gravada_tax': 0.0,
         'export_cost_base': 0.0,
+        'export_cost_taxable_base': 0.0,
+        'export_cost_non_taxed': 0.0,
         'export_cost_tax': 0.0,
         'export_cost_total': 0.0,
+        'export_purchase_total': 0.0,
     })
     export_documents = set()
     invoice_detail_reference = _load_invoice_detail_reference()
@@ -189,11 +194,20 @@ def build_export_sales_report(sales_rows, purchase_rows, current_year=None):
         monthly[key]['purchases_tax'] += tax
         monthly[key]['purchases_total'] += _number(row.get('total'))
         monthly[key]['purchases_non_taxed'] += non_taxed
+        monthly[key]['purchases_taxable_gravada'] += (
+            export_base if has_nisira_breakdown else base
+        )
+        monthly[key]['purchases_taxable_gravada_tax'] += (
+            export_tax if has_nisira_breakdown else tax
+        )
         linked_cost_base = (
             export_base + mixed_base + acquisitions_non_taxed
             if has_nisira_breakdown else base
         )
-        nisira_has_linked_cost = has_nisira_breakdown and bool(linked_cost_base or tax)
+        # AFECTO1 identifica directamente compras vinculadas a operaciones
+        # gravadas/exportación. Los demás componentes solo se consideran
+        # vinculados cuando el documento o la glosa referencia una exportación.
+        nisira_has_linked_cost = has_nisira_breakdown and bool(export_base or export_tax)
         is_export_purchase = nisira_has_linked_cost or _is_export_purchase(
             row.get('detail'), row.get('glosa'), export_documents,
         )
@@ -206,8 +220,11 @@ def build_export_sales_report(sales_rows, purchase_rows, current_year=None):
         # (AFECTO2) y adquisiciones no gravadas (AFECTO4). AFECTO3 no forma
         # parte de este indicador.
         monthly[key]['export_cost_base'] += linked_cost_base
+        monthly[key]['export_cost_taxable_base'] += base
+        monthly[key]['export_cost_non_taxed'] += acquisitions_non_taxed
         monthly[key]['export_cost_tax'] += tax
         monthly[key]['export_cost_total'] += linked_cost_base + tax
+        monthly[key]['export_purchase_total'] += _number(row.get('total'))
         report['purchases'].append({
             'year': purchase_year,
             'month': purchase_month,
@@ -236,20 +253,17 @@ def build_export_sales_report(sales_rows, purchase_rows, current_year=None):
             sales_total_with_export = sales_with_export + values['sales_tax']
             sales_total_without_export = sales_without_export + values['sales_tax']
             purchases_without_export = max(
-                0.0, values['purchases_base'] - values['export_cost_base']
+                0.0,
+                values['purchases_base'] - values['export_cost_taxable_base'],
             )
             purchase_tax_without_export = (
                 values['purchases_tax'] - values['export_cost_tax']
             )
             purchases_total_without_export = (
-                values['purchases_total'] - values['export_cost_total']
+                values['purchases_total'] - values['export_purchase_total']
             )
             purchases_non_taxed = values['purchases_non_taxed']
-            export_cost_non_taxed = (
-                values['export_cost_total']
-                - values['export_cost_base']
-                - values['export_cost_tax']
-            )
+            export_cost_non_taxed = values['export_cost_non_taxed']
             purchases_non_taxed_without_export = (
                 purchases_non_taxed - export_cost_non_taxed
             )
@@ -269,6 +283,12 @@ def build_export_sales_report(sales_rows, purchase_rows, current_year=None):
                 'export_cost': round(values['export_cost_base'], 2),
                 'purchases_with_export': round(values['purchases_base'], 2),
                 'purchases_without_export': round(purchases_without_export, 2),
+                'purchases_taxable_gravada': round(
+                    values['purchases_taxable_gravada'], 2
+                ),
+                'purchases_taxable_gravada_tax': round(
+                    values['purchases_taxable_gravada_tax'], 2
+                ),
                 'affected_sales': round(values['affected'], 2),
                 'exempt_sales': round(values['exempt'], 2),
                 'sales_total_with_export': round(sales_total_with_export, 2),

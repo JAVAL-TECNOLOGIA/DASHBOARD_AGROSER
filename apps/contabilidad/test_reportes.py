@@ -138,7 +138,9 @@ class ContabilidadReportesViewTests(TestCase):
                 {
                     'date': date(2026, 8, 18), 'document_type': 'FAC',
                     'document': 'E001 0001', 'tax_id': '20111111111',
-                    'supplier': 'PROVEEDOR LOCAL', 'base': 1000, 'tax': 180,
+                    'supplier': 'PROVEEDOR LOCAL', 'export_base': 0,
+                    'mixed_base': 1000, 'non_taxed_base': 0,
+                    'non_taxed': 0, 'export_tax': 0, 'general_tax': 180,
                     'total': 1180, 'currency': 'S/', 'exchange_rate': 3.4,
                     'detail': 'COMPRA LOCAL', 'glosa': '',
                 },
@@ -171,6 +173,10 @@ class ContabilidadReportesViewTests(TestCase):
         self.assertEqual(august['igv_difference_without_export'], 3384.69)
         self.assertEqual(august['igv_scenario_difference'], 646.76)
         self.assertEqual(august['income_tax_difference'], -448.0)
+        self.assertEqual(august['purchases_without_export'], 1000.0)
+        self.assertEqual(august['purchase_tax_without_export'], 180.0)
+        self.assertEqual(august['purchases_taxable_gravada'], 2500.0)
+        self.assertEqual(august['purchases_taxable_gravada_tax'], 450.0)
         self.assertEqual(len(data['invoices']), 1)
         self.assertEqual(data['invoices'][0]['boxes'], 2240.0)
         self.assertEqual(data['invoices'][0]['price_fob_box'], 25.0)
