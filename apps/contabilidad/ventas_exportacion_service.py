@@ -14,7 +14,7 @@ MONTHS = [
     'Julio', 'Agosto', 'Setiembre', 'Octubre', 'Noviembre', 'Diciembre',
 ]
 FIRST_REPORT_YEAR = 2025
-CACHE_KEY = 'contabilidad:ventas-exportacion:nisira:v8'
+CACHE_KEY = 'contabilidad:ventas-exportacion:nisira:v9'
 CACHE_SECONDS = 10 * 60
 DETAIL_REFERENCE_PATH = Path(__file__).resolve().parent / 'data' / 'ventas_exportacion_detalle.json'
 
@@ -287,6 +287,12 @@ def build_export_sales_report(sales_rows, purchase_rows, current_year=None):
                 'sales_without_export': round(sales_without_export, 2),
                 'export_sales': round(values['exported'], 2),
                 'export_cost': round(values['export_cost_base'], 2),
+                'linked_cost_total': round(
+                    values['purchases_taxable_gravada']
+                    + values['purchases_mixed_base']
+                    + values['purchases_non_taxed'],
+                    2,
+                ),
                 'purchases_with_export': round(values['purchases_base'], 2),
                 'purchases_without_export': round(purchases_without_export, 2),
                 'purchases_taxable_gravada': round(

@@ -181,6 +181,7 @@ class ContabilidadReportesViewTests(TestCase):
         self.assertEqual(august['purchases_taxable_gravada_tax'], 450.0)
         self.assertEqual(august['purchases_mixed_base'], 2000.0)
         self.assertEqual(august['purchases_mixed_tax'], 360.0)
+        self.assertEqual(august['linked_cost_total'], 4740.0)
         self.assertEqual(len(data['invoices']), 1)
         self.assertEqual(data['invoices'][0]['boxes'], 2240.0)
         self.assertEqual(data['invoices'][0]['price_fob_box'], 25.0)

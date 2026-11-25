@@ -56,7 +56,7 @@
         document.getElementById('export-with-sales').textContent = money(total('sales_with_export'));
         document.getElementById('export-without-sales').textContent = money(total('sales_without_export'));
         document.getElementById('export-sales-total').textContent = money(total('export_sales'));
-        document.getElementById('export-cost-total').textContent = money(total('export_cost'));
+        document.getElementById('export-cost-total').textContent = money(total('linked_cost_total'));
         document.getElementById('export-tax-payable').textContent = money(total('igv_difference_with_export'));
         document.getElementById('export-income-tax').textContent = money(total('income_tax_with_export'));
         document.getElementById('export-drawback').textContent = money(total('drawback'));
