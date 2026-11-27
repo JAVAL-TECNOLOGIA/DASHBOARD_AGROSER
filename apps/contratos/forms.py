@@ -81,6 +81,42 @@ class ContractGenerationForm(forms.Form):
         return cleaned
 
 
+class ReentryRegistrationForm(ContractGenerationForm):
+    worker_id = forms.ChoiceField(label="Trabajador cesante")
+    payroll = forms.ChoiceField(label="Nueva planilla")
+    position = forms.ChoiceField(label="Nuevo cargo")
+    employment_start = forms.DateField(
+        label="Fecha de reingreso",
+        widget=forms.DateInput(format="%Y-%m-%d", attrs={"type": "date"}),
+    )
+
+    def __init__(self, *args, workers=(), catalogs=None, **kwargs):
+        catalogs = catalogs or {}
+        super().__init__(*args, contract_types=catalogs.get("contract_type", ()), **kwargs)
+        self.fields["worker_id"].choices = [("", "Seleccione un trabajador...")] + list(workers)
+        self.fields["payroll"].choices = [("", "Seleccione...")] + list(catalogs.get("payroll", ()))
+        self.fields["position"].choices = [("", "Seleccione...")] + list(catalogs.get("position", ()))
+        self.fields["contract_type"].choices = [("", "Seleccione...")] + list(
+            catalogs.get("contract_type", ())
+        )
+        for name, field in self.fields.items():
+            field.widget.attrs.setdefault("class", "form-control")
+        self.fields["worker_id"].widget.attrs["class"] += " searchable-select"
+        self.fields["payroll"].widget.attrs["class"] += " searchable-select"
+        self.fields["position"].widget.attrs["class"] += " searchable-select"
+
+    def clean(self):
+        cleaned = super().clean()
+        employment_start = cleaned.get("employment_start")
+        start_date = cleaned.get("start_date")
+        if employment_start and start_date and employment_start != start_date:
+            self.add_error(
+                "start_date",
+                "La fecha inicial del contrato debe coincidir con la fecha de reingreso.",
+            )
+        return cleaned
+
+
 class NewEmployeeContractForm(ContractGenerationForm):
     worker_id = forms.CharField(required=False, widget=forms.HiddenInput)
     document = forms.RegexField(

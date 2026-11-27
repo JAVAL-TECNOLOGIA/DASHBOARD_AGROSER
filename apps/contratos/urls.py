@@ -10,8 +10,10 @@ from .views import (
     ContractTemplateView,
     ContractTemplateUploadView,
     NewEmployeeContractView,
+    NewReentryView,
     PdaEmployeeRegistrationView,
     PdaRegistrationLoginView,
+    ReentryContractGenerateView,
 )
 
 
@@ -21,9 +23,15 @@ urlpatterns = [
     path("", ContractListView.as_view(), name="index"),
     path("registro-personal/acceso/", PdaRegistrationLoginView.as_view(), name="employee_registration_login"),
     path("nuevo-trabajador/", NewEmployeeContractView.as_view(), name="new_employee"),
+    path("nuevo-reingreso/", NewReentryView.as_view(), name="new_reentry"),
     path("registro-personal/", PdaEmployeeRegistrationView.as_view(), name="employee_registration"),
     path("pdf/generar-lote/", ContractBulkPdfView.as_view(), name="bulk_pdf"),
     path("generar/<str:worker_id>/", ContractGenerateView.as_view(), name="generate"),
+    path(
+        "reingresante/<str:worker_id>/generar/",
+        ReentryContractGenerateView.as_view(),
+        name="generate_reentry",
+    ),
     path("plantilla/cargar/", ContractTemplateUploadView.as_view(), name="template_upload"),
     path("plantilla/<str:contract_type>/", ContractTemplateView.as_view(), name="template"),
     path("pdf/<str:worker_id>/<str:contract_id>/", ContractPdfView.as_view(), name="pdf"),

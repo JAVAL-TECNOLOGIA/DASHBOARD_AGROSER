@@ -1,4 +1,5 @@
 import re
+from datetime import date
 from pathlib import Path
 
 from django.conf import settings
@@ -80,6 +81,224 @@ class ContractService:
             ORDER BY pe.fecha_ingreso DESC, full_name
         """
         return self._rows(sql, [self.company_id, self.company_id, start_date, end_date])
+
+    def list_reentries(self, start_date, end_date):
+        """Return workers whose latest employment follows a previous termination."""
+        sql = """
+            WITH employment_history AS (
+                SELECT
+                    pe.*,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY pe.idempresa, pe.idcodigogeneral
+                        ORDER BY pe.fecha_ingreso DESC, pe.item DESC
+                    ) AS row_number,
+                    COUNT(*) OVER (
+                        PARTITION BY pe.idempresa, pe.idcodigogeneral
+                    ) AS employment_count,
+                    LEAD(pe.fecha_ingreso) OVER (
+                        PARTITION BY pe.idempresa, pe.idcodigogeneral
+                        ORDER BY pe.fecha_ingreso DESC, pe.item DESC
+                    ) AS previous_start_date,
+                    LEAD(pe.fecha_cese) OVER (
+                        PARTITION BY pe.idempresa, pe.idcodigogeneral
+                        ORDER BY pe.fecha_ingreso DESC, pe.item DESC
+                    ) AS previous_end_date
+                FROM personal_empresa pe WITH (NOLOCK)
+                WHERE pe.idempresa = %s
+            ),
+            latest_contract AS (
+                SELECT c.*, ROW_NUMBER() OVER (
+                    PARTITION BY c.idempresa, c.idcodigogeneral
+                    ORDER BY TRY_CONVERT(int, c.idcontrato) DESC, c.fechacreacion DESC
+                ) AS row_number
+                FROM contrato c WITH (NOLOCK)
+                WHERE c.idempresa = %s AND c.estado = 1
+            )
+            SELECT
+                pg.idcodigogeneral,
+                RTRIM(pg.nrodocumento) AS document,
+                LTRIM(RTRIM(CONCAT(pg.a_paterno, ' ', pg.a_materno, ' ', pg.nombres))) AS full_name,
+                eh.previous_start_date,
+                eh.previous_end_date,
+                eh.fecha_ingreso AS reentry_date,
+                eh.fecha_cese,
+                DATEDIFF(day, eh.previous_end_date, eh.fecha_ingreso) AS days_away,
+                eh.employment_count,
+                RTRIM(p.idplanilla) AS payroll_id,
+                RTRIM(pl.descripcion) AS payroll,
+                RTRIM(ISNULL(cp.descripcion, 'SIN CARGO')) AS position,
+                CASE WHEN lc.inicio_contrato >= eh.fecha_ingreso THEN lc.idcontrato END AS contract_id,
+                CASE WHEN lc.inicio_contrato >= eh.fecha_ingreso THEN lc.inicio_contrato END AS contract_start,
+                CASE WHEN lc.inicio_contrato >= eh.fecha_ingreso THEN lc.final_contrato END AS contract_end
+            FROM employment_history eh
+            INNER JOIN personal_general pg WITH (NOLOCK)
+                ON pg.idcodigogeneral = eh.idcodigogeneral
+            OUTER APPLY (
+                SELECT TOP 1 p0.idempresa, p0.idcodigogeneral, p0.idplanilla, p0.idcargo
+                FROM personal p0 WITH (NOLOCK)
+                WHERE p0.idempresa = eh.idempresa
+                  AND p0.idcodigogeneral = eh.idcodigogeneral
+            ) p
+            LEFT JOIN planilla pl WITH (NOLOCK)
+                ON pl.idempresa = p.idempresa AND pl.idplanilla = p.idplanilla
+            LEFT JOIN cargos_personal cp WITH (NOLOCK)
+                ON cp.idempresa = p.idempresa AND cp.idcargo = p.idcargo
+            LEFT JOIN latest_contract lc
+                ON lc.idempresa = eh.idempresa
+                AND lc.idcodigogeneral = eh.idcodigogeneral
+                AND lc.row_number = 1
+            WHERE eh.row_number = 1
+              AND eh.employment_count > 1
+              AND eh.previous_end_date IS NOT NULL
+              AND eh.fecha_ingreso > eh.previous_end_date
+              AND eh.fecha_ingreso BETWEEN %s AND %s
+              AND (eh.fecha_cese IS NULL OR eh.fecha_cese >= CAST(GETDATE() AS date))
+            ORDER BY eh.fecha_ingreso DESC, full_name
+        """
+        return self._rows(sql, [self.company_id, self.company_id, start_date, end_date])
+
+    def get_reentry(self, worker_id):
+        """Return the current reentry record for one worker, if applicable."""
+        rows = self.list_reentries(date(1900, 1, 1), date(9999, 12, 31))
+        worker_id = str(worker_id).strip()
+        return next(
+            (row for row in rows if str(row.get("idcodigogeneral", "")).strip() == worker_id),
+            None,
+        )
+
+    def list_former_employees(self):
+        """Personnel whose latest employment in the company is already terminated."""
+        sql = """
+            WITH latest_employment AS (
+                SELECT pe.*, ROW_NUMBER() OVER (
+                    PARTITION BY pe.idempresa, pe.idcodigogeneral
+                    ORDER BY pe.fecha_ingreso DESC, pe.item DESC
+                ) AS row_number
+                FROM personal_empresa pe WITH (NOLOCK)
+                WHERE pe.idempresa = %s
+            )
+            SELECT
+                pg.idcodigogeneral,
+                RTRIM(pg.nrodocumento) AS document,
+                LTRIM(RTRIM(CONCAT(pg.a_paterno, ' ', pg.a_materno, ' ', pg.nombres))) AS full_name,
+                le.fecha_ingreso AS previous_start_date,
+                le.fecha_cese AS previous_end_date,
+                RTRIM(p.idplanilla) AS payroll_id,
+                RTRIM(ISNULL(pl.descripcion, p.idplanilla)) AS payroll,
+                RTRIM(p.idcargo) AS position_id,
+                RTRIM(ISNULL(cp.descripcion, 'SIN CARGO')) AS position
+            FROM latest_employment le
+            INNER JOIN personal_general pg WITH (NOLOCK)
+                ON pg.idcodigogeneral = le.idcodigogeneral
+            OUTER APPLY (
+                SELECT TOP 1 p0.idempresa, p0.idcodigogeneral, p0.idplanilla, p0.idcargo
+                FROM personal p0 WITH (NOLOCK)
+                WHERE p0.idempresa = le.idempresa
+                  AND p0.idcodigogeneral = le.idcodigogeneral
+            ) p
+            LEFT JOIN planilla pl WITH (NOLOCK)
+                ON pl.idempresa = p.idempresa AND pl.idplanilla = p.idplanilla
+            LEFT JOIN cargos_personal cp WITH (NOLOCK)
+                ON cp.idempresa = p.idempresa AND cp.idcargo = p.idcargo
+            WHERE le.row_number = 1
+              AND le.fecha_cese IS NOT NULL
+              AND le.fecha_cese < CAST(GETDATE() AS date)
+            ORDER BY full_name
+        """
+        return self._rows(sql, [self.company_id])
+
+    def find_employment_by_document(self, document):
+        rows = self._rows(
+            """
+            SELECT TOP 1
+                pg.idcodigogeneral,
+                RTRIM(pg.nrodocumento) AS document,
+                LTRIM(RTRIM(CONCAT(pg.a_paterno, ' ', pg.a_materno, ' ', pg.nombres))) AS full_name,
+                pe.fecha_ingreso,
+                pe.fecha_cese,
+                CASE WHEN pe.fecha_cese IS NOT NULL
+                           AND pe.fecha_cese < CAST(GETDATE() AS date)
+                     THEN 1 ELSE 0 END AS is_former
+            FROM personal_general pg WITH (NOLOCK)
+            OUTER APPLY (
+                SELECT TOP 1 pe0.fecha_ingreso, pe0.fecha_cese, pe0.item
+                FROM personal_empresa pe0 WITH (NOLOCK)
+                WHERE pe0.idempresa = %s
+                  AND pe0.idcodigogeneral = pg.idcodigogeneral
+                ORDER BY pe0.fecha_ingreso DESC, pe0.item DESC
+            ) pe
+            WHERE LTRIM(RTRIM(pg.nrodocumento)) = %s
+               OR LTRIM(RTRIM(pg.idcodigogeneral)) = %s
+            """,
+            [self.company_id, document, document],
+        )
+        return rows[0] if rows else None
+
+    def register_reentry_and_contract(self, data):
+        worker_id = str(data["worker_id"]).strip()
+        with transaction.atomic(using=self.connection_name):
+            connection = connections[self.connection_name]
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    """
+                    SELECT TOP 1 item, fecha_ingreso, fecha_cese, idtipo, idgrupo,
+                           idtipotrabajador
+                    FROM personal_empresa WITH (UPDLOCK, HOLDLOCK)
+                    WHERE idempresa = %s AND idcodigogeneral = %s
+                    ORDER BY fecha_ingreso DESC, item DESC
+                    """,
+                    [self.company_id, worker_id],
+                )
+                latest = cursor.fetchone()
+                if not latest:
+                    raise ValueError("El trabajador no tiene historial laboral en NISIRA.")
+                latest_item, unused_start, latest_end, employment_type, group_id, worker_type = latest
+                if latest_end is None:
+                    raise ValueError("El trabajador ya tiene un vínculo laboral activo.")
+                latest_end_date = latest_end.date() if hasattr(latest_end, "date") else latest_end
+                if data["employment_start"] <= latest_end_date:
+                    raise ValueError("El reingreso debe ser posterior al último cese.")
+                cursor.execute(
+                    """
+                    SELECT RIGHT('000' + CAST(ISNULL(MAX(TRY_CONVERT(int, item)), 0) + 1 AS varchar(3)), 3)
+                    FROM personal_empresa WITH (UPDLOCK, HOLDLOCK)
+                    WHERE idempresa = %s AND idcodigogeneral = %s
+                    """,
+                    [self.company_id, worker_id],
+                )
+                next_item = cursor.fetchone()[0]
+                cursor.execute(
+                    """
+                    UPDATE personal
+                    SET idplanilla = %s, idcargo = %s, fecha_inicioplanilla = %s,
+                        estado = 1, activado_en_estaplani = 1,
+                        en_plantilla_asistencia = 'S', sincroniza = 'N'
+                    WHERE idempresa = %s AND idcodigogeneral = %s
+                    """,
+                    [data["payroll"], data["position"], data["employment_start"],
+                     self.company_id, worker_id],
+                )
+                if cursor.rowcount < 1:
+                    raise ValueError("No se encontró la configuración laboral del trabajador.")
+                cursor.execute(
+                    "UPDATE personal_general SET estado=1, sincroniza='N' WHERE idcodigogeneral=%s",
+                    [worker_id],
+                )
+                cursor.execute(
+                    """
+                    INSERT INTO personal_empresa
+                    (idempresa,idcodigogeneral,item,fecha_ingreso,idsituacion,idtipo,
+                     fecha_ocurrencia,idgrupo,idtipotrabajador)
+                    VALUES (%s,%s,%s,%s,'11',%s,%s,%s,%s)
+                    """,
+                    [self.company_id, worker_id, next_item, data["employment_start"],
+                     employment_type or '1', data["employment_start"],
+                     group_id or '003', worker_type],
+                )
+            contract_data = dict(data)
+            contract_data["worker_id"] = worker_id
+            contract_id = self.generate(contract_data)
+        return worker_id, contract_id
 
     def get_person(self, worker_id):
         sql = """

@@ -23,6 +23,7 @@ from .forms import (
     ContractGenerationForm,
     ContractTemplateUploadForm,
     NewEmployeeContractForm,
+    ReentryRegistrationForm,
 )
 from .identity import IdentityLookupError, lookup_dni
 from .pdf import (
@@ -87,7 +88,8 @@ class ContractListView(ContractPermissionMixin, View):
 
     def get(self, request):
         today = date.today()
-        active_tab = "templates" if request.GET.get("tab") == "templates" else "contracts"
+        requested_tab = request.GET.get("tab")
+        active_tab = requested_tab if requested_tab in {"templates", "reentries"} else "contracts"
         service = ContractService()
         if active_tab == "templates":
             try:
@@ -125,6 +127,53 @@ class ContractListView(ContractPermissionMixin, View):
                     ),
                 },
             )
+        if active_tab == "reentries":
+            minimum_start = date(2023, 1, 1)
+            start_value = request.GET.get("start") or minimum_start.isoformat()
+            end_value = request.GET.get("end") or today.isoformat()
+            query_value = request.GET.get("q", "").strip()
+            try:
+                start_date = date.fromisoformat(start_value)
+                end_date = date.fromisoformat(end_value)
+                if start_date < minimum_start or end_date < start_date:
+                    raise ValueError
+            except ValueError:
+                messages.error(request, "El rango debe comenzar desde el 01/01/2023.")
+                start_date, end_date = minimum_start, today
+                start_value, end_value = start_date.isoformat(), end_date.isoformat()
+            try:
+                reentries = service.list_reentries(start_date, end_date)
+            except DatabaseError:
+                logger.exception("No se pudieron consultar los reingresos en NISIRA.")
+                messages.error(request, "No fue posible consultar los trabajadores reingresantes.")
+                reentries = []
+            reentry_counts = {
+                "total": len(reentries),
+                "month": sum(
+                    item.get("reentry_date")
+                    and item["reentry_date"].year == today.year
+                    and item["reentry_date"].month == today.month
+                    for item in reentries
+                ),
+                "pending": sum(not item.get("contract_id") for item in reentries),
+            }
+            if query_value:
+                normalized_query = query_value.casefold()
+                reentries = [
+                    item for item in reentries
+                    if normalized_query in "{} {} {} {}".format(
+                        item.get("full_name", ""), item.get("document", ""),
+                        item.get("position", ""), item.get("payroll", ""),
+                    ).casefold()
+                ]
+            return render(request, self.template_name, {
+                "active_tab": active_tab,
+                "reentries": reentries,
+                "reentry_counts": reentry_counts,
+                "start_value": start_value,
+                "end_value": end_value,
+                "query": query_value,
+            })
         warm_contract_pdf_converter()
         minimum_start = date(2023, 1, 1)
         start_value = request.GET.get("start") or minimum_start.isoformat()
@@ -313,6 +362,176 @@ class ContractGenerateView(ContractPermissionMixin, View):
         return redirect("contratos:pdf", worker_id=worker_id, contract_id=contract_id)
 
 
+class ReentryContractGenerateView(ContractPermissionMixin, View):
+    template_name = "contratos/generate.html"
+
+    def get_service_data(self, worker_id):
+        service = ContractService()
+        person = service.get_person(worker_id)
+        reentry = service.get_reentry(worker_id)
+        if not person or not reentry:
+            raise Http404("El trabajador no tiene un reingreso vigente registrado en NISIRA.")
+        if reentry.get("contract_id"):
+            messages.info(
+                self.request,
+                "El reingreso ya tiene el contrato {} registrado.".format(reentry["contract_id"]),
+            )
+            return service, person, reentry, []
+        types = service.contract_types()
+        choices = [(item["idtipocontrato"], item["descripcion"]) for item in types]
+        return service, person, reentry, choices
+
+    def get(self, request, worker_id):
+        service, person, reentry, choices = self.get_service_data(worker_id)
+        if reentry.get("contract_id"):
+            return redirect(
+                "contratos:pdf", worker_id=worker_id, contract_id=reentry["contract_id"]
+            )
+        form = ContractGenerationForm(
+            contract_types=choices,
+            initial={
+                "worker_id": worker_id,
+                "start_date": reentry["reentry_date"],
+                "trial_days": 0,
+                "signature_date": date.today(),
+            },
+        )
+        form.fields["start_date"].widget.attrs["readonly"] = True
+        return render(request, self.template_name, {
+            "person": person, "form": form, "reentry": reentry,
+        })
+
+    def post(self, request, worker_id):
+        service, person, reentry, choices = self.get_service_data(worker_id)
+        if reentry.get("contract_id"):
+            return redirect(
+                "contratos:pdf", worker_id=worker_id, contract_id=reentry["contract_id"]
+            )
+        form = ContractGenerationForm(request.POST, contract_types=choices)
+        if form.is_valid() and form.cleaned_data["worker_id"] != worker_id:
+            form.add_error(None, "El trabajador indicado no coincide.")
+        reentry_date = reentry["reentry_date"]
+        if isinstance(reentry_date, datetime):
+            reentry_date = reentry_date.date()
+        if form.is_valid() and form.cleaned_data["start_date"] != reentry_date:
+            form.add_error(
+                "start_date",
+                "La fecha inicial debe coincidir con el reingreso registrado en NISIRA.",
+            )
+        if not form.is_valid():
+            form.fields["start_date"].widget.attrs["readonly"] = True
+            return render(request, self.template_name, {
+                "person": person, "form": form, "reentry": reentry,
+            })
+        try:
+            contract_id = service.generate(form.cleaned_data)
+            _ensure_contract_pdf(service, worker_id, contract_id)
+        except (ValueError, DatabaseError, FileNotFoundError, RuntimeError, OSError) as exc:
+            logger.exception("No se pudo generar el contrato de reingreso de %s.", worker_id)
+            form.add_error(None, str(exc))
+            form.fields["start_date"].widget.attrs["readonly"] = True
+            return render(request, self.template_name, {
+                "person": person, "form": form, "reentry": reentry,
+            })
+        messages.success(
+            request,
+            "Contrato de reingreso {} registrado y PDF generado.".format(contract_id),
+        )
+        return redirect("contratos:pdf", worker_id=worker_id, contract_id=contract_id)
+
+
+class NewReentryView(ContractPermissionMixin, View):
+    template_name = "contratos/new_reentry.html"
+
+    @staticmethod
+    def employee_defaults(former_employees):
+        return {
+            str(item["idcodigogeneral"]).strip(): {
+                "payroll": str(item.get("payroll_id") or "").strip(),
+                "position": str(item.get("position_id") or "").strip(),
+                "previous_start": item["previous_start_date"].strftime("%d/%m/%Y"),
+                "previous_end": item["previous_end_date"].strftime("%d/%m/%Y"),
+            }
+            for item in former_employees
+        }
+
+    def get_form_data(self):
+        service = ContractService()
+        former_employees = service.list_former_employees()
+        catalogs = service.employee_catalogs()
+        catalogs["contract_type"] = [
+            (str(item["idtipocontrato"]), item["descripcion"])
+            for item in service.contract_types()
+        ]
+        workers = [
+            (
+                str(item["idcodigogeneral"]).strip(),
+                "{} · DNI {} · Cese {}".format(
+                    item["full_name"], item["document"],
+                    item["previous_end_date"].strftime("%d/%m/%Y"),
+                ),
+            )
+            for item in former_employees
+        ]
+        return service, former_employees, catalogs, workers
+
+    def get(self, request):
+        try:
+            unused_service, former_employees, catalogs, workers = self.get_form_data()
+        except DatabaseError:
+            logger.exception("No se pudieron consultar los cesantes para reingreso.")
+            raise Http404("No fue posible consultar los trabajadores cesantes en NISIRA.")
+        selected = request.GET.get("worker", "").strip()
+        employee_map = {
+            str(item["idcodigogeneral"]).strip(): item for item in former_employees
+        }
+        initial = {"worker_id": selected, "trial_days": 0, "signature_date": date.today()}
+        if selected in employee_map:
+            employee = employee_map[selected]
+            initial.update({
+                "payroll": employee.get("payroll_id"),
+                "position": employee.get("position_id"),
+            })
+        form = ReentryRegistrationForm(workers=workers, catalogs=catalogs, initial=initial)
+        return render(request, self.template_name, {
+            "form": form, "former_employees": former_employees,
+            "employee_defaults": self.employee_defaults(former_employees),
+        })
+
+    def post(self, request):
+        try:
+            service, former_employees, catalogs, workers = self.get_form_data()
+        except DatabaseError:
+            logger.exception("No se pudieron consultar los cesantes para reingreso.")
+            raise Http404("No fue posible consultar los trabajadores cesantes en NISIRA.")
+        form = ReentryRegistrationForm(request.POST, workers=workers, catalogs=catalogs)
+        if not form.is_valid():
+            return render(request, self.template_name, {
+                "form": form, "former_employees": former_employees,
+                "employee_defaults": self.employee_defaults(former_employees),
+            })
+        try:
+            worker_id, contract_id = service.register_reentry_and_contract(form.cleaned_data)
+        except (ValueError, DatabaseError) as exc:
+            logger.exception("No se pudo registrar el nuevo reingreso.")
+            form.add_error(None, str(exc))
+            return render(request, self.template_name, {
+                "form": form, "former_employees": former_employees,
+                "employee_defaults": self.employee_defaults(former_employees),
+            })
+        try:
+            _ensure_contract_pdf(service, worker_id, contract_id)
+        except (FileNotFoundError, RuntimeError, OSError):
+            logger.exception("El reingreso se registró pero no se pudo generar su PDF.")
+            messages.warning(
+                request,
+                "Reingreso y contrato {} registrados. Genera nuevamente el PDF.".format(contract_id),
+            )
+            return redirect("contratos:index")
+        messages.success(request, "Reingreso y contrato {} registrados correctamente.".format(contract_id))
+        return redirect("contratos:pdf", worker_id=worker_id, contract_id=contract_id)
+
+
 class NewEmployeeContractView(ContractPermissionMixin, View):
     template_name = "contratos/new_employee.html"
 
@@ -326,15 +545,41 @@ class NewEmployeeContractView(ContractPermissionMixin, View):
 
     def get(self, request):
         service = ContractService()
+        document = request.GET.get("dni", "").strip()
+        existing = None
+        if document and re.fullmatch(r"\d{8}", document):
+            try:
+                existing = service.find_employment_by_document(document)
+            except DatabaseError:
+                logger.exception("No se pudo validar el DNI en NISIRA.")
+                existing = None
+            if existing and existing.get("is_former"):
+                worker_id = str(existing["idcodigogeneral"]).strip()
+                messages.info(
+                    request,
+                    "{} ya trabajó en la empresa. Completa su nuevo vínculo y contrato de reingreso.".format(
+                        existing["full_name"]
+                    ),
+                )
+                return redirect("{}?worker={}".format(
+                    reverse("contratos:new_reentry"), worker_id
+                ))
         try:
             catalogs = self._catalogs(service)
         except DatabaseError:
             logger.exception("No se pudieron cargar los catálogos de NISIRA.")
             raise Http404("No fue posible cargar los catálogos de NISIRA.")
-        initial = {"document": request.GET.get("dni", "").strip()}
+        initial = {"document": document}
         if initial["document"]:
             if not re.fullmatch(r"\d{8}", initial["document"]):
                 messages.error(request, "El DNI debe contener exactamente 8 dígitos.")
+            elif existing:
+                messages.warning(
+                    request,
+                    "El trabajador {} ya tiene un vínculo activo en NISIRA y no puede registrarse nuevamente.".format(
+                        existing["full_name"]
+                    ),
+                )
             else:
                 try:
                     initial.update(lookup_dni(initial["document"]))

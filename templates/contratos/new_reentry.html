@@ -1,0 +1,46 @@
+{% load static %}
+{% include 'base/header.html' %}
+{% include 'base/sidebar.html' %}
+<div id="content" class="content">
+    <link href="{% static 'assets/plugins/select2/dist/css/select2.min.css' %}" rel="stylesheet">
+    <a href="{% url 'contratos:index' %}?tab=reentries" class="text-muted"><i class="fa fa-arrow-left mr-1"></i> Volver a reingresantes</a>
+    <h1 class="page-header mt-3 mb-1">Registrar nuevo reingreso</h1>
+    <p class="text-muted">Reactiva el vínculo laboral de un trabajador cesante y genera su nuevo contrato en NISIRA.</p>
+    {% for message in messages %}<div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>{% endfor %}
+    <form method="post" id="new-reentry-form" novalidate>
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white"><strong><span class="badge badge-primary mr-2">1</span>Trabajador cesante</strong></div>
+            <div class="card-body">
+                <div class="form-group mb-0"><label>{{ form.worker_id.label }}</label>{{ form.worker_id }}{% for error in form.worker_id.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}<small class="form-text text-muted">Solo aparecen trabajadores cuyo último vínculo tiene fecha de cese.</small><div id="previous-employment" class="alert alert-info mt-3 mb-0 d-none"></div></div>
+            </div>
+        </div>
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white"><strong><span class="badge badge-primary mr-2">2</span>Nuevo vínculo laboral</strong></div>
+            <div class="card-body"><div class="form-row">
+                <div class="form-group col-md-4"><label>{{ form.employment_start.label }}</label>{{ form.employment_start }}{% for error in form.employment_start.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>
+                <div class="form-group col-md-4"><label>{{ form.payroll.label }}</label>{{ form.payroll }}{% for error in form.payroll.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>
+                <div class="form-group col-md-4"><label>{{ form.position.label }}</label>{{ form.position }}{% for error in form.position.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>
+            </div></div>
+        </div>
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-white"><strong><span class="badge badge-primary mr-2">3</span>Nuevo contrato</strong></div>
+            <div class="card-body"><div class="form-row">
+                <div class="form-group col-lg-4 col-md-6"><label>{{ form.contract_type.label }}</label>{{ form.contract_type }}{% for error in form.contract_type.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>
+                <div class="form-group col-lg-4 col-md-6"><label>{{ form.start_date.label }}</label>{{ form.start_date }}{% for error in form.start_date.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>
+                <div class="form-group col-lg-4 col-md-6"><label>{{ form.end_date.label }}</label>{{ form.end_date }}{% for error in form.end_date.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>
+                <div class="form-group col-lg-4 col-md-6"><label>{{ form.basic.label }}</label>{{ form.basic }}{% for error in form.basic.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>
+                <div class="form-group col-lg-4 col-md-6"><label>{{ form.trial_days.label }}</label>{{ form.trial_days }}{% for error in form.trial_days.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>
+                <div class="form-group col-lg-4 col-md-6"><label>{{ form.signature_date.label }}</label>{{ form.signature_date }}{% for error in form.signature_date.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>
+            </div>
+            <div class="alert alert-warning"><i class="fa fa-exclamation-triangle mr-1"></i> Al confirmar se reactivará al trabajador, se añadirá un nuevo ítem a su historial laboral y se generará el contrato. La operación se cancelará completa si alguna parte falla.</div>
+            <div class="text-right"><a class="btn btn-light" href="{% url 'contratos:index' %}?tab=reentries">Cancelar</a> <button class="btn btn-success btn-lg" type="submit"><i class="fa fa-user-plus mr-1"></i>Registrar reingreso y generar contrato</button></div>
+            </div>
+        </div>
+    </form>
+</div>
+{% include 'base/footer.html' %}
+{{ employee_defaults|json_script:"reentry-employee-defaults" }}
+<script src="{% static 'assets/plugins/select2/dist/js/select2.full.min.js' %}"></script>
+<script>$(document).ready(function(){App.init();$('.searchable-select').select2({width:'100%'});var defaults=JSON.parse(document.getElementById('reentry-employee-defaults').textContent),worker=$('#id_worker_id'),payroll=$('#id_payroll'),position=$('#id_position'),previous=$('#previous-employment'),employment=$('#id_employment_start'),start=$('#id_start_date');function loadWorker(){var item=defaults[worker.val()];if(!item){previous.addClass('d-none').empty();return;}payroll.val(item.payroll).trigger('change');position.val(item.position).trigger('change');previous.removeClass('d-none').html('<i class="fa fa-history mr-1"></i> Último vínculo: <strong>'+item.previous_start+'</strong> al <strong>'+item.previous_end+'</strong>.');}worker.on('change',loadWorker);employment.on('change',function(){start.val(this.value);});$('#new-reentry-form').on('submit',function(){return window.confirm('Se registrará un nuevo vínculo laboral y contrato en NISIRA. ¿Deseas continuar?');});loadWorker();});</script>
