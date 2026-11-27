@@ -9,15 +9,105 @@ from django.views import View
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import TemplateView
 from django.http import HttpResponse
+from django.views.decorators.http import require_POST
 
 import apps.connection.connect_portalaei as portalaei_db
 from apps.utils.permissions import es_admin
 from django.http import JsonResponse
 import traceback 
 
+from .nisira_sync import synchronize_marks
+
 
 connection_portalaei = getattr(portalaei_db, 'connection_portalaei', None)
 _portalaei_reconnect_lock = threading.Lock()
+
+
+MARKER_ENTRY_EDITORS = {'JALCANTARA', 'YGARCIA', 'LNEYRA'}
+MARKER_HISTORY_ADMINS = {'JALCANTARA', 'YGARCIA'}
+MARKER_ERP_SYNC_USERS = {'JALCANTARA', 'YGARCIA', 'LNEYRA'}
+MAX_OVERNIGHT_SHIFT_HOURS = 16
+OVERNIGHT_EXIT_CUTOFF = datetime.strptime('06:00:00', '%H:%M:%S').time()
+
+
+def _marker_username(user):
+    return str(getattr(user, 'username', '') or '').strip().upper()
+
+
+def _can_edit_marker_entry(user):
+    """Usuarios autorizados para corregir exclusivamente la hora de ingreso."""
+    return bool(
+        getattr(user, 'is_authenticated', False)
+        and _marker_username(user) in MARKER_ENTRY_EDITORS
+    )
+
+
+def _can_view_marker_history(user):
+    """La auditoría queda restringida a los dos administradores designados."""
+    return bool(
+        getattr(user, 'is_authenticated', False)
+        and _marker_username(user) in MARKER_HISTORY_ADMINS
+    )
+
+
+def _can_sync_marker_erp(user):
+    return bool(
+        getattr(user, 'is_authenticated', False)
+        and _marker_username(user) in MARKER_ERP_SYNC_USERS
+    )
+
+
+def _is_overnight_exit(entry_date, entry_time, current_moment,
+                       max_hours=MAX_OVERNIGHT_SHIFT_HOURS):
+    """Indica si una marca del día siguiente cierra un turno aún abierto."""
+    if not entry_date or not entry_time or not current_moment:
+        return False
+    if isinstance(entry_date, datetime):
+        entry_date = entry_date.date()
+    entry_moment = datetime.combine(entry_date, entry_time)
+    elapsed = current_moment - entry_moment
+    return (
+        entry_date == current_moment.date() - timedelta(days=1)
+        and current_moment.time() <= OVERNIGHT_EXIT_CUTOFF
+        and timedelta(minutes=5) < elapsed <= timedelta(hours=max_hours)
+    )
+
+
+def _parse_attendance_time(value, field_name, required=False):
+    value = str(value or '').strip()
+    if not value:
+        if required:
+            raise ValueError(f'{field_name} es obligatorio.')
+        return None
+    for pattern in ('%H:%M:%S', '%H:%M'):
+        try:
+            return datetime.strptime(value, pattern).time()
+        except ValueError:
+            continue
+    raise ValueError(f'{field_name} debe tener el formato HH:MM.')
+
+
+def _ensure_attendance_audit_table(cursor):
+    cursor.execute("""
+        IF OBJECT_ID('dbo.ASISTENCIA_MODIFICACION_LOG', 'U') IS NULL
+        BEGIN
+            CREATE TABLE dbo.ASISTENCIA_MODIFICACION_LOG (
+                ID_LOG BIGINT IDENTITY(1,1) PRIMARY KEY,
+                ID_ASISTENCIA INT NOT NULL,
+                HORA_INGRESO_ANTERIOR TIME(0) NULL,
+                HORA_SALIDA_ANTERIOR TIME(0) NULL,
+                HORA_INGRESO_NUEVA TIME(0) NULL,
+                HORA_SALIDA_NUEVA TIME(0) NULL,
+                MOTIVO NVARCHAR(500) NOT NULL,
+                USUARIO NVARCHAR(150) NOT NULL,
+                IP_ORIGEN NVARCHAR(64) NULL,
+                FECHA_MODIFICACION DATETIME2(0) NOT NULL
+                    CONSTRAINT DF_ASISTENCIA_MOD_LOG_FECHA DEFAULT SYSDATETIME()
+            );
+            CREATE INDEX IX_ASISTENCIA_MOD_LOG_ASISTENCIA
+                ON dbo.ASISTENCIA_MODIFICACION_LOG (ID_ASISTENCIA, FECHA_MODIFICACION DESC);
+        END
+    """)
 
 
 def _close_portalaei_connection(connection):
@@ -100,6 +190,44 @@ def _get_portalaei_cursor(ensure_alive=True):
     return connection.cursor()
 
 
+def _run_portalaei_query(operation):
+    """Ejecuta una consulta aislada y reintenta si SQL Server corta el enlace.
+
+    Las conexiones pyodbc no son seguras para compartirlas entre solicitudes del
+    servidor de desarrollo. Una conexión propia evita los errores 08S01/08S02 y
+    ``Unable to open a logical session`` cuando dos peticiones coinciden.
+    """
+    last_error = None
+    for attempt in range(2):
+        query_connection = None
+        cursor = None
+        try:
+            query_connection = pyodbc.connect(
+                portalaei_db.build_pyodbc_connection_string(
+                    portalaei_db.host,
+                    portalaei_db.name,
+                    portalaei_db.user,
+                    portalaei_db.password,
+                    mars=False
+                )
+            )
+            cursor = query_connection.cursor()
+            return operation(cursor)
+        except Exception as error:
+            last_error = error
+            if attempt == 0 and _is_portalaei_connection_error(error):
+                continue
+            raise
+        finally:
+            if cursor is not None:
+                try:
+                    cursor.close()
+                except Exception:
+                    pass
+            _close_portalaei_connection(query_connection)
+    raise last_error
+
+
 def _is_portalaei_connection_error(error):
     """Distingue errores de transporte/conexión de errores SQL funcionales."""
     if not isinstance(error, pyodbc.Error):
@@ -176,8 +304,9 @@ def procesar_marcacion(request):
                     'tipo': 'danger'
                 })
             
-            fecha_actual = datetime.now().date()
-            hora_actual = datetime.now().strftime('%H:%M:%S')
+            momento_actual = datetime.now().replace(microsecond=0)
+            fecha_actual = momento_actual.date()
+            hora_actual = momento_actual.strftime('%H:%M:%S')
             
             cursor = _get_portalaei_cursor(ensure_alive=True)
             active_connection = connection_portalaei
@@ -296,8 +425,34 @@ def procesar_marcacion(request):
                     else:
                         fecha_registro_dt = fecha_registro
 
+                    if fecha_registro_dt < fecha_actual and _is_overnight_exit(
+                        fecha_registro_dt, hora_ingreso, momento_actual
+                    ):
+                        # Turno nocturno: la marca de madrugada cierra el ingreso anterior.
+                        ingreso_dt = datetime.combine(fecha_registro_dt, hora_ingreso)
+                        horas_turno = (momento_actual - ingreso_dt).total_seconds() / 3600
+                        estado_turno = 2 if horas_turno >= 6 else 1
+                        cursor.execute("""
+                            UPDATE ASISTENCIA
+                            SET HORA_SALIDA = ?, ESTADO = ?
+                            WHERE ID_ASISTENCIA = ?
+                        """, [hora_actual, estado_turno, id_asistencia])
+                        connection_portalaei.commit()
+                        cursor.close()
+
+                        return JsonResponse({
+                            'status': 'success',
+                            'message': (
+                                f'{nombre_completo} | {codigo_personal} | '
+                                f'Salida nocturna: {hora_actual} '
+                                f'(ingreso {fecha_registro_dt:%d/%m/%Y} {hora_ingreso})'
+                            ),
+                            'tipo': 'primary',
+                            'turno_nocturno': True,
+                        })
+
                     if fecha_registro_dt < fecha_actual:
-                        # ✅ ES OTRO DÍA → NUEVO INGRESO
+                        # Entrada abierta demasiado antigua: iniciar una asistencia nueva.
                         cursor.execute("""
                             INSERT INTO ASISTENCIA (ID_PERSONAL, ID_SEDE, HORA_INGRESO, LOG_FECHA, ESTADO)
                             VALUES (?, ?, ?, CAST(? AS DATE), 1)
@@ -419,10 +574,8 @@ class marcadores(TemplateView):
         context = super().get_context_data(**kwargs)
         
         try:
-            cursor = connection_portalaei.cursor()
-            
-            # Obtener todas las sedes con conteo de marcaciones
-            cursor.execute("""
+            def load_data(cursor):
+                cursor.execute("""
                 SELECT 
                     s.ID_SEDE, 
                     s.NOMBRE_SEDE,
@@ -434,27 +587,26 @@ class marcadores(TemplateView):
                 ORDER BY s.NOMBRE_SEDE
             """)
             
-            sedes = []
-            for row in cursor.fetchall():
-                sedes.append({
+                sedes = []
+                for row in cursor.fetchall():
+                    sedes.append({
                     'ID_SEDE': row[0],
                     'NOMBRE_SEDE': row[1],
                     'IDEMPRESA': row[2],
                     'TOTAL_MARCACIONES': row[3]
-                })
-            context['sedes'] = sedes
-            
-            # Obtener empresas para el filtro de exportación
-            cursor.execute("SELECT IDEMPRESA, DESCRIPCION FROM EMPRESA ORDER BY DESCRIPCION")
-            empresas = []
-            for row in cursor.fetchall():
-                empresas.append({
+                    })
+                cursor.execute("SELECT IDEMPRESA, DESCRIPCION FROM EMPRESA ORDER BY DESCRIPCION")
+                empresas = []
+                for row in cursor.fetchall():
+                    empresas.append({
                     'id': row[0],
                     'descripcion': row[1]
-                })
+                    })
+                return sedes, empresas
+
+            sedes, empresas = _run_portalaei_query(load_data)
+            context['sedes'] = sedes
             context['empresas'] = empresas
-            
-            cursor.close()
         except Exception as e:
             context['sedes'] = []
             context['empresas'] = []
@@ -471,20 +623,28 @@ class marcaciones_sede(TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context['puede_editar_ingreso'] = _can_edit_marker_entry(self.request.user)
+        context['puede_ver_historial'] = _can_view_marker_history(self.request.user)
+        context['puede_sincronizar_erp'] = _can_sync_marker_erp(self.request.user)
         id_sede = self.kwargs.get('id_sede')
         
         try:
-            cursor = connection_portalaei.cursor()
-            
-            # Obtener información de la sede
-            cursor.execute("""
+            def load_data(cursor):
+                cursor.execute("""
                 SELECT ID_SEDE, NOMBRE_SEDE, IDEMPRESA
                 FROM SEDES_MARCACIONES
                 WHERE ID_SEDE = ?
             """, [id_sede])
             
-            sede = cursor.fetchone()
-            
+                sede = cursor.fetchone()
+                cursor.execute("SELECT IDEMPRESA, DESCRIPCION FROM EMPRESA ORDER BY DESCRIPCION")
+                empresas = [
+                    {'id': row[0], 'descripcion': row[1]}
+                    for row in cursor.fetchall()
+                ]
+                return sede, empresas
+
+            sede, empresas = _run_portalaei_query(load_data)
             if sede:
                 context['sede'] = {
                     'ID_SEDE': sede[0],
@@ -494,17 +654,7 @@ class marcaciones_sede(TemplateView):
             else:
                 context['error'] = 'Sede no encontrada'
             
-            # Empresas para filtros
-            cursor.execute("SELECT IDEMPRESA, DESCRIPCION FROM EMPRESA ORDER BY DESCRIPCION")
-            empresas = []
-            for row in cursor.fetchall():
-                empresas.append({
-                    'id': row[0],
-                    'descripcion': row[1]
-                })
             context['empresas'] = empresas
-            
-            cursor.close()
         except Exception as e:
             context['error'] = str(e)
             
@@ -522,8 +672,6 @@ def obtener_asistencias(request):
             fecha_fin = request.GET.get('fecha_fin', '')
             empresa_filtro = request.GET.get('empresa', '')
             sede_filtro = request.GET.get('sede', '')
-            
-            cursor = connection_portalaei.cursor()
             
             query = """
                 SELECT a.ID_ASISTENCIA, a.ID_PERSONAL, a.ID_SEDE, a.HORA_INGRESO, a.HORA_SALIDA, 
@@ -562,10 +710,11 @@ def obtener_asistencias(request):
             # Ordenar por fecha más reciente primero
             query += " ORDER BY a.LOG_FECHA DESC, a.HORA_INGRESO DESC"
             
-            cursor.execute(query, params)
-            
+            rows = _run_portalaei_query(
+                lambda cursor: (cursor.execute(query, params), cursor.fetchall())[1]
+            )
             asistencias = []
-            for row in cursor.fetchall():
+            for row in rows:
                
                 hora_ingreso = row[3].strftime('%H:%M:%S') if row[3] else None
                 hora_salida = row[4].strftime('%H:%M:%S') if row[4] else None
@@ -621,16 +770,258 @@ def obtener_asistencias(request):
                     'IDEMPRESA': row[10],
                     'EMPRESA_NOMBRE': row[11],
                     'SEDE_NOMBRE': row[12]
+                    ,'ES_TURNO_NOCTURNO': bool(
+                        row[3] and row[4] and row[4] < row[3]
+                    )
                 })
             
             # Actualizar estados en la base de datos para registros que califican como "Completado" - REMOVIDO
             # actualizar_estados_completados(cursor)  # Solo se ejecuta manualmente ahora
             
-            cursor.close()
             return JsonResponse({'status': 'success', 'data': asistencias})
             
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+def editar_asistencia(request):
+    """Corrige solo la hora de ingreso y registra una auditoría inmutable."""
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)
+    if not _can_edit_marker_entry(request.user):
+        return JsonResponse({
+            'status': 'error',
+            'message': 'El usuario no está autorizado para modificar la hora de ingreso.',
+        }, status=403)
+
+    cursor = None
+    try:
+        data = json.loads(request.body or '{}')
+        attendance_id = int(data.get('id_asistencia') or 0)
+        if attendance_id <= 0:
+            raise ValueError('La marcación seleccionada no es válida.')
+        entry_time = _parse_attendance_time(
+            data.get('hora_ingreso'), 'La hora de ingreso', required=True
+        )
+        reason = str(data.get('motivo') or '').strip()
+        if len(reason) < 8:
+            raise ValueError('Ingrese un motivo de al menos 8 caracteres.')
+
+        cursor = _get_portalaei_cursor(ensure_alive=True)
+        _ensure_attendance_audit_table(cursor)
+        connection_portalaei.commit()
+        cursor.execute("""
+            SELECT a.HORA_INGRESO, a.HORA_SALIDA, a.LOG_FECHA,
+                   p.CODIGO_PERSONAL, p.NOMBRES, p.APELLIDOS
+            FROM ASISTENCIA a
+            INNER JOIN PERSONAL p ON p.ID_PERSONAL = a.ID_PERSONAL
+            WHERE a.ID_ASISTENCIA = ?
+        """, [attendance_id])
+        current = cursor.fetchone()
+        if not current:
+            return JsonResponse({
+                'status': 'error', 'message': 'La marcación ya no existe.'
+            }, status=404)
+
+        previous_entry, previous_exit = current[0], current[1]
+        exit_time = previous_exit
+        if previous_entry == entry_time:
+            raise ValueError('No hay cambios en la hora de ingreso.')
+
+        worked_hours = 0
+        if exit_time:
+            entry_dt = datetime.combine(date.today(), entry_time)
+            exit_dt = datetime.combine(date.today(), exit_time)
+            if exit_dt < entry_dt:
+                exit_dt += timedelta(days=1)
+            worked_hours = (exit_dt - entry_dt).total_seconds() / 3600
+        new_status = 2 if exit_time and worked_hours >= 6 else 1
+
+        cursor.execute("""
+            UPDATE ASISTENCIA
+            SET HORA_INGRESO = ?, ESTADO = ?
+            WHERE ID_ASISTENCIA = ?
+        """, [entry_time, new_status, attendance_id])
+        cursor.execute("""
+            INSERT INTO dbo.ASISTENCIA_MODIFICACION_LOG (
+                ID_ASISTENCIA, HORA_INGRESO_ANTERIOR, HORA_SALIDA_ANTERIOR,
+                HORA_INGRESO_NUEVA, HORA_SALIDA_NUEVA, MOTIVO,
+                USUARIO, IP_ORIGEN
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, [
+            attendance_id, previous_entry, previous_exit, entry_time, exit_time,
+            reason, request.user.username, request.META.get('REMOTE_ADDR', ''),
+        ])
+        connection_portalaei.commit()
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Hora de ingreso actualizada y registrada en el historial.',
+            'data': {
+                'id_asistencia': attendance_id,
+                'estado': 'Completado' if new_status == 2 else (
+                    'Completo' if exit_time else 'Incompleto'
+                ),
+            },
+        })
+    except (ValueError, TypeError, json.JSONDecodeError) as error:
+        return JsonResponse({'status': 'error', 'message': str(error)}, status=400)
+    except Exception as error:
+        try:
+            connection_portalaei.rollback()
+        except Exception:
+            pass
+        traceback.print_exc()
+        return JsonResponse({
+            'status': 'error', 'message': f'No se pudo actualizar: {error}'
+        }, status=500)
+    finally:
+        if cursor is not None:
+            try:
+                cursor.close()
+            except Exception:
+                pass
+
+
+def historial_modificaciones_asistencia(request):
+    if request.method != 'GET':
+        return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)
+    if not _can_view_marker_history(request.user):
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Solo un administrador puede consultar el historial.',
+        }, status=403)
+
+    cursor = None
+    try:
+        attendance_id = request.GET.get('id_asistencia', '').strip()
+        cursor = _get_portalaei_cursor(ensure_alive=True)
+        _ensure_attendance_audit_table(cursor)
+        connection_portalaei.commit()
+        query = """
+            SELECT TOP 300 l.ID_LOG, l.ID_ASISTENCIA,
+                   l.HORA_INGRESO_ANTERIOR, l.HORA_SALIDA_ANTERIOR,
+                   l.HORA_INGRESO_NUEVA, l.HORA_SALIDA_NUEVA,
+                   l.MOTIVO, l.USUARIO, l.IP_ORIGEN, l.FECHA_MODIFICACION,
+                   p.CODIGO_PERSONAL, p.NOMBRES, p.APELLIDOS
+            FROM dbo.ASISTENCIA_MODIFICACION_LOG l
+            LEFT JOIN ASISTENCIA a ON a.ID_ASISTENCIA = l.ID_ASISTENCIA
+            LEFT JOIN PERSONAL p ON p.ID_PERSONAL = a.ID_PERSONAL
+        """
+        params = []
+        if attendance_id:
+            query += ' WHERE l.ID_ASISTENCIA = ?'
+            params.append(int(attendance_id))
+        query += ' ORDER BY l.FECHA_MODIFICACION DESC, l.ID_LOG DESC'
+        cursor.execute(query, params)
+
+        def time_text(value):
+            return value.strftime('%H:%M:%S') if value else None
+
+        rows = []
+        for row in cursor.fetchall():
+            rows.append({
+                'id_log': row[0], 'id_asistencia': row[1],
+                'ingreso_anterior': time_text(row[2]),
+                'salida_anterior': time_text(row[3]),
+                'ingreso_nuevo': time_text(row[4]),
+                'salida_nueva': time_text(row[5]),
+                'motivo': row[6], 'usuario': row[7], 'ip': row[8],
+                'fecha_modificacion': row[9].strftime('%Y-%m-%d %H:%M:%S'),
+                'codigo_personal': row[10],
+                'nombre_completo': ' '.join(filter(None, [row[11], row[12]])),
+            })
+        return JsonResponse({'status': 'success', 'data': rows})
+    except (ValueError, TypeError) as error:
+        return JsonResponse({'status': 'error', 'message': str(error)}, status=400)
+    except Exception as error:
+        traceback.print_exc()
+        return JsonResponse({'status': 'error', 'message': str(error)}, status=500)
+    finally:
+        if cursor is not None:
+            try:
+                cursor.close()
+            except Exception:
+                pass
+
+
+@require_POST
+def sincronizar_asistencias_nisira(request):
+    if not _can_sync_marker_erp(request.user):
+        return JsonResponse({
+            'status': 'error',
+            'message': 'El usuario no está autorizado para sincronizar con NISIRA ERP.',
+        }, status=403)
+    try:
+        data = json.loads(request.body or '{}')
+        start_date = datetime.strptime(str(data.get('fecha_inicio') or ''), '%Y-%m-%d').date()
+        end_date = datetime.strptime(str(data.get('fecha_fin') or ''), '%Y-%m-%d').date()
+        if end_date < start_date:
+            raise ValueError('La fecha final no puede ser menor que la fecha inicial.')
+        if (end_date - start_date).days > 31:
+            raise ValueError('La sincronización permite un rango máximo de 32 días.')
+        site_id = int(data.get('sede') or 0)
+        if site_id <= 0:
+            raise ValueError('Seleccione una sede válida.')
+        company = str(data.get('empresa') or '').strip()
+
+        def load_marks(cursor):
+            query = """
+                SELECT RTRIM(p.CODIGO_PERSONAL), p.NOMBRES, p.APELLIDOS,
+                       CAST(a.LOG_FECHA AS date), a.HORA_INGRESO, a.HORA_SALIDA
+                FROM ASISTENCIA a
+                INNER JOIN PERSONAL p ON p.ID_PERSONAL = a.ID_PERSONAL
+                LEFT JOIN EMPRESA e ON e.IDEMPRESA = p.IDEMPRESA
+                WHERE a.ID_SEDE = ? AND CAST(a.LOG_FECHA AS date) BETWEEN ? AND ?
+            """
+            params = [site_id, start_date, end_date]
+            if company:
+                query += ' AND e.DESCRIPCION = ?'
+                params.append(company)
+            query += ' ORDER BY a.LOG_FECHA, p.CODIGO_PERSONAL'
+            cursor.execute(query, params)
+            marks = []
+            for code, names, surnames, work_date, entry, exit_time in cursor.fetchall():
+                code = str(code or '').strip()
+                if not code:
+                    continue
+                display_name = ' '.join(filter(None, [str(names or '').strip(), str(surnames or '').strip()]))
+                if entry:
+                    marks.append({'code': code, 'name': display_name,
+                                  'timestamp': datetime.combine(work_date, entry),
+                                  'kind': 'I'})
+                if exit_time:
+                    exit_date = work_date + timedelta(days=1) if entry and exit_time < entry else work_date
+                    marks.append({'code': code, 'name': display_name,
+                                  'timestamp': datetime.combine(exit_date, exit_time),
+                                  'kind': 'S'})
+            return marks
+
+        marks = _run_portalaei_query(load_marks)
+        if not marks:
+            return JsonResponse({
+                'status': 'error', 'message': 'No hay marcaciones para sincronizar en el periodo.'
+            }, status=400)
+        result = synchronize_marks(
+            marks,
+            username=_marker_username(request.user),
+            machine=request.META.get('REMOTE_ADDR', 'DASHBOARD'),
+        )
+        return JsonResponse({
+            'status': 'success',
+            'message': (
+                f"Sincronización finalizada: {result['sent']} marcas enviadas, "
+                f"{result['duplicates']} ya existentes y "
+                f"{result['types_corrected']} tipos Ingreso/Salida corregidos."
+            ),
+            'data': result,
+        })
+    except (ValueError, TypeError, json.JSONDecodeError) as error:
+        return JsonResponse({'status': 'error', 'message': str(error)}, status=400)
+    except Exception as error:
+        traceback.print_exc()
+        return JsonResponse({
+            'status': 'error', 'message': f'No se pudo sincronizar con NISIRA ERP: {error}'
+        }, status=500)
 
 
 # ===============================

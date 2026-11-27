@@ -18,6 +18,9 @@ urlpatterns = [
     path('api/health/', marcadores_health, name='marcadores_health'),
     path('api/procesar-marcacion/', procesar_marcacion, name='procesar_marcacion'),
     path('api/asistencias/', obtener_asistencias, name='obtener_asistencias'),
+    path('api/asistencias/editar/', editar_asistencia, name='editar_asistencia'),
+    path('api/asistencias/historial/', historial_modificaciones_asistencia, name='historial_modificaciones_asistencia'),
+    path('api/asistencias/sincronizar-nisira/', sincronizar_asistencias_nisira, name='sincronizar_asistencias_nisira'),
     path('api/exportar-txt/', exportar_txt_nisira, name='exportar_txt_nisira'),
     
     # APIs para gestión de sedes

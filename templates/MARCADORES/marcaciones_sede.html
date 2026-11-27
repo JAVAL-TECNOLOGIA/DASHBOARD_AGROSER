@@ -126,6 +126,29 @@
                         <i class="fa fa-file-excel"></i> Excel
                     </button>
                 </div>
+                {% if puede_sincronizar_erp %}
+                <div class="col-md-3">
+                    <label>&nbsp;</label>
+                    <button type="button" class="btn btn-info btn-block" id="btn-sincronizar-erp" onclick="sincronizarNisiraERP()">
+                        <i class="fa fa-sync-alt"></i> Sincronización ERP
+                    </button>
+                </div>
+                {% endif %}
+                {% if puede_editar_ingreso %}
+                <div class="col-md-3 mt-3">
+                    <div class="custom-control custom-switch pt-2">
+                        <input type="checkbox" class="custom-control-input" id="solo-incompletas">
+                        <label class="custom-control-label" for="solo-incompletas">Solo marcaciones sin salida</label>
+                    </div>
+                </div>
+                {% endif %}
+                {% if puede_ver_historial %}
+                <div class="col-md-3 mt-3">
+                    <button type="button" class="btn btn-outline-secondary btn-block" onclick="abrirHistorial()">
+                        <i class="fa fa-history"></i> Historial de modificaciones
+                    </button>
+                </div>
+                {% endif %}
             </div>
             
             <!-- Información de registros -->
@@ -152,6 +175,7 @@
                             <th>Fecha</th>
                             <th>Horas Trabajadas</th>
                             <th>Estado</th>
+                            {% if puede_editar_ingreso %}<th>Acciones</th>{% endif %}
                         </tr>
                     </thead>
                     <tbody>
@@ -163,6 +187,32 @@
         </div>
     </div>
 </div>
+
+{% if puede_editar_ingreso %}
+<div class="modal fade" id="editarMarcacionModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document"><div class="modal-content">
+        <div class="modal-header"><div><small class="text-muted">Corrección administrativa</small><h5 class="modal-title mb-0">Editar marcación</h5></div><button type="button" class="close" data-dismiss="modal">&times;</button></div>
+        <div class="modal-body">
+            {% csrf_token %}
+            <input type="hidden" id="editar-id-asistencia">
+            <div class="alert alert-warning py-2"><i class="fa fa-shield-alt"></i> Todo cambio quedará registrado en el historial.</div>
+            <p class="mb-3"><strong id="editar-persona"></strong><br><small id="editar-fecha" class="text-muted"></small></p>
+            <div class="form-group"><label>Hora de ingreso *</label><input type="time" step="1" class="form-control" id="editar-hora-ingreso" required><small class="text-muted">La hora de salida no puede modificarse desde esta opción.</small></div>
+            <div class="form-group mb-0"><label>Motivo de la modificación *</label><textarea id="editar-motivo" class="form-control" rows="3" maxlength="500" placeholder="Ej.: Corrección de la marcación de ingreso" required></textarea></div>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button><button type="button" class="btn btn-primary" onclick="guardarEdicionMarcacion()"><i class="fa fa-save"></i> Guardar corrección</button></div>
+    </div></div>
+</div>
+{% endif %}
+
+{% if puede_ver_historial %}
+<div class="modal fade" id="historialMarcacionModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document"><div class="modal-content">
+        <div class="modal-header"><div><small class="text-muted">Auditoría administrativa</small><h5 class="modal-title mb-0">Historial de modificaciones</h5></div><button type="button" class="close" data-dismiss="modal">&times;</button></div>
+        <div class="modal-body"><div class="table-responsive"><table class="table table-sm table-striped"><thead><tr><th>Fecha</th><th>Trabajador</th><th>Antes</th><th>Después</th><th>Motivo</th><th>Administrador</th><th>IP</th></tr></thead><tbody id="historial-marcaciones-body"></tbody></table></div></div>
+    </div></div>
+</div>
+{% endif %}
 
 {% include 'base/footer.html' %}
 
@@ -180,6 +230,8 @@
 
 <script>
 let asistenciasTable;
+let asistenciasActuales = [];
+const PUEDE_EDITAR_MARCACIONES = {% if puede_editar_ingreso %}true{% else %}false{% endif %};
 
 $(document).ready(function() {
     // Verificar que tengamos ID de sede
@@ -230,6 +282,7 @@ $(document).ready(function() {
     });
     
     filtrarAsistencias();
+    $('#solo-incompletas').on('change', function() { renderizarAsistencias(asistenciasActuales); });
 });
 
 function filtrarAsistencias() {
@@ -311,9 +364,11 @@ function calcularHorasTrabajadas(horaIngreso, horaSalida) {
 }
 
 function renderizarAsistencias(asistencias) {
+    asistenciasActuales = asistencias;
     asistenciasTable.clear();
-    
-    asistencias.forEach(function(asistencia) {
+    const visibles = $('#solo-incompletas').is(':checked') ? asistencias.filter(function(item) { return !item.HORA_SALIDA; }) : asistencias;
+
+    visibles.forEach(function(asistencia) {
         // Corregir la lógica de estados
         let estadoClass, estadoTexto;
         
@@ -331,7 +386,9 @@ function renderizarAsistencias(asistencias) {
             estadoTexto = asistencia.ESTADO || 'Sin datos';
         }
         
-        const estadoBadge = `<span class="badge badge-${estadoClass}">${estadoTexto}</span>`;
+        const nocturnoBadge = asistencia.ES_TURNO_NOCTURNO
+            ? ' <span class="badge badge-dark"><i class="fa fa-moon"></i> Turno nocturno</span>' : '';
+        const estadoBadge = `<span class="badge badge-${estadoClass}">${estadoTexto}</span>${nocturnoBadge}`;
         
         // Usar las horas trabajadas que vienen del backend
         let horasHTML = '-';
@@ -360,7 +417,7 @@ function renderizarAsistencias(asistencias) {
             `;
         }
         
-        asistenciasTable.row.add([
+        const row = [
             asistencia.ID_ASISTENCIA,
             asistencia.CODIGO_PERSONAL,
             asistencia.NOMBRES,
@@ -371,10 +428,113 @@ function renderizarAsistencias(asistencias) {
             asistencia.LOG_FECHA,
             horasHTML,
             estadoBadge
-        ]);
+        ];
+        if (PUEDE_EDITAR_MARCACIONES) {
+            row.push(`<button type="button" class="btn btn-sm btn-outline-primary" onclick="abrirEdicionMarcacion(${asistencia.ID_ASISTENCIA})"><i class="fa fa-edit"></i> Editar</button>`);
+        }
+        asistenciasTable.row.add(row);
     });
     
     asistenciasTable.draw();
+}
+
+function getCookie(name) {
+    const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+    return match ? decodeURIComponent(match[2]) : '';
+}
+
+function escapeHtml(value) {
+    return String(value == null ? '' : value).replace(/[&<>'"]/g, function(character) {
+        return {'&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'}[character];
+    });
+}
+
+function abrirEdicionMarcacion(id) {
+    const asistencia = asistenciasActuales.find(function(item) { return Number(item.ID_ASISTENCIA) === Number(id); });
+    if (!asistencia) return;
+    $('#editar-id-asistencia').val(asistencia.ID_ASISTENCIA);
+    $('#editar-persona').text(asistencia.CODIGO_PERSONAL + ' · ' + asistencia.NOMBRE_COMPLETO);
+    $('#editar-fecha').text(asistencia.LOG_FECHA + ' · ' + (asistencia.SEDE_NOMBRE || ''));
+    $('#editar-hora-ingreso').val((asistencia.HORA_INGRESO || '').slice(0, 8));
+    $('#editar-motivo').val('');
+    $('#editarMarcacionModal').modal('show');
+}
+
+function guardarEdicionMarcacion() {
+    const payload = {
+        id_asistencia: Number($('#editar-id-asistencia').val()),
+        hora_ingreso: $('#editar-hora-ingreso').val(),
+        motivo: $('#editar-motivo').val().trim()
+    };
+    if (!payload.hora_ingreso || payload.motivo.length < 8) {
+        Swal.fire('Datos incompletos', 'Indique la hora de ingreso y un motivo de al menos 8 caracteres.', 'warning');
+        return;
+    }
+    $.ajax({
+        url: '/marcadores/api/asistencias/editar/', method: 'POST', contentType: 'application/json',
+        headers: {'X-CSRFToken': getCookie('csrftoken')}, data: JSON.stringify(payload),
+        success: function(response) {
+            $('#editarMarcacionModal').modal('hide');
+            Swal.fire('Actualizado', response.message, 'success');
+            filtrarAsistencias();
+        },
+        error: function(xhr) { Swal.fire('No se pudo actualizar', (xhr.responseJSON && xhr.responseJSON.message) || 'Error inesperado', 'error'); }
+    });
+}
+
+function abrirHistorial(idAsistencia) {
+    $('#historialMarcacionModal').modal('show');
+    $('#historial-marcaciones-body').html('<tr><td colspan="7" class="text-center py-4"><i class="fa fa-spinner fa-spin"></i> Cargando historial...</td></tr>');
+    $.ajax({
+        url: '/marcadores/api/asistencias/historial/', method: 'GET',
+        data: idAsistencia ? {id_asistencia: idAsistencia} : {},
+        success: function(response) {
+            const rows = response.data.map(function(item) {
+                const antes = (item.ingreso_anterior || '—') + ' / ' + (item.salida_anterior || '—');
+                const despues = (item.ingreso_nuevo || '—') + ' / ' + (item.salida_nueva || '—');
+                return `<tr><td>${escapeHtml(item.fecha_modificacion)}</td><td><strong>${escapeHtml(item.codigo_personal)}</strong><br>${escapeHtml(item.nombre_completo)}</td><td>${escapeHtml(antes)}</td><td>${escapeHtml(despues)}</td><td>${escapeHtml(item.motivo)}</td><td>${escapeHtml(item.usuario)}</td><td>${escapeHtml(item.ip || '—')}</td></tr>`;
+            });
+            $('#historial-marcaciones-body').html(rows.length ? rows.join('') : '<tr><td colspan="7" class="text-center text-muted py-4">Aún no hay modificaciones.</td></tr>');
+        },
+        error: function(xhr) { $('#historial-marcaciones-body').html('<tr><td colspan="7" class="text-center text-danger py-4">No se pudo cargar el historial.</td></tr>'); }
+    });
+}
+
+function sincronizarNisiraERP() {
+    const fechaInicio = $('#filtro-fecha-inicio').val();
+    const fechaFin = $('#filtro-fecha-fin').val();
+    const empresa = $('#filtro-empresa').val();
+    if (!fechaInicio || !fechaFin) {
+        Swal.fire('Periodo requerido', 'Seleccione la fecha inicial y final.', 'warning');
+        return;
+    }
+    Swal.fire({
+        title: '¿Sincronizar con NISIRA ERP?',
+        html: `Se enviarán las marcaciones del <strong>${escapeHtml(fechaInicio)}</strong> al <strong>${escapeHtml(fechaFin)}</strong> al módulo RRHH · Gestión de Asistencia · Control de Ingreso/Salida Personal.<br><small>Las marcas que ya existen no se duplicarán.</small>`,
+        icon: 'warning', showCancelButton: true, confirmButtonText: 'Sí, sincronizar', cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#138496'
+    }).then(function(result) {
+        if (!result.isConfirmed) return;
+        const button = $('#btn-sincronizar-erp');
+        button.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Sincronizando...');
+        $.ajax({
+            url: '/marcadores/api/asistencias/sincronizar-nisira/', method: 'POST', contentType: 'application/json',
+            headers: {'X-CSRFToken': getCookie('csrftoken')},
+            data: JSON.stringify({fecha_inicio: fechaInicio, fecha_fin: fechaFin, empresa: empresa, sede: ID_SEDE}),
+            success: function(response) {
+                const warnings = response.data.warnings || [];
+                Swal.fire(warnings.length ? 'Sincronización con observaciones' : 'Sincronización completada',
+                    response.message + (warnings.length ? '<br><small>' + warnings.slice(0, 5).map(escapeHtml).join('<br>') + '</small>' : ''),
+                    warnings.length ? 'warning' : 'success');
+            },
+            error: function(xhr) {
+                Swal.fire('No se pudo sincronizar', (xhr.responseJSON && xhr.responseJSON.message) || 'Error inesperado', 'error');
+            },
+            complete: function() {
+                button.prop('disabled', false).html('<i class="fa fa-sync-alt"></i> Sincronización ERP');
+            }
+        });
+    });
 }
 
 function exportarNisira() {
