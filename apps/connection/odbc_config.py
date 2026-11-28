@@ -1,3 +1,4 @@
+import os
 import platform
 
 
@@ -40,6 +41,7 @@ def build_pyodbc_connection_string(host, database, user, password, mars=False, p
         f"DATABASE={database}",
         f"UID={user}",
         f"PWD={password}",
+        f"Connection Timeout={int(os.getenv('NISIRA_CONNECTION_TIMEOUT', '30'))}",
     ]
 
     if not is_windows():

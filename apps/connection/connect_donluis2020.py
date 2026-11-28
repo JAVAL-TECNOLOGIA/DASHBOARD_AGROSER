@@ -8,7 +8,7 @@ name = 'CMPA2022'
 user = 'sa'
 password = '@eisac2020'
 
-
+connection_donluis2020 = None
 try:
     connection_donluis2020 = open_connection(
         build_pyodbc_connection_string(host, name, user, password)

@@ -16,7 +16,7 @@ name = 'CMPA2022'
 user = 'sa'
 password = '@eisac2020'
 
-
+connection_inversioneajs = None
 try:
     connection_inversioneajs = open_connection(
         build_pyodbc_connection_string(host, name, user, password)

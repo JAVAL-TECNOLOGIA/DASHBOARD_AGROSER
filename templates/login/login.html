@@ -132,9 +132,30 @@
 	<!-- ================== END BASE JS ================== -->
 
 	<script>
-		$(document).ready(function() {
-			App.init();
-		});
+		(function () {
+			function mostrarLogin() {
+				var loader = document.getElementById('page-loader');
+				var container = document.getElementById('page-container');
+				if (loader) {
+					loader.classList.remove('show');
+					loader.style.display = 'none';
+				}
+				if (container) {
+					container.classList.add('show');
+					container.style.opacity = '1';
+				}
+			}
+
+			$(document).ready(function() {
+				try {
+					App.init();
+				} finally {
+					mostrarLogin();
+				}
+			});
+			window.addEventListener('load', mostrarLogin);
+			setTimeout(mostrarLogin, 1200);
+		})();
 	</script>
 </body>
 </html>
