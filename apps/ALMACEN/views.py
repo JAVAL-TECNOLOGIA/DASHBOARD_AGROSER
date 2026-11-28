@@ -637,7 +637,9 @@ class OrdenCompraPdfView(OrdenCompraPermissionMixin, View):
                            RTRIM(ISNULL(A.DESCRIPCION,'')), RTRIM(ISNULL(OC.NOTA,'')),
                            ISNULL(OC.SUBTOTALSINDSCTO,0), ISNULL(OC.DESCUENTO,0),
                            ISNULL(OC.SUBTOTALCONDSCTO,0), ISNULL(OC.IGV,0), ISNULL(OC.TOTAL,0),
-                           RTRIM(ISNULL(OC.IDSUCURSAL,'')), RTRIM(ISNULL(OC.IDALMACEN,''))
+                           RTRIM(ISNULL(OC.IDSUCURSAL,'')), RTRIM(ISNULL(OC.IDALMACEN,'')),
+                           RTRIM(ISNULL(OC.NRSIDUSUARIO_AP,'')), RTRIM(ISNULL(UA.USR_NOMBRES,'')),
+                           UA.FIRMA, RTRIM(ISNULL(UR.USR_NOMBRES,'')), UR.FIRMA
                     FROM ORDENCOMPRA OC
                     LEFT JOIN CLIEPROV CP ON CP.IDCLIEPROV=OC.IDCLIEPROV
                     LEFT JOIN ESTADOS E ON E.IDESTADO=OC.IDESTADO
@@ -646,6 +648,8 @@ class OrdenCompraPdfView(OrdenCompraPermissionMixin, View):
                     LEFT JOIN MONEDAS M ON M.IDMONEDA=OC.IDMONEDA
                     LEFT JOIN FORMA_PAGO FP ON FP.IDFPAGO=OC.IDFPAGO
                     LEFT JOIN RESPONSABLE R ON R.IDRESPONSABLE=OC.IDRESPONSABLE
+                    LEFT JOIN USUARIO UA ON UA.IDUSUARIO=OC.NRSIDUSUARIO_AP
+                    LEFT JOIN USUARIO UR ON UR.IDUSUARIO=R.IDUSUARIO
                     LEFT JOIN AREAS A ON A.IDAREA=OC.IDAREA
                     WHERE OC.IDEMPRESA='001' AND OC.IDCOMPRA=?
                 """, [idcompra])
@@ -691,7 +695,7 @@ class OrdenCompraPdfView(OrdenCompraPermissionMixin, View):
     def _build_pdf(self, header, detail):
         from reportlab.lib import colors
         from reportlab.lib.enums import TA_LEFT, TA_RIGHT, TA_CENTER
-        from reportlab.lib.pagesizes import A4, landscape
+        from reportlab.lib.pagesizes import A4
         from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
         from reportlab.lib.units import mm
         from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, KeepTogether
@@ -705,7 +709,7 @@ class OrdenCompraPdfView(OrdenCompraPermissionMixin, View):
         amber = colors.HexColor('#F2A900')
         buffer = BytesIO()
         doc = SimpleDocTemplate(
-            buffer, pagesize=landscape(A4), rightMargin=13*mm, leftMargin=13*mm,
+            buffer, pagesize=A4, rightMargin=13*mm, leftMargin=13*mm,
             topMargin=12*mm, bottomMargin=15*mm, title='Orden de compra',
             author='AGROSERVICE SAC',
         )
@@ -717,7 +721,7 @@ class OrdenCompraPdfView(OrdenCompraPermissionMixin, View):
         right = ParagraphStyle('oc-right', parent=normal, alignment=TA_RIGHT)
         right_bold = ParagraphStyle('oc-right-bold', parent=right, fontName='Helvetica-Bold')
         center = ParagraphStyle('oc-center', parent=normal, alignment=TA_CENTER)
-        title = ParagraphStyle('oc-title', parent=styles['Title'], fontName='Helvetica-Bold', fontSize=19, leading=22, textColor=navy, alignment=TA_RIGHT)
+        title = ParagraphStyle('oc-title', parent=styles['Title'], fontName='Helvetica-Bold', fontSize=17, leading=20, textColor=navy, alignment=TA_RIGHT)
         subtitle = ParagraphStyle('oc-subtitle', parent=normal, fontSize=8, textColor=slate, alignment=TA_RIGHT)
 
         clean = lambda value: escape(self._texto(value)) or '—'
@@ -738,7 +742,7 @@ class OrdenCompraPdfView(OrdenCompraPermissionMixin, View):
             [logo, Paragraph('ORDEN DE COMPRA', title)],
             [Paragraph('AGROSERVICE SAC<br/><font color="#5D7080">Documento generado desde NISIRA ERP</font>', normal),
              Paragraph('<b>{}</b><br/><font size="8">Emisión: {}</font>'.format(clean(document), fecha(header[1])), subtitle)],
-        ], colWidths=[125*mm, 140*mm])
+        ], colWidths=[78*mm, 106*mm])
         heading.setStyle(TableStyle([
             ('VALIGN',(0,0),(-1,-1),'MIDDLE'), ('ALIGN',(1,0),(-1,-1),'RIGHT'),
             ('LINEBELOW',(0,-1),(-1,-1),1.5,green), ('BOTTOMPADDING',(0,-1),(-1,-1),7),
@@ -757,7 +761,7 @@ class OrdenCompraPdfView(OrdenCompraPermissionMixin, View):
             [Paragraph(clean(header[7]), value), Paragraph(clean(header[8]), value), Paragraph(clean(header[15]), value), Paragraph('{} / {}'.format(clean(currency_name), money(header[14])), value)],
             [Paragraph('DIRECCIÓN / LUGAR DE ENTREGA', label), '', Paragraph('FECHA DE ENTREGA', label), Paragraph('RESPONSABLE', label)],
             [Paragraph(clean(header[10] or header[9]), normal), '', Paragraph(fecha(header[2]), value), Paragraph(clean(header[16]), value)],
-        ], colWidths=[93*mm, 38*mm, 65*mm, 69*mm])
+        ], colWidths=[72*mm, 33*mm, 46*mm, 33*mm])
         provider.setStyle(TableStyle([
             ('SPAN',(0,2),(1,2)), ('SPAN',(0,3),(1,3)), ('BACKGROUND',(0,0),(-1,0),paper), ('BACKGROUND',(0,2),(-1,2),paper),
             ('GRID',(0,0),(-1,-1),.45,line), ('VALIGN',(0,0),(-1,-1),'TOP'),
@@ -767,25 +771,24 @@ class OrdenCompraPdfView(OrdenCompraPermissionMixin, View):
         meta = Table([
             [Paragraph('SUCURSAL', label), Paragraph('ALMACÉN', label), Paragraph('ÁREA', label)],
             [Paragraph('{} · {}'.format(clean(header[24]), clean(header[11])), value), Paragraph('{} · {}'.format(clean(header[25]), clean(header[12])), value), Paragraph(clean(header[17]), value)],
-        ], colWidths=[88*mm, 88*mm, 89*mm])
+        ], colWidths=[61*mm, 61*mm, 62*mm])
         meta.setStyle(TableStyle([
             ('BACKGROUND',(0,0),(-1,0),paper), ('GRID',(0,0),(-1,-1),.45,line), ('VALIGN',(0,0),(-1,-1),'TOP'),
             ('LEFTPADDING',(0,0),(-1,-1),7), ('RIGHTPADDING',(0,0),(-1,-1),7), ('TOPPADDING',(0,0),(-1,-1),5), ('BOTTOMPADDING',(0,0),(-1,-1),5),
         ]))
 
-        rows = [[Paragraph(v, ParagraphStyle('th-'+str(i), parent=center, fontName='Helvetica-Bold', fontSize=6.3, leading=7.5, textColor=colors.white)) for i,v in enumerate(
-            ('ÍTEM','CÓDIGO','DESCRIPCIÓN','U.M.','CENTRO DE COSTO','CANTIDAD','P. UNIT.','% IMP.','SUBTOTAL','IMPUESTO','TOTAL'))]]
+        rows = [[Paragraph(v, ParagraphStyle('th-'+str(i), parent=center, fontName='Helvetica-Bold', fontSize=5.8, leading=7, textColor=colors.white)) for i,v in enumerate(
+            ('ÍTEM','CÓDIGO','DESCRIPCIÓN','U.M.','CENTRO DE COSTO','CANT.','P. UNIT.','% IGV','TOTAL'))]]
         for row in detail:
             consumer = '{} · {}'.format(self._texto(row[4]), self._texto(row[5])).strip(' ·')
             rows.append([
                 Paragraph(clean(row[0]), center), Paragraph(clean(row[1]), small), Paragraph(clean(row[2]), normal),
                 Paragraph(clean(row[3]), center), Paragraph(clean(consumer), small), Paragraph(quantity(row[6]), right),
-                Paragraph(money(row[7]), right), Paragraph(quantity(row[8]), right), Paragraph(money(row[9]), right),
-                Paragraph(money(row[10]), right), Paragraph(money(row[11]), right_bold),
+                Paragraph(money(row[7]), right), Paragraph(quantity(row[8]), right), Paragraph(money(row[11]), right_bold),
             ])
         if len(rows) == 1:
-            rows.append(['', '', Paragraph('La orden no contiene productos.', center), '', '', '', '', '', '', '', ''])
-        items = Table(rows, colWidths=[10*mm,26*mm,54*mm,11*mm,40*mm,19*mm,21*mm,16*mm,22*mm,21*mm,25*mm], repeatRows=1)
+            rows.append(['', '', Paragraph('La orden no contiene productos.', center), '', '', '', '', '', ''])
+        items = Table(rows, colWidths=[8*mm,23*mm,43*mm,10*mm,28*mm,15*mm,19*mm,16*mm,22*mm], repeatRows=1)
         items.setStyle(TableStyle([
             ('BACKGROUND',(0,0),(-1,0),navy), ('GRID',(0,0),(-1,-1),.35,line), ('VALIGN',(0,0),(-1,-1),'TOP'),
             ('ROWBACKGROUNDS',(0,1),(-1,-1),[colors.white, colors.HexColor('#F8FAFB')]),
@@ -797,22 +800,68 @@ class OrdenCompraPdfView(OrdenCompraPermissionMixin, View):
             [Paragraph('Descuento', right), Paragraph('{} {}'.format(currency, money(header[20])), right_bold)],
             [Paragraph('IGV', right), Paragraph('{} {}'.format(currency, money(header[22])), right_bold)],
             [Paragraph('TOTAL', ParagraphStyle('total-label', parent=right_bold, fontSize=9, textColor=colors.white)), Paragraph('{} {}'.format(currency, money(header[23])), ParagraphStyle('total-value', parent=right_bold, fontSize=11, textColor=colors.white))],
-        ], colWidths=[38*mm, 40*mm])
+        ], colWidths=[31*mm, 37*mm])
         totals.setStyle(TableStyle([
             ('GRID',(0,0),(-1,-2),.4,line), ('BACKGROUND',(0,0),(-1,-2),paper), ('BACKGROUND',(0,-1),(-1,-1),green),
             ('TOPPADDING',(0,0),(-1,-1),6), ('BOTTOMPADDING',(0,0),(-1,-1),6), ('LEFTPADDING',(0,0),(-1,-1),7), ('RIGHTPADDING',(0,0),(-1,-1),7),
         ]))
-        note = Table([[Paragraph('<b>NOTA / REFERENCIA</b><br/>{}'.format(clean(header[18])), normal), totals]], colWidths=[187*mm,78*mm])
+        note = Table([[Paragraph('<b>NOTA / REFERENCIA</b><br/>{}'.format(clean(header[18])), normal), totals]], colWidths=[116*mm,68*mm])
         note.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'TOP'), ('BOX',(0,0),(0,0),.5,line), ('BACKGROUND',(0,0),(0,0),pale_green), ('LEFTPADDING',(0,0),(0,0),8), ('RIGHTPADDING',(0,0),(0,0),8), ('TOPPADDING',(0,0),(0,0),8), ('BOTTOMPADDING',(0,0),(0,0),8)]))
 
-        story = [heading, Spacer(1,5*mm), status, Spacer(1,3*mm), provider, Spacer(1,3*mm), meta, Spacer(1,5*mm), items, Spacer(1,4*mm), KeepTogether(note)]
+        def signature_image(blob):
+            if not blob:
+                return Spacer(1, 14*mm)
+            try:
+                from PIL import Image as PillowImage, ImageChops
+
+                raw = bytes(blob)
+                # NISIRA guarda la imagen dentro de un campo General de Visual FoxPro.
+                # Se descarta la cabecera OLE hasta el inicio real del bitmap.
+                bitmap_start = raw.find(b'BM')
+                if bitmap_start >= 0:
+                    raw = raw[bitmap_start:]
+                source = PillowImage.open(BytesIO(raw)).convert('RGB')
+                background = PillowImage.new('RGB', source.size, source.getpixel((0, 0)))
+                content_box = ImageChops.difference(source, background).getbbox()
+                if content_box:
+                    margin = max(4, int(min(source.size) * .015))
+                    left = max(0, content_box[0] - margin)
+                    top = max(0, content_box[1] - margin)
+                    right_edge = min(source.width, content_box[2] + margin)
+                    bottom_edge = min(source.height, content_box[3] + margin)
+                    source = source.crop((left, top, right_edge, bottom_edge))
+                prepared = BytesIO()
+                source.save(prepared, format='PNG', optimize=True)
+                prepared.seek(0)
+                max_width, max_height = 42*mm, 14*mm
+                ratio = min(max_width / source.width, max_height / source.height)
+                return Image(prepared, width=source.width*ratio, height=source.height*ratio)
+            except Exception:
+                return Spacer(1, 14*mm)
+
+        responsible_name = self._texto(header[29]) or self._texto(header[16])
+        approver_name = self._texto(header[27]) or self._texto(header[26])
+        signature_title = ParagraphStyle('signature-title', parent=center, fontName='Helvetica-Bold', fontSize=7, leading=8.5, textColor=navy)
+        signature_name = ParagraphStyle('signature-name', parent=center, fontSize=6.4, leading=7.7, textColor=slate)
+        signatures = Table([
+            [signature_image(header[30]), signature_image(header[28]), Spacer(1, 14*mm)],
+            ['', '', ''],
+            [Paragraph(clean(responsible_name), signature_title), Paragraph(clean(approver_name), signature_title), Paragraph('PROVEEDOR', signature_title)],
+            [Paragraph('Elaborado / Responsable', signature_name), Paragraph('Aprobado por', signature_name), Paragraph('Conformidad de recepción', signature_name)],
+        ], colWidths=[61.3*mm, 61.3*mm, 61.4*mm], rowHeights=[15*mm, 1*mm, 8*mm, 7*mm])
+        signatures.setStyle(TableStyle([
+            ('ALIGN',(0,0),(-1,-1),'CENTER'), ('VALIGN',(0,0),(-1,-1),'BOTTOM'),
+            ('LINEABOVE',(0,2),(-1,2),.6,slate), ('LEFTPADDING',(0,0),(-1,-1),5), ('RIGHTPADDING',(0,0),(-1,-1),5),
+        ]))
+
+        story = [heading, Spacer(1,4*mm), status, Spacer(1,3*mm), provider, Spacer(1,3*mm), meta, Spacer(1,4*mm), items, Spacer(1,4*mm), KeepTogether(note), Spacer(1,9*mm), KeepTogether(signatures)]
 
         def footer(canvas, pdf_doc):
             canvas.saveState()
-            canvas.setStrokeColor(line); canvas.line(13*mm, 10*mm, 284*mm, 10*mm)
+            canvas.setStrokeColor(line); canvas.line(13*mm, 10*mm, 197*mm, 10*mm)
             canvas.setFont('Helvetica', 6.5); canvas.setFillColor(slate)
             canvas.drawString(13*mm, 6.3*mm, 'Fuente: NISIRA ERP · Documento de consulta')
-            canvas.drawRightString(284*mm, 6.3*mm, 'Página {}'.format(pdf_doc.page))
+            canvas.drawRightString(197*mm, 6.3*mm, 'Página {}'.format(pdf_doc.page))
             canvas.restoreState()
 
         doc.build(story, onFirstPage=footer, onLaterPages=footer)
