@@ -275,6 +275,24 @@ class AttendanceEditingTests(SimpleTestCase):
             captured['marks'][0]['timestamp'], datetime(2026, 11, 25, 1, 0)
         )
 
+    def test_attendance_filter_returns_overnight_dates_without_datetime_error(self):
+        request = self.factory.get(
+            '/marcadores/api/asistencias/',
+            {'fecha_inicio': '2026-11-24', 'fecha_fin': '2026-11-25', 'sede': '1'},
+        )
+        overnight_row = (
+            91, 10, 1, time(21, 0), time(1, 0), date(2026, 11, 24), 2,
+            '12345678', 'ANA', 'PRUEBA', '001', 'AGROSERVICE', 'PLANTA',
+        )
+        with patch.object(views, '_run_portalaei_query', return_value=[overnight_row]):
+            response = views.obtener_asistencias(request)
+
+        self.assertEqual(response.status_code, 200)
+        payload = json.loads(response.content)
+        self.assertEqual(payload['data'][0]['FECHA_INGRESO'], '2026-11-24')
+        self.assertEqual(payload['data'][0]['FECHA_SALIDA'], '2026-11-25')
+        self.assertTrue(payload['data'][0]['ES_TURNO_NOCTURNO'])
+
     def test_next_day_early_mark_closes_overnight_shift(self):
         self.assertTrue(views._is_overnight_exit(
             date(2026, 11, 26), time(21, 0), datetime(2026, 11, 27, 2, 0)

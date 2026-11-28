@@ -823,7 +823,6 @@ def obtener_asistencias(request):
                 
                 if hora_ingreso and hora_salida:
                     try:
-                        from datetime import datetime, timedelta
                         ingreso_dt = datetime.strptime(hora_ingreso, '%H:%M:%S')
                         salida_dt = datetime.strptime(hora_salida, '%H:%M:%S')
                         
