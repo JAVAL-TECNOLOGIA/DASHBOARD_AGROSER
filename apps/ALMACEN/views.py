@@ -723,6 +723,7 @@ class OrdenCompraPdfView(OrdenCompraPermissionMixin, View):
         center = ParagraphStyle('oc-center', parent=normal, alignment=TA_CENTER)
         title = ParagraphStyle('oc-title', parent=styles['Title'], fontName='Helvetica-Bold', fontSize=17, leading=20, textColor=navy, alignment=TA_RIGHT)
         subtitle = ParagraphStyle('oc-subtitle', parent=normal, fontSize=8, textColor=slate, alignment=TA_RIGHT)
+        section = ParagraphStyle('oc-section', parent=normal, fontName='Helvetica-Bold', fontSize=7.2, leading=9, textColor=green, spaceBefore=1, spaceAfter=4)
 
         clean = lambda value: escape(self._texto(value)) or '—'
         money = lambda value: '{:,.2f}'.format(Decimal(str(value or 0)))
@@ -749,18 +750,22 @@ class OrdenCompraPdfView(OrdenCompraPermissionMixin, View):
         ]))
 
         state_color = green if state_code in ('AP','AT','TP') else amber if state_code in ('PE','V1') else colors.HexColor('#C64545')
-        status = Table([[Paragraph('<b>ESTADO</b>', label), Paragraph('<b>{}</b>'.format(clean(state)), center)]], colWidths=[25*mm, 44*mm], rowHeights=[9*mm])
+        status = Table([
+            [Paragraph('DOCUMENTO', label), Paragraph('FECHA DE EMISIÓN', label), Paragraph('FECHA DE ENTREGA', label), Paragraph('ESTADO', label)],
+            [Paragraph(clean(document), value), Paragraph(fecha(header[1]), value), Paragraph(fecha(header[2]), value), Paragraph('<b>{}</b>'.format(clean(state)), center)],
+        ], colWidths=[55*mm, 40*mm, 40*mm, 49*mm], rowHeights=[7*mm, 10*mm])
         status.setStyle(TableStyle([
-            ('BACKGROUND',(0,0),(0,0),paper), ('BACKGROUND',(1,0),(1,0),state_color),
-            ('TEXTCOLOR',(1,0),(1,0),colors.white), ('BOX',(0,0),(-1,-1),.6,line),
-            ('VALIGN',(0,0),(-1,-1),'MIDDLE'), ('ALIGN',(0,0),(-1,-1),'CENTER'),
+            ('BACKGROUND',(0,0),(-1,0),paper), ('BACKGROUND',(-1,1),(-1,1),state_color),
+            ('TEXTCOLOR',(-1,1),(-1,1),colors.white), ('GRID',(0,0),(-1,-1),.45,line),
+            ('VALIGN',(0,0),(-1,-1),'MIDDLE'), ('ALIGN',(-1,0),(-1,-1),'CENTER'),
+            ('LEFTPADDING',(0,0),(-1,-1),7), ('RIGHTPADDING',(0,0),(-1,-1),7),
         ]))
 
         provider = Table([
             [Paragraph('PROVEEDOR', label), Paragraph('RUC', label), Paragraph('CONDICIÓN DE PAGO', label), Paragraph('MONEDA / T.C.', label)],
             [Paragraph(clean(header[7]), value), Paragraph(clean(header[8]), value), Paragraph(clean(header[15]), value), Paragraph('{} / {}'.format(clean(currency_name), money(header[14])), value)],
-            [Paragraph('DIRECCIÓN / LUGAR DE ENTREGA', label), '', Paragraph('FECHA DE ENTREGA', label), Paragraph('RESPONSABLE', label)],
-            [Paragraph(clean(header[10] or header[9]), normal), '', Paragraph(fecha(header[2]), value), Paragraph(clean(header[16]), value)],
+            [Paragraph('DIRECCIÓN / LUGAR DE ENTREGA', label), '', Paragraph('RESPONSABLE', label), Paragraph('ÁREA', label)],
+            [Paragraph(clean(header[10] or header[9]), normal), '', Paragraph(clean(header[16]), value), Paragraph(clean(header[17]), value)],
         ], colWidths=[72*mm, 33*mm, 46*mm, 33*mm])
         provider.setStyle(TableStyle([
             ('SPAN',(0,2),(1,2)), ('SPAN',(0,3),(1,3)), ('BACKGROUND',(0,0),(-1,0),paper), ('BACKGROUND',(0,2),(-1,2),paper),
@@ -769,9 +774,9 @@ class OrdenCompraPdfView(OrdenCompraPermissionMixin, View):
         ]))
 
         meta = Table([
-            [Paragraph('SUCURSAL', label), Paragraph('ALMACÉN', label), Paragraph('ÁREA', label)],
-            [Paragraph('{} · {}'.format(clean(header[24]), clean(header[11])), value), Paragraph('{} · {}'.format(clean(header[25]), clean(header[12])), value), Paragraph(clean(header[17]), value)],
-        ], colWidths=[61*mm, 61*mm, 62*mm])
+            [Paragraph('SUCURSAL DESTINO', label), Paragraph('ALMACÉN DESTINO', label)],
+            [Paragraph('{} · {}'.format(clean(header[24]), clean(header[11])), value), Paragraph('{} · {}'.format(clean(header[25]), clean(header[12])), value)],
+        ], colWidths=[92*mm, 92*mm])
         meta.setStyle(TableStyle([
             ('BACKGROUND',(0,0),(-1,0),paper), ('GRID',(0,0),(-1,-1),.45,line), ('VALIGN',(0,0),(-1,-1),'TOP'),
             ('LEFTPADDING',(0,0),(-1,-1),7), ('RIGHTPADDING',(0,0),(-1,-1),7), ('TOPPADDING',(0,0),(-1,-1),5), ('BOTTOMPADDING',(0,0),(-1,-1),5),
@@ -844,17 +849,23 @@ class OrdenCompraPdfView(OrdenCompraPermissionMixin, View):
         signature_title = ParagraphStyle('signature-title', parent=center, fontName='Helvetica-Bold', fontSize=7, leading=8.5, textColor=navy)
         signature_name = ParagraphStyle('signature-name', parent=center, fontSize=6.4, leading=7.7, textColor=slate)
         signatures = Table([
-            [signature_image(header[30]), signature_image(header[28]), Spacer(1, 14*mm)],
+            [signature_image(header[30]), '', signature_image(header[28])],
             ['', '', ''],
-            [Paragraph(clean(responsible_name), signature_title), Paragraph(clean(approver_name), signature_title), Paragraph('PROVEEDOR', signature_title)],
-            [Paragraph('Elaborado / Responsable', signature_name), Paragraph('Aprobado por', signature_name), Paragraph('Conformidad de recepción', signature_name)],
-        ], colWidths=[61.3*mm, 61.3*mm, 61.4*mm], rowHeights=[15*mm, 1*mm, 8*mm, 7*mm])
+            [Paragraph(clean(responsible_name), signature_title), '', Paragraph(clean(approver_name), signature_title)],
+            [Paragraph('Elaborado / Responsable', signature_name), '', Paragraph('Aprobado por', signature_name)],
+        ], colWidths=[82*mm, 20*mm, 82*mm], rowHeights=[15*mm, 1*mm, 8*mm, 7*mm])
         signatures.setStyle(TableStyle([
             ('ALIGN',(0,0),(-1,-1),'CENTER'), ('VALIGN',(0,0),(-1,-1),'BOTTOM'),
-            ('LINEABOVE',(0,2),(-1,2),.6,slate), ('LEFTPADDING',(0,0),(-1,-1),5), ('RIGHTPADDING',(0,0),(-1,-1),5),
+            ('LINEABOVE',(0,2),(0,2),.6,slate), ('LINEABOVE',(2,2),(2,2),.6,slate),
+            ('LEFTPADDING',(0,0),(-1,-1),8), ('RIGHTPADDING',(0,0),(-1,-1),8),
         ]))
 
-        story = [heading, Spacer(1,4*mm), status, Spacer(1,3*mm), provider, Spacer(1,3*mm), meta, Spacer(1,4*mm), items, Spacer(1,4*mm), KeepTogether(note), Spacer(1,9*mm), KeepTogether(signatures)]
+        story = [
+            heading, Spacer(1,4*mm), status, Spacer(1,4*mm),
+            Paragraph('INFORMACIÓN COMERCIAL', section), provider, Spacer(1,2.5*mm), meta, Spacer(1,4*mm),
+            Paragraph('DETALLE DE PRODUCTOS', section), items, Spacer(1,4*mm), KeepTogether(note), Spacer(1,8*mm),
+            Paragraph('AUTORIZACIONES', section), KeepTogether(signatures),
+        ]
 
         def footer(canvas, pdf_doc):
             canvas.saveState()
