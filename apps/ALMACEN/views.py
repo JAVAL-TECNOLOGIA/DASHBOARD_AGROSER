@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.views.generic import TemplateView
 from django.views.generic import View
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from apps.connection.connect_donluis import connection_donluis
 from apps.connection.connect_campoverde import connection_campoverde
 from apps.connection.connect_inversioneajs import connection_inversioneajs
@@ -20,6 +20,10 @@ from datetime import datetime, date
 import traceback
 from django.contrib.auth.mixins import LoginRequiredMixin, PermissionRequiredMixin
 from django.utils.dateparse import parse_date
+from django.conf import settings
+from io import BytesIO
+from pathlib import Path
+from html import escape
 
 
 
@@ -607,6 +611,212 @@ class OrdenCompraDetalleView(OrdenCompraPermissionMixin, View):
             'total': float(fila[8] or 0),
         } for fila in filas]
         return JsonResponse({'success': True, 'data': detalle})
+
+
+class OrdenCompraPdfView(OrdenCompraPermissionMixin, View):
+    """Genera una OC corporativa usando siempre la información vigente de NISIRA."""
+
+    ESTADOS = OrdenCompraDataView.ESTADOS
+
+    @staticmethod
+    def _texto(valor):
+        return str(valor).strip() if valor is not None else ''
+
+    def get(self, request, idcompra, *args, **kwargs):
+        try:
+            with connection_donluis.cursor() as cursor:
+                cursor.execute("""
+                    SELECT RTRIM(OC.IDCOMPRA), OC.FECHA, OC.FECHA_ENTREGA,
+                           RTRIM(ISNULL(OC.SERIE,'')), RTRIM(ISNULL(OC.NUMERO,'')),
+                           RTRIM(ISNULL(OC.IDESTADO,'')), RTRIM(ISNULL(E.DESCRIPCION,'')),
+                           RTRIM(ISNULL(CP.RAZON_SOCIAL,'')), RTRIM(ISNULL(CP.RUC,'')),
+                           RTRIM(ISNULL(CP.DIRECCION,'')), RTRIM(ISNULL(OC.LUGAR_ENTREGA,'')),
+                           RTRIM(ISNULL(S.DESCRIPCION,'')), RTRIM(ISNULL(AL.DESCRIPCION,'')),
+                           RTRIM(ISNULL(M.DESCRIPCION,'')), ISNULL(OC.TIPOCAMBIO,0),
+                           RTRIM(ISNULL(FP.DESCRIPCION,'')), RTRIM(ISNULL(R.NOMBRE,'')),
+                           RTRIM(ISNULL(A.DESCRIPCION,'')), RTRIM(ISNULL(OC.NOTA,'')),
+                           ISNULL(OC.SUBTOTALSINDSCTO,0), ISNULL(OC.DESCUENTO,0),
+                           ISNULL(OC.SUBTOTALCONDSCTO,0), ISNULL(OC.IGV,0), ISNULL(OC.TOTAL,0),
+                           RTRIM(ISNULL(OC.IDSUCURSAL,'')), RTRIM(ISNULL(OC.IDALMACEN,''))
+                    FROM ORDENCOMPRA OC
+                    LEFT JOIN CLIEPROV CP ON CP.IDCLIEPROV=OC.IDCLIEPROV
+                    LEFT JOIN ESTADOS E ON E.IDESTADO=OC.IDESTADO
+                    LEFT JOIN SUCURSALES S ON S.IDEMPRESA=OC.IDEMPRESA AND S.IDSUCURSAL=OC.IDSUCURSAL
+                    LEFT JOIN ALMACENES AL ON AL.IDEMPRESA=OC.IDEMPRESA AND AL.IDSUCURSAL=OC.IDSUCURSAL AND AL.IDALMACEN=OC.IDALMACEN
+                    LEFT JOIN MONEDAS M ON M.IDMONEDA=OC.IDMONEDA
+                    LEFT JOIN FORMA_PAGO FP ON FP.IDFPAGO=OC.IDFPAGO
+                    LEFT JOIN RESPONSABLE R ON R.IDRESPONSABLE=OC.IDRESPONSABLE
+                    LEFT JOIN AREAS A ON A.IDAREA=OC.IDAREA
+                    WHERE OC.IDEMPRESA='001' AND OC.IDCOMPRA=?
+                """, [idcompra])
+                header = cursor.fetchone()
+                if not header:
+                    return HttpResponse('La orden de compra no existe en NISIRA.', status=404, content_type='text/plain; charset=utf-8')
+
+                cursor.execute("""
+                    SELECT RTRIM(ISNULL(D.ITEM,'')), RTRIM(ISNULL(D.IDPRODUCTO,'')),
+                           RTRIM(ISNULL(D.DESCRIPCION,'')), RTRIM(ISNULL(D.IDMEDIDA,'')),
+                           RTRIM(ISNULL(D.IDCONSUMIDOR,'')), RTRIM(ISNULL(C.DESCRIPCION,'')),
+                           ISNULL(D.CANTIDAD,0), ISNULL(D.PRECIO_UNITARIO,0),
+                           ISNULL(D.IMPUESTO_I,0), ISNULL(D.SUBTOTALCONDSCTO,0),
+                           ISNULL(D.IMPUESTO,0), ISNULL(D.TOTAL,0)
+                    FROM DORDENCOMPRA D
+                    LEFT JOIN CONSUMIDOR C ON C.IDEMPRESA='001' AND C.IDCONSUMIDOR=D.IDCONSUMIDOR
+                    WHERE D.IDEMPRESA='001' AND D.IDCOMPRA=?
+                    ORDER BY D.ITEM
+                """, [idcompra])
+                detail = cursor.fetchall()
+        except Exception:
+            return HttpResponse(
+                'No fue posible obtener la orden desde NISIRA. Verifique la conexión e intente nuevamente.',
+                status=503,
+                content_type='text/plain; charset=utf-8',
+            )
+
+        try:
+            pdf = self._build_pdf(header, detail)
+        except Exception:
+            return HttpResponse(
+                'No fue posible generar el PDF de la orden de compra.',
+                status=500,
+                content_type='text/plain; charset=utf-8',
+            )
+
+        document = '{}-{}'.format(self._texto(header[3]) or 'OCO', self._texto(header[4]) or self._texto(header[0]))
+        response = HttpResponse(pdf, content_type='application/pdf')
+        response['Content-Disposition'] = 'inline; filename="orden-compra-{}.pdf"'.format(document.replace(' ', '-'))
+        response['Cache-Control'] = 'no-store, max-age=0'
+        return response
+
+    def _build_pdf(self, header, detail):
+        from reportlab.lib import colors
+        from reportlab.lib.enums import TA_LEFT, TA_RIGHT, TA_CENTER
+        from reportlab.lib.pagesizes import A4, landscape
+        from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+        from reportlab.lib.units import mm
+        from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, KeepTogether
+
+        navy = colors.HexColor('#12334B')
+        green = colors.HexColor('#087B58')
+        pale_green = colors.HexColor('#EAF5F1')
+        slate = colors.HexColor('#5D7080')
+        line = colors.HexColor('#DDE5EA')
+        paper = colors.HexColor('#F5F8FA')
+        amber = colors.HexColor('#F2A900')
+        buffer = BytesIO()
+        doc = SimpleDocTemplate(
+            buffer, pagesize=landscape(A4), rightMargin=13*mm, leftMargin=13*mm,
+            topMargin=12*mm, bottomMargin=15*mm, title='Orden de compra',
+            author='AGROSERVICE SAC',
+        )
+        styles = getSampleStyleSheet()
+        normal = ParagraphStyle('oc-normal', parent=styles['BodyText'], fontName='Helvetica', fontSize=7.4, leading=9.3, textColor=navy)
+        small = ParagraphStyle('oc-small', parent=normal, fontSize=6.5, leading=8, textColor=slate)
+        label = ParagraphStyle('oc-label', parent=small, fontName='Helvetica-Bold', fontSize=6.2, leading=7.5, textColor=slate, spaceAfter=2)
+        value = ParagraphStyle('oc-value', parent=normal, fontName='Helvetica-Bold', fontSize=8, leading=10)
+        right = ParagraphStyle('oc-right', parent=normal, alignment=TA_RIGHT)
+        right_bold = ParagraphStyle('oc-right-bold', parent=right, fontName='Helvetica-Bold')
+        center = ParagraphStyle('oc-center', parent=normal, alignment=TA_CENTER)
+        title = ParagraphStyle('oc-title', parent=styles['Title'], fontName='Helvetica-Bold', fontSize=19, leading=22, textColor=navy, alignment=TA_RIGHT)
+        subtitle = ParagraphStyle('oc-subtitle', parent=normal, fontSize=8, textColor=slate, alignment=TA_RIGHT)
+
+        clean = lambda value: escape(self._texto(value)) or '—'
+        money = lambda value: '{:,.2f}'.format(Decimal(str(value or 0)))
+        quantity = lambda value: '{:,.3f}'.format(Decimal(str(value or 0))).rstrip('0').rstrip('.')
+        fecha = lambda value: value.strftime('%d/%m/%Y') if value else '—'
+        document = '{}-{}'.format(self._texto(header[3]), self._texto(header[4])).strip('-')
+        state_code = self._texto(header[5])
+        state = self.ESTADOS.get(state_code, self._texto(header[6]) or state_code)
+        currency_name = self._texto(header[13])
+        currency = 'US$' if ('DOL' in currency_name.upper() or 'US' in currency_name.upper()) else 'S/'
+
+        logo_path = Path(settings.BASE_DIR) / 'static' / 'assets' / 'img' / 'logo' / 'agroservice-corporativo.png'
+        if not logo_path.exists():
+            logo_path = Path(settings.BASE_DIR) / 'static' / 'assets' / 'img' / 'logo' / 'agroservice.png'
+        logo = Image(str(logo_path), width=47*mm, height=15*mm, kind='proportional') if logo_path.exists() else Paragraph('<b>AGROSERVICE SAC</b>', value)
+        heading = Table([
+            [logo, Paragraph('ORDEN DE COMPRA', title)],
+            [Paragraph('AGROSERVICE SAC<br/><font color="#5D7080">Documento generado desde NISIRA ERP</font>', normal),
+             Paragraph('<b>{}</b><br/><font size="8">Emisión: {}</font>'.format(clean(document), fecha(header[1])), subtitle)],
+        ], colWidths=[125*mm, 140*mm])
+        heading.setStyle(TableStyle([
+            ('VALIGN',(0,0),(-1,-1),'MIDDLE'), ('ALIGN',(1,0),(-1,-1),'RIGHT'),
+            ('LINEBELOW',(0,-1),(-1,-1),1.5,green), ('BOTTOMPADDING',(0,-1),(-1,-1),7),
+        ]))
+
+        state_color = green if state_code in ('AP','AT','TP') else amber if state_code in ('PE','V1') else colors.HexColor('#C64545')
+        status = Table([[Paragraph('<b>ESTADO</b>', label), Paragraph('<b>{}</b>'.format(clean(state)), center)]], colWidths=[25*mm, 44*mm], rowHeights=[9*mm])
+        status.setStyle(TableStyle([
+            ('BACKGROUND',(0,0),(0,0),paper), ('BACKGROUND',(1,0),(1,0),state_color),
+            ('TEXTCOLOR',(1,0),(1,0),colors.white), ('BOX',(0,0),(-1,-1),.6,line),
+            ('VALIGN',(0,0),(-1,-1),'MIDDLE'), ('ALIGN',(0,0),(-1,-1),'CENTER'),
+        ]))
+
+        provider = Table([
+            [Paragraph('PROVEEDOR', label), Paragraph('RUC', label), Paragraph('CONDICIÓN DE PAGO', label), Paragraph('MONEDA / T.C.', label)],
+            [Paragraph(clean(header[7]), value), Paragraph(clean(header[8]), value), Paragraph(clean(header[15]), value), Paragraph('{} / {}'.format(clean(currency_name), money(header[14])), value)],
+            [Paragraph('DIRECCIÓN / LUGAR DE ENTREGA', label), '', Paragraph('FECHA DE ENTREGA', label), Paragraph('RESPONSABLE', label)],
+            [Paragraph(clean(header[10] or header[9]), normal), '', Paragraph(fecha(header[2]), value), Paragraph(clean(header[16]), value)],
+        ], colWidths=[93*mm, 38*mm, 65*mm, 69*mm])
+        provider.setStyle(TableStyle([
+            ('SPAN',(0,2),(1,2)), ('SPAN',(0,3),(1,3)), ('BACKGROUND',(0,0),(-1,0),paper), ('BACKGROUND',(0,2),(-1,2),paper),
+            ('GRID',(0,0),(-1,-1),.45,line), ('VALIGN',(0,0),(-1,-1),'TOP'),
+            ('LEFTPADDING',(0,0),(-1,-1),7), ('RIGHTPADDING',(0,0),(-1,-1),7), ('TOPPADDING',(0,0),(-1,-1),5), ('BOTTOMPADDING',(0,0),(-1,-1),5),
+        ]))
+
+        meta = Table([
+            [Paragraph('SUCURSAL', label), Paragraph('ALMACÉN', label), Paragraph('ÁREA', label)],
+            [Paragraph('{} · {}'.format(clean(header[24]), clean(header[11])), value), Paragraph('{} · {}'.format(clean(header[25]), clean(header[12])), value), Paragraph(clean(header[17]), value)],
+        ], colWidths=[88*mm, 88*mm, 89*mm])
+        meta.setStyle(TableStyle([
+            ('BACKGROUND',(0,0),(-1,0),paper), ('GRID',(0,0),(-1,-1),.45,line), ('VALIGN',(0,0),(-1,-1),'TOP'),
+            ('LEFTPADDING',(0,0),(-1,-1),7), ('RIGHTPADDING',(0,0),(-1,-1),7), ('TOPPADDING',(0,0),(-1,-1),5), ('BOTTOMPADDING',(0,0),(-1,-1),5),
+        ]))
+
+        rows = [[Paragraph(v, ParagraphStyle('th-'+str(i), parent=center, fontName='Helvetica-Bold', fontSize=6.3, leading=7.5, textColor=colors.white)) for i,v in enumerate(
+            ('ÍTEM','CÓDIGO','DESCRIPCIÓN','U.M.','CENTRO DE COSTO','CANTIDAD','P. UNIT.','% IMP.','SUBTOTAL','IMPUESTO','TOTAL'))]]
+        for row in detail:
+            consumer = '{} · {}'.format(self._texto(row[4]), self._texto(row[5])).strip(' ·')
+            rows.append([
+                Paragraph(clean(row[0]), center), Paragraph(clean(row[1]), small), Paragraph(clean(row[2]), normal),
+                Paragraph(clean(row[3]), center), Paragraph(clean(consumer), small), Paragraph(quantity(row[6]), right),
+                Paragraph(money(row[7]), right), Paragraph(quantity(row[8]), right), Paragraph(money(row[9]), right),
+                Paragraph(money(row[10]), right), Paragraph(money(row[11]), right_bold),
+            ])
+        if len(rows) == 1:
+            rows.append(['', '', Paragraph('La orden no contiene productos.', center), '', '', '', '', '', '', '', ''])
+        items = Table(rows, colWidths=[10*mm,26*mm,54*mm,11*mm,40*mm,19*mm,21*mm,16*mm,22*mm,21*mm,25*mm], repeatRows=1)
+        items.setStyle(TableStyle([
+            ('BACKGROUND',(0,0),(-1,0),navy), ('GRID',(0,0),(-1,-1),.35,line), ('VALIGN',(0,0),(-1,-1),'TOP'),
+            ('ROWBACKGROUNDS',(0,1),(-1,-1),[colors.white, colors.HexColor('#F8FAFB')]),
+            ('LEFTPADDING',(0,0),(-1,-1),4), ('RIGHTPADDING',(0,0),(-1,-1),4), ('TOPPADDING',(0,0),(-1,-1),5), ('BOTTOMPADDING',(0,0),(-1,-1),5),
+        ]))
+
+        totals = Table([
+            [Paragraph('Subtotal', right), Paragraph('{} {}'.format(currency, money(header[21])), right_bold)],
+            [Paragraph('Descuento', right), Paragraph('{} {}'.format(currency, money(header[20])), right_bold)],
+            [Paragraph('IGV', right), Paragraph('{} {}'.format(currency, money(header[22])), right_bold)],
+            [Paragraph('TOTAL', ParagraphStyle('total-label', parent=right_bold, fontSize=9, textColor=colors.white)), Paragraph('{} {}'.format(currency, money(header[23])), ParagraphStyle('total-value', parent=right_bold, fontSize=11, textColor=colors.white))],
+        ], colWidths=[38*mm, 40*mm])
+        totals.setStyle(TableStyle([
+            ('GRID',(0,0),(-1,-2),.4,line), ('BACKGROUND',(0,0),(-1,-2),paper), ('BACKGROUND',(0,-1),(-1,-1),green),
+            ('TOPPADDING',(0,0),(-1,-1),6), ('BOTTOMPADDING',(0,0),(-1,-1),6), ('LEFTPADDING',(0,0),(-1,-1),7), ('RIGHTPADDING',(0,0),(-1,-1),7),
+        ]))
+        note = Table([[Paragraph('<b>NOTA / REFERENCIA</b><br/>{}'.format(clean(header[18])), normal), totals]], colWidths=[187*mm,78*mm])
+        note.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'TOP'), ('BOX',(0,0),(0,0),.5,line), ('BACKGROUND',(0,0),(0,0),pale_green), ('LEFTPADDING',(0,0),(0,0),8), ('RIGHTPADDING',(0,0),(0,0),8), ('TOPPADDING',(0,0),(0,0),8), ('BOTTOMPADDING',(0,0),(0,0),8)]))
+
+        story = [heading, Spacer(1,5*mm), status, Spacer(1,3*mm), provider, Spacer(1,3*mm), meta, Spacer(1,5*mm), items, Spacer(1,4*mm), KeepTogether(note)]
+
+        def footer(canvas, pdf_doc):
+            canvas.saveState()
+            canvas.setStrokeColor(line); canvas.line(13*mm, 10*mm, 284*mm, 10*mm)
+            canvas.setFont('Helvetica', 6.5); canvas.setFillColor(slate)
+            canvas.drawString(13*mm, 6.3*mm, 'Fuente: NISIRA ERP · Documento de consulta')
+            canvas.drawRightString(284*mm, 6.3*mm, 'Página {}'.format(pdf_doc.page))
+            canvas.restoreState()
+
+        doc.build(story, onFirstPage=footer, onLaterPages=footer)
+        return buffer.getvalue()
 
 #=================================================================================================================
 #MODULO PRESUPUESTOS
