@@ -433,7 +433,13 @@ function renderizarAsistencias(asistencias) {
             estadoBadge
         ];
         if (PUEDE_EDITAR_MARCACIONES) {
-            row.push(`<button type="button" class="btn btn-sm btn-outline-primary" onclick="abrirEdicionMarcacion(${asistencia.ID_ASISTENCIA})"><i class="fa fa-edit"></i> Editar</button>`);
+            const nombres = String(asistencia.NOMBRES || '').trim().toUpperCase();
+            const apellidos = String(asistencia.APELLIDOS || '').trim().toUpperCase();
+            const sinIdentidad = !nombres || !apellidos || nombres === 'SIN NOMBRE' || apellidos === 'SIN APELLIDO';
+            const actualizarNombre = sinIdentidad
+                ? `<button type="button" class="btn btn-sm btn-outline-success ml-1" onclick="actualizarIdentidad(${asistencia.ID_ASISTENCIA}, this)"><i class="fa fa-id-card"></i> Actualizar nombre</button>`
+                : '';
+            row.push(`<div class="text-nowrap"><button type="button" class="btn btn-sm btn-outline-primary" onclick="abrirEdicionMarcacion(${asistencia.ID_ASISTENCIA})"><i class="fa fa-edit"></i> Editar</button>${actualizarNombre}</div>`);
         }
         asistenciasTable.row.add(row);
     });
@@ -484,6 +490,26 @@ function guardarEdicionMarcacion() {
             filtrarAsistencias();
         },
         error: function(xhr) { Swal.fire('No se pudo actualizar', (xhr.responseJSON && xhr.responseJSON.message) || 'Error inesperado', 'error'); }
+    });
+}
+
+function actualizarIdentidad(idAsistencia, button) {
+    const $button = $(button);
+    $button.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Consultando...');
+    $.ajax({
+        url: '/marcadores/api/asistencias/actualizar-identidad/',
+        method: 'POST',
+        contentType: 'application/json',
+        headers: {'X-CSRFToken': getCookie('csrftoken')},
+        data: JSON.stringify({id_asistencia: Number(idAsistencia)}),
+        success: function(response) {
+            Swal.fire('Identidad actualizada', response.data.nombre_completo, 'success');
+            filtrarAsistencias();
+        },
+        error: function(xhr) {
+            Swal.fire('No se pudo actualizar', (xhr.responseJSON && xhr.responseJSON.message) || 'Error inesperado', 'error');
+            $button.prop('disabled', false).html('<i class="fa fa-id-card"></i> Actualizar nombre');
+        }
     });
 }
 

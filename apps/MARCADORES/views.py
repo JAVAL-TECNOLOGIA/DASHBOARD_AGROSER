@@ -955,6 +955,79 @@ def editar_asistencia(request):
                 pass
 
 
+@require_POST
+def actualizar_identidad_asistencia(request):
+    """Actualiza nombres y apellidos de una marcación existente desde NISIRA."""
+    if not _can_edit_marker_entry(request.user):
+        return JsonResponse({
+            'status': 'error',
+            'message': 'El usuario no está autorizado para actualizar la identidad.',
+        }, status=403)
+
+    cursor = None
+    try:
+        data = json.loads(request.body or '{}')
+        attendance_id = int(data.get('id_asistencia') or 0)
+        if attendance_id <= 0:
+            raise ValueError('La marcación seleccionada no es válida.')
+
+        cursor = _get_portalaei_cursor(ensure_alive=True)
+        cursor.execute("""
+            SELECT p.ID_PERSONAL, LTRIM(RTRIM(p.CODIGO_PERSONAL))
+            FROM ASISTENCIA a
+            INNER JOIN PERSONAL p ON p.ID_PERSONAL = a.ID_PERSONAL
+            WHERE a.ID_ASISTENCIA = ?
+        """, [attendance_id])
+        current = cursor.fetchone()
+        if not current:
+            return JsonResponse({
+                'status': 'error', 'message': 'La marcación ya no existe.'
+            }, status=404)
+
+        personal_id, document_number = current[0], str(current[1] or '').strip()
+        identity = _lookup_nisira_person(document_number)
+        if not identity:
+            return JsonResponse({
+                'status': 'error',
+                'message': f'NISIRA no encontró nombres para el DNI o código {document_number}.',
+            }, status=404)
+
+        cursor.execute("""
+            UPDATE PERSONAL
+            SET NOMBRES = ?, APELLIDOS = ?
+            WHERE ID_PERSONAL = ?
+        """, [identity['nombres'], identity['apellidos'], personal_id])
+        connection_portalaei.commit()
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Nombres y apellidos actualizados desde NISIRA.',
+            'data': {
+                'id_asistencia': attendance_id,
+                'codigo_personal': document_number,
+                'nombres': identity['nombres'],
+                'apellidos': identity['apellidos'],
+                'nombre_completo': f"{identity['nombres']} {identity['apellidos']}".strip(),
+            },
+        })
+    except (ValueError, TypeError, json.JSONDecodeError) as error:
+        return JsonResponse({'status': 'error', 'message': str(error)}, status=400)
+    except Exception as error:
+        try:
+            connection_portalaei.rollback()
+        except Exception:
+            pass
+        traceback.print_exc()
+        return JsonResponse({
+            'status': 'error', 'message': f'No se pudo actualizar la identidad: {error}'
+        }, status=500)
+    finally:
+        if cursor is not None:
+            try:
+                cursor.close()
+            except Exception:
+                pass
+
+
 def historial_modificaciones_asistencia(request):
     if request.method != 'GET':
         return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)

@@ -139,6 +139,35 @@ class AttendanceEditingTests(SimpleTestCase):
         cursor.close.assert_called_once()
         connection.close.assert_called_once()
 
+    def test_existing_placeholder_identity_can_be_updated_from_nisira(self):
+        request = self.factory.post(
+            '/marcadores/api/asistencias/actualizar-identidad/',
+            data=json.dumps({'id_asistencia': 25}),
+            content_type='application/json',
+        )
+        request.user = SimpleNamespace(
+            is_authenticated=True, username='JALCANTARA'
+        )
+        cursor = Mock()
+        cursor.fetchone.return_value = (44, '21574732')
+        connection = Mock()
+        identity = {'nombres': 'CARMEN MONICA', 'apellidos': 'CRUZ VELASCO'}
+
+        with patch.object(views, '_get_portalaei_cursor', return_value=cursor), patch.object(
+            views, '_lookup_nisira_person', return_value=identity
+        ), patch.object(views, 'connection_portalaei', connection):
+            response = views.actualizar_identidad_asistencia(request)
+
+        self.assertEqual(response.status_code, 200)
+        update_call = next(
+            call for call in cursor.execute.call_args_list
+            if 'UPDATE PERSONAL' in call.args[0]
+        )
+        self.assertEqual(
+            update_call.args[1], ['CARMEN MONICA', 'CRUZ VELASCO', 44]
+        )
+        connection.commit.assert_called_once()
+
     def test_nisira_xml_contains_code_date_and_time(self):
         xml = _xml_for_marks([{
             'code': '21574732',
