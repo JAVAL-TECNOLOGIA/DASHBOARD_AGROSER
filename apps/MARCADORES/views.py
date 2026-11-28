@@ -12,6 +12,8 @@ from django.http import HttpResponse
 from django.views.decorators.http import require_POST
 
 import apps.connection.connect_portalaei as portalaei_db
+from apps.connection.connect_donluis import connection_string as nisira_connection_string
+from apps.connection.local_connection import open_connection
 from apps.utils.permissions import es_admin
 from django.http import JsonResponse
 import traceback 
@@ -85,6 +87,51 @@ def _parse_attendance_time(value, field_name, required=False):
         except ValueError:
             continue
     raise ValueError(f'{field_name} debe tener el formato HH:MM.')
+
+
+def _lookup_nisira_person(document_number):
+    """Busca la identidad vigente en NISIRA por DNI o código general."""
+    document_number = str(document_number or '').strip()
+    if not document_number:
+        return None
+
+    connection = None
+    cursor = None
+    try:
+        connection = open_connection(nisira_connection_string)
+        cursor = connection.cursor()
+        cursor.execute("""
+            SELECT TOP 1
+                   LTRIM(RTRIM(ISNULL(NOMBRES, ''))),
+                   LTRIM(RTRIM(CONCAT(ISNULL(A_PATERNO, ''), ' ', ISNULL(A_MATERNO, ''))))
+            FROM PERSONAL_GENERAL
+            WHERE LTRIM(RTRIM(NRODOCUMENTO)) = ?
+               OR LTRIM(RTRIM(IDCODIGOGENERAL)) = ?
+            ORDER BY CASE WHEN ESTADO = 1 THEN 0 ELSE 1 END
+        """, [document_number, document_number])
+        row = cursor.fetchone()
+        if not row:
+            return None
+        names = str(row[0] or '').strip()
+        surnames = ' '.join(str(row[1] or '').split())
+        if not names and not surnames:
+            return None
+        return {'nombres': names or 'SIN NOMBRE', 'apellidos': surnames or 'SIN APELLIDO'}
+    except Exception:
+        # La marcación no debe bloquearse si NISIRA está temporalmente fuera de línea.
+        traceback.print_exc()
+        return None
+    finally:
+        if cursor is not None:
+            try:
+                cursor.close()
+            except Exception:
+                pass
+        if connection is not None:
+            try:
+                connection.close()
+            except Exception:
+                pass
 
 
 def _ensure_attendance_audit_table(cursor):
@@ -320,8 +367,9 @@ def procesar_marcacion(request):
             personal = cursor.fetchone()
             
             if not personal:
-                nombres = 'SIN NOMBRE'
-                apellidos = 'SIN APELLIDO'
+                nisira_person = _lookup_nisira_person(codigo_personal)
+                nombres = nisira_person['nombres'] if nisira_person else 'SIN NOMBRE'
+                apellidos = nisira_person['apellidos'] if nisira_person else 'SIN APELLIDO'
                 genero = 'Masculino'
 
                 cursor.execute("""
@@ -341,13 +389,36 @@ def procesar_marcacion(request):
                 cursor.close()
                 
                 return JsonResponse({
-                    'status': 'warning',
-                    'message': f'DNI no encontrado pero registrado | {codigo_personal} | Ingreso: {hora_actual}',
-                    'tipo': 'warning'
+                    'status': 'success' if nisira_person else 'warning',
+                    'message': (
+                        f'{nombres} {apellidos} | {codigo_personal} | Ingreso: {hora_actual}'
+                        if nisira_person else
+                        f'DNI no encontrado en NISIRA; registrado para revisión | {codigo_personal} | Ingreso: {hora_actual}'
+                    ),
+                    'tipo': 'success' if nisira_person else 'warning'
                 })
             
             id_personal = personal[0]
-            nombre_completo = f"{personal[2]} {personal[3]}"
+            nombres_personal = str(personal[2] or '').strip()
+            apellidos_personal = str(personal[3] or '').strip()
+            placeholder_identity = (
+                not nombres_personal
+                or nombres_personal.upper() == 'SIN NOMBRE'
+                or not apellidos_personal
+                or apellidos_personal.upper() == 'SIN APELLIDO'
+            )
+            if placeholder_identity:
+                nisira_person = _lookup_nisira_person(codigo_personal)
+                if nisira_person:
+                    nombres_personal = nisira_person['nombres']
+                    apellidos_personal = nisira_person['apellidos']
+                    cursor.execute("""
+                        UPDATE PERSONAL
+                        SET NOMBRES = ?, APELLIDOS = ?
+                        WHERE ID_PERSONAL = ?
+                    """, [nombres_personal, apellidos_personal, id_personal])
+                    connection_portalaei.commit()
+            nombre_completo = f"{nombres_personal} {apellidos_personal}".strip()
 
             # 🔥 VALIDACIÓN GLOBAL ANTI-DUPLICADOS
             cursor.execute("""
@@ -785,13 +856,13 @@ def obtener_asistencias(request):
 
 
 def editar_asistencia(request):
-    """Corrige solo la hora de ingreso y registra una auditoría inmutable."""
+    """Corrige ingreso y/o salida y registra una auditoría inmutable."""
     if request.method != 'POST':
         return JsonResponse({'status': 'error', 'message': 'Método no permitido'}, status=405)
     if not _can_edit_marker_entry(request.user):
         return JsonResponse({
             'status': 'error',
-            'message': 'El usuario no está autorizado para modificar la hora de ingreso.',
+            'message': 'El usuario no está autorizado para modificar la marcación.',
         }, status=403)
 
     cursor = None
@@ -802,6 +873,9 @@ def editar_asistencia(request):
             raise ValueError('La marcación seleccionada no es válida.')
         entry_time = _parse_attendance_time(
             data.get('hora_ingreso'), 'La hora de ingreso', required=True
+        )
+        exit_time = _parse_attendance_time(
+            data.get('hora_salida'), 'La hora de salida', required=False
         )
         reason = str(data.get('motivo') or '').strip()
         if len(reason) < 8:
@@ -824,9 +898,8 @@ def editar_asistencia(request):
             }, status=404)
 
         previous_entry, previous_exit = current[0], current[1]
-        exit_time = previous_exit
-        if previous_entry == entry_time:
-            raise ValueError('No hay cambios en la hora de ingreso.')
+        if previous_entry == entry_time and previous_exit == exit_time:
+            raise ValueError('No hay cambios en la hora de ingreso o salida.')
 
         worked_hours = 0
         if exit_time:
@@ -839,9 +912,9 @@ def editar_asistencia(request):
 
         cursor.execute("""
             UPDATE ASISTENCIA
-            SET HORA_INGRESO = ?, ESTADO = ?
+            SET HORA_INGRESO = ?, HORA_SALIDA = ?, ESTADO = ?
             WHERE ID_ASISTENCIA = ?
-        """, [entry_time, new_status, attendance_id])
+        """, [entry_time, exit_time, new_status, attendance_id])
         cursor.execute("""
             INSERT INTO dbo.ASISTENCIA_MODIFICACION_LOG (
                 ID_ASISTENCIA, HORA_INGRESO_ANTERIOR, HORA_SALIDA_ANTERIOR,
@@ -855,7 +928,7 @@ def editar_asistencia(request):
         connection_portalaei.commit()
         return JsonResponse({
             'status': 'success',
-            'message': 'Hora de ingreso actualizada y registrada en el historial.',
+            'message': 'Horas de ingreso y salida actualizadas y registradas en el historial.',
             'data': {
                 'id_asistencia': attendance_id,
                 'estado': 'Completado' if new_status == 2 else (

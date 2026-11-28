@@ -79,9 +79,13 @@ class AttendanceEditingTests(SimpleTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertTrue(any('UPDATE ASISTENCIA' in query for query, _ in cursor.executions))
         self.assertTrue(any('ASISTENCIA_MODIFICACION_LOG' in query and 'INSERT INTO' in query for query, _ in cursor.executions))
+        update_params = next(
+            params for query, params in cursor.executions if 'UPDATE ASISTENCIA' in query
+        )
+        self.assertEqual(update_params, [time(8, 10), None, 1, 15])
         self.assertEqual(connection.commit.call_count, 2)
 
-    def test_lneyra_can_edit_entry_but_cannot_view_history(self):
+    def test_lneyra_can_edit_entry_and_exit_but_cannot_view_history(self):
         edit_request = self.factory.post(
             '/marcadores/api/asistencias/editar/',
             data=json.dumps({
@@ -107,7 +111,7 @@ class AttendanceEditingTests(SimpleTestCase):
         update_params = next(
             params for query, params in cursor.executions if 'UPDATE ASISTENCIA' in query
         )
-        self.assertEqual(update_params, [time(8, 30), 1, 15])
+        self.assertEqual(update_params, [time(8, 30), time(22, 45), 2, 15])
 
         history_request = self.factory.get('/marcadores/api/asistencias/historial/')
         history_request.user = edit_request.user
@@ -117,6 +121,23 @@ class AttendanceEditingTests(SimpleTestCase):
     def test_time_validation_rejects_invalid_values(self):
         with self.assertRaisesRegex(ValueError, 'formato HH:MM'):
             views._parse_attendance_time('25:90', 'La hora')
+
+    def test_nisira_person_lookup_returns_names_and_surnames(self):
+        cursor = Mock()
+        cursor.fetchone.return_value = ('CARMEN MONICA', 'CRUZ   VELASCO')
+        connection = Mock()
+        connection.cursor.return_value = cursor
+
+        with patch.object(views, 'open_connection', return_value=connection):
+            result = views._lookup_nisira_person('21574732')
+
+        self.assertEqual(result, {
+            'nombres': 'CARMEN MONICA',
+            'apellidos': 'CRUZ VELASCO',
+        })
+        self.assertEqual(cursor.execute.call_args.args[1], ['21574732', '21574732'])
+        cursor.close.assert_called_once()
+        connection.close.assert_called_once()
 
     def test_nisira_xml_contains_code_date_and_time(self):
         xml = _xml_for_marks([{

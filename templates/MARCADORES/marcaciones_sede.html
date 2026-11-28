@@ -197,7 +197,10 @@
             <input type="hidden" id="editar-id-asistencia">
             <div class="alert alert-warning py-2"><i class="fa fa-shield-alt"></i> Todo cambio quedará registrado en el historial.</div>
             <p class="mb-3"><strong id="editar-persona"></strong><br><small id="editar-fecha" class="text-muted"></small></p>
-            <div class="form-group"><label>Hora de ingreso *</label><input type="time" step="1" class="form-control" id="editar-hora-ingreso" required><small class="text-muted">La hora de salida no puede modificarse desde esta opción.</small></div>
+            <div class="row">
+                <div class="col-md-6 form-group"><label>Hora de ingreso *</label><input type="time" step="1" class="form-control" id="editar-hora-ingreso" required></div>
+                <div class="col-md-6 form-group"><label>Hora de salida</label><input type="time" step="1" class="form-control" id="editar-hora-salida"><small class="text-muted">Déjela vacía si el trabajador aún no marcó salida.</small></div>
+            </div>
             <div class="form-group mb-0"><label>Motivo de la modificación *</label><textarea id="editar-motivo" class="form-control" rows="3" maxlength="500" placeholder="Ej.: Corrección de la marcación de ingreso" required></textarea></div>
         </div>
         <div class="modal-footer"><button type="button" class="btn btn-default" data-dismiss="modal">Cancelar</button><button type="button" class="btn btn-primary" onclick="guardarEdicionMarcacion()"><i class="fa fa-save"></i> Guardar corrección</button></div>
@@ -456,6 +459,7 @@ function abrirEdicionMarcacion(id) {
     $('#editar-persona').text(asistencia.CODIGO_PERSONAL + ' · ' + asistencia.NOMBRE_COMPLETO);
     $('#editar-fecha').text(asistencia.LOG_FECHA + ' · ' + (asistencia.SEDE_NOMBRE || ''));
     $('#editar-hora-ingreso').val((asistencia.HORA_INGRESO || '').slice(0, 8));
+    $('#editar-hora-salida').val((asistencia.HORA_SALIDA || '').slice(0, 8));
     $('#editar-motivo').val('');
     $('#editarMarcacionModal').modal('show');
 }
@@ -464,6 +468,7 @@ function guardarEdicionMarcacion() {
     const payload = {
         id_asistencia: Number($('#editar-id-asistencia').val()),
         hora_ingreso: $('#editar-hora-ingreso').val(),
+        hora_salida: $('#editar-hora-salida').val(),
         motivo: $('#editar-motivo').val().trim()
     };
     if (!payload.hora_ingreso || payload.motivo.length < 8) {
