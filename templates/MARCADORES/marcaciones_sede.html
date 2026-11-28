@@ -172,7 +172,8 @@
                             <th>Empresa</th>
                             <th>Hora Ingreso</th>
                             <th>Hora Salida</th>
-                            <th>Fecha</th>
+                            <th>Fecha ingreso</th>
+                            <th>Fecha salida</th>
                             <th>Horas Trabajadas</th>
                             <th>Estado</th>
                             {% if puede_editar_ingreso %}<th>Acciones</th>{% endif %}
@@ -279,8 +280,8 @@ $(document).ready(function() {
         order: [[7, 'desc'], [5, 'desc']],
         columnDefs: [
             { targets: [0], visible: false }, // Ocultar ID
-            { targets: [8], className: 'text-center' }, // Centrar horas
-            { targets: [9], className: 'text-center' } // Centrar estado
+            { targets: [9], className: 'text-center' }, // Centrar horas
+            { targets: [10], className: 'text-center' } // Centrar estado
         ]
     });
     
@@ -428,7 +429,8 @@ function renderizarAsistencias(asistencias) {
             asistencia.EMPRESA_NOMBRE || '-',
             asistencia.HORA_INGRESO || '-',
             asistencia.HORA_SALIDA || '-',
-            asistencia.LOG_FECHA,
+            asistencia.FECHA_INGRESO || asistencia.LOG_FECHA || '-',
+            asistencia.FECHA_SALIDA || '-',
             horasHTML,
             estadoBadge
         ];

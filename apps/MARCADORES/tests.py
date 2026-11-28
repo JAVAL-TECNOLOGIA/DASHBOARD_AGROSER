@@ -228,6 +228,53 @@ class AttendanceEditingTests(SimpleTestCase):
             [mark], username='LNEYRA', machine='127.0.0.1'
         )
 
+    def test_sync_selected_next_day_sends_only_overnight_exit(self):
+        request = self.factory.post(
+            '/marcadores/api/asistencias/sincronizar-nisira/',
+            data=json.dumps({
+                'fecha_inicio': '2026-11-25', 'fecha_fin': '2026-11-25',
+                'sede': 1, 'empresa': '',
+            }),
+            content_type='application/json',
+        )
+        request.user = SimpleNamespace(is_authenticated=True, username='LNEYRA')
+        request.META['REMOTE_ADDR'] = '127.0.0.1'
+
+        class OvernightCursor:
+            def execute(self, query, params=None):
+                self.query = query
+                self.params = params
+
+            def fetchall(self):
+                return [(
+                    '12345678', 'ANA', 'PRUEBA', date(2026, 11, 24),
+                    time(21, 0), time(1, 0),
+                )]
+
+        cursor = OvernightCursor()
+        captured = {}
+
+        def run_query(callback):
+            return callback(cursor)
+
+        def sync_marks(marks, **kwargs):
+            captured['marks'] = marks
+            return {'sent': 1, 'duplicates': 0, 'types_corrected': 0,
+                    'warnings': [], 'documents': ['TEST']}
+
+        with patch.object(views, '_run_portalaei_query', side_effect=run_query), patch.object(
+            views, 'synchronize_marks', side_effect=sync_marks
+        ):
+            response = views.sincronizar_asistencias_nisira(request)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(cursor.params[:3], [1, date(2026, 11, 25), date(2026, 11, 25)])
+        self.assertEqual(len(captured['marks']), 1)
+        self.assertEqual(captured['marks'][0]['kind'], 'S')
+        self.assertEqual(
+            captured['marks'][0]['timestamp'], datetime(2026, 11, 25, 1, 0)
+        )
+
     def test_next_day_early_mark_closes_overnight_shift(self):
         self.assertTrue(views._is_overnight_exit(
             date(2026, 11, 26), time(21, 0), datetime(2026, 11, 27, 2, 0)

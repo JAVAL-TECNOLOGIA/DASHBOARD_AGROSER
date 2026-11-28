@@ -760,15 +760,35 @@ def obtener_asistencias(request):
             
             # Aplicar filtros de fecha solo si se proporcionan
             if fecha_inicio and fecha_fin:
-                query += " AND CAST(a.LOG_FECHA AS DATE) BETWEEN ? AND ?"
-                params.append(fecha_inicio)
-                params.append(fecha_fin)
+                query += """ AND (
+                    CAST(a.LOG_FECHA AS DATE) BETWEEN ? AND ?
+                    OR (
+                        a.HORA_INGRESO IS NOT NULL AND a.HORA_SALIDA IS NOT NULL
+                        AND a.HORA_SALIDA < a.HORA_INGRESO
+                        AND CAST(DATEADD(day, 1, a.LOG_FECHA) AS DATE) BETWEEN ? AND ?
+                    )
+                )"""
+                params.extend([fecha_inicio, fecha_fin, fecha_inicio, fecha_fin])
             elif fecha_inicio:
-                query += " AND CAST(a.LOG_FECHA AS DATE) >= ?"
-                params.append(fecha_inicio)
+                query += """ AND (
+                    CAST(a.LOG_FECHA AS DATE) >= ?
+                    OR (
+                        a.HORA_INGRESO IS NOT NULL AND a.HORA_SALIDA IS NOT NULL
+                        AND a.HORA_SALIDA < a.HORA_INGRESO
+                        AND CAST(DATEADD(day, 1, a.LOG_FECHA) AS DATE) >= ?
+                    )
+                )"""
+                params.extend([fecha_inicio, fecha_inicio])
             elif fecha_fin:
-                query += " AND CAST(a.LOG_FECHA AS DATE) <= ?"
-                params.append(fecha_fin)
+                query += """ AND (
+                    CAST(a.LOG_FECHA AS DATE) <= ?
+                    OR (
+                        a.HORA_INGRESO IS NOT NULL AND a.HORA_SALIDA IS NOT NULL
+                        AND a.HORA_SALIDA < a.HORA_INGRESO
+                        AND CAST(DATEADD(day, 1, a.LOG_FECHA) AS DATE) <= ?
+                    )
+                )"""
+                params.extend([fecha_fin, fecha_fin])
             
             if empresa_filtro:
                 query += " AND e.DESCRIPCION = ?"
@@ -790,6 +810,13 @@ def obtener_asistencias(request):
                 hora_ingreso = row[3].strftime('%H:%M:%S') if row[3] else None
                 hora_salida = row[4].strftime('%H:%M:%S') if row[4] else None
                 log_fecha = row[5].strftime('%Y-%m-%d') if row[5] else None
+                es_turno_nocturno = bool(row[3] and row[4] and row[4] < row[3])
+                fecha_salida = None
+                if row[4] and row[5]:
+                    salida_date = row[5].date() if isinstance(row[5], datetime) else row[5]
+                    if es_turno_nocturno:
+                        salida_date += timedelta(days=1)
+                    fecha_salida = salida_date.strftime('%Y-%m-%d')
                 
                 # Calcular estado basado en marcaciones y horas trabajadas
                 estado_numerico = row[6]  # El estado original de la BD
@@ -832,6 +859,8 @@ def obtener_asistencias(request):
                     'HORA_INGRESO': hora_ingreso,
                     'HORA_SALIDA': hora_salida,
                     'LOG_FECHA': log_fecha,
+                    'FECHA_INGRESO': log_fecha,
+                    'FECHA_SALIDA': fecha_salida,
                     'ESTADO': estado_texto,
                     'HORAS_TRABAJADAS': horas_trabajadas,
                     'CODIGO_PERSONAL': row[7],
@@ -841,9 +870,7 @@ def obtener_asistencias(request):
                     'IDEMPRESA': row[10],
                     'EMPRESA_NOMBRE': row[11],
                     'SEDE_NOMBRE': row[12]
-                    ,'ES_TURNO_NOCTURNO': bool(
-                        row[3] and row[4] and row[4] < row[3]
-                    )
+                    ,'ES_TURNO_NOCTURNO': es_turno_nocturno
                 })
             
             # Actualizar estados en la base de datos para registros que califican como "Completado" - REMOVIDO
@@ -1117,7 +1144,8 @@ def sincronizar_asistencias_nisira(request):
                 FROM ASISTENCIA a
                 INNER JOIN PERSONAL p ON p.ID_PERSONAL = a.ID_PERSONAL
                 LEFT JOIN EMPRESA e ON e.IDEMPRESA = p.IDEMPRESA
-                WHERE a.ID_SEDE = ? AND CAST(a.LOG_FECHA AS date) BETWEEN ? AND ?
+                WHERE a.ID_SEDE = ?
+                  AND CAST(a.LOG_FECHA AS date) BETWEEN DATEADD(day, -1, ?) AND ?
             """
             params = [site_id, start_date, end_date]
             if company:
@@ -1132,14 +1160,18 @@ def sincronizar_asistencias_nisira(request):
                     continue
                 display_name = ' '.join(filter(None, [str(names or '').strip(), str(surnames or '').strip()]))
                 if entry:
-                    marks.append({'code': code, 'name': display_name,
-                                  'timestamp': datetime.combine(work_date, entry),
-                                  'kind': 'I'})
+                    entry_timestamp = datetime.combine(work_date, entry)
+                    if start_date <= entry_timestamp.date() <= end_date:
+                        marks.append({'code': code, 'name': display_name,
+                                      'timestamp': entry_timestamp,
+                                      'kind': 'I'})
                 if exit_time:
                     exit_date = work_date + timedelta(days=1) if entry and exit_time < entry else work_date
-                    marks.append({'code': code, 'name': display_name,
-                                  'timestamp': datetime.combine(exit_date, exit_time),
-                                  'kind': 'S'})
+                    exit_timestamp = datetime.combine(exit_date, exit_time)
+                    if start_date <= exit_timestamp.date() <= end_date:
+                        marks.append({'code': code, 'name': display_name,
+                                      'timestamp': exit_timestamp,
+                                      'kind': 'S'})
             return marks
 
         marks = _run_portalaei_query(load_marks)
