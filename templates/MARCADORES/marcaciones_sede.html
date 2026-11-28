@@ -466,8 +466,8 @@ function abrirEdicionMarcacion(id) {
     $('#editar-id-asistencia').val(asistencia.ID_ASISTENCIA);
     $('#editar-persona').text(asistencia.CODIGO_PERSONAL + ' · ' + asistencia.NOMBRE_COMPLETO);
     $('#editar-fecha').text(asistencia.LOG_FECHA + ' · ' + (asistencia.SEDE_NOMBRE || ''));
-    $('#editar-hora-ingreso').val((asistencia.HORA_INGRESO || '').slice(0, 8));
-    $('#editar-hora-salida').val((asistencia.HORA_SALIDA || '').slice(0, 8));
+    $('#editar-hora-ingreso').val((asistencia.HORA_INGRESO_REAL || asistencia.HORA_INGRESO || '').slice(0, 8));
+    $('#editar-hora-salida').val((asistencia.HORA_SALIDA_REAL || asistencia.HORA_SALIDA || '').slice(0, 8));
     $('#editar-motivo').val('');
     $('#editarMarcacionModal').modal('show');
 }

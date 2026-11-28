@@ -293,6 +293,47 @@ class AttendanceEditingTests(SimpleTestCase):
         self.assertEqual(payload['data'][0]['FECHA_SALIDA'], '2026-11-25')
         self.assertTrue(payload['data'][0]['ES_TURNO_NOCTURNO'])
 
+    def test_single_day_filter_places_overnight_exit_on_next_day(self):
+        request = self.factory.get(
+            '/marcadores/api/asistencias/',
+            {'fecha_inicio': '2026-11-27', 'fecha_fin': '2026-11-27', 'sede': '1'},
+        )
+        overnight_row = (
+            92, 10, 1, time(21, 0), time(1, 0), date(2026, 11, 26), 2,
+            '02598724', 'GABRIEL DAVID', 'MEJIAS ESTRANO', '001',
+            'AGROSERVICE', 'PLANTA',
+        )
+        with patch.object(views, '_run_portalaei_query', return_value=[overnight_row]):
+            response = views.obtener_asistencias(request)
+
+        payload = json.loads(response.content)['data'][0]
+        self.assertIsNone(payload['HORA_INGRESO'])
+        self.assertIsNone(payload['FECHA_INGRESO'])
+        self.assertEqual(payload['HORA_SALIDA'], '01:00:00')
+        self.assertEqual(payload['FECHA_SALIDA'], '2026-11-27')
+        self.assertEqual(payload['TIPO_MOVIMIENTO_VISTA'], 'SALIDA')
+        self.assertEqual(payload['HORA_INGRESO_REAL'], '21:00:00')
+
+    def test_single_day_filter_keeps_overnight_entry_on_start_day(self):
+        request = self.factory.get(
+            '/marcadores/api/asistencias/',
+            {'fecha_inicio': '2026-11-26', 'fecha_fin': '2026-11-26', 'sede': '1'},
+        )
+        overnight_row = (
+            92, 10, 1, time(21, 0), time(1, 0), date(2026, 11, 26), 2,
+            '02598724', 'GABRIEL DAVID', 'MEJIAS ESTRANO', '001',
+            'AGROSERVICE', 'PLANTA',
+        )
+        with patch.object(views, '_run_portalaei_query', return_value=[overnight_row]):
+            response = views.obtener_asistencias(request)
+
+        payload = json.loads(response.content)['data'][0]
+        self.assertEqual(payload['HORA_INGRESO'], '21:00:00')
+        self.assertEqual(payload['FECHA_INGRESO'], '2026-11-26')
+        self.assertIsNone(payload['HORA_SALIDA'])
+        self.assertIsNone(payload['FECHA_SALIDA'])
+        self.assertEqual(payload['TIPO_MOVIMIENTO_VISTA'], 'INGRESO')
+
     def test_next_day_early_mark_closes_overnight_shift(self):
         self.assertTrue(views._is_overnight_exit(
             date(2026, 11, 26), time(21, 0), datetime(2026, 11, 27, 2, 0)

@@ -804,6 +804,9 @@ def obtener_asistencias(request):
             rows = _run_portalaei_query(
                 lambda cursor: (cursor.execute(query, params), cursor.fetchall())[1]
             )
+            fecha_unica = None
+            if fecha_inicio and fecha_fin and fecha_inicio == fecha_fin:
+                fecha_unica = date.fromisoformat(fecha_inicio)
             asistencias = []
             for row in rows:
                
@@ -851,15 +854,38 @@ def obtener_asistencias(request):
                     estado_texto = 'Sin datos'
                     horas_trabajadas = None
 
+                # En la vista de un solo día, cada movimiento se muestra en su
+                # fecha real. El registro sigue unido internamente para edición,
+                # auditoría y cálculo de horas del turno nocturno.
+                hora_ingreso_vista = hora_ingreso
+                hora_salida_vista = hora_salida
+                fecha_ingreso_vista = log_fecha
+                fecha_salida_vista = fecha_salida
+                tipo_movimiento_vista = 'JORNADA'
+                if fecha_unica and es_turno_nocturno:
+                    ingreso_date = row[5].date() if isinstance(row[5], datetime) else row[5]
+                    salida_date = ingreso_date + timedelta(days=1)
+                    if fecha_unica == ingreso_date:
+                        hora_salida_vista = None
+                        fecha_salida_vista = None
+                        tipo_movimiento_vista = 'INGRESO'
+                    elif fecha_unica == salida_date:
+                        hora_ingreso_vista = None
+                        fecha_ingreso_vista = None
+                        tipo_movimiento_vista = 'SALIDA'
+
                 asistencias.append({
                     'ID_ASISTENCIA': row[0],
                     'ID_PERSONAL': row[1],
                     'ID_SEDE': row[2],
-                    'HORA_INGRESO': hora_ingreso,
-                    'HORA_SALIDA': hora_salida,
+                    'HORA_INGRESO': hora_ingreso_vista,
+                    'HORA_SALIDA': hora_salida_vista,
+                    'HORA_INGRESO_REAL': hora_ingreso,
+                    'HORA_SALIDA_REAL': hora_salida,
                     'LOG_FECHA': log_fecha,
-                    'FECHA_INGRESO': log_fecha,
-                    'FECHA_SALIDA': fecha_salida,
+                    'FECHA_INGRESO': fecha_ingreso_vista,
+                    'FECHA_SALIDA': fecha_salida_vista,
+                    'TIPO_MOVIMIENTO_VISTA': tipo_movimiento_vista,
                     'ESTADO': estado_texto,
                     'HORAS_TRABAJADAS': horas_trabajadas,
                     'CODIGO_PERSONAL': row[7],
